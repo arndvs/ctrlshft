@@ -2,7 +2,7 @@ Output "Read Google Docs." to chat to acknowledge your read this file.
 
 if the document you're working on is related to Google Docs, please read the instructions in this file to ensure your contributions align with the project's standards and guidelines for Google Docs content.
 
-Use the service account credentials provided in the JSON format located in the /secrets directory to authenticate and interact with Google APIs as needed for your work on Google Docs. Make sure to keep these credentials secure and do not share them publicly.:
+Use the service account credentials provided in the JSON format located in the ~/dotfiles/secrets/ directory to authenticate and interact with Google APIs as needed for your work on Google Docs. Make sure to keep these credentials secure and do not share them publicly.:
 
 Example of service account credentials in JSON format:
 
