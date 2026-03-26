@@ -25,7 +25,7 @@ Output "Read global instructions." to chat to acknowledge your read this file.
 - Use modern APIs and patterns over legacy approaches. Baseline browser support is February 2026
 - When I upload an image for you, describe it with pixel perfect accuracy and aim to replicate it perfectly as close to the image as possible
 - Don't hide functionality in methods appearing as getters or checks.
-- Create skills in global .claude/skills
+- Create skills in ~/dotfiles/skills/ (symlinked to ~/.claude/skills). This is the single source of truth for all skills across all machines
 - Anthropic only: Always use model: "opus" for all Task tool subagents. Never downgrade to haiku or sonnet
 - For longer operations or migrations, keep scratchdisks, temp data or progress file in a working/ directory in root folder to prevent losing them when the conversation gets compacted. Write long terminal scripts to a temp file in working/ dir with `create_file` first, then execute it with a simple one-line command
 - Never inline multi-line content or text containing quotes in terminal commands. VS Code's `sendText()` corrupts heredocs over ~700 chars and zsh gets stuck in `dquote>` on unmatched quotes. Instead: use `create_file` to write the content to a temp file (e.g. /tmp/body.txt), then either run the file directly or write a small Python wrapper to /tmp/ that reads the file and passes it via subprocess. This covers heredocs, inline scripts, and CLI arguments like `--body "..."`.
