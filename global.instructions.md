@@ -1,4 +1,4 @@
-Output "Read global." to chat to acknowledge your read this file.
+Output "Read global instructions." to chat to acknowledge your read this file.
 
 <general>
 - ALWAYS follow all rules below carefully & to the letter
@@ -80,6 +80,7 @@ Read the relevant SKILL.md in full, find the most suitable place to integrate th
 </database>
 
 <code_formatting>
+
 - Use 4 spaces for indentation
 - Put conditions multiline. Do not wrap single if, else etc. statements. Never put the condition and body on the same line — always break after the condition: `if (x)\n    doSomething();` not `if (x) doSomething();`
 - Single-line conditions without braces
@@ -88,15 +89,15 @@ Read the relevant SKILL.md in full, find the most suitable place to integrate th
 - In associative arrays, vertically align `=>` arrows. The longest key gets exactly 1 space before `=>`; shorter keys pad to match
 - Do not align `=>` in match expressions. Use a single space before `=>`
 - Never put multiple statements on a single line inside braces. Always expand to multiple lines
-</code_formatting>
+  </code_formatting>
 
 <thinking>
 - You must engage in exhaustive, deep-level reasoning. Think deeply about edge cases, data integrity, and architectural consequences before writing code and after refactorings.
 </thinking>
 
 <design>
-- For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production. 
-- Avoid baloon labels because they look AI-generated. 
+- For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+- Avoid baloon labels because they look AI-generated.
 </design>
 
 <copywriting>
@@ -107,7 +108,7 @@ The below are rules you must adhere to when writing sales, email, ad, funnel or 
 - Work scarcity in early on: offer 5% discount if they come and buy later and on remarketing ads in the next few hours
 - Mental triggers: urgency, scarcity, novelty but avoid generic scarcity
 - Use storytelling
-- Simple optin page, win immediatelly, lead magnet 
+- Simple optin page, win immediatelly, lead magnet
 - Add more curiosity to headline and open loop to the ad copy
 - Add trust badges
 - Address their problem, show them an easy push button way to fix it while creating mystery
@@ -191,23 +192,23 @@ The below are rules you must adhere to when writing sales, email, ad, funnel or 
 
 Sell specific results, not vague conceptsú.
 
-Your offer must be: "You pay X, you get Y" - crystal clear.**
+Your offer must be: "You pay X, you get Y" - crystal clear.\*\*
 
-| Good Offer | Why It Works |
-|------------|--------------|
-| "You speak French in 90 days" | Specific, measurable |
-| "Six pack in 3 weeks" | Clear outcome + timeline |
-| "Speed read" | Tangible skill |
-| "Fix brain fog in 15 days" | Specific problem + deadline |
-| "Increase IQ by 12%" | Verifiable result |
+| Good Offer                    | Why It Works                |
+| ----------------------------- | --------------------------- |
+| "You speak French in 90 days" | Specific, measurable        |
+| "Six pack in 3 weeks"         | Clear outcome + timeline    |
+| "Speed read"                  | Tangible skill              |
+| "Fix brain fog in 15 days"    | Specific problem + deadline |
+| "Increase IQ by 12%"          | Verifiable result           |
 
-| Bad Offer | Why It Fails |
-|-----------|--------------|
-| "Regain your drive" | What does that even mean? |
-| "Flow state" | Buzzword - means nothing tangible |
-| "Scale your business" | Too broad |
-| "Peak performance" | Vague idea, not a result |
-| "Conquer your mind" | Not measurable |
+| Bad Offer             | Why It Fails                      |
+| --------------------- | --------------------------------- |
+| "Regain your drive"   | What does that even mean?         |
+| "Flow state"          | Buzzword - means nothing tangible |
+| "Scale your business" | Too broad                         |
+| "Peak performance"    | Vague idea, not a result          |
+| "Conquer your mind"   | Not measurable                    |
 
 People won't pay for abstract transformation. They pay for specific, fast, clear outcomes they can verify.
 

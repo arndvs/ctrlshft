@@ -1,4 +1,4 @@
-Output "Read PHP." to chat to acknowledge your read this file.
+Output "Read PHP instructions." to chat to acknowledge your read this file.
 
 <php>
 - Support modern PHP 8.4+ syntax unless stated below
@@ -22,7 +22,7 @@ Output "Read PHP." to chat to acknowledge your read this file.
 - Empty line before } else if, } else, } catch
 - In PHP templates, never use multi-line if/else blocks to conditionally add CSS classes. Instead, use inline ternary with short echo tags on a single line, e.g. `<a href="/admin" class="nav-link <?= $path === '/admin' ? 'active' : '' ?>">`. Keep it compact and on one line.
 - Do not inline styles in DOM elements
-- Mark class fields as private and use getters and setters to access them. 
+- Mark class fields as private and use getters and setters to access them.
 - No public static methods in classes for utility purposes. Move them to a lib package.
 - Order: static fields on top, then on static, static methods on bottom. public first, protected then, private last. Each class must read like a newspaper.
 - Never prefix global PHP classes with `\`. Use bare names (e.g., `RuntimeException` not `\RuntimeException`). Import with `use` if in a namespace
