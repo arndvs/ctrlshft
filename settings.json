@@ -1,82 +1,161 @@
 {
-	"chat.agent.maxRequests": 100000,
-	"chat.agent.thinkingStyle": "collapsedPreview",
-	"chat.checkpoints.showFileChanges": true,
-	"chat.customAgentInSubagent.enabled": true,
-	"chat.editMode.hidden": true,
-	"chat.edits2.enabled": true,
-	"chat.experimental.useSkillAdherencePrompt": true,
-	"chat.instructionsFilesLocations": {
-		"/Users/YOURNAME/dotfiles": true,
-		".github/instructions": true
-	},
-	"chat.mcp.discovery.enabled": {
-		"claude-desktop": true
-	},
-	"chat.planAgent.defaultModel": "Claude Opus 4.6 (fast mode) (Preview) (copilot)",
-	"chat.requestQueuing.defaultAction": "queue",
-	"chat.tools.global.autoApprove": true,
-	"chat.useAgentSkills": true,
-	"chat.useNestedAgentsMdFiles": true,
-	"claudeCode.allowDangerouslySkipPermissions": true,
-	"claudeCode.environmentVariables": [
-		{
-			"name": "DISABLE_AUTO_COMPACT",
-			"value": "true"
-		},
-		{
-			"name": "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE",
-			"value": "95"
-		}
-	],
-	"claudeCode.initialPermissionMode": "bypassPermissions",
-	"claudeCode.preferredLocation": "sidebar",
-	"claudeCode.selectedModel": "opus[1m]",
-	"diffEditor.experimental.showMoves": true,
-	"diffEditor.ignoreTrimWhitespace": false,
-	"diffEditor.maxComputationTime": 0,
-	"diffEditor.renderSideBySide": false,
+	// =============================================================================
+	// TYPESCRIPT & JAVASCRIPT CONFIGURATION
+	// =============================================================================
+	"js/ts.tsdk": "node_modules/typescript/lib",
+	"js/ts.enablePromptUseWorkspaceTsdk": true,
+	"js/ts.preferences.importModuleSpecifier": "non-relative",
+	"js/ts.updateImportsOnFileMove.enabled": "always",
+	"js/ts.preferences.quoteStyle": "single",
+	"js/ts.suggest.paths": false,
+	"js/ts.format.enable": false,
+	"js/ts.tsserver.experimental.enableProjectDiagnostics": true,
+	"js/ts.tsserver.maxTsServerMemory": 4096,
+	"js/ts.format.enabled": false,
+	"js/ts.implicitProjectConfig.checkJs": true,
+	"js/ts.suggest.completeFunctionCalls": true,
+	// =============================================================================
+	// EDITOR BEHAVIOR & FORMATTING
+	// =============================================================================
+	"editor.formatOnPaste": true,
+	"editor.formatOnSave": true,
+	"editor.formatOnSaveMode": "file",
+	"editor.formatOnSaveTimeout": 750,
+	"editor.acceptSuggestionOnEnter": "on",
+	"editor.tabCompletion": "on",
+	"editor.guides.bracketPairs": false, // File 2 overrides File 1 (was true)
 	"editor.bracketPairColorization.independentColorPoolPerBracketType": false,
+	"editor.minimap.enabled": false,
+	"editor.stickyScroll.enabled": false,
+	"editor.wordWrap": "on",
 	"editor.experimentalGpuAcceleration": "on",
+	"editor.accessibilitySupport": "off",
 	"editor.gotoLocation.multipleDeclarations": "goto",
 	"editor.gotoLocation.multipleDefinitions": "goto",
 	"editor.gotoLocation.multipleImplementations": "goto",
 	"editor.gotoLocation.multipleReferences": "goto",
 	"editor.gotoLocation.multipleTypeDefinitions": "goto",
-	"editor.guides.bracketPairs": false,
-	"editor.minimap.enabled": false,
-	"editor.stickyScroll.enabled": false,
-	"enable-crash-reporter": false,
-	"explorer.autoReveal": false,
-	"explorer.confirmDelete": false,
-	"files.exclude": {
-		"**/.classpath": true,
-		"**/.project": true,
-		"**/.settings": true,
-		"**/.idea": true,
-		"**/target": true,
-		"**/.claude/**": true,
-		"**/vendor/**": true,
-		"**/.gitattributes": true,
-		"**/composer.lock": true
+	"editor.codeActionsOnSave": {
+		"source.fixAll": "explicit",
+		"source.organizeImports": "never",
+		"source.fixAll.eslint": "explicit"
 	},
-	"files.watcherExclude": {
-		"**/.git/objects/**": true,
-		"**/.next/**": true,
-		"**/node_modules/**": true,
-		"**/.turbo/**": true
+	// =============================================================================
+	// PRETTIER CONFIGURATION
+	// =============================================================================
+	"prettier.enable": true,
+	"prettier.requireConfig": false,
+	"prettier.useEditorConfig": true,
+	"prettier.resolveGlobalModules": true,
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"formate.enable": false,
+	// =============================================================================
+	// LANGUAGE-SPECIFIC FORMATTERS
+	// =============================================================================
+	"[javascript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.formatOnSave": true
 	},
-	"git.decorations.enabled": false,
+	"[javascriptreact]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.formatOnSave": true
+	},
+	"[typescript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.formatOnSave": true,
+		"editor.formatOnSaveMode": "file"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.formatOnSave": true,
+		"editor.formatOnSaveMode": "file"
+	},
+	"[json]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	},
+	"[html]": {
+		"editor.defaultFormatter": "vscode.html-language-features"
+	},
+	// =============================================================================
+	// TAILWIND CSS CONFIGURATION
+	// =============================================================================
+	"tailwindCSS.files.exclude": [
+		"**/.nx/cache/**",
+		"**/node_modules/**",
+		"**/.git/**",
+		"**/dist/**",
+		"**/build/**",
+		"**/.next/**"
+	],
+	"tailwindCSS.includeLanguages": {
+		"css": "css"
+	},
+	// =============================================================================
+	// CSS CONFIGURATION
+	// =============================================================================
+	"css.validate": false,
+	"less.validate": false,
+	"scss.validate": false,
+	"css.customData": [
+		".vscode/css_custom_data.json"
+	],
+	// =============================================================================
+	// EMMET CONFIGURATION
+	// =============================================================================
+	"emmet.triggerExpansionOnTab": true,
+	"emmet.includeLanguages": {
+		"javascript": "javascriptreact"
+	},
+	"emmet.syntaxProfiles": {
+		"xml": {
+			"attr_quotes": "single"
+		},
+		"html": {
+			"attr_quotes": "single"
+		},
+		"js": {
+			"attr_quotes": "single",
+			"self_closing_tag": true
+		},
+		"jsx": {
+			"attr_quotes": "single",
+			"self_closing_tag": true
+		}
+	},
+	// =============================================================================
+	// ESLINT CONFIGURATION
+	// =============================================================================
+	"eslint.validate": [
+		"javascript",
+		"javascriptreact",
+		"typescript",
+		"typescriptreact"
+	],
+	"eslint.format.enable": false,
+	// =============================================================================
+	// GITHUB COPILOT & CLAUDE / AI CONFIGURATION
+	// =============================================================================
+	"github.copilot.enable": {
+		"markdown": true
+	},
+	"github.copilot.nextEditSuggestions.enabled": true,
+	"github.copilot.nextEditSuggestions.extendedRange": true,
 	"github.copilot.chat.advanced.debug.overrideChatMaxTokenNum": 1000000,
 	"github.copilot.chat.advanced.workspace.codeSearchExternalIngest.enabled": "force",
-	"github.copilot.chat.agent.autoFix": true,
 	"github.copilot.chat.agent.omitFileAttachmentContents": true,
 	"github.copilot.chat.agent.temperature": 1,
+	"github.copilot.chat.agent.largeToolResultsToDisk.enabled": false,
 	"github.copilot.chat.agentHistorySummarizationWithPromptCache": true,
 	"github.copilot.chat.alternateGeminiModelFPrompt.enabled": true,
 	"github.copilot.chat.alternateGptPrompt.enabled": true,
-	"github.copilot.chat.anthropic.thinking.budgetTokens": 127000,
+	"github.copilot.chat.anthropic.thinking.budgetTokens": 32000,
+	"github.copilot.chat.anthropic.thinking.effort": "high",
 	"github.copilot.chat.anthropic.toolSearchTool.enabled": true,
+	"github.copilot.chat.anthropic.toolSearchTool.mode": "server",
+	"github.copilot.chat.anthropic.tools.websearch.enabled": true,
 	"github.copilot.chat.anthropic.tools.websearch.maxUses": 20,
 	"github.copilot.chat.anthropic.tools.websearch.userLocation": {},
 	"github.copilot.chat.claudeAgent.allowDangerouslySkipPermissions": true,
@@ -89,7 +168,9 @@
 	"github.copilot.chat.editRecording.enabled": true,
 	"github.copilot.chat.edits.gemini3MultiReplaceString": true,
 	"github.copilot.chat.enableUserPreferences": true,
+	"github.copilot.chat.exploreAgent.model": "claude-opus-4-6",
 	"github.copilot.chat.feedback.onChange": true,
+	"github.copilot.chat.getSearchViewResultsSkill.enabled": true,
 	"github.copilot.chat.githubMcpServer.enabled": true,
 	"github.copilot.chat.gpt5AlternativePatch": true,
 	"github.copilot.chat.growthMessages.enabled": false,
@@ -110,6 +191,7 @@
 	"github.copilot.chat.otel.enabled": false,
 	"github.copilot.chat.projectLabels.chat": true,
 	"github.copilot.chat.projectLabels.expanded": true,
+	"github.copilot.chat.projectLabels.inline": true,
 	"github.copilot.chat.responsesApiReasoningEffort": "xhigh",
 	"github.copilot.chat.review.intent": true,
 	"github.copilot.chat.reviewSelection.instructions": [
@@ -122,48 +204,33 @@
 	"github.copilot.chat.searchSubagent.toolCallLimit": 1000,
 	"github.copilot.chat.searchSubagent.useAgenticProxy": true,
 	"github.copilot.chat.suggestRelatedFilesFromGitHistory.useEmbeddings": true,
+	"github.copilot.chat.tools.defaultToolsGrouped": true,
+	"github.copilot.chat.updated53CodexPrompt.enabled": true,
 	"github.copilot.chat.useResponsesApiTruncation": true,
-	"github.copilot.enable": {
-		"markdown": true
+	// =============================================================================
+	// CHAT / AGENT CONFIGURATION
+	// =============================================================================
+	"chat.agent.maxRequests": 100000,
+	"chat.agent.thinking.collapsedTools": "withThinking",
+	"chat.agent.thinkingStyle": "collapsedPreview",
+	"chat.agentSessionProjection.enabled": true,
+	"chat.checkpoints.showFileChanges": true,
+	"chat.customAgentInSubagent.enabled": true,
+	"chat.editor.wordWrap": "on",
+	"chat.editMode.hidden": true,
+	"chat.edits2.enabled": true,
+	"chat.experimental.useSkillAdherencePrompt": true,
+	"chat.exploreAgent.defaultModel": "Claude Opus 4.6 (copilot)",
+	"chat.includeReferencedInstructions": true,
+	"chat.instructionsFilesLocations": {
+		"~/dotfiles": true,
+		".github/instructions": true
 	},
-	"github.copilot.nextEditSuggestions.enabled": true,
-	"github.copilot.nextEditSuggestions.extendedRange": true,
-	"inlineChat.affordance": "editor",
-	"inlineChat.defaultModel": "Claude Opus 4.6 (fast mode) (Preview) (copilot)",
-	"inlineChat.enableV2": true,
-	"intelephense.compatibility.correctForArrayAccessArrayAndTraversableArrayUnionTypes": false,
-	"js/ts.implicitProjectConfig.checkJs": true,
-	"js/ts.suggest.completeFunctionCalls": true,
-	"redhat.telemetry.enabled": false,
-	"scm.diffDecorations": "none",
-	"scm.diffDecorationsGutterAction": "none",
-	"scm.diffDecorationsGutterVisibility": "hover",
-	"search.exclude": {
-		"**/.next": true,
-		"**/node_modules": true,
-		"**/.turbo": true,
-		"**/pnpm-lock.yaml": true
+	"chat.mcp.discovery.enabled": {
+		"claude-desktop": true,
+		"cursor-global": true,
+		"cursor-workspace": true
 	},
-	"simpleBrowser.useIntegratedBrowser": true,
-	"task.allowAutomaticTasks": "on",
-	"telemetry.disableFeedback": true,
-	"telemetry.feedback.enabled": false,
-	"telemetry.telemetryLevel": "off",
-	"terminal.integrated.enableKittyKeyboardProtocol": true,
-	"terminal.integrated.stickyScroll.enabled": false,
-	"testing.gutterEnabled": false,
-	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
-	"typescript.tsserver.maxTsServerMemory": 4096,
-	"workbench.activityBar.location": "top",
-	"workbench.browser.openLocalhostLinks": true,
-	"workbench.editor.allowOpenInModalEditor": false,
-	"workbench.editor.editorActionsLocation": "hidden",
-	"workbench.editor.enablePreview": false,
-	"workbench.enableExperiments": false,
-	"workbench.navigationControl.enabled": false,
-	"workbench.startupEditor": "none",
-	"workbench.statusBar.visible": false,
-	"workbench.tree.enableStickyScroll": false,
 	"chat.mcp.serverSampling": {
 		"Global in Code - Insiders: canva": {
 			"allowedModels": [
@@ -181,26 +248,27 @@
 			]
 		}
 	},
-	"terminal.integrated.initialHint": false,
-	"chat.exploreAgent.defaultModel": "Claude Opus 4.6 (fast mode) (Preview) (copilot)",
-	"github.copilot.chat.exploreAgent.model": "claude-opus-4-6-fast",
-	"editor.wordWrap": "on",
-	"explorer.confirmDragAndDrop": false,
-	"terminal.integrated.enableImages": true,
-	"terminal.integrated.gpuAcceleration": "on",
-	"github.copilot.chat.updated53CodexPrompt.enabled": true,
-	"github.copilot.chat.agent.largeToolResultsToDisk.enabled": false,
-	"github.copilot.chat.anthropic.tools.websearch.enabled": true,
-	"github.copilot.chat.projectLabels.inline": true,
-	"github.copilot.chat.tools.defaultToolsGrouped": true,
+	"chat.planAgent.defaultModel": "Claude Opus 4.6 (copilot)",
+	"chat.requestQueuing.defaultAction": "queue",
+	"chat.tips.enabled": true,
+	"chat.tools.global.autoApprove": true,
 	"chat.tools.terminal.autoReplyToPrompts": true,
-	"terminal.integrated.shellIntegration.history": 1000,
-	"terminal.integrated.localEchoEnabled": "auto",
-	"terminal.integrated.shellIntegration.enabled": true,
-	"terminal.integrated.suggest.providers": {
-		"lsp": true
-	},
-	"github.copilot.chat.anthropic.thinking.effort": "high",
+	"chat.useAgentSkills": true,
+	"chat.useClaudeHooks": true,
+	"chat.useCustomAgentHooks": true,
+	"chat.useCustomizationsInParentRepositories": true,
+	"chat.useNestedAgentsMdFiles": true,
+	"chat.viewProgressBadge.enabled": true,
+	// =============================================================================
+	// CLAUDE CODE CONFIGURATION
+	// =============================================================================
+	"claudeCode.allowDangerouslySkipPermissions": true,
+	"claudeCode.initialPermissionMode": "bypassPermissions",
+	"claudeCode.preferredLocation": "sidebar",
+	"claudeCode.selectedModel": "default",
+	// =============================================================================
+	// ROO CODE CONFIGURATION
+	// =============================================================================
 	"roo-code-nightly.debug": false,
 	"roo-code-nightly.allowedCommands": [
 		"*",
@@ -209,23 +277,120 @@
 		"git show"
 	],
 	"roo-code-nightly.deniedCommands": [],
-	"explorer.confirmPasteNative": false,
-	"workbench.editor.useModal": "off",
-	"workbench.browser.enableChatTools": true,
-	"chat.editor.wordWrap": "on",
-	"chat.agentsControl.enabled": false,
-	"chat.tips.enabled": true,
-	"chat.viewProgressBadge.enabled": true,
-	"chat.agentSessionProjection.enabled": true,
-	"chat.includeReferencedInstructions": true,
-	"chat.useClaudeHooks": true,
-	"github.copilot.chat.getSearchViewResultsSkill.enabled": true,
 	"roo-code-nightly.maximumIndexedFilesForFileSearch": 100000,
-	"github.copilot.chat.anthropic.toolSearchTool.mode": "server",
+	// =============================================================================
+	// GIT CONFIGURATION
+	// =============================================================================
+	"git.rebaseWhenSync": false,
+	"git.autofetch": true,
+	"git.enableSmartCommit": true,
+	"git.decorations.enabled": false,
+	// =============================================================================
+	// TERMINAL CONFIGURATION
+	// =============================================================================
+	"terminal.integrated.splitCwd": "initial",
+	"terminal.integrated.defaultProfile.windows": "Git Bash",
+	"terminal.integrated.enableKittyKeyboardProtocol": true,
+	"terminal.integrated.enableImages": true,
+	"terminal.integrated.gpuAcceleration": "on",
+	"terminal.integrated.initialHint": false,
+	"terminal.integrated.localEchoEnabled": "auto",
+	"terminal.integrated.shellIntegration.enabled": true,
+	"terminal.integrated.shellIntegration.history": 1000,
+	"terminal.integrated.stickyScroll.enabled": false,
+	"terminal.integrated.suggest.providers": {
+		"lsp": true
+	},
+	// =============================================================================
+	// FILE & SEARCH CONFIGURATION
+	// =============================================================================
+	"files.associations": {
+		"*.tsx": "typescriptreact",
+		"*.ts": "typescript"
+	},
+	"files.exclude": {
+		"**/.classpath": true,
+		"**/.project": true,
+		"**/.settings": true,
+		"**/.idea": true,
+		"**/target": true,
+		"**/.claude/**": true,
+		"**/vendor/**": true,
+		"**/.gitattributes": true,
+		"**/composer.lock": true
+	},
+	"files.watcherExclude": {
+		"**/.git/objects/**": true,
+		"**/.next/**": true,
+		"**/node_modules/**": true,
+		"**/.turbo/**": true
+	},
+	"search.exclude": {
+		"**/.next": true,
+		"**/node_modules": true,
+		"**/.turbo": true,
+		"**/pnpm-lock.yaml": true
+	},
+	// =============================================================================
+	// DIFF EDITOR CONFIGURATION
+	// =============================================================================
+	"diffEditor.codeLens": true,
+	"diffEditor.experimental.showMoves": true,
+	"diffEditor.ignoreTrimWhitespace": false,
+	"diffEditor.maxComputationTime": 0,
+	"diffEditor.renderSideBySide": false,
+	// =============================================================================
+	// WORKBENCH & UI CUSTOMIZATION
+	// =============================================================================
+	"workbench.colorTheme": "IBM Carbon Color Theme",
+	"workbench.colorCustomizations": {
+		"editorStickyScroll.background": "#232323",
+		"editorStickyScrollHover.background": "#333333"
+	},
+	"workbench.browser.enableChatTools": true,
+	"workbench.browser.openLocalhostLinks": true,
+	"workbench.editor.allowOpenInModalEditor": false,
+	"workbench.editor.enablePreview": false,
+	"workbench.editor.useModal": "off",
+	"workbench.enableExperiments": false,
+	"workbench.navigationControl.enabled": false,
+	"workbench.startupEditor": "none",
+	"workbench.statusBar.visible": false,
+	"workbench.tree.enableStickyScroll": false,
+	// =============================================================================
+	// MISCELLANEOUS SETTINGS
+	// =============================================================================
+	"npm.packageManager": "npm",
+	"yaml.format.singleQuote": true,
+	"nxConsole.generateAiAgentRules": true,
+	"enable-crash-reporter": false,
+	"explorer.autoReveal": false,
+	"explorer.confirmDelete": false,
+	"explorer.confirmDragAndDrop": false,
+	"explorer.confirmPasteNative": false,
+	"inlineChat.affordance": "editor",
+	"inlineChat.defaultModel": "Claude Opus 4.6 (copilot)",
+	"inlineChat.enableV2": true,
+	"intelephense.compatibility.correctForArrayAccessArrayAndTraversableArrayUnionTypes": false,
+	"redhat.telemetry.enabled": false,
+	"scm.diffDecorations": "none",
+	"scm.diffDecorationsGutterAction": "none",
+	"scm.diffDecorationsGutterVisibility": "hover",
+	"simpleBrowser.useIntegratedBrowser": true,
+	"task.allowAutomaticTasks": "on",
+	"telemetry.disableFeedback": true,
 	"telemetry.editStats.enabled": false,
-	"chat.useCustomizationsInParentRepositories": true,
-	"github.copilot.chat.tools.memory.enabled": false,
-	"chat.useCustomAgentHooks": true,
-	"update.titleBar": "none",
-	"update.statusBar": "hidden"
+	"telemetry.feedback.enabled": false,
+	"telemetry.telemetryLevel": "off",
+	"testing.gutterEnabled": false,
+	"workbench.secondarySideBar.showLabels": false,
+	"gitlens.ai.model": "vscode",
+	"gitlens.ai.vscode.model": "copilot:gpt-4.1",
+	"workbench.sideBar.location": "right",
+	"git.confirmSync": false,
+	"github.copilot.chat.agentDebugLog.enabled": true,
+	"github.copilot.chat.agentDebugLog.fileLogging.enabled": true,
+	"remote.SSH.remotePlatform": {
+		"vps": "linux"
+	}
 }

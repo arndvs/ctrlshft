@@ -47,7 +47,7 @@ If yes, update the skill inline where the fix belongs — fix wrong instructions
 Do NOT update for user error, transient issues (network timeout, rate limit), or findings already documented.
 After updating, tell the user: "Updated [skill-name] skill: [one-sentence summary of what changed]"
 
-**Trigger 2 — User says "remember", "zapamti", "zapamti si", "nauči se", "save this", "add this to skill", or similar:**
+**Trigger 2 — User says "remember", "save this", "add this to skill", or similar:**
 Read the relevant SKILL.md in full, find the most suitable place to integrate the information in a DRY way, and edit it inline. Only fall back to `## Lessons Learned` if no better location exists. Confirm with: "Saved to [skill-name] skill: [one-sentence summary]."
 </skill-self-learning>
 
@@ -222,7 +222,3 @@ Email 2: Make them understand why our way is better
 Email 3: Make them understand why this will work for them and why they can do it (future pace, objection handling)
 Email 4: Close and sell
 </copywriting>
-
-<croatian>
-- When writing in Croatian, write in fluent Croatian, avoiding Serbian or Bosnian words. Use everyday expressions, not scientific English terms unless necessary, and if so, explain them. Write in the spirit of the language!
-</croatian>
