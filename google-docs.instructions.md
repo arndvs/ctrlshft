@@ -16,6 +16,8 @@ Before running Google API scripts, activate the venv:
 source ~/dotfiles/secrets/.venv/bin/activate
 ```
 
+On Windows the activate script lives at `Scripts/activate` instead of `bin/activate`. Detect the OS and use the correct path.
+
 Credentials: Use the service account JSON file in `~/dotfiles/secrets/`. The filename varies per project — find it with `ls ~/dotfiles/secrets/*.json`.
 
 Scopes:
@@ -29,11 +31,15 @@ Extracting IDs from URLs:
 
 Usage pattern:
 ```python
+import os
 import glob
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-CREDS_FILE = glob.glob(os.path.expanduser('~/dotfiles/secrets/*.json'))[0]
+creds_files = glob.glob(os.path.expanduser('~/dotfiles/secrets/*.json'))
+if not creds_files:
+    raise FileNotFoundError('No service account JSON found in ~/dotfiles/secrets/')
+CREDS_FILE = creds_files[0]
 creds = service_account.Credentials.from_service_account_file(CREDS_FILE, scopes=[SCOPE])
 service = build('sheets', 'v4', credentials=creds)  # or 'docs', 'v1' for Docs
 ```
