@@ -186,15 +186,52 @@ source ~/.bashrc
 
 ### VPS Setup
 
-Same steps — clone and bootstrap:
+Clone and bootstrap — same as local, but **do not run `sync-settings.sh` on the VPS**. VS Code Remote SSH forwards your local settings automatically.
 
 ```bash
 git clone https://github.com/arndvs/dotfiles.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
-# Fill in secrets/.env with the same keys (or VPS-specific values)
+$EDITOR ~/dotfiles/secrets/.env          # fill in API keys (same or VPS-specific values)
+source ~/.bashrc
 ```
 
-When you connect via VS Code Remote SSH, the `chat.instructionsFilesLocations` setting is forwarded — the remote VS Code server discovers `~/dotfiles` on the VPS and loads the same instructions and skills.
+Bootstrap runs a validation step at the end — all checks should pass. If any fail, re-read the error and re-run.
+
+**What's different on VPS vs local:**
+
+| Concern | Local machine | VPS |
+|---------|--------------|-----|
+| VS Code settings | Run `sync-settings.sh` | Forwarded via Remote SSH — do NOT run `sync-settings.sh` |
+| `~/.claude/CLAUDE.md` | Symlink (or copy on Windows) | Symlink |
+| `secrets/.env` | Your local API keys | Same keys or VPS-specific overrides |
+| Python venv | Created by bootstrap | Created by bootstrap |
+| Shell integration | `.bashrc` / `.zshrc` | `.bashrc` (bootstrap wires it) |
+
+#### VPS Verification Checklist
+
+After bootstrap, verify everything is wired correctly:
+
+```bash
+# Symlinks point to ~/dotfiles
+readlink ~/.claude/CLAUDE.md        # should print /home/<user>/dotfiles/CLAUDE.md
+readlink ~/.claude/skills           # should print /home/<user>/dotfiles/skills
+
+# Secrets loaded
+source ~/.bashrc
+echo $GITHUB_USERNAME               # should print your username
+
+# Context detection works
+cd ~/some-project
+echo $ACTIVE_CONTEXTS               # should list detected contexts
+```
+
+#### VPS Updating
+
+```bash
+cd ~/dotfiles && git pull
+bash ~/dotfiles/bin/bootstrap.sh     # re-validates + fixes stale symlinks
+source ~/.bashrc                     # pick up any new env vars
+```
 
 ### Manual Setup
 
@@ -314,9 +351,35 @@ echo $ACTIVE_CONTEXTS  # should include "nextjs"
 
 ```bash
 cd ~/dotfiles && git pull
-bash ~/dotfiles/bin/sync-settings.sh   # merge any new VS Code settings
+bash ~/dotfiles/bin/bootstrap.sh        # re-validates symlinks, creates missing files
+bash ~/dotfiles/bin/sync-settings.sh    # merge any new VS Code settings (LOCAL only)
 source ~/.bashrc                        # pick up any new env vars
 ```
+
+On a VPS, skip `sync-settings.sh` — VS Code Remote SSH forwards settings from your local machine.
+
+## Troubleshooting
+
+**Instructions not loading in Copilot Chat**
+- Verify the symlink: `readlink ~/.claude/CLAUDE.md` — should point to `~/dotfiles/CLAUDE.md`
+- If it's a regular file (not a symlink), re-run `bash ~/dotfiles/bin/bootstrap.sh`
+- Check that `chat.instructionsFilesLocations` includes `"~/dotfiles": true` in your VS Code settings
+
+**`secrets/.env not found` warning on shell startup**
+- Run: `cp ~/dotfiles/.env.example ~/dotfiles/secrets/.env`
+- Fill in your API keys: `$EDITOR ~/dotfiles/secrets/.env`
+
+**`sync-settings.sh` fails on VPS**
+- This is expected — `sync-settings.sh` only works on your local machine
+- VS Code Remote SSH forwards your local settings to the VPS automatically
+
+**`ACTIVE_CONTEXTS` not set / empty**
+- Verify `.bashrc` has the context-detection block: `grep "detect-context" ~/.bashrc`
+- If missing, re-run `bash ~/dotfiles/bin/bootstrap.sh`
+- Context detection runs on `cd` — it reads the current directory's files
+
+**Python venv missing or broken**
+- Delete and recreate: `rm -rf ~/dotfiles/secrets/.venv && bash ~/dotfiles/bin/bootstrap.sh`
 
 ## Architecture Decisions
 

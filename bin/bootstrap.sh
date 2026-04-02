@@ -56,13 +56,20 @@ echo
 green "[2/6] CLAUDE.md"
 mkdir -p "$CLAUDE_DIR"
 if [[ -L "$CLAUDE_DIR/CLAUDE.md" ]]; then
-    yellow "  ~/.claude/CLAUDE.md is already a symlink — skipping"
+    _target=$(readlink "$CLAUDE_DIR/CLAUDE.md")
+    if [[ "$_target" == "$DOTFILES/CLAUDE.md" ]]; then
+        yellow "  ~/.claude/CLAUDE.md is already symlinked correctly — skipping"
+    else
+        ln -sf "$DOTFILES/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+        green "  Fixed stale symlink (was $_target)"
+    fi
 elif [[ "$OS" == "windows" ]]; then
     cp "$DOTFILES/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
     yellow "  Copied CLAUDE.md (Windows: file symlinks require admin)"
     yellow "  To upgrade to a symlink, run as admin:"
     yellow "    cmd /c mklink C:\\Users\\%USERNAME%\\.claude\\CLAUDE.md C:\\Users\\%USERNAME%\\dotfiles\\CLAUDE.md"
 else
+    [[ -f "$CLAUDE_DIR/CLAUDE.md" ]] && yellow "  Replacing regular file with symlink"
     ln -sf "$DOTFILES/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
     green "  Symlinked ~/.claude/CLAUDE.md -> ~/dotfiles/CLAUDE.md"
 fi
@@ -142,14 +149,65 @@ else
     green "  Venv created and base packages installed"
 fi
 
-# ── 6. Summary ────────────────────────────────────────────────────────────────
+# ── 6. Validation ─────────────────────────────────────────────────────────────
 echo
-green "[6/6] Done!"
+green "[6/6] Validating setup"
+_fail=0
+
+if [[ "$OS" == "windows" ]]; then
+    if [[ -f "$CLAUDE_DIR/CLAUDE.md" ]]; then
+        green "  ✓ ~/.claude/CLAUDE.md exists"
+    else
+        red "  ✗ ~/.claude/CLAUDE.md missing"; _fail=1
+    fi
+else
+    if [[ -L "$CLAUDE_DIR/CLAUDE.md" ]]; then
+        green "  ✓ ~/.claude/CLAUDE.md is a symlink"
+    else
+        red "  ✗ ~/.claude/CLAUDE.md is not a symlink — re-run bootstrap"; _fail=1
+    fi
+fi
+
+if [[ -L "$CLAUDE_DIR/skills" ]]; then
+    green "  ✓ ~/.claude/skills is a symlink"
+else
+    red "  ✗ ~/.claude/skills missing or not a symlink"; _fail=1
+fi
+
+if [[ -f "$SECRETS_DIR/.env" ]]; then
+    green "  ✓ secrets/.env exists"
+else
+    red "  ✗ secrets/.env missing"; _fail=1
+fi
+
+if [[ -f "$BASHRC" ]] && grep -qF "load-secrets.sh" "$BASHRC"; then
+    green "  ✓ .bashrc has load-secrets integration"
+else
+    red "  ✗ .bashrc missing load-secrets integration"; _fail=1
+fi
+
+if [[ -d "$VENV_DIR" ]]; then
+    green "  ✓ Python venv exists"
+else
+    yellow "  ~ Python venv not created (Python not found)"
+fi
+
+echo
+if [[ $_fail -eq 0 ]]; then
+    green "All checks passed!"
+else
+    red "Some checks failed — review the output above."
+fi
+
 echo ""
 echo "Next steps:"
 if [[ ! -s "$SECRETS_DIR/.env" ]] || grep -q "^GITHUB_USERNAME=$" "$SECRETS_DIR/.env" 2>/dev/null; then
     yellow "  1. Fill in secrets:  \$EDITOR ~/dotfiles/secrets/.env"
 fi
 echo "  2. Reload shell:    source ~/.bashrc"
-echo "  3. Merge VS Code settings:  bash ~/dotfiles/bin/sync-settings.sh"
+if [[ -d "$HOME/.vscode-server" ]] && [[ ! -d "$HOME/.config/Code - Insiders" ]] && [[ ! -d "$HOME/.config/Code" ]]; then
+    echo "  3. Sync VS Code settings on your LOCAL machine (not this VPS)"
+else
+    echo "  3. Merge VS Code settings:  bash ~/dotfiles/bin/sync-settings.sh"
+fi
 echo "  4. Verify:          echo \$GITHUB_USERNAME"

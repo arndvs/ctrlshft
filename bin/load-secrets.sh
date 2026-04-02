@@ -22,6 +22,8 @@ _source_env() {
 
 if [ -f "$_DOTFILES_ENV" ]; then
     _source_env "$_DOTFILES_ENV"
+else
+    printf '\033[33m[dotfiles] secrets/.env not found — run: cp ~/dotfiles/.env.example ~/dotfiles/secrets/.env\033[0m\n' >&2
 fi
 
 if [ -f "$_DOTFILES_ENV_CITATION" ]; then

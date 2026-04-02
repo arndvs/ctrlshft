@@ -23,6 +23,14 @@ for arg in "$@"; do
     esac
 done
 
+# ── Guard: skip on VPS / Remote SSH targets ───────────────────────────────────
+if [[ -d "$HOME/.vscode-server" ]] && [[ ! -d "$HOME/.config/Code - Insiders" ]] && [[ ! -d "$HOME/.config/Code" ]]; then
+    echo "Error: This appears to be a VS Code Remote SSH target (VPS)."
+    echo "VS Code settings are managed on your LOCAL machine — Remote SSH forwards them automatically."
+    echo "Run sync-settings.sh on your local machine instead."
+    exit 1
+fi
+
 # ── Locate settings file ─────────────────────────────────────────────────────
 case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*)
