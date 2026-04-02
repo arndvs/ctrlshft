@@ -28,7 +28,9 @@ export CITATION_VAULT_KEY="paste-key-here"
 cp assets/nap_template.json nap.json
 # Edit nap.json — all required fields must be filled
 
-# 5. Edit config.json — set your spreadsheet ID and email settings
+# 5. Copy and edit config.json — set your spreadsheet ID and email settings
+cp config.example.json config.json
+# Edit config.json — set spreadsheet_id, verification_account, business_email
 
 # 6. Initialize the credential vault
 python -c "from scripts.credential_vault import init_vault; init_vault('credentials.vault')"

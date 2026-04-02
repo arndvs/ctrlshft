@@ -46,6 +46,11 @@ mkdir -p "$SECRETS_DIR"
 if [[ -f "$SECRETS_DIR/.env" ]]; then
     yellow "  secrets/.env already exists — skipping"
 else
+    if [[ ! -f "$DOTFILES/.env.example" ]]; then
+        red "  Error: $DOTFILES/.env.example not found — cannot create secrets/.env"
+        red "  This file should exist in the repo. Try: git checkout -- .env.example"
+        exit 1
+    fi
     cp "$DOTFILES/.env.example" "$SECRETS_DIR/.env"
     green "  Created secrets/.env from .env.example"
     yellow "  >>> Fill in your API keys: $SECRETS_DIR/.env"
@@ -89,7 +94,17 @@ elif [[ -d "$CLAUDE_DIR/skills" ]]; then
     yellow "  ~/.claude/skills exists as a real directory — skipping (manual merge needed)"
 else
     ln -sf "$DOTFILES/skills" "$CLAUDE_DIR/skills"
-    green "  Symlinked ~/.claude/skills -> ~/dotfiles/skills/"
+    if [[ -L "$CLAUDE_DIR/skills" ]]; then
+        green "  Symlinked ~/.claude/skills -> ~/dotfiles/skills/"
+    elif [[ "$OS" == "windows" ]]; then
+        red "  Symlink creation failed — Windows requires Developer Mode for directory symlinks."
+        red "  Enable Developer Mode: Settings > Privacy > For Developers > Developer Mode"
+        red "  Then re-run this script."
+        _fail=1
+    else
+        red "  Symlink creation failed — check permissions"
+        _fail=1
+    fi
 fi
 
 # ── 4. Wire up .bashrc ───────────────────────────────────────────────────────
@@ -139,7 +154,17 @@ if [[ -z "$PYTHON" ]]; then
     yellow "  Python not found — skipping venv setup"
     yellow "  Install Python 3.10+ and re-run this script"
 elif [[ -d "$VENV_DIR" ]]; then
-    yellow "  Venv already exists at $VENV_DIR — skipping"
+    # Verify venv is functional, not just present
+    _venv_python=""
+    [[ -f "$VENV_DIR/Scripts/python.exe" ]] && _venv_python="$VENV_DIR/Scripts/python.exe"
+    [[ -f "$VENV_DIR/bin/python" ]] && _venv_python="$VENV_DIR/bin/python"
+    if [[ -n "$_venv_python" ]] && "$_venv_python" --version &>/dev/null; then
+        yellow "  Venv already exists at $VENV_DIR — skipping"
+    else
+        red "  Venv directory exists but Python binary is broken: $VENV_DIR"
+        red "  Fix with: rm -rf $VENV_DIR && bash ~/dotfiles/bin/bootstrap.sh"
+        _fail=1
+    fi
 else
     green "  Creating venv with $PYTHON..."
     "$PYTHON" -m venv "$VENV_DIR"
@@ -167,15 +192,19 @@ if [[ "$OS" == "windows" ]]; then
         red "  ✗ ~/.claude/CLAUDE.md missing"; _fail=1
     fi
 else
-    if [[ -L "$CLAUDE_DIR/CLAUDE.md" ]]; then
-        green "  ✓ ~/.claude/CLAUDE.md is a symlink"
+    if [[ -L "$CLAUDE_DIR/CLAUDE.md" ]] && [[ -f "$CLAUDE_DIR/CLAUDE.md" ]]; then
+        green "  ✓ ~/.claude/CLAUDE.md is a symlink (target resolves)"
+    elif [[ -L "$CLAUDE_DIR/CLAUDE.md" ]]; then
+        red "  ✗ ~/.claude/CLAUDE.md is a dangling symlink — target missing"; _fail=1
     else
         red "  ✗ ~/.claude/CLAUDE.md is not a symlink — re-run bootstrap"; _fail=1
     fi
 fi
 
-if [[ -L "$CLAUDE_DIR/skills" ]]; then
-    green "  ✓ ~/.claude/skills is a symlink"
+if [[ -L "$CLAUDE_DIR/skills" ]] && [[ -d "$CLAUDE_DIR/skills" ]]; then
+    green "  ✓ ~/.claude/skills is a symlink (target resolves)"
+elif [[ -L "$CLAUDE_DIR/skills" ]]; then
+    red "  ✗ ~/.claude/skills is a dangling symlink — target missing"; _fail=1
 else
     red "  ✗ ~/.claude/skills missing or not a symlink"; _fail=1
 fi

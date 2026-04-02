@@ -9,6 +9,10 @@ __MACOSX
 .LSOverride
 Icon?
 
+# Python bytecode
+__pycache__/
+*.pyc
+
 # Secrets — NEVER commit
 secrets/
 .env

@@ -23,58 +23,58 @@ set -euo pipefail
 contexts="general"
 
 # --- Next.js ---
-if [ -f "next.config.ts" ] || [ -f "next.config.js" ] || [ -f "next.config.mjs" ]; then
+if [[ -f "next.config.ts" ]] || [[ -f "next.config.js" ]] || [[ -f "next.config.mjs" ]]; then
     contexts="$contexts,nextjs"
 fi
 
 # --- React Native ---
-if [ -f "package.json" ] && grep -q '"react-native"' package.json 2>/dev/null; then
+if [[ -f "package.json" ]] && grep -q '"react-native"' package.json 2>/dev/null; then
     contexts="$contexts,react-native"
 fi
 
 # --- React (non-Next, non-Native) ---
 # Must come AFTER react-native check — both match "react" in package.json
-if [ -f "package.json" ] && grep -q '"react"' package.json 2>/dev/null; then
+if [[ -f "package.json" ]] && grep -q '"react"' package.json 2>/dev/null; then
     if [[ "$contexts" != *"nextjs"* && "$contexts" != *"react-native"* ]]; then
         contexts="$contexts,react"
     fi
 fi
 
 # --- Node / TypeScript ---
-if [ -f "package.json" ]; then
+if [[ -f "package.json" ]]; then
     contexts="$contexts,node"
 fi
-if [ -f "tsconfig.json" ]; then
+if [[ -f "tsconfig.json" ]]; then
     contexts="$contexts,typescript"
 fi
 
 # --- PHP ---
-if [ -f "composer.json" ]; then
+if [[ -f "composer.json" ]]; then
     contexts="$contexts,php"
 fi
 
 # --- Sanity CMS ---
-if [ -f "sanity.config.ts" ] || [ -f "sanity.config.js" ] || [ -f "sanity.cli.ts" ] || [ -f "sanity.cli.js" ]; then
+if [[ -f "sanity.config.ts" ]] || [[ -f "sanity.config.js" ]] || [[ -f "sanity.cli.ts" ]] || [[ -f "sanity.cli.js" ]]; then
     contexts="$contexts,sanity"
 fi
 
 # --- Prisma ---
-if [ -f "prisma/schema.prisma" ]; then
+if [[ -f "prisma/schema.prisma" ]]; then
     contexts="$contexts,prisma"
 fi
 
 # --- Docker ---
-if [ -f "Dockerfile" ] || [ -f "docker-compose.yml" ] || [ -f "docker-compose.yaml" ]; then
+if [[ -f "Dockerfile" ]] || [[ -f "docker-compose.yml" ]] || [[ -f "docker-compose.yaml" ]]; then
     contexts="$contexts,docker"
 fi
 
 # --- Python ---
-if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ] || [ -f "setup.py" ] || [ -f "Pipfile" ]; then
+if [[ -f "requirements.txt" ]] || [[ -f "pyproject.toml" ]] || [[ -f "setup.py" ]] || [[ -f "Pipfile" ]]; then
     contexts="$contexts,python"
 fi
 
 # --- Laravel ---
-if [ -f "artisan" ]; then
+if [[ -f "artisan" ]]; then
     contexts="$contexts,laravel"
 fi
 

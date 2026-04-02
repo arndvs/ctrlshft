@@ -48,6 +48,8 @@ class EmailHandler:
                 if url:
                     print(f"  ✓ Verification URL found for {sender_domain}")
                     return url
+            except (EnvironmentError, ValueError) as e:
+                raise
             except Exception as e:
                 print(f"  Email check error: {e}")
 

@@ -12,7 +12,7 @@ _DOTFILES_ENV_CITATION="$HOME/dotfiles/secrets/.env.citation"
 
 _source_env() {
     local _tmp
-    _tmp=$(mktemp)
+    _tmp=$(mktemp) || { printf '\033[31m[dotfiles] mktemp failed — cannot load %s\033[0m\n' "$1" >&2; return 1; }
     tr -d '\r' < "$1" > "$_tmp"
     set -a
     source "$_tmp"

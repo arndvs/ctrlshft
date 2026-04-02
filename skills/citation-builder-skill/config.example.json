@@ -1,9 +1,12 @@
 {
     "sheets": {
+        "spreadsheet_id": "YOUR_SPREADSHEET_ID_HERE",
         "citations_tab": "Citations",
         "summary_tab": "Summary"
     },
     "email": {
+        "verification_account": "citations@yourbusiness.com",
+        "business_email": "info@yourbusiness.com",
         "use_gmail_api": false,
         "gmail_subject_user": "",
         "poll_interval_seconds": 60,

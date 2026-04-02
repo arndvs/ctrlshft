@@ -59,12 +59,19 @@ def run_preflight(config_path: str) -> bool:
         errors.append(str(e))
 
     # 4. Google Sheets connectivity
-    try:
-        client = SheetsClient(config)
-        domains = client.get_all_domains()
-        print(f"  ✓ Google Sheets connected ({len(domains)} domains loaded)")
-    except Exception as e:
-        errors.append(f"Google Sheets connection failed: {e}")
+    spreadsheet_id = config.get("sheets", {}).get("spreadsheet_id", "")
+    if not spreadsheet_id or spreadsheet_id == "YOUR_SPREADSHEET_ID_HERE":
+        errors.append(
+            "sheets.spreadsheet_id is missing or still has placeholder value.\n"
+            "  Set CITATION_SPREADSHEET_ID in secrets/.env or update config.json."
+        )
+    else:
+        try:
+            client = SheetsClient(config)
+            domains = client.get_all_domains()
+            print(f"  \u2713 Google Sheets connected ({len(domains)} domains loaded)")
+        except Exception as e:
+            errors.append(f"Google Sheets connection failed: {e}")
 
     # 5. Email configuration
     email_cfg = config.get("email", {})
