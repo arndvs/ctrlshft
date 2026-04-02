@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# bootstrap.sh — Set up ~/dotfiles on a fresh machine.
+#
+# Usage:
+#   cd ~/dotfiles && bash bin/bootstrap.sh
+#
+# Idempotent — safe to re-run. Skips steps that are already done.
+# Works on: Windows (Git Bash), Linux (VPS), macOS.
+
+set -euo pipefail
+
+DOTFILES="$HOME/dotfiles"
+CLAUDE_DIR="$HOME/.claude"
+SECRETS_DIR="$DOTFILES/secrets"
+VENV_DIR="$SECRETS_DIR/.venv"
+
+# ── Colors ────────────────────────────────────────────────────────────────────
+green()  { printf '\033[32m%s\033[0m\n' "$*"; }
+yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
+red()    { printf '\033[31m%s\033[0m\n' "$*"; }
+
+# ── OS detection ──────────────────────────────────────────────────────────────
+detect_os() {
+    case "$(uname -s)" in
+        MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
+        Linux*)               echo "linux"   ;;
+        Darwin*)              echo "macos"   ;;
+        *)                    echo "unknown" ;;
+    esac
+}
+
+OS=$(detect_os)
+green "Detected OS: $OS"
+
+# ── Verify we're inside the dotfiles repo ─────────────────────────────────────
+if [[ ! -f "$DOTFILES/CLAUDE.md" ]]; then
+    red "Error: $DOTFILES/CLAUDE.md not found."
+    red "Clone the repo first: git clone <repo-url> ~/dotfiles"
+    exit 1
+fi
+
+# ── 1. Create secrets directory and .env from template ────────────────────────
+echo
+green "[1/6] Secrets directory"
+mkdir -p "$SECRETS_DIR"
+if [[ -f "$SECRETS_DIR/.env" ]]; then
+    yellow "  secrets/.env already exists — skipping"
+else
+    cp "$DOTFILES/.env.example" "$SECRETS_DIR/.env"
+    green "  Created secrets/.env from .env.example"
+    yellow "  >>> Fill in your API keys: $SECRETS_DIR/.env"
+fi
+
+# ── 2. Symlink ~/.claude/CLAUDE.md ────────────────────────────────────────────
+echo
+green "[2/6] CLAUDE.md"
+mkdir -p "$CLAUDE_DIR"
+if [[ -L "$CLAUDE_DIR/CLAUDE.md" ]]; then
+    yellow "  ~/.claude/CLAUDE.md is already a symlink — skipping"
+elif [[ "$OS" == "windows" ]]; then
+    cp "$DOTFILES/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+    yellow "  Copied CLAUDE.md (Windows: file symlinks require admin)"
+    yellow "  To upgrade to a symlink, run as admin:"
+    yellow "    cmd /c mklink C:\\Users\\%USERNAME%\\.claude\\CLAUDE.md C:\\Users\\%USERNAME%\\dotfiles\\CLAUDE.md"
+else
+    ln -sf "$DOTFILES/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+    green "  Symlinked ~/.claude/CLAUDE.md -> ~/dotfiles/CLAUDE.md"
+fi
+
+# ── 3. Symlink ~/.claude/skills/ ──────────────────────────────────────────────
+echo
+green "[3/6] Skills directory"
+if [[ -L "$CLAUDE_DIR/skills" ]]; then
+    yellow "  ~/.claude/skills is already a symlink — skipping"
+elif [[ -d "$CLAUDE_DIR/skills" ]]; then
+    yellow "  ~/.claude/skills exists as a real directory — skipping (manual merge needed)"
+else
+    ln -sf "$DOTFILES/skills" "$CLAUDE_DIR/skills"
+    green "  Symlinked ~/.claude/skills -> ~/dotfiles/skills/"
+fi
+
+# ── 4. Wire up .bashrc ───────────────────────────────────────────────────────
+echo
+green "[4/6] Shell integration"
+BASHRC="$HOME/.bashrc"
+
+if [[ -f "$BASHRC" ]] && grep -qF "load-secrets.sh" "$BASHRC"; then
+    yellow "  .bashrc already sources load-secrets — skipping"
+else
+    cat >> "$BASHRC" << 'BASHEOF'
+
+# ── dotfiles/load-secrets ──
+[[ -f ~/dotfiles/bin/load-secrets.sh ]] && source ~/dotfiles/bin/load-secrets.sh
+
+# ── dotfiles/context-detection ──
+_load_context() {
+    [[ -f ~/dotfiles/bin/detect-context.sh ]] \
+        && source ~/dotfiles/bin/detect-context.sh > /dev/null 2>&1
+}
+cd() { builtin cd "$@" && _load_context; }
+_load_context
+BASHEOF
+    green "  Appended load-secrets and context-detection to ~/.bashrc"
+fi
+
+# ── 5. Python venv ───────────────────────────────────────────────────────────
+echo
+green "[5/6] Python venv"
+
+# Find a python executable (venv first, then system)
+PYTHON=""
+if [[ -f "$VENV_DIR/Scripts/python.exe" ]]; then
+    PYTHON="$VENV_DIR/Scripts/python.exe"
+elif [[ -f "$VENV_DIR/bin/python" ]]; then
+    PYTHON="$VENV_DIR/bin/python"
+else
+    for cmd in python3 python; do
+        if "$cmd" --version &>/dev/null 2>&1; then
+            PYTHON="$cmd"
+            break
+        fi
+    done
+fi
+
+if [[ -z "$PYTHON" ]]; then
+    yellow "  Python not found — skipping venv setup"
+    yellow "  Install Python 3.10+ and re-run this script"
+elif [[ -d "$VENV_DIR" ]]; then
+    yellow "  Venv already exists at $VENV_DIR — skipping"
+else
+    green "  Creating venv with $PYTHON..."
+    "$PYTHON" -m venv "$VENV_DIR"
+
+    # Activate (cross-platform)
+    if [[ "$OS" == "windows" ]]; then
+        source "$VENV_DIR/Scripts/activate"
+    else
+        source "$VENV_DIR/bin/activate"
+    fi
+
+    pip install --quiet google-auth google-auth-httplib2 google-api-python-client
+    green "  Venv created and base packages installed"
+fi
+
+# ── 6. Summary ────────────────────────────────────────────────────────────────
+echo
+green "[6/6] Done!"
+echo ""
+echo "Next steps:"
+if [[ ! -s "$SECRETS_DIR/.env" ]] || grep -q "^GITHUB_USERNAME=$" "$SECRETS_DIR/.env" 2>/dev/null; then
+    yellow "  1. Fill in secrets:  \$EDITOR ~/dotfiles/secrets/.env"
+fi
+echo "  2. Reload shell:    source ~/.bashrc"
+echo "  3. Merge VS Code settings:  bash ~/dotfiles/bin/sync-settings.sh"
+echo "  4. Verify:          echo \$GITHUB_USERNAME"
