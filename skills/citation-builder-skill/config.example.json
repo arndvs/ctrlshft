@@ -1,0 +1,20 @@
+{
+    "sheets": {
+        "citations_tab": "Citations",
+        "summary_tab": "Summary"
+    },
+    "email": {
+        "use_gmail_api": false,
+        "gmail_subject_user": "",
+        "poll_interval_seconds": 60,
+        "max_poll_minutes": 15
+    },
+    "nap_path": "./nap.json",
+    "evidence_path": "./evidence/",
+    "credentials_path": "./credentials.vault",
+    "session": {
+        "max_submissions_per_session": 20,
+        "domain_cooldown_seconds": 120,
+        "circuit_breaker_threshold": 5
+    }
+}

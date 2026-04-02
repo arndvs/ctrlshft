@@ -7,8 +7,8 @@ Opinionated VS Code + GitHub Copilot configuration that makes AI agents follow s
 | `settings.json` | VS Code settings — Copilot agent config, model selection, editor prefs |
 | `CLAUDE.md` | Entry point that tells AI agents which instruction files to load |
 | `global.instructions.md` | Universal coding rules — DRY, error handling, CSS, JS, formatting |
-| `nextjs.instructions.md` | Next.js / TypeScript / React 19 conventions |
-| `php.instructions.md` | PHP 8.4+ OOP conventions |
+| `instructions/nextjs.instructions.md` | Next.js / TypeScript / React 19 conventions |
+| `instructions/php.instructions.md` | PHP 8.4+ OOP conventions |
 
 ## Prerequisites
 

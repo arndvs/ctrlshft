@@ -1,0 +1,126 @@
+{
+    "business_name": "Acme Family Chiropractic",
+    "short_name": "AcmeChiro",
+    "owner_name": "Dr. Jane Smith",
+    "owner_title": "Founder & Lead Chiropractor",
+
+    "address1": "123 Main St",
+    "address2": "Ste 100",
+    "city": "Springfield",
+    "state": "Illinois",
+    "state_abbr": "IL",
+    "zip": "62704",
+    "zip_plus4": "62704-0000",
+    "country": "US",
+    "latitude": 39.7817,
+    "longitude": -89.6501,
+
+    "phone_display": "(555) 123-4567",
+    "phone_e164": "+15551234567",
+    "phone_fax": "(555) 123-4568",
+    "phone_sms": "(555) 123-4569",
+
+    "email": "info@acmechiro.example.com",
+    "email_citation": "citations@acmechiro.example.com",
+
+    "website": "https://acmechiro.example.com/",
+    "booking_url": "https://booking.acmechiro.example.com/",
+
+    "description_short": "Springfield family chiropractor since 2010. Specializing in prenatal, postpartum & pediatric care.",
+    "description_medium": "Springfield's trusted family chiropractor since 2010. Webster Certified. Specializing in prenatal & postpartum chiropractic care, gentle infant & pediatric adjustments, therapeutic massage. Insurance accepted. Free parking. Call (555) 123-4567.",
+    "description_long": "Springfield's trusted family chiropractor since 2010. Webster Certified.\n\nSpecialties:\n\u2022 Webster Technique for optimal fetal positioning\n\u2022 Prenatal chiropractic care & postpartum recovery\n\u2022 Gentle infant & pediatric adjustments\n\u2022 Family chiropractic & wellness care\n\u2022 Therapeutic massage\n\nWhy Families Choose Us:\n\u2022 15+ years experience\n\u2022 Insurance accepted & transparent pricing\n\u2022 Comfortable, family-friendly environment\n\u2022 Free parking\n\nCall (555) 123-4567 to schedule.",
+
+    "categories_primary": "Chiropractor",
+    "categories_secondary": [
+        "Prenatal Chiropractor",
+        "Pediatric Chiropractor",
+        "Family Chiropractor",
+        "Wellness Center",
+        "Massage Therapist"
+    ],
+
+    "services": [
+        "Chiropractic Care",
+        "Webster Technique",
+        "Prenatal Care",
+        "Postpartum Care",
+        "Pediatric Care",
+        "Massage Therapy"
+    ],
+
+    "keywords": [
+        "Family Chiropractor Springfield",
+        "Prenatal Chiropractor Springfield",
+        "Pediatric Chiropractor Springfield"
+    ],
+
+    "year_established": "2010",
+    "languages": ["English"],
+
+    "payment_methods": [
+        "Cash",
+        "Credit Cards (Visa, Mastercard, American Express, Discover)",
+        "Debit Cards",
+        "HSA (Health Savings Account)",
+        "FSA (Flexible Spending Account)"
+    ],
+
+    "insurance_accepted": [
+        "Aetna",
+        "Blue Cross Blue Shield",
+        "Cigna",
+        "United Healthcare"
+    ],
+
+    "attributes": [
+        "Family-friendly",
+        "Wheelchair accessible",
+        "Free parking available",
+        "Accepts new patients"
+    ],
+
+    "credentials": {
+        "npi": "0000000000",
+        "license_state": "IL",
+        "license_number": "00000"
+    },
+
+    "hours": {
+        "monday": "9:00am - 5:00pm",
+        "tuesday": "9:00am - 5:00pm",
+        "wednesday": "9:00am - 5:00pm",
+        "thursday": "9:00am - 5:00pm",
+        "friday": "9:00am - 12:00pm",
+        "saturday": "Closed",
+        "sunday": "Closed"
+    },
+
+    "service_areas": [
+        "Springfield, IL",
+        "Chatham, IL",
+        "Rochester, IL",
+        "Sangamon County"
+    ],
+
+    "social_urls": {
+        "facebook": "https://www.facebook.com/example-chiro/",
+        "instagram": "https://www.instagram.com/example_chiro",
+        "twitter": "https://x.com/example_chiro",
+        "linkedin": "https://www.linkedin.com/company/example-chiro/",
+        "youtube": "https://www.youtube.com/@examplechiro",
+        "yelp": "https://www.yelp.com/biz/example-chiro-springfield"
+    },
+
+    "existing_profiles": {
+        "google_business": "",
+        "apple_maps": "",
+        "bing_places": "",
+        "booking": ""
+    },
+
+    "featured_message": "Springfield Family Chiropractor | Webster Certified | Wellness Care",
+    "tagline": "Springfield Family Chiropractor | Webster Certified | Wellness Care",
+
+    "logo_path": "assets/logo.png",
+    "photo_paths": []
+}

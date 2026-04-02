@@ -1,3 +1,4 @@
+# macOS
 .DS_Store
 **/.DS_Store
 ._*
@@ -7,8 +8,22 @@ __MACOSX
 .AppleDouble
 .LSOverride
 Icon?
+
+# Secrets — NEVER commit
 secrets/
+.env
+.env.*
+!.env.example
+*.vault
+credentials.*
 
+# Working/scratch
+working/
 
-#skills
+# Skills with sensitive content
 /skills/aihc-scraping
+
+# Config files with real credentials (use *.example.json templates)
+skills/citation-builder-skill/config.json
+skills/citation-builder-skill/nap.json
+skills/citation-builder-skill/credentials.vault

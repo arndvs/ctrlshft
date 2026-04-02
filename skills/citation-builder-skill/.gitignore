@@ -1,0 +1,5 @@
+nap.json
+*.vault
+evidence/
+*.log
+sessions/
