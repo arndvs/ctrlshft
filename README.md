@@ -36,7 +36,8 @@ Clone to `~/dotfiles` on every machine (Windows, Linux VPS, macOS). One `git pul
 │   ├── *.json                      GCP service account credentials
 │   └── .venv/                      shared Python venv for Google API scripts
 ├── working/                    ← GITIGNORED — scratch files, migration scripts
-└── .env.example                ← template for secrets/.env (tracked in git)
+├── .env.example                ← template for secrets/.env (tracked in git)
+└── .env.citation.example       ← template for secrets/.env.citation (citation vars)
 ```
 
 ## How It Works
@@ -204,7 +205,7 @@ Bootstrap runs a validation step at the end — all checks should pass. If any f
 | `~/.claude/CLAUDE.md` | Symlink (or copy on Windows) | Symlink |
 | `secrets/.env` | Your local API keys | Same keys or VPS-specific overrides |
 | Python venv | Created by bootstrap | Created by bootstrap |
-| Shell integration | `.bashrc` / `.zshrc` | `.bashrc` (bootstrap wires it) |
+| Shell integration | `.bashrc` / `.zshrc` (bootstrap wires both) | `.bashrc` / `.zshrc` (bootstrap wires both) |
 
 #### VPS Verification Checklist
 
@@ -310,6 +311,10 @@ pip install google-auth google-auth-httplib2 google-api-python-client
 ### Verify
 
 ```bash
+# Quick validation of all env vars and file setup
+bash ~/dotfiles/bin/validate-env.sh        # core vars only
+bash ~/dotfiles/bin/validate-env.sh --all  # core + citation builder vars
+
 # Check secrets are loaded
 echo $GITHUB_USERNAME
 
@@ -329,6 +334,7 @@ echo $ACTIVE_CONTEXTS  # should include "nextjs"
 | `bin/sync-settings.sh`  | Merge `settings.json` into VS Code user settings           | `--dry-run`, `--stable` |
 | `bin/load-secrets.sh`   | Source `secrets/.env` into current shell                   | (sourced, not run)      |
 | `bin/detect-context.sh` | Detect project type, export `ACTIVE_CONTEXTS`              | (sourced, not run)      |
+| `bin/validate-env.sh`   | Validate all prerequisite env vars are set                 | `--all`                 |
 
 `sync-settings.sh` details:
 

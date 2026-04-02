@@ -59,8 +59,9 @@ def _load_env_file(path: Path) -> None:
 
 def load_env() -> None:
     """Load secrets into os.environ from ~/dotfiles/secrets/.env (primary)
-    or ~/.env.citation (legacy fallback). Vars already set in the environment
-    (e.g. from shell profile) take priority and are never overwritten.
+    and ~/dotfiles/secrets/.env.citation (citation-specific overrides).
+    Vars already set in the environment (e.g. from shell profile) take
+    priority and are never overwritten.
     Also reconfigures stdout/stderr to UTF-8 on Windows."""
     stdout_enc = getattr(sys.stdout, "encoding", None) or ""
     if stdout_enc.lower() not in ("utf-8", "utf8"):

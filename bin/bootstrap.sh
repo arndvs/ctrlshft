@@ -32,6 +32,9 @@ detect_os() {
 OS=$(detect_os)
 green "Detected OS: $OS"
 
+# Track failures across all steps
+_fail=0
+
 # ── Verify we're inside the dotfiles repo ─────────────────────────────────────
 if [[ ! -f "$DOTFILES/CLAUDE.md" ]]; then
     red "Error: $DOTFILES/CLAUDE.md not found."
@@ -107,15 +110,11 @@ else
     fi
 fi
 
-# ── 4. Wire up .bashrc ───────────────────────────────────────────────────────
+# ── 4. Wire up shell ──────────────────────────────────────────────────────────
 echo
 green "[4/6] Shell integration"
-BASHRC="$HOME/.bashrc"
 
-if [[ -f "$BASHRC" ]] && grep -qF "load-secrets.sh" "$BASHRC"; then
-    yellow "  .bashrc already sources load-secrets — skipping"
-else
-    cat >> "$BASHRC" << 'BASHEOF'
+_SHELL_SNIPPET=$(cat << 'SHELLEOF'
 
 # ── dotfiles/load-secrets ──
 [[ -f ~/dotfiles/bin/load-secrets.sh ]] && source ~/dotfiles/bin/load-secrets.sh
@@ -127,8 +126,26 @@ _load_context() {
 }
 cd() { builtin cd "$@" && _load_context; }
 _load_context
-BASHEOF
-    green "  Appended load-secrets and context-detection to ~/.bashrc"
+SHELLEOF
+)
+
+_wire_shell_rc() {
+    local rc_file="$1"
+    local rc_name="$2"
+    if [[ -f "$rc_file" ]] && grep -qF "load-secrets.sh" "$rc_file"; then
+        yellow "  $rc_name already sources load-secrets — skipping"
+    else
+        printf '%s\n' "$_SHELL_SNIPPET" >> "$rc_file"
+        green "  Appended load-secrets and context-detection to $rc_name"
+    fi
+}
+
+BASHRC="$HOME/.bashrc"
+ZSHRC="$HOME/.zshrc"
+
+_wire_shell_rc "$BASHRC" "~/.bashrc"
+if [[ -f "$ZSHRC" ]] || [[ "$(basename "$SHELL" 2>/dev/null)" == "zsh" ]]; then
+    _wire_shell_rc "$ZSHRC" "~/.zshrc"
 fi
 
 # ── 5. Python venv ───────────────────────────────────────────────────────────
@@ -183,7 +200,6 @@ fi
 # ── 6. Validation ─────────────────────────────────────────────────────────────
 echo
 green "[6/6] Validating setup"
-_fail=0
 
 if [[ "$OS" == "windows" ]]; then
     if [[ -f "$CLAUDE_DIR/CLAUDE.md" ]]; then
@@ -221,6 +237,14 @@ else
     red "  ✗ .bashrc missing load-secrets integration"; _fail=1
 fi
 
+if [[ -f "$ZSHRC" ]]; then
+    if grep -qF "load-secrets.sh" "$ZSHRC"; then
+        green "  ✓ .zshrc has load-secrets integration"
+    else
+        red "  ✗ .zshrc exists but missing load-secrets integration"; _fail=1
+    fi
+fi
+
 if [[ -d "$VENV_DIR" ]]; then
     green "  ✓ Python venv exists"
 else
@@ -250,3 +274,5 @@ else
 fi
 ((_step++))
 echo "  $_step. Verify:          echo \$GITHUB_USERNAME"
+
+exit $_fail
