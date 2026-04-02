@@ -205,7 +205,7 @@ if [[ ! -s "$SECRETS_DIR/.env" ]] || grep -q "^GITHUB_USERNAME=$" "$SECRETS_DIR/
     yellow "  1. Fill in secrets:  \$EDITOR ~/dotfiles/secrets/.env"
 fi
 echo "  2. Reload shell:    source ~/.bashrc"
-if [[ -d "$HOME/.vscode-server" ]] && [[ ! -d "$HOME/.config/Code - Insiders" ]] && [[ ! -d "$HOME/.config/Code" ]]; then
+if [[ -d "$HOME/.vscode-server" ]]; then
     echo "  3. Sync VS Code settings on your LOCAL machine (not this VPS)"
 else
     echo "  3. Merge VS Code settings:  bash ~/dotfiles/bin/sync-settings.sh"
