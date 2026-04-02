@@ -78,7 +78,13 @@ fi
 echo
 green "[3/6] Skills directory"
 if [[ -L "$CLAUDE_DIR/skills" ]]; then
-    yellow "  ~/.claude/skills is already a symlink — skipping"
+    _target=$(readlink "$CLAUDE_DIR/skills")
+    if [[ "$_target" == "$DOTFILES/skills" ]]; then
+        yellow "  ~/.claude/skills is already symlinked correctly — skipping"
+    else
+        ln -sf "$DOTFILES/skills" "$CLAUDE_DIR/skills"
+        green "  Fixed stale skills symlink (was $_target)"
+    fi
 elif [[ -d "$CLAUDE_DIR/skills" ]]; then
     yellow "  ~/.claude/skills exists as a real directory — skipping (manual merge needed)"
 else
