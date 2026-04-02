@@ -11,11 +11,11 @@ Usage:
 import argparse
 
 from scripts.sheets_client import SheetsClient
-from scripts.shared_utils import load_env, load_config
+from scripts.shared_utils import ensure_env, load_config
 
 
 def setup_sheet(config_path: str) -> None:
-    load_env()
+    ensure_env()
     config = load_config(config_path)
 
     client = SheetsClient(config)

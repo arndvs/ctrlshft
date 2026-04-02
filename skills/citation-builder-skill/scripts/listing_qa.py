@@ -189,6 +189,23 @@ def _normalize_address(addr: str) -> str:
         r"\bplace\b": "pl",
         r"\bsuite\b": "ste",
         r"\bapartment\b": "apt",
+        r"\bhighway\b": "hwy",
+        r"\bparkway\b": "pkwy",
+        r"\bcircle\b": "cir",
+        r"\bterrace\b": "ter",
+        r"\btrail\b": "trl",
+        r"\bsquare\b": "sq",
+        r"\bnorth\b": "n",
+        r"\bsouth\b": "s",
+        r"\beast\b": "e",
+        r"\bwest\b": "w",
+        r"\bnortheast\b": "ne",
+        r"\bnorthwest\b": "nw",
+        r"\bsoutheast\b": "se",
+        r"\bsouthwest\b": "sw",
+        r"\bbuilding\b": "bldg",
+        r"\bfloor\b": "fl",
+        r"\bunit\b": "unit",
     }
     for pattern, replacement in contractions.items():
         addr = re.sub(pattern, replacement, addr)

@@ -13,7 +13,7 @@ Usage:
 import argparse
 import sys
 
-from scripts.shared_utils import due_date, load_config, CircuitBreaker
+from scripts.shared_utils import due_date, load_config, CircuitBreaker, ensure_env
 from scripts.sheets_client import SheetsClient
 from scripts.nap_loader import load_nap
 from scripts.listing_qa import ListingQA
@@ -21,6 +21,8 @@ from scripts.session_logger import SessionLogger
 
 
 def run_reverify(config_path: str) -> None:
+    ensure_env()
+
     config = load_config(config_path)
 
     nap = load_nap(config["nap_path"])
@@ -113,9 +115,6 @@ def run_reverify(config_path: str) -> None:
 
 
 if __name__ == "__main__":
-    from scripts.shared_utils import load_env
-    load_env()
-
     parser = argparse.ArgumentParser(description="Run citation re-verification pass")
     parser.add_argument("--config", default="config.json")
     args = parser.parse_args()

@@ -15,7 +15,7 @@ from pathlib import Path
 
 from scripts.nap_loader import load_nap
 from scripts.sheets_client import SheetsClient
-from scripts.shared_utils import discover_credentials, load_env, load_config, resolve_path
+from scripts.shared_utils import discover_credentials, ensure_env, load_config, resolve_path, validate_config
 from scripts.credential_vault import validate_vault_key
 
 
@@ -24,7 +24,7 @@ def run_preflight(config_path: str) -> bool:
     Run all pre-flight checks. Prints results.
     Returns True if all required checks pass, False otherwise.
     """
-    load_env()
+    ensure_env()
 
     print("=" * 50)
     print("Pre-flight Validation")
@@ -34,6 +34,13 @@ def run_preflight(config_path: str) -> bool:
 
     errors = []
     warnings = []
+
+    # 0. Config structure validation
+    try:
+        validate_config(config)
+        print("  \u2713 Config structure valid (all required keys present)")
+    except ValueError as e:
+        errors.append(str(e))
 
     # 1. nap.json validation
     try:
@@ -84,31 +91,15 @@ def run_preflight(config_path: str) -> bool:
         else:
             print(f"  ✓ Gmail API configured (subject: {email_cfg['gmail_subject_user']})")
     else:
-        missing = [v for v in ("CITATION_EMAIL", "CITATION_EMAIL_PASSWORD", "CITATION_IMAP_HOST")
+        missing = [v for v in ("CITATION_EMAIL", "CITATION_EMAIL_PASSWORD")
                    if not os.environ.get(v)]
         if missing:
             errors.append(f"IMAP env vars not set: {missing} (required for email verification)")
         else:
-            print(f"  ✓ IMAP email configured ({os.environ['CITATION_EMAIL']})")
+            imap_host = os.environ.get("CITATION_IMAP_HOST", "imap.gmail.com")
+            print(f"  \u2713 IMAP email configured ({os.environ['CITATION_EMAIL']} via {imap_host})")
 
-    # 6. Required config keys
-    required_keys = [
-        "sheets.spreadsheet_id", "sheets.citations_tab", "sheets.summary_tab",
-        "nap_path", "evidence_path", "credentials_path",
-    ]
-    for key_path in required_keys:
-        keys = key_path.split(".")
-        obj = config
-        missing = False
-        for k in keys:
-            if not isinstance(obj, dict) or k not in obj:
-                missing = True
-                break
-            obj = obj[k]
-        if missing:
-            errors.append(f"config.json missing key: {key_path}")
-
-    # 7. Evidence directory (create if missing)
+    # 6. Evidence directory (create if missing)
     evidence_path = resolve_path(config.get("evidence_path", "./evidence/"))
     Path(evidence_path).mkdir(parents=True, exist_ok=True)
     print(f"  ✓ Evidence directory ready: {evidence_path}")

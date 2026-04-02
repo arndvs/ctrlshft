@@ -50,9 +50,11 @@ def load_env() -> None:
     or ~/.env.citation (legacy fallback). Vars already set in the environment
     (e.g. from shell profile) take priority and are never overwritten.
     Also reconfigures stdout/stderr to UTF-8 on Windows."""
-    if sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    stdout_enc = getattr(sys.stdout, "encoding", None) or ""
+    if stdout_enc.lower() not in ("utf-8", "utf8"):
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
     loaded = False
     for env_file in _ENV_FILES:
@@ -141,13 +143,34 @@ def discover_credentials(config: dict = None) -> str:
     return matches[0]
 
 
+_env_loaded = False
+
+
+def ensure_env() -> None:
+    """Idempotent wrapper around load_env(). Safe to call multiple times."""
+    global _env_loaded
+    if not _env_loaded:
+        load_env()
+        _env_loaded = True
+
+
 def load_config(config_path: str) -> dict:
     """
     Load config.json and override sensitive fields from environment variables.
     Env vars always win over config file values — this lets config.json stay
     committed with placeholder values while real secrets live in .env.
+    Automatically calls load_env() if not already loaded.
     """
-    with open(config_path) as f:
+    ensure_env()
+
+    resolved = resolve_path(config_path)
+    if not os.path.exists(resolved):
+        raise FileNotFoundError(
+            f"Config file not found: {resolved}\n"
+            f"Copy config.example.json to config.json and fill in values."
+        )
+
+    with open(resolved) as f:
         config = json.load(f)
 
     env_spreadsheet = os.environ.get("CITATION_SPREADSHEET_ID", "").strip()
@@ -172,6 +195,49 @@ def load_config(config_path: str) -> dict:
         email_cfg["business_email"] = env_business
 
     return config
+
+
+def validate_config(config: dict) -> None:
+    """Validate config has all required keys. Raises ValueError with details on failure."""
+    errors = []
+
+    required_paths = {
+        "sheets.spreadsheet_id": "Set CITATION_SPREADSHEET_ID in secrets/.env or add to config.json",
+        "sheets.citations_tab": "Add sheets.citations_tab to config.json",
+        "sheets.summary_tab": "Add sheets.summary_tab to config.json",
+        "nap_path": "Add nap_path to config.json",
+        "evidence_path": "Add evidence_path to config.json",
+        "credentials_path": "Add credentials_path to config.json",
+        "session.max_submissions_per_session": "Add session section to config.json (see config.example.json)",
+        "session.domain_cooldown_seconds": "Add session section to config.json",
+        "session.circuit_breaker_threshold": "Add session section to config.json",
+    }
+
+    for key_path, hint in required_paths.items():
+        keys = key_path.split(".")
+        obj = config
+        for k in keys:
+            if not isinstance(obj, dict) or k not in obj:
+                errors.append(f"Missing config key: {key_path} — {hint}")
+                break
+            obj = obj[k]
+        else:
+            if obj in (None, "", "YOUR_SPREADSHEET_ID_HERE"):
+                errors.append(f"Config key has placeholder/empty value: {key_path} — {hint}")
+
+    email_cfg = config.get("email", {})
+    has_verification = bool(email_cfg.get("verification_account"))
+    has_env_verification = bool(os.environ.get("CITATION_VERIFICATION_EMAIL", "").strip())
+    if not has_verification and not has_env_verification:
+        errors.append(
+            "No verification email configured. "
+            "Set CITATION_VERIFICATION_EMAIL in secrets/.env or add email.verification_account to config.json."
+        )
+
+    if errors:
+        raise ValueError(
+            "Config validation failed:\n" + "\n".join(f"  ✗ {e}" for e in errors)
+        )
 
 
 def due_date(days: int) -> str:
