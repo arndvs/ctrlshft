@@ -1,6 +1,6 @@
 ---
 name: citation-builder
-description: Fully automated local SEO citation building agent. Use this skill whenever the user wants to submit business listings to citation directories, build local SEO citations at scale, automate NAP submissions, manage directory listings, track citation status, or verify submitted listings. Triggers on: "build citations", "submit to directories", "citation campaign", "local SEO listings", "directory submissions", "NAP consistency", "citation audit", "automate directory submissions". This skill covers the complete pipeline from domain list ingestion through submission, email verification, live listing QA, and Google Sheets status tracking.
+description: > Fully automated local SEO citation building agent. Use this skill whenever the user wants to submit business listings to citation directories, build local SEO citations at scale, automate NAP submissions, manage directory listings, track citation status, or verify submitted listings. Triggers on: "build citations", "submit to directories", "citation campaign", "local SEO listings", "directory submissions", "NAP consistency", "citation audit", "automate directory submissions". This skill covers the complete pipeline from domain list ingestion through submission, email verification, live listing QA, and Google Sheets status tracking.
 ---
 
 # Automated SEO Citation Building
