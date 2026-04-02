@@ -28,8 +28,8 @@ _ENV_FILES = [
 def _load_env_file(path: Path) -> None:
     """Load key=value pairs from an env file into os.environ.
     Skips blank lines, comments, and vars already set in the environment.
-    Strips matching quotes from values (bash source compat)."""
-    for line in path.read_text(encoding="utf-8").splitlines():
+    Strips matching quotes and inline comments from values (bash source compat)."""
+    for line_num, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         line = line.strip()
 
         if not line or line.startswith("#") or "=" not in line:
@@ -40,6 +40,14 @@ def _load_env_file(path: Path) -> None:
 
         if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
             value = value[1:-1]
+        else:
+            comment_idx = value.find("  #")
+            if comment_idx == -1:
+                comment_idx = value.find("\t#")
+            if comment_idx >= 0:
+                value = value[:comment_idx].rstrip()
+
+        value = os.path.expandvars(os.path.expanduser(value))
 
         if key and not os.environ.get(key):
             os.environ[key] = value

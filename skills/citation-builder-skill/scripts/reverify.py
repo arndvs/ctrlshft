@@ -13,7 +13,7 @@ Usage:
 import argparse
 import sys
 
-from scripts.shared_utils import due_date, load_config, CircuitBreaker, ensure_env
+from scripts.shared_utils import due_date, load_config, validate_config, resolve_path, CircuitBreaker, ensure_env
 from scripts.sheets_client import SheetsClient
 from scripts.nap_loader import load_nap
 from scripts.listing_qa import ListingQA
@@ -24,11 +24,12 @@ def run_reverify(config_path: str) -> None:
     ensure_env()
 
     config = load_config(config_path)
+    validate_config(config)
 
     nap = load_nap(config["nap_path"])
     sheets = SheetsClient(config)
     qa = ListingQA(nap)
-    logger = SessionLogger(config["evidence_path"])
+    logger = SessionLogger(resolve_path(config["evidence_path"]))
 
     queue = sheets.get_reverify_queue()
     print(f"Re-verification queue: {len(queue)} domains")
