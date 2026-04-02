@@ -358,6 +358,11 @@ source ~/.bashrc                        # pick up any new env vars
 
 On a VPS, skip `sync-settings.sh` — VS Code Remote SSH forwards settings from your local machine.
 
+> **Note:** If your git remote still shows `ai-files.git` (the old repo name), update it:
+> ```bash
+> git remote set-url origin https://github.com/arndvs/dotfiles.git
+> ```
+
 ## Troubleshooting
 
 **Instructions not loading in Copilot Chat**

@@ -389,8 +389,5 @@
 	"workbench.sideBar.location": "right",
 	"git.confirmSync": false,
 	"github.copilot.chat.agentDebugLog.enabled": true,
-	"github.copilot.chat.agentDebugLog.fileLogging.enabled": true,
-	"remote.SSH.remotePlatform": {
-		"vps": "linux"
-	}
+	"github.copilot.chat.agentDebugLog.fileLogging.enabled": true
 }

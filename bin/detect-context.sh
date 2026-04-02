@@ -33,6 +33,7 @@ if [ -f "package.json" ] && grep -q '"react-native"' package.json 2>/dev/null; t
 fi
 
 # --- React (non-Next, non-Native) ---
+# Must come AFTER react-native check — both match "react" in package.json
 if [ -f "package.json" ] && grep -q '"react"' package.json 2>/dev/null; then
     if [[ "$contexts" != *"nextjs"* && "$contexts" != *"react-native"* ]]; then
         contexts="$contexts,react"

@@ -207,13 +207,17 @@ fi
 
 echo ""
 echo "Next steps:"
+_step=1
 if [[ ! -s "$SECRETS_DIR/.env" ]] || grep -q "^GITHUB_USERNAME=$" "$SECRETS_DIR/.env" 2>/dev/null; then
-    yellow "  1. Fill in secrets:  \$EDITOR ~/dotfiles/secrets/.env"
+    yellow "  $_step. Fill in secrets:  \$EDITOR ~/dotfiles/secrets/.env"
+    ((_step++))
 fi
-echo "  2. Reload shell:    source ~/.bashrc"
+echo "  $_step. Reload shell:    source ~/.bashrc"
+((_step++))
 if [[ -d "$HOME/.vscode-server" ]]; then
-    echo "  3. Sync VS Code settings on your LOCAL machine (not this VPS)"
+    echo "  $_step. Sync VS Code settings on your LOCAL machine (not this VPS)"
 else
-    echo "  3. Merge VS Code settings:  bash ~/dotfiles/bin/sync-settings.sh"
+    echo "  $_step. Merge VS Code settings:  bash ~/dotfiles/bin/sync-settings.sh"
 fi
-echo "  4. Verify:          echo \$GITHUB_USERNAME"
+((_step++))
+echo "  $_step. Verify:          echo \$GITHUB_USERNAME"
