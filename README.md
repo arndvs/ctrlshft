@@ -135,7 +135,6 @@ Skills are self-contained knowledge packages in `skills/`. Each has a `SKILL.md`
 | `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                | Extended thinking for complex reasoning              |
 | `github.copilot.chat.responsesApiReasoningEffort`     | `xhigh`                | Maximum reasoning effort                             |
 | `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6`      | Model selection for explore subagent                 |
-| `remote.SSH.remotePlatform`                           | `{"vps": "linux"}`     | VPS target for Remote SSH                            |
 | `claudeCode.allowDangerouslySkipPermissions`          | `true`                 | Claude Code auto-approve                             |
 
 ### Environment Variables
