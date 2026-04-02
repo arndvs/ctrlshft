@@ -126,18 +126,18 @@ The `SheetsClient` imports `discover_credentials()` from `shared_utils.py`, whic
 
 The orchestrator (`run_campaign.py`) runs these phases per domain. The Google Sheet is updated after every phase — the run is fully resumable.
 
-| Phase | Script | What it does |
-|-------|--------|--------------|
-| 0 | `preflight.py` | Validates NAP, Sheets auth, vault key, email, evidence dir (auto-runs at campaign start) |
-| 1 | `run_campaign.py` `_phase1_intel` | Discovers submission URL, platform type, CAPTCHA, paid gates, existing listings |
-| 2 | `run_campaign.py` `_phase2_account` | Vault lookup → login or register; email alias strategy |
-| 3 | `run_campaign.py` `_phase3_duplicate_check` | Searches directory for conflicting/existing listings |
-| 4 | `run_campaign.py` `_phase4_nap_mapping` | Maps nap.json fields to form selectors (see platform_adapters.md) |
-| 5 | `run_campaign.py` `_phase5_submit` | Browser form fill + submit + screenshot evidence |
-| 6 | `run_campaign.py` `_phase6_email_verify` | Polls inbox (IMAP or Gmail API) for verification link |
-| 7 | `run_campaign.py` `_phase7_qa` | Scrapes live listing, scores NAP 0-100, flags discrepancies |
-| 8 | (circuit breaker) | Stops campaign if 5 consecutive failures |
-| 9 | `reverify.py` | Scheduled pass: checks pending_review, email_pending, stale verified |
+| Phase | Script                                      | What it does                                                                             |
+| ----- | ------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 0     | `preflight.py`                              | Validates NAP, Sheets auth, vault key, email, evidence dir (auto-runs at campaign start) |
+| 1     | `run_campaign.py` `_phase1_intel`           | Discovers submission URL, platform type, CAPTCHA, paid gates, existing listings          |
+| 2     | `run_campaign.py` `_phase2_account`         | Vault lookup → login or register; email alias strategy                                   |
+| 3     | `run_campaign.py` `_phase3_duplicate_check` | Searches directory for conflicting/existing listings                                     |
+| 4     | `run_campaign.py` `_phase4_nap_mapping`     | Maps nap.json fields to form selectors (see platform_adapters.md)                        |
+| 5     | `run_campaign.py` `_phase5_submit`          | Browser form fill + submit + screenshot evidence                                         |
+| 6     | `run_campaign.py` `_phase6_email_verify`    | Polls inbox (IMAP or Gmail API) for verification link                                    |
+| 7     | `run_campaign.py` `_phase7_qa`              | Scrapes live listing, scores NAP 0-100, flags discrepancies                              |
+| 8     | (circuit breaker)                           | Stops campaign if 5 consecutive failures                                                 |
+| 9     | `reverify.py`                               | Scheduled pass: checks pending_review, email_pending, stale verified                     |
 
 ---
 
@@ -171,21 +171,22 @@ Single source of truth. Copy `assets/nap_template.json` and fill it in. The agen
 
 **Required fields** (campaign will not start without these):
 
-| Field | Example | Notes |
-|-------|---------|-------|
-| `business_name` | `"Acme Family Chiropractic"` | Exact legal name |
-| `address1` | `"123 Main St"` | As registered, including directional |
-| `city` | `"Springfield"` | |
-| `state` | `"Illinois"` | Full name |
-| `state_abbr` | `"IL"` | Two-letter |
-| `zip` | `"62704"` | 5-digit preferred for matching |
-| `phone_e164` | `"+15551234567"` | +1 then 10 digits, no spaces |
-| `phone_display` | `"(555) 123-4567"` | Human-readable format |
-| `website` | `"https://acmechiro.example.com/"` | Must start with https:// |
-| `description_short` | `"Springfield family chiropractor since 2010..."` | ≤160 chars |
-| `categories_primary` | `"Chiropractor"` | |
+| Field                | Example                                           | Notes                                |
+| -------------------- | ------------------------------------------------- | ------------------------------------ |
+| `business_name`      | `"Acme Family Chiropractic"`                      | Exact legal name                     |
+| `address1`           | `"123 Main St"`                                   | As registered, including directional |
+| `city`               | `"Springfield"`                                   |                                      |
+| `state`              | `"Illinois"`                                      | Full name                            |
+| `state_abbr`         | `"IL"`                                            | Two-letter                           |
+| `zip`                | `"62704"`                                         | 5-digit preferred for matching       |
+| `phone_e164`         | `"+15551234567"`                                  | +1 then 10 digits, no spaces         |
+| `phone_display`      | `"(555) 123-4567"`                                | Human-readable format                |
+| `website`            | `"https://acmechiro.example.com/"`                | Must start with https://             |
+| `description_short`  | `"Springfield family chiropractor since 2010..."` | ≤160 chars                           |
+| `categories_primary` | `"Chiropractor"`                                  |                                      |
 
 Helper functions from `nap_loader.py`:
+
 - `get_field(nap, "business_name", max_length=50)` — with word-boundary truncation
 - `get_description(nap, max_length=300)` — picks long → medium → short by available space
 - `get_phone(nap, format="digits")` — `display` | `e164` | `digits` | `dashes`
@@ -196,30 +197,30 @@ Helper functions from `nap_loader.py`:
 
 ## Google Sheet Schema (22 columns, A–V)
 
-| Col | Field | Type | Description |
-|-----|-------|------|-------------|
-| A | domain | text | Citation domain |
-| B | priority | 1-5 | 1 = submit first |
-| C | da_score | number | Domain authority |
-| D | category | text | General / Local / Niche |
-| E | platform_type | text | Detected platform type |
-| F | difficulty | text | Easy / Medium / Hard |
-| G | captcha_type | text | none / recaptcha_v2 / hcaptcha |
-| H | submission_url | url | Actual submission page URL |
-| I | status | text | See status codes below |
-| J | email_used | text | Account email |
-| K | username | text | Account username |
-| L | date_submitted | datetime | Submission timestamp |
-| M | date_verified | datetime | Verification timestamp |
-| N | listing_url | url | Live listing URL |
-| O | confirmation_id | text | Submission confirmation |
-| P | nap_match_score | 0-100 | NAP accuracy score |
-| Q | verification_method | text | email / phone / auto / manual |
-| R | evidence_path | text | Local screenshot archive path |
-| S | last_checked | date | Last QA date |
-| T | next_check_due | date | Scheduled re-check |
-| U | notes | text | Errors, flags, discrepancies |
-| V | cost_gate | TRUE/FALSE | Paid listing only |
+| Col | Field               | Type       | Description                    |
+| --- | ------------------- | ---------- | ------------------------------ |
+| A   | domain              | text       | Citation domain                |
+| B   | priority            | 1-5        | 1 = submit first               |
+| C   | da_score            | number     | Domain authority               |
+| D   | category            | text       | General / Local / Niche        |
+| E   | platform_type       | text       | Detected platform type         |
+| F   | difficulty          | text       | Easy / Medium / Hard           |
+| G   | captcha_type        | text       | none / recaptcha_v2 / hcaptcha |
+| H   | submission_url      | url        | Actual submission page URL     |
+| I   | status              | text       | See status codes below         |
+| J   | email_used          | text       | Account email                  |
+| K   | username            | text       | Account username               |
+| L   | date_submitted      | datetime   | Submission timestamp           |
+| M   | date_verified       | datetime   | Verification timestamp         |
+| N   | listing_url         | url        | Live listing URL               |
+| O   | confirmation_id     | text       | Submission confirmation        |
+| P   | nap_match_score     | 0-100      | NAP accuracy score             |
+| Q   | verification_method | text       | email / phone / auto / manual  |
+| R   | evidence_path       | text       | Local screenshot archive path  |
+| S   | last_checked        | date       | Last QA date                   |
+| T   | next_check_due      | date       | Scheduled re-check             |
+| U   | notes               | text       | Errors, flags, discrepancies   |
+| V   | cost_gate           | TRUE/FALSE | Paid listing only              |
 
 **Status codes:**
 `not_started` | `in_progress` | `submitted` | `email_verification_pending` | `pending_review` | `verified` | `verified_partial` | `nap_mismatch` | `duplicate` | `needs_claim` | `paid_only` | `manual_needed` | `captcha_required` | `failed` | `delisted` | `partial_submission` | `already_listed`
@@ -246,12 +247,12 @@ export CITATION_VAULT_KEY="your-generated-key"
 
 ## NAP Match Scoring (`listing_qa.py`)
 
-| Component | Points | Full match criteria |
-|-----------|--------|-------------------|
-| Business name | 30 | Exact lowercase match (20 pts for partial/substring) |
-| Phone | 25 | Last 10 digits match after stripping all non-digits |
-| Address | 25 | Normalized match (25 pts exact, 15 pts if city+zip match) |
-| Website | 20 | Normalized match: strip scheme, www, trailing slash |
+| Component     | Points | Full match criteria                                       |
+| ------------- | ------ | --------------------------------------------------------- |
+| Business name | 30     | Exact lowercase match (20 pts for partial/substring)      |
+| Phone         | 25     | Last 10 digits match after stripping all non-digits       |
+| Address       | 25     | Normalized match (25 pts exact, 15 pts if city+zip match) |
+| Website       | 20     | Normalized match: strip scheme, www, trailing slash       |
 
 **Thresholds:** ≥90 → `verified` | ≥70 → `verified_partial` | <70 → `nap_mismatch`
 
@@ -263,17 +264,17 @@ Address normalization contracts full words to abbreviations (Suite→Ste, Street
 
 Each domain phase is wrapped in try/except. The circuit breaker triggers if 5 consecutive domains fail with unhandled errors — it writes the summary, closes the session log, and exits cleanly.
 
-| Error | Recovery |
-|-------|---------|
-| Network timeout | Retry 3× with backoff |
-| CAPTCHA challenge | `captcha_required` → skip, add to manual queue |
-| Login failed + recovery failed | `manual_needed` → skip |
-| Paid gate | `paid_only` → skip |
-| Account registration failed | `manual_needed` → skip |
-| Form submit failed | `failed` + error message in notes |
-| Email verify timeout | `email_verification_pending` + next_check_due = +24h |
-| Email verify success | `pending_review` — listing still awaiting directory publication |
-| Listing not found after submit | `pending_review` + next_check_due = +3 days |
+| Error                          | Recovery                                                        |
+| ------------------------------ | --------------------------------------------------------------- |
+| Network timeout                | Retry 3× with backoff                                           |
+| CAPTCHA challenge              | `captcha_required` → skip, add to manual queue                  |
+| Login failed + recovery failed | `manual_needed` → skip                                          |
+| Paid gate                      | `paid_only` → skip                                              |
+| Account registration failed    | `manual_needed` → skip                                          |
+| Form submit failed             | `failed` + error message in notes                               |
+| Email verify timeout           | `email_verification_pending` + next_check_due = +24h            |
+| Email verify success           | `pending_review` — listing still awaiting directory publication |
+| Listing not found after submit | `pending_review` + next_check_due = +3 days                     |
 
 ---
 
@@ -284,6 +285,7 @@ When `status = manual_needed` or `captcha_required`, the agent flags the domain 
 Review manually: filter Sheet by status = `manual_needed` or `captcha_required`. After manual completion, update status to `submitted` and fill in `date_submitted` and `confirmation_id`.
 
 Common manual items:
+
 - CAPTCHA image challenges (reCAPTCHA v2, hCaptcha)
 - Phone verification (SMS/call required)
 - Business document upload (license, proof of address)
@@ -310,6 +312,7 @@ python -m scripts.reverify --config config.json
 ```
 
 Processes:
+
 1. `pending_review` / `email_verification_pending` / `submitted` where `next_check_due ≤ today`
 2. `verified` / `verified_partial` where `last_checked > 30 days ago` (freshness check)
 

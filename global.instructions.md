@@ -43,14 +43,14 @@ Output "Read global instructions." to chat to acknowledge your read this file.
 <skill-context>
 Before loading a domain-specific skill, check the workspace for matching file signatures. Do not load skills irrelevant to the current workspace context.
 
-| Context signal | File signature | Relevant skills |
-|---------------|---------------|-----------------|
-| Next.js | `next.config.*` | vercel-react-best-practices, prisma-expert, seo-*, programmatic-seo |
-| React Native | `"react-native"` in package.json | (none currently, but skip web-only skills) |
-| PHP | `composer.json` | (PHP skills) |
-| Sanity | `sanity.config.*` or `sanity.cli.*` | sanity-best-practices, content-modeling-best-practices |
-| Prisma | `prisma/schema.prisma` | prisma-expert |
-| Python | `requirements.txt` or `pyproject.toml` | systematic-debugging |
+| Context signal | File signature                         | Relevant skills                                                      |
+| -------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| Next.js        | `next.config.*`                        | vercel-react-best-practices, prisma-expert, seo-\*, programmatic-seo |
+| React Native   | `"react-native"` in package.json       | (none currently, but skip web-only skills)                           |
+| PHP            | `composer.json`                        | (PHP skills)                                                         |
+| Sanity         | `sanity.config.*` or `sanity.cli.*`    | sanity-best-practices, content-modeling-best-practices               |
+| Prisma         | `prisma/schema.prisma`                 | prisma-expert                                                        |
+| Python         | `requirements.txt` or `pyproject.toml` | systematic-debugging                                                 |
 
 Marketing, copywriting, SEO strategy, and AI generation skills (brand-voice, direct-response-copy, keyword-research, ai-image-generation, etc.) are always relevant regardless of tech stack — they are context: general.
 

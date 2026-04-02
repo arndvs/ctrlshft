@@ -2,13 +2,13 @@
 
 Opinionated VS Code + GitHub Copilot configuration that makes AI agents follow strict coding conventions and produce production-quality code.
 
-| File | Purpose |
-|------|---------|
-| `settings.json` | VS Code settings — Copilot agent config, model selection, editor prefs |
-| `CLAUDE.md` | Entry point that tells AI agents which instruction files to load |
-| `global.instructions.md` | Universal coding rules — DRY, error handling, CSS, JS, formatting |
-| `instructions/nextjs.instructions.md` | Next.js / TypeScript / React 19 conventions |
-| `instructions/php.instructions.md` | PHP 8.4+ OOP conventions |
+| File                                  | Purpose                                                                |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `settings.json`                       | VS Code settings — Copilot agent config, model selection, editor prefs |
+| `CLAUDE.md`                           | Entry point that tells AI agents which instruction files to load       |
+| `global.instructions.md`              | Universal coding rules — DRY, error handling, CSS, JS, formatting      |
+| `instructions/nextjs.instructions.md` | Next.js / TypeScript / React 19 conventions                            |
+| `instructions/php.instructions.md`    | PHP 8.4+ OOP conventions                                               |
 
 ## Prerequisites
 
@@ -74,7 +74,7 @@ Replace `/Users/YOURNAME/dotfiles` with your real path in two files:
 
 1. Open any project in VS Code
 2. Open Copilot Chat (`Cmd+Shift+I` / `Ctrl+Shift+I`) in **Agent** mode
-3. Ask: *"What instruction files do you see?"*
+3. Ask: _"What instruction files do you see?"_
 
 You can also run **"Chat: Configure Instructions..."** from the Command Palette.
 
