@@ -11,10 +11,9 @@ Usage:
 """
 
 import argparse
-import json
 import sys
 
-from scripts.shared_utils import due_date, CircuitBreaker
+from scripts.shared_utils import due_date, load_config, CircuitBreaker
 from scripts.sheets_client import SheetsClient
 from scripts.nap_loader import load_nap
 from scripts.listing_qa import ListingQA
@@ -22,8 +21,7 @@ from scripts.session_logger import SessionLogger
 
 
 def run_reverify(config_path: str) -> None:
-    with open(config_path) as f:
-        config = json.load(f)
+    config = load_config(config_path)
 
     nap = load_nap(config["nap_path"])
     sheets = SheetsClient(config)

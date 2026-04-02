@@ -27,16 +27,16 @@ if [ -f "next.config.ts" ] || [ -f "next.config.js" ] || [ -f "next.config.mjs" 
     contexts="$contexts,nextjs"
 fi
 
-# --- React (non-Next) ---
-if [ -f "package.json" ] && grep -q '"react"' package.json 2>/dev/null; then
-    if [[ "$contexts" != *"nextjs"* ]]; then
-        contexts="$contexts,react"
-    fi
-fi
-
 # --- React Native ---
 if [ -f "package.json" ] && grep -q '"react-native"' package.json 2>/dev/null; then
     contexts="$contexts,react-native"
+fi
+
+# --- React (non-Next, non-Native) ---
+if [ -f "package.json" ] && grep -q '"react"' package.json 2>/dev/null; then
+    if [[ "$contexts" != *"nextjs"* && "$contexts" != *"react-native"* ]]; then
+        contexts="$contexts,react"
+    fi
 fi
 
 # --- Node / TypeScript ---

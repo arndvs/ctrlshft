@@ -10,16 +10,24 @@
 _DOTFILES_ENV="$HOME/dotfiles/secrets/.env"
 _DOTFILES_ENV_CITATION="$HOME/dotfiles/secrets/.env.citation"
 
-if [ -f "$_DOTFILES_ENV" ]; then
+_source_env() {
+    local _tmp
+    _tmp=$(mktemp)
+    tr -d '\r' < "$1" > "$_tmp"
     set -a
-    source "$_DOTFILES_ENV"
+    source "$_tmp"
     set +a
+    rm -f "$_tmp"
+}
+
+if [ -f "$_DOTFILES_ENV" ]; then
+    _source_env "$_DOTFILES_ENV"
 fi
 
 if [ -f "$_DOTFILES_ENV_CITATION" ]; then
-    set -a
-    source "$_DOTFILES_ENV_CITATION"
-    set +a
+    _source_env "$_DOTFILES_ENV_CITATION"
 fi
+
+unset -f _source_env
 
 unset _DOTFILES_ENV _DOTFILES_ENV_CITATION
