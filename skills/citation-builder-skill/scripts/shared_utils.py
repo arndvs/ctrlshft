@@ -3,11 +3,15 @@ shared_utils.py — Shared utilities used across multiple scripts.
 
 Currently provides:
     discover_credentials() — auto-find service account JSON
-    load_env() — load secrets from ~/dotfiles/secrets/.env into os.environ
+    load_env() / ensure_env() — load secrets from ~/dotfiles/secrets/.env
     load_config() — load config.json with env var overrides for sensitive values
+    validate_config() — validate all required config keys are present
+    resolve_path() — expand ~ and resolve to absolute path
+    due_date() — return YYYY-MM-DD date offset from today
+    CircuitBreaker — track consecutive failures with threshold
 
 Import from here instead of duplicating in each module:
-    from scripts.shared_utils import discover_credentials, load_env, load_config
+    from scripts.shared_utils import discover_credentials, ensure_env, load_config, validate_config
 """
 
 import glob

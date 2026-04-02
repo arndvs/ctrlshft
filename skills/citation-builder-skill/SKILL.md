@@ -1,5 +1,5 @@
 ---
-name: citation-builder
+name: citation-builder-skill
 description: > Fully automated local SEO citation building agent. Use this skill whenever the user wants to submit business listings to citation directories, build local SEO citations at scale, automate NAP submissions, manage directory listings, track citation status, or verify submitted listings. Triggers on: "build citations", "submit to directories", "citation campaign", "local SEO listings", "directory submissions", "NAP consistency", "citation audit", "automate directory submissions". This skill covers the complete pipeline from domain list ingestion through submission, email verification, live listing QA, and Google Sheets status tracking.
 ---
 
@@ -109,7 +109,7 @@ The `SheetsClient` imports `discover_credentials()` from `shared_utils.py`, whic
     "poll_interval_seconds": 60,
     "max_poll_minutes": 15
   },
-  "nap_path": "./nap.json",
+  "nap_path": "~/dotfiles/secrets/citation-nap.json",
   "evidence_path": "./evidence/",
   "credentials_path": "./credentials.vault",
   "session": {

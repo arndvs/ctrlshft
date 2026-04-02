@@ -12,7 +12,7 @@
         "poll_interval_seconds": 60,
         "max_poll_minutes": 15
     },
-    "nap_path": "./nap.json",
+    "nap_path": "~/dotfiles/secrets/citation-nap.json",
     "evidence_path": "./evidence/",
     "credentials_path": "./credentials.vault",
     "session": {
