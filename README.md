@@ -199,13 +199,13 @@ Bootstrap runs a validation step at the end — all checks should pass. If any f
 
 **What's different on VPS vs local:**
 
-| Concern | Local machine | VPS |
-|---------|--------------|-----|
-| VS Code settings | Run `sync-settings.sh` | Forwarded via Remote SSH — do NOT run `sync-settings.sh` |
-| `~/.claude/CLAUDE.md` | Symlink (or copy on Windows) | Symlink |
-| `secrets/.env` | Your local API keys | Same keys or VPS-specific overrides |
-| Python venv | Created by bootstrap | Created by bootstrap |
-| Shell integration | `.bashrc` / `.zshrc` (bootstrap wires both) | `.bashrc` / `.zshrc` (bootstrap wires both) |
+| Concern               | Local machine                               | VPS                                                      |
+| --------------------- | ------------------------------------------- | -------------------------------------------------------- |
+| VS Code settings      | Run `sync-settings.sh`                      | Forwarded via Remote SSH — do NOT run `sync-settings.sh` |
+| `~/.claude/CLAUDE.md` | Symlink (or copy on Windows)                | Symlink                                                  |
+| `secrets/.env`        | Your local API keys                         | Same keys or VPS-specific overrides                      |
+| Python venv           | Created by bootstrap                        | Created by bootstrap                                     |
+| Shell integration     | `.bashrc` / `.zshrc` (bootstrap wires both) | `.bashrc` / `.zshrc` (bootstrap wires both)              |
 
 #### VPS Verification Checklist
 
@@ -364,6 +364,7 @@ source ~/.bashrc                        # pick up any new env vars
 On a VPS, skip `sync-settings.sh` — VS Code Remote SSH forwards settings from your local machine.
 
 > **Note:** If your git remote still shows `ai-files.git` (the old repo name), update it:
+>
 > ```bash
 > git remote set-url origin https://github.com/arndvs/dotfiles.git
 > ```
@@ -371,24 +372,29 @@ On a VPS, skip `sync-settings.sh` — VS Code Remote SSH forwards settings from 
 ## Troubleshooting
 
 **Instructions not loading in Copilot Chat**
+
 - Verify the symlink: `readlink ~/.claude/CLAUDE.md` — should point to `~/dotfiles/CLAUDE.md`
 - If it's a regular file (not a symlink), re-run `bash ~/dotfiles/bin/bootstrap.sh`
 - Check that `chat.instructionsFilesLocations` includes `"~/dotfiles": true` in your VS Code settings
 
 **`secrets/.env not found` warning on shell startup**
+
 - Run: `cp ~/dotfiles/.env.example ~/dotfiles/secrets/.env`
 - Fill in your API keys: `$EDITOR ~/dotfiles/secrets/.env`
 
 **`sync-settings.sh` fails on VPS**
+
 - This is expected — `sync-settings.sh` only works on your local machine
 - VS Code Remote SSH forwards your local settings to the VPS automatically
 
 **`ACTIVE_CONTEXTS` not set / empty**
+
 - Verify `.bashrc` has the context-detection block: `grep "detect-context" ~/.bashrc`
 - If missing, re-run `bash ~/dotfiles/bin/bootstrap.sh`
 - Context detection runs on `cd` — it reads the current directory's files
 
 **Python venv missing or broken**
+
 - Delete and recreate: `rm -rf ~/dotfiles/secrets/.venv && bash ~/dotfiles/bin/bootstrap.sh`
 
 ## Architecture Decisions
