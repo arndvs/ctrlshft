@@ -70,7 +70,7 @@ def run_preflight(config_path: str) -> bool:
     if not spreadsheet_id or spreadsheet_id == "YOUR_SPREADSHEET_ID_HERE":
         errors.append(
             "sheets.spreadsheet_id is missing or still has placeholder value.\n"
-            "  Set CITATION_SPREADSHEET_ID in secrets/.env or update config.json."
+            "  Set CITATION_SPREADSHEET_ID in secrets/.env.agent or update config.json."
         )
     else:
         try:

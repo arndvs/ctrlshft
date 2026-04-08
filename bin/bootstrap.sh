@@ -42,26 +42,47 @@ if [[ ! -f "$DOTFILES/CLAUDE.md" ]]; then
     exit 1
 fi
 
-# ── 1. Create secrets directory and .env from template ────────────────────────
+# ── 1. Create secrets directory and split env files ───────────────────────────
 echo
-green "[1/6] Secrets directory"
+green "[1/7] Secrets directory"
 mkdir -p "$SECRETS_DIR"
-if [[ -f "$SECRETS_DIR/.env" ]]; then
-    yellow "  secrets/.env already exists — skipping"
+
+# Migration hint for legacy .env users (must check BEFORE creating new files)
+if [[ -f "$SECRETS_DIR/.env" ]] && [[ ! -f "$SECRETS_DIR/.env.agent" ]]; then
+    yellow "  MIGRATION: legacy secrets/.env detected. Split into .env.agent + .env.secrets"
+    yellow "  See templates: .env.agent.example and .env.secrets.example"
+    yellow "  After migrating, delete secrets/.env to complete the transition"
+fi
+
+# .env.agent (non-sensitive config — sourced into shell)
+if [[ -f "$SECRETS_DIR/.env.agent" ]]; then
+    yellow "  secrets/.env.agent already exists — skipping"
 else
-    if [[ ! -f "$DOTFILES/.env.example" ]]; then
-        red "  Error: $DOTFILES/.env.example not found — cannot create secrets/.env"
-        red "  This file should exist in the repo. Try: git checkout -- .env.example"
+    if [[ ! -f "$DOTFILES/.env.agent.example" ]]; then
+        red "  Error: $DOTFILES/.env.agent.example not found"
         exit 1
     fi
-    cp "$DOTFILES/.env.example" "$SECRETS_DIR/.env"
-    green "  Created secrets/.env from .env.example"
-    yellow "  >>> Fill in your API keys: $SECRETS_DIR/.env"
+    cp "$DOTFILES/.env.agent.example" "$SECRETS_DIR/.env.agent"
+    green "  Created secrets/.env.agent from .env.agent.example"
+    yellow "  >>> Fill in non-sensitive config: $SECRETS_DIR/.env.agent"
+fi
+
+# .env.secrets (sensitive credentials — process-scoped only)
+if [[ -f "$SECRETS_DIR/.env.secrets" ]]; then
+    yellow "  secrets/.env.secrets already exists — skipping"
+else
+    if [[ ! -f "$DOTFILES/.env.secrets.example" ]]; then
+        red "  Error: $DOTFILES/.env.secrets.example not found"
+        exit 1
+    fi
+    cp "$DOTFILES/.env.secrets.example" "$SECRETS_DIR/.env.secrets"
+    green "  Created secrets/.env.secrets from .env.secrets.example"
+    yellow "  >>> Fill in API keys and tokens: $SECRETS_DIR/.env.secrets"
 fi
 
 # ── 2. Symlink ~/.claude/CLAUDE.md ────────────────────────────────────────────
 echo
-green "[2/6] CLAUDE.md"
+green "[2/7] CLAUDE.md"
 mkdir -p "$CLAUDE_DIR"
 if [[ -L "$CLAUDE_DIR/CLAUDE.md" ]]; then
     _target=$(readlink "$CLAUDE_DIR/CLAUDE.md")
@@ -84,7 +105,7 @@ fi
 
 # ── 3. Symlink ~/.claude/skills/ ──────────────────────────────────────────────
 echo
-green "[3/6] Skills directory"
+green "[3/7] Skills directory"
 if [[ -L "$CLAUDE_DIR/skills" ]]; then
     _target=$(readlink "$CLAUDE_DIR/skills")
     if [[ "$_target" == "$DOTFILES/skills" ]]; then
@@ -112,7 +133,7 @@ fi
 
 # ── 4. Wire up shell ──────────────────────────────────────────────────────────
 echo
-green "[4/6] Shell integration"
+green "[4/7] Shell integration"
 
 _SHELL_SNIPPET=$(cat << 'SHELLEOF'
 
@@ -150,7 +171,7 @@ fi
 
 # ── 5. Python venv ───────────────────────────────────────────────────────────
 echo
-green "[5/6] Python venv"
+green "[5/7] Python venv"
 
 # Find a python executable (venv first, then system)
 PYTHON=""
@@ -197,9 +218,32 @@ else
     green "  Venv created and base packages installed"
 fi
 
-# ── 6. Validation ─────────────────────────────────────────────────────────────
+# ── 6. Supply chain attack protection ─────────────────────────────────────────
 echo
-green "[6/6] Validating setup"
+green "[6/7] Package manager security (supply chain protection)"
+
+# ~/.npmrc — refuse npm packages published < 7 days ago
+if [[ -f "$HOME/.npmrc" ]] && grep -qF "min-release-age" "$HOME/.npmrc"; then
+    yellow "  ~/.npmrc already has min-release-age — skipping"
+else
+    echo 'min-release-age=7' >> "$HOME/.npmrc"
+    green "  Added min-release-age=7 to ~/.npmrc"
+fi
+
+# ~/.config/uv/uv.toml — refuse uv/Python packages published < 7 days ago
+UV_CONFIG_DIR="$HOME/.config/uv"
+UV_CONFIG="$UV_CONFIG_DIR/uv.toml"
+if [[ -f "$UV_CONFIG" ]] && grep -qF "exclude-newer" "$UV_CONFIG"; then
+    yellow "  ~/.config/uv/uv.toml already has exclude-newer — skipping"
+else
+    mkdir -p "$UV_CONFIG_DIR"
+    echo 'exclude-newer = "7 days"' >> "$UV_CONFIG"
+    green "  Added exclude-newer = \"7 days\" to ~/.config/uv/uv.toml"
+fi
+
+# ── 7. Validation ─────────────────────────────────────────────────────────────
+echo
+green "[7/7] Validating setup"
 
 if [[ "$OS" == "windows" ]]; then
     if [[ -f "$CLAUDE_DIR/CLAUDE.md" ]]; then
@@ -225,10 +269,16 @@ else
     red "  ✗ ~/.claude/skills missing or not a symlink"; _fail=1
 fi
 
-if [[ -f "$SECRETS_DIR/.env" ]]; then
-    green "  ✓ secrets/.env exists"
+if [[ -f "$SECRETS_DIR/.env.agent" ]]; then
+    green "  ✓ secrets/.env.agent exists"
 else
-    red "  ✗ secrets/.env missing"; _fail=1
+    red "  ✗ secrets/.env.agent missing"; _fail=1
+fi
+
+if [[ -f "$SECRETS_DIR/.env.secrets" ]]; then
+    green "  ✓ secrets/.env.secrets exists"
+else
+    red "  ✗ secrets/.env.secrets missing"; _fail=1
 fi
 
 if [[ -f "$BASHRC" ]] && grep -qF "load-secrets.sh" "$BASHRC"; then
@@ -251,6 +301,18 @@ else
     yellow "  ~ Python venv not created (Python not found)"
 fi
 
+if grep -qF "min-release-age" "$HOME/.npmrc" 2>/dev/null; then
+    green "  ✓ ~/.npmrc has supply chain protection"
+else
+    red "  ✗ ~/.npmrc missing min-release-age"; _fail=1
+fi
+
+if grep -qF "exclude-newer" "$HOME/.config/uv/uv.toml" 2>/dev/null; then
+    green "  ✓ ~/.config/uv/uv.toml has supply chain protection"
+else
+    red "  ✗ ~/.config/uv/uv.toml missing exclude-newer"; _fail=1
+fi
+
 echo
 if [[ $_fail -eq 0 ]]; then
     green "All checks passed!"
@@ -261,8 +323,10 @@ fi
 echo ""
 echo "Next steps:"
 _step=1
-if [[ ! -s "$SECRETS_DIR/.env" ]] || grep -q "^GITHUB_USERNAME=$" "$SECRETS_DIR/.env" 2>/dev/null; then
-    yellow "  $_step. Fill in secrets:  \$EDITOR ~/dotfiles/secrets/.env"
+if [[ ! -s "$SECRETS_DIR/.env.agent" ]] || grep -q "^GITHUB_USERNAME=$" "$SECRETS_DIR/.env.agent" 2>/dev/null; then
+    yellow "  $_step. Fill in config:    \$EDITOR ~/dotfiles/secrets/.env.agent"
+    ((_step++))
+    yellow "  $_step. Fill in secrets:  \$EDITOR ~/dotfiles/secrets/.env.secrets"
     ((_step++))
 fi
 echo "  $_step. Reload shell:    source ~/.bashrc"
