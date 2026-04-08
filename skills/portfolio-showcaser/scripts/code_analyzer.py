@@ -16,6 +16,8 @@ import os
 import re
 from pathlib import Path
 
+from scripts.shared_utils import detect_package_manager as _detect_package_manager_shared
+
 FRAMEWORK_SIGNATURES = {
     "next": {
         "files": ["next.config.js", "next.config.mjs", "next.config.ts"],
@@ -242,19 +244,7 @@ def _detect_language(repo: Path, pkg: dict) -> str:
 
 
 def _detect_package_manager(repo: Path) -> str:
-    if (repo / "pnpm-lock.yaml").exists():
-        return "pnpm"
-    if (repo / "bun.lockb").exists() or (repo / "bun.lock").exists():
-        return "bun"
-    if (repo / "yarn.lock").exists():
-        return "yarn"
-    if (repo / "package-lock.json").exists():
-        return "npm"
-    if (repo / "package.json").exists():
-        return "npm"
-    if (repo / "requirements.txt").exists() or (repo / "pyproject.toml").exists():
-        return "pip"
-    return "unknown"
+    return _detect_package_manager_shared(str(repo))
 
 
 def _detect_start_command(repo: Path, pkg: dict, framework: str, pm: str) -> str:
@@ -295,18 +285,8 @@ def _detect_port(repo: Path, framework: str) -> int:
         "html": 5500,
     }
 
-    for config_name in ["next.config.js", "next.config.mjs", "next.config.ts"]:
-        config_path = repo / config_name
-        if config_path.exists():
-            try:
-                content = config_path.read_text(encoding="utf-8")
-                port_match = re.search(r"port\s*[:=]\s*(\d+)", content)
-                if port_match:
-                    return int(port_match.group(1))
-            except OSError:
-                pass
-
-    for config_name in ["vite.config.js", "vite.config.ts", "vite.config.mjs"]:
+    for config_name in ["next.config.js", "next.config.mjs", "next.config.ts",
+                         "vite.config.js", "vite.config.ts", "vite.config.mjs"]:
         config_path = repo / config_name
         if config_path.exists():
             try:
@@ -429,30 +409,26 @@ def _detect_patterns(repo: Path, framework: str, deps: dict) -> list[dict]:
                 "score": 3,
             })
 
-        for action_pattern in ["use server", "'use server'"]:
-            try:
-                server_action_files = []
-                for ext in ("*.ts", "*.tsx", "*.js", "*.jsx"):
-                    for f in (repo / "app").rglob(ext) if (repo / "app").is_dir() else []:
-                        try:
-                            content = f.read_text(encoding="utf-8", errors="replace")
-                            if action_pattern in content[:200]:
-                                server_action_files.append(str(f.relative_to(repo)))
-                                if len(server_action_files) >= 5:
-                                    break
-                        except OSError:
-                            pass
-                    if len(server_action_files) >= 5:
-                        break
-                if server_action_files:
-                    patterns.append({
-                        "name": "Server Actions",
-                        "files": server_action_files,
-                        "score": 4,
-                    })
+        if (repo / "app").is_dir():
+            server_action_files = []
+            for ext in ("*.ts", "*.tsx", "*.js", "*.jsx"):
+                for f in (repo / "app").rglob(ext):
+                    try:
+                        content = f.read_text(encoding="utf-8", errors="replace")
+                        if "use server" in content[:200]:
+                            server_action_files.append(str(f.relative_to(repo)))
+                            if len(server_action_files) >= 5:
+                                break
+                    except OSError:
+                        pass
+                if len(server_action_files) >= 5:
                     break
-            except OSError:
-                pass
+            if server_action_files:
+                patterns.append({
+                    "name": "Server Actions",
+                    "files": server_action_files,
+                    "score": 4,
+                })
 
     hooks_dir = None
     for candidate in ["src/hooks", "hooks", "lib/hooks", "src/lib/hooks"]:

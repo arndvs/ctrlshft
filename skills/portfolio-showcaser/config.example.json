@@ -1,20 +1,19 @@
 {
     "repo_path": "/path/to/your/project",
-    "output": {
-        "evidence_path": "./evidence/",
-        "report_path": "./output/",
-        "state_file": "./state.json"
-    },
+    "output_dir": "./output",
+    "screenshots_dir": "./output/screenshots",
+    "report_filename": "portfolio-report.md",
+    "state_file": "./output/state.json",
     "exploration": {
-        "max_features_per_run": 15,
-        "screenshot_budget_per_feature": 5,
+        "max_features": 15,
+        "screenshot_budget": 5,
         "viewports": {
             "desktop": {"width": 1440, "height": 900},
             "tablet": {"width": 768, "height": 1024},
             "mobile": {"width": 375, "height": 812}
         },
-        "dev_server_timeout_seconds": 120,
-        "dev_server_port": 3000
+        "dev_server_timeout": 120,
+        "port": 3000
     },
     "session": {
         "circuit_breaker_threshold": 5

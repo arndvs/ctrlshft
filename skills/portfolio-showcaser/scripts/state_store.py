@@ -16,6 +16,7 @@ Usage:
 
 import json
 import os
+import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -44,8 +45,13 @@ class JsonStateStore:
         else:
             self._data = json.loads(json.dumps(_EMPTY_STATE))
 
+    @property
+    def data(self) -> dict:
+        return self._data
+
     def save(self) -> None:
         """Atomic write: write to .tmp then rename."""
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp_path = tempfile.mkstemp(
             dir=self.state_path.parent,
             suffix=".tmp",
@@ -54,6 +60,8 @@ class JsonStateStore:
             os.write(fd, json.dumps(self._data, indent=2, default=str).encode("utf-8"))
             os.close(fd)
             fd = -1
+            if sys.platform == "win32" and self.state_path.exists():
+                self.state_path.unlink()
             Path(tmp_path).replace(self.state_path)
         except Exception:
             if fd >= 0:
@@ -75,12 +83,11 @@ class JsonStateStore:
     def get_feature(self, feature_id: str) -> dict | None:
         return self._data.get("features", {}).get(feature_id)
 
-    def add_feature(self, feature: dict) -> None:
-        """Add a new feature. Requires 'id' key."""
-        fid = feature["id"]
-        if fid in self._data.get("features", {}):
+    def add_feature(self, name: str, data: dict) -> None:
+        """Add a new feature keyed by name."""
+        if name in self._data.get("features", {}):
             return
-        self._data.setdefault("features", {})[fid] = feature
+        self._data.setdefault("features", {})[name] = {"name": name, **data}
         self.save()
 
     def update_feature(self, feature_id: str, updates: dict) -> None:
@@ -124,11 +131,10 @@ class JsonStateStore:
         pending.sort(key=score_key, reverse=True)
         return pending
 
-    def record_run(self, run_id: str, focus: str, features_touched: int) -> None:
+    def record_run(self, run_id: str, data: dict) -> None:
         self._data.setdefault("runs", []).append({
             "id": run_id,
-            "focus": focus,
-            "features_touched": features_touched,
+            **data,
             "date": datetime.now().isoformat(),
         })
         self.save()

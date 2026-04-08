@@ -151,11 +151,10 @@ def _section_features(features: list[dict], screenshot_mgr) -> str:
             if scores.get("penalty", 0) < 0:
                 lines.append(f"| Penalty | {scores['penalty']} |")
 
-        annotations = screenshot_mgr.get_annotations() if screenshot_mgr else {}
-        feature_screenshots = {k: v for k, v in annotations.items() if feature["name"].lower().replace(" ", "_") in k.lower()}
-        if feature_screenshots:
+        annotations = screenshot_mgr.get_annotations(feature["name"]) if screenshot_mgr else {}
+        if annotations:
             lines.append("\n**Screenshots:**\n")
-            for path, annotation in feature_screenshots.items():
+            for path, annotation in annotations.items():
                 fname = Path(path).name
                 lines.append(f"- `{fname}`: {annotation}")
 

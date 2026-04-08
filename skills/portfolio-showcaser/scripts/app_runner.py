@@ -101,22 +101,28 @@ class AppRunner:
         env["PORT"] = str(self.port)
         env["NODE_ENV"] = "development"
 
-        self._process = subprocess.Popen(
-            self.start_command,
-            shell=True,
-            cwd=self.repo_path,
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-        )
+        popen_kwargs = {
+            "shell": True,
+            "cwd": self.repo_path,
+            "env": env,
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "text": True,
+        }
+
+        if sys.platform == "win32":
+            popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            popen_kwargs["preexec_fn"] = os.setsid
+
+        self._process = subprocess.Popen(self.start_command, **popen_kwargs)
 
         if not self._wait_for_ready():
             stderr_output = ""
             try:
-                stderr_output = self._process.stderr.read(2000) if self._process.stderr else ""
-            except Exception:
+                _, stderr_output = self._process.communicate(timeout=5)
+                stderr_output = (stderr_output or "")[:2000]
+            except (subprocess.TimeoutExpired, Exception):
                 pass
             self.stop()
             raise RuntimeError(

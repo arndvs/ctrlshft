@@ -246,7 +246,6 @@ def _discover_api_endpoints(repo: Path, framework: str) -> list[dict]:
             for route_file in api_dir.rglob("route.*"):
                 if route_file.suffix not in (".ts", ".js"):
                     continue
-                rel = route_file.parent.relative_to(repo)
                 route = "/api/" + str(route_file.parent.relative_to(api_dir)).replace("\\", "/")
                 if route.endswith("/."):
                     route = "/api"
