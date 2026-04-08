@@ -58,19 +58,20 @@ class ScreenshotManager:
         filename = f"{step_num:02d}_{step}_{timestamp}.png"
         return str(self.domain_dir(domain) / filename)
 
-    def capture(self, browser, domain: str, step: str) -> str:
+    def capture(self, browser, domain: str, step: str) -> tuple[str, bool]:
         """
         Capture a screenshot via the browser object and save to the evidence archive.
-        Returns the saved file path (even on failure — path is still useful for logging).
+        Returns (path, success). Path is always set (useful for logging even on failure).
         """
         path = self.screenshot_path(domain, step)
         try:
             screenshot_bytes = browser.screenshot()
             Path(path).write_bytes(screenshot_bytes)
             print(f"  📷 {step}: {path}")
+            return path, True
         except Exception as e:
             print(f"  ⚠  Screenshot failed ({step}): {e}")
-        return path
+            return path, False
 
     def get_evidence_paths(self, domain: str) -> list[str]:
         """List all screenshots for a domain, sorted by filename."""

@@ -22,7 +22,7 @@ from datetime import datetime
 
 from scripts.preflight import run_preflight
 from scripts.nap_loader import load_nap, normalize_phone
-from scripts.shared_utils import due_date, NOTE_MAX_LEN, CircuitBreaker, resolve_path, load_config
+from scripts.shared_utils import due_date, NOTE_MAX_LEN, CircuitBreaker, resolve_path, load_config, validate_config, ensure_env
 from scripts.sheets_client import SheetsClient
 from scripts.credential_vault import get_credentials, store_credentials
 from scripts.email_handler import EmailHandler
@@ -43,8 +43,11 @@ class CitationCampaignRunner:
     """
 
     def __init__(self, config_path: str):
+        ensure_env()
+
         self.config_path = config_path
         self.config      = load_config(config_path)
+        validate_config(self.config)
 
         self.nap = load_nap(self.config["nap_path"])
         self.sheets = SheetsClient(self.config)
@@ -54,10 +57,8 @@ class CitationCampaignRunner:
         self.logger = SessionLogger(resolve_path(self.config["evidence_path"]))
         self.vault_path = resolve_path(self.config["credentials_path"])
 
-        # Injected by agent
         self.browser = None
 
-        # Session state
         self.submissions_this_session = 0
         self.max_submissions          = self.config["session"]["max_submissions_per_session"]
         self.breaker                  = CircuitBreaker(self.config["session"]["circuit_breaker_threshold"])
@@ -290,10 +291,15 @@ class CitationCampaignRunner:
             # Agent determines email strategy: alias for most, business email for priority dirs
             high_priority_domains = {"yelp.com", "bbb.org", "yellowpages.com"}
             if domain in high_priority_domains:
-                reg_email = self.config["email"].get("business_email", self.config["email"]["verification_account"])
+                reg_email = self.config["email"].get("business_email") or self.config["email"].get("verification_account")
+                if not reg_email:
+                    raise ValueError(
+                        "No business_email or verification_account in config. "
+                        "Set CITATION_BUSINESS_EMAIL or CITATION_VERIFICATION_EMAIL in secrets/.env.agent."
+                    )
             else:
-                verification_email = self.config["email"]["verification_account"]
-                if "@" not in verification_email:
+                verification_email = self.config["email"].get("verification_account", "")
+                if not verification_email or "@" not in verification_email:
                     raise ValueError(f"Invalid verification_account in config (missing @): {verification_email}")
                 local, domain_part = verification_email.split("@", 1)
                 slug = domain.replace(".", "_").replace("-", "_")
@@ -474,9 +480,6 @@ class CitationCampaignRunner:
 
 
 if __name__ == "__main__":
-    from scripts.shared_utils import load_env
-    load_env()
-
     parser = argparse.ArgumentParser(description="Automated citation building campaign")
     parser.add_argument("--config", default="config.json", help="Path to config.json")
     parser.add_argument("--domain", help="Process a single domain only")

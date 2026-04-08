@@ -23,7 +23,7 @@
 	"editor.formatOnSaveTimeout": 750,
 	"editor.acceptSuggestionOnEnter": "on",
 	"editor.tabCompletion": "on",
-	"editor.guides.bracketPairs": false, // File 2 overrides File 1 (was true)
+	"editor.guides.bracketPairs": false,
 	"editor.bracketPairColorization.independentColorPoolPerBracketType": false,
 	"editor.minimap.enabled": false,
 	"editor.stickyScroll.enabled": false,
@@ -390,7 +390,5 @@
 	"git.confirmSync": false,
 	"github.copilot.chat.agentDebugLog.enabled": true,
 	"github.copilot.chat.agentDebugLog.fileLogging.enabled": true,
-	"remote.SSH.remotePlatform": {
-		"vps": "linux"
-	}
+	"python.terminal.useEnvFile": true
 }

@@ -48,6 +48,8 @@ class EmailHandler:
                 if url:
                     print(f"  ✓ Verification URL found for {sender_domain}")
                     return url
+            except (EnvironmentError, ValueError) as e:
+                raise
             except Exception as e:
                 print(f"  Email check error: {e}")
 
@@ -93,8 +95,9 @@ class EmailHandler:
                     f"IMAP login failed for {user} — check CITATION_EMAIL_PASSWORD"
                 )
             mail.select("INBOX")
+            safe_domain = re.sub(r'[^a-zA-Z0-9.\-]', '', sender_domain)
             date_str = submitted_after.strftime("%d-%b-%Y")
-            _, data = mail.search(None, f'FROM "@{sender_domain}" SINCE "{date_str}"')
+            _, data = mail.search(None, f'FROM "@{safe_domain}" SINCE "{date_str}"')
             for num in data[0].split():
                 uid = num.decode() if isinstance(num, bytes) else str(num)
                 if uid in seen_ids:
