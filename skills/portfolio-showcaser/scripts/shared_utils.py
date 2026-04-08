@@ -207,9 +207,6 @@ class CircuitBreaker:
     def record_success(self) -> None:
         self.consecutive_failures = 0
 
-    def reset(self):
-        self.consecutive_failures = 0
-
     @property
     def tripped(self) -> bool:
         return self.consecutive_failures >= self.threshold

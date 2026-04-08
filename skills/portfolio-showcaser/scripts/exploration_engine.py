@@ -46,8 +46,14 @@ class ExplorationEngine:
         Returns a dict of screenshots taken and observations.
 
         1. Navigate to the feature's route (if it has one)
-        2. Call the appropriate focus handler below
-        3. Update state_store with screenshots and status
+        2. Read the focus handler's docstring for specific browser actions
+        3. Use screenshot_mgr.screenshot_path(feature_name, step_name) for paths
+        4. Use screenshot_mgr.annotate(screenshot_path, annotation) to add context
+        5. Update state_store with screenshots and status
+        6. After all features, optionally call engine.freestyle_explore(base_url)
+
+        The focus handlers return empty dicts — YOU fill them with actual data
+        from your browser observations.
         """
         name = feature.get("name", "unknown")
         route = feature.get("route", "/")
