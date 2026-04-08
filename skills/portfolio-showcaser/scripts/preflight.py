@@ -17,7 +17,7 @@ import socket
 import subprocess
 from pathlib import Path
 
-from scripts.shared_utils import validate_config, validate_repo_path, check_command_available
+from scripts.shared_utils import validate_config, validate_repo_path, check_command_available, detect_package_manager
 
 
 def run_preflight(config: dict) -> tuple[bool, list[dict]]:
@@ -78,28 +78,20 @@ def _check_package_json(config: dict) -> dict:
 
 
 def _check_package_manager(config: dict) -> dict:
-    repo = Path(config.get("repo_path", ""))
+    repo_path = config.get("repo_path", "")
+    repo = Path(repo_path)
+    pm = detect_package_manager(repo_path)
 
-    managers = {
-        "pnpm-lock.yaml": "pnpm",
-        "bun.lockb": "bun",
-        "bun.lock": "bun",
-        "yarn.lock": "yarn",
-        "package-lock.json": "npm",
-    }
+    if pm == "unknown":
+        return {"name": "Package manager", "passed": True, "message": "Non-Node project, skipping", "severity": "warning"}
 
-    for lockfile, pm in managers.items():
-        if (repo / lockfile).exists():
-            if check_command_available(pm):
-                return {"name": "Package manager", "passed": True, "message": f"{pm} detected and available", "severity": "error"}
-            return {"name": "Package manager", "passed": False, "message": f"Lockfile requires {pm} but it's not installed", "severity": "error"}
+    if pm == "pip":
+        return {"name": "Package manager", "passed": True, "message": "Python project (pip)", "severity": "warning"}
 
-    if (repo / "package.json").exists():
-        if check_command_available("npm"):
-            return {"name": "Package manager", "passed": True, "message": "Defaulting to npm", "severity": "warning"}
-        return {"name": "Package manager", "passed": False, "message": "npm not found", "severity": "error"}
+    if check_command_available(pm):
+        return {"name": "Package manager", "passed": True, "message": f"{pm} detected and available", "severity": "error"}
 
-    return {"name": "Package manager", "passed": True, "message": "Non-Node project, skipping", "severity": "warning"}
+    return {"name": "Package manager", "passed": False, "message": f"Lockfile requires {pm} but it's not installed", "severity": "error"}
 
 
 def _check_node(config: dict) -> dict:

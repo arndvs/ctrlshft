@@ -14,15 +14,13 @@ Usage:
     from scripts.shared_utils import ensure_env, load_config, validate_config, resolve_path
 """
 
-import glob
 import json
 import os
 import shutil
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
-NOTE_MAX_LEN = 500
 
 _ENV_FILES = [
     Path.home() / "dotfiles" / "secrets" / ".env.agent",
@@ -164,9 +162,29 @@ def validate_repo_path(repo_path: str) -> None:
         )
 
 
-def due_date(days: int) -> str:
-    """Return a YYYY-MM-DD date string offset from today by the given number of days."""
-    return (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d")
+def detect_package_manager(repo_path: str) -> str:
+    """Detect the package manager for a project by lockfile presence."""
+    repo = Path(repo_path)
+
+    lockfile_map = {
+        "pnpm-lock.yaml": "pnpm",
+        "bun.lockb": "bun",
+        "bun.lock": "bun",
+        "yarn.lock": "yarn",
+        "package-lock.json": "npm",
+    }
+
+    for lockfile, pm in lockfile_map.items():
+        if (repo / lockfile).exists():
+            return pm
+
+    if (repo / "package.json").exists():
+        return "npm"
+
+    if (repo / "requirements.txt").exists() or (repo / "pyproject.toml").exists():
+        return "pip"
+
+    return "unknown"
 
 
 def check_command_available(cmd: str) -> bool:
