@@ -153,12 +153,59 @@ Features are scored on four weighted axes:
 
 Next.js (App/Pages Router), Nuxt, SvelteKit, Vite + React, Vite + Vue, CRA, Angular, Remix, Astro, Gatsby, Django, Flask, Rails, Laravel, static HTML.
 
-## Error Handling
+## State Store Schema
 
-- **Circuit breaker**: Trips after 5 consecutive exploration failures, stops gracefully
-- **Resume**: Re-run picks up from last completed feature via `state.json`
-- **Server failure**: Falls back to `--skip-server` mode with warning
-- **Missing deps**: Preflight catches and reports before running
+The JSON state file (`output/state.json`) has four top-level keys:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `project` | object | Repo metadata: path, framework, language, session_id |
+| `runs` | array | History of each run with id, focus, date, feature counts |
+| `features` | object | Keyed by feature name. Each value contains the fields below |
+| `code_highlights` | array | Architecture/pattern highlights from static analysis |
+
+### Feature Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Display name (e.g. "Home Page") |
+| `type` | string | `page`, `flow`, `api_endpoint`, `component`, `integration` |
+| `route` | string | URL route (e.g. "/dashboard") |
+| `score` | float | Portfolio impact score from highlight_scorer |
+| `description` | string | Human-readable summary |
+| `status` | string | Current processing status (see Status Codes) |
+| `notes` | string | Optional notes, max 500 chars |
+| `screenshots` | array | Screenshot records appended during exploration |
+| `metadata` | object | Framework-specific metadata (dynamic, flow_type, methods) |
+
+## Status Codes
+
+| Status | Meaning |
+|--------|---------|
+| `discovered` | Found by feature_discovery, not yet scored |
+| `scored` | Ranked by highlight_scorer |
+| `in_progress` | Currently being explored by the agent |
+| `screenshotted` | Browser exploration complete, screenshots captured |
+| `documented` | Included in the final report (terminal state) |
+| `skipped` | Skipped due to error or low priority (terminal state) |
+
+Features with status `documented` or `skipped` are excluded from `get_pending_features()` on resume.
+
+## Error Recovery
+
+| Error | Recovery |
+|-------|----------|
+| Config validation fails | Fix config.json, re-run preflight |
+| Repo path not found | Set correct `repo_path` or `PORTFOLIO_REPO_PATH` env var |
+| Server won't start | Re-run with `--skip-server`, start server manually |
+| Circuit breaker trips (5 consecutive failures) | Re-run; resumes from last completed feature via `state.json` |
+| Single feature exploration fails | Feature marked `skipped`, pipeline continues to next |
+| Port already in use | Change `exploration.port` in config or kill process on port |
+| Disk space low | Free 500MB+ for screenshots |
+
+## Rate Limiting
+
+This skill does not interact with external rate-limited APIs. Browser interactions are paced by the agent's natural action speed. No artificial delays are configured.
 
 ## Reference Documents
 
