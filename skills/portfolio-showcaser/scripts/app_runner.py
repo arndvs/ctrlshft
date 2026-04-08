@@ -11,7 +11,6 @@ Usage:
     runner = AppRunner(config, analysis)
     runner.install_deps()
     runner.start()
-    # ... agent does browser work ...
     runner.stop()
 """
 
