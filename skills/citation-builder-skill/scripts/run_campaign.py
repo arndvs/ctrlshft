@@ -295,7 +295,7 @@ class CitationCampaignRunner:
                 if not reg_email:
                     raise ValueError(
                         "No business_email or verification_account in config. "
-                        "Set CITATION_BUSINESS_EMAIL or CITATION_VERIFICATION_EMAIL in secrets/.env."
+                        "Set CITATION_BUSINESS_EMAIL or CITATION_VERIFICATION_EMAIL in secrets/.env.agent."
                     )
             else:
                 verification_email = self.config["email"].get("verification_account", "")
