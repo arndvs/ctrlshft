@@ -3,7 +3,7 @@ shared_utils.py — Shared utilities used across multiple scripts.
 
 Currently provides:
     discover_credentials() — auto-find service account JSON
-    load_env() / ensure_env() — load secrets from ~/dotfiles/secrets/.env
+    load_env() / ensure_env() — load env from ~/dotfiles/secrets/.env.agent and .env.secrets
     load_config() — load config.json with env var overrides for sensitive values
     validate_config() — validate all required config keys are present
     resolve_path() — expand ~ and resolve to absolute path
@@ -24,8 +24,9 @@ from pathlib import Path
 NOTE_MAX_LEN = 500
 
 _ENV_FILES = [
+    Path.home() / "dotfiles" / "secrets" / ".env.agent",
+    Path.home() / "dotfiles" / "secrets" / ".env.secrets",
     Path.home() / "dotfiles" / "secrets" / ".env",
-    Path.home() / "dotfiles" / "secrets" / ".env.citation",
 ]
 
 
@@ -58,10 +59,11 @@ def _load_env_file(path: Path) -> None:
 
 
 def load_env() -> None:
-    """Load secrets into os.environ from ~/dotfiles/secrets/.env (primary)
-    and ~/dotfiles/secrets/.env.citation (citation-specific overrides).
-    Vars already set in the environment (e.g. from shell profile) take
-    priority and are never overwritten.
+    """Load env vars from ~/dotfiles/secrets/.env.agent (non-sensitive config)
+    and ~/dotfiles/secrets/.env.secrets (credentials). Falls back to legacy
+    secrets/.env for migration compatibility.
+    Vars already set in the environment (e.g. from shell profile or
+    run-with-secrets.sh) take priority and are never overwritten.
     Also reconfigures stdout/stderr to UTF-8 on Windows."""
     stdout_enc = getattr(sys.stdout, "encoding", None) or ""
     if stdout_enc.lower() not in ("utf-8", "utf8"):
@@ -79,7 +81,7 @@ def load_env() -> None:
         raise FileNotFoundError(
             f"No secrets env file found. Searched:\n"
             + "\n".join(f"  {p}" for p in _ENV_FILES)
-            + "\nCopy secrets/.env.example to secrets/.env and fill in values."
+            + "\nCopy .env.agent.example to secrets/.env.agent and .env.secrets.example to secrets/.env.secrets"
         )
 
 
@@ -215,7 +217,7 @@ def validate_config(config: dict) -> None:
     errors = []
 
     required_paths = {
-        "sheets.spreadsheet_id": "Set CITATION_SPREADSHEET_ID in secrets/.env or add to config.json",
+        "sheets.spreadsheet_id": "Set CITATION_SPREADSHEET_ID in secrets/.env.agent or add to config.json",
         "sheets.citations_tab": "Add sheets.citations_tab to config.json",
         "sheets.summary_tab": "Add sheets.summary_tab to config.json",
         "nap_path": "Add nap_path to config.json",
@@ -244,7 +246,7 @@ def validate_config(config: dict) -> None:
     if not has_verification and not has_env_verification:
         errors.append(
             "No verification email configured. "
-            "Set CITATION_VERIFICATION_EMAIL in secrets/.env or add email.verification_account to config.json."
+            "Set CITATION_VERIFICATION_EMAIL in secrets/.env.agent or add email.verification_account to config.json."
         )
 
     if errors:

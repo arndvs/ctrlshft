@@ -26,18 +26,21 @@ Clone to `~/dotfiles` on every machine (Windows, Linux VPS, macOS). One `git pul
 ├── prompts/                    ← reusable prompt templates
 │   └── codebase-audit.txt          ruthless audit prompt
 ├── bin/                        ← shell scripts sourced in .bashrc
-│   ├── load-secrets.sh             sources secrets/.env into shell (cross-platform)
+│   ├── load-secrets.sh             sources secrets/.env.agent into shell (non-sensitive only)
+│   ├── run-with-secrets.sh         injects secrets/.env.secrets into a child process
 │   ├── detect-context.sh           auto-detects project type → ACTIVE_CONTEXTS
 │   ├── bootstrap.sh                one-command setup for a fresh machine
 │   └── sync-settings.sh            merge VS Code settings from dotfiles
 ├── secrets/                    ← GITIGNORED — per-machine secrets
-│   ├── .env                        master env vars (from .env.example)
-│   ├── .env.citation               citation-specific env vars
+│   ├── .env.agent                  non-sensitive config (from .env.agent.example)
+│   ├── .env.secrets                credentials/tokens (from .env.secrets.example)
+│   ├── .env                        legacy (kept during migration)
 │   ├── *.json                      GCP service account credentials
 │   └── .venv/                      shared Python venv for Google API scripts
 ├── working/                    ← GITIGNORED — scratch files, migration scripts
-├── .env.example                ← template for secrets/.env (tracked in git)
-└── .env.citation.example       ← template for secrets/.env.citation (citation vars)
+├── .env.example                ← legacy template (kept for reference)
+├── .env.agent.example          ← template for secrets/.env.agent (non-sensitive config)
+└── .env.secrets.example        ← template for secrets/.env.secrets (credentials)
 ```
 
 ## How It Works
@@ -62,12 +65,31 @@ skills/citation-builder-skill/SKILL.md (if relevant)
 
 ### Environment Hardening
 
-Secrets never live in code. The resolution chain:
+Secrets are split into two tiers — agents see config but never credentials:
 
-1. `secrets/.env` sourced into shell by `bin/load-secrets.sh` (added to `.bashrc`)
-2. Scripts read from `os.environ` / `process.env` / `$VAR`
-3. Fallback: `GCP_CREDENTIALS_FILE` env var → auto-discover from `secrets/*.json`
-4. If missing → hard error naming the var and pointing to `.env.example`
+| File | Sourced into shell? | Agent-visible? | Contents |
+|---|---|---|---|
+| `secrets/.env.agent` | Yes (via `load-secrets.sh`) | Yes (in shell env) | Usernames, hosts, spreadsheet IDs, flags |
+| `secrets/.env.secrets` | **No** | **No** | API keys, tokens, passwords |
+
+**How secrets reach scripts:**
+
+1. `load-secrets.sh` sources **only** `.env.agent` into the shell (added to `.bashrc`)
+2. Scripts that need credentials run via `bin/run-with-secrets.sh`:
+   ```bash
+   ~/dotfiles/bin/run-with-secrets.sh python scripts/sheets_client.py
+   ```
+   This injects `.env.secrets` into the child process only — secrets vanish when it exits
+3. Scripts read everything from `os.environ` / `process.env` / `$VAR` as before
+4. If missing → hard error naming the var and pointing to the appropriate `.example` file
+
+**Agent-level protections:**
+
+- Claude Code deny rules in `~/.claude/settings.json` block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` patterns
+- Secrets are never in the shell environment, so agents can't accidentally inherit them
+- `bin/validate-env.sh` checks that secrets are NOT leaking into the shell
+
+> **Setting up deny rules on a new machine/VPS:** The deny rules in `~/.claude/settings.json` are machine-local (not in this repo). After bootstrap, run `validate-env.sh` — if it warns about missing deny rules, copy the `"deny"` array from your local `~/.claude/settings.json` to the new machine's. The rules block agents from running `env`, `printenv`, `cat secrets/*`, `echo $SECRET_VAR`, and similar commands.
 
 ```bash
 # In .bashrc on every machine:
@@ -140,15 +162,17 @@ Skills are self-contained knowledge packages in `skills/`. Each has a `SKILL.md`
 
 ### Environment Variables
 
-`.env.example` documents all supported env vars. Key groups:
+`.env.agent.example` and `.env.secrets.example` document all supported env vars:
 
-| Group            | Vars                                                                    | Used by                              |
-| ---------------- | ----------------------------------------------------------------------- | ------------------------------------ |
-| System           | `PYTHONUTF8`                                                            | All Python scripts                   |
-| GitHub           | `GITHUB_USERNAME`, `GITHUB_PACKAGE_REGISTRY_TOKEN`                      | Git operations, package publishing   |
-| OpenAI           | `OPENAI_API_KEY`                                                        | AI skills, nanobot                   |
-| Google Cloud     | `GCP_CREDENTIALS_FILE`                                                  | Google Sheets/Docs/Drive API scripts |
-| Citation Builder | `CITATION_VAULT_KEY`, `CITATION_EMAIL`, `CITATION_SPREADSHEET_ID`, etc. | Citation campaign automation         |
+| Group            | File          | Vars                                                                    | Used by                              |
+| ---------------- | ------------- | ----------------------------------------------------------------------- | ------------------------------------ |
+| System           | `.env.agent`  | `PYTHONUTF8`                                                            | All Python scripts                   |
+| GitHub (config)  | `.env.agent`  | `GITHUB_USERNAME`                                                       | Git operations                       |
+| GitHub (secret)  | `.env.secrets`| `GITHUB_PACKAGE_REGISTRY_TOKEN`                                         | Package publishing                   |
+| OpenAI           | `.env.secrets`| `OPENAI_API_KEY`                                                        | AI skills, nanobot                   |
+| Google Cloud     | `.env.agent`  | `GCP_CREDENTIALS_FILE`                                                  | Google Sheets/Docs/Drive API scripts |
+| Citation (config)| `.env.agent`  | `CITATION_EMAIL`, `CITATION_SPREADSHEET_ID`, `CITATION_IMAP_HOST`, etc. | Citation campaign automation         |
+| Citation (secret)| `.env.secrets`| `CITATION_VAULT_KEY`, `CITATION_EMAIL_PASSWORD`                         | Citation credential vault, IMAP auth |
 
 ## Prerequisites
 
@@ -168,15 +192,16 @@ bash ~/dotfiles/bin/bootstrap.sh
 
 The bootstrap script is idempotent (safe to re-run) and handles:
 
-- Creating `secrets/.env` from the template
+- Creating `secrets/.env.agent` and `secrets/.env.secrets` from templates
 - Symlinking `~/.claude/CLAUDE.md` and `~/.claude/skills/`
 - Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc`
 - Creating the Python venv with base Google API packages
 
-After running, fill in your secrets and merge VS Code settings:
+After running, fill in your config and secrets, then merge VS Code settings:
 
 ```bash
-$EDITOR ~/dotfiles/secrets/.env
+$EDITOR ~/dotfiles/secrets/.env.agent      # non-sensitive config (usernames, hosts, IDs)
+$EDITOR ~/dotfiles/secrets/.env.secrets    # API keys, tokens, passwords
 bash ~/dotfiles/bin/sync-settings.sh --dry-run   # preview changes
 bash ~/dotfiles/bin/sync-settings.sh              # merge into VS Code Insiders
 source ~/.bashrc
@@ -191,7 +216,8 @@ Clone and bootstrap — same as local, but **do not run `sync-settings.sh` on th
 ```bash
 git clone https://github.com/arndvs/dotfiles.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
-$EDITOR ~/dotfiles/secrets/.env          # fill in API keys (same or VPS-specific values)
+$EDITOR ~/dotfiles/secrets/.env.agent          # fill in non-sensitive config
+$EDITOR ~/dotfiles/secrets/.env.secrets        # fill in API keys
 source ~/.bashrc
 ```
 
@@ -203,7 +229,7 @@ Bootstrap runs a validation step at the end — all checks should pass. If any f
 | --------------------- | ------------------------------------------- | -------------------------------------------------------- |
 | VS Code settings      | Run `sync-settings.sh`                      | Forwarded via Remote SSH — do NOT run `sync-settings.sh` |
 | `~/.claude/CLAUDE.md` | Symlink (or copy on Windows)                | Symlink                                                  |
-| `secrets/.env`        | Your local API keys                         | Same keys or VPS-specific overrides                      |
+| `secrets/.env.*`    | Your local API keys (split: agent + secrets) | Same keys or VPS-specific overrides                      |
 | Python venv           | Created by bootstrap                        | Created by bootstrap                                     |
 | Shell integration     | `.bashrc` / `.zshrc` (bootstrap wires both) | `.bashrc` / `.zshrc` (bootstrap wires both)              |
 
@@ -262,8 +288,10 @@ cp ~/dotfiles/CLAUDE.md ~/.claude/CLAUDE.md
 
 ```bash
 mkdir -p ~/dotfiles/secrets
-cp ~/dotfiles/.env.example ~/dotfiles/secrets/.env
-# Edit secrets/.env — fill in your API keys
+cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent
+cp ~/dotfiles/.env.secrets.example ~/dotfiles/secrets/.env.secrets
+# Edit .env.agent — fill in non-sensitive config (usernames, hosts, IDs)
+# Edit .env.secrets — fill in API keys, tokens, passwords
 ```
 
 #### 4. Wire Up Shell
@@ -328,13 +356,14 @@ echo $ACTIVE_CONTEXTS  # should include "nextjs"
 
 ## Scripts Reference
 
-| Script                  | Purpose                                                    | Flags                   |
-| ----------------------- | ---------------------------------------------------------- | ----------------------- |
-| `bin/bootstrap.sh`      | One-command machine setup — secrets, symlinks, shell, venv | (none)                  |
-| `bin/sync-settings.sh`  | Merge `settings.json` into VS Code user settings           | `--dry-run`, `--stable` |
-| `bin/load-secrets.sh`   | Source `secrets/.env` into current shell                   | (sourced, not run)      |
-| `bin/detect-context.sh` | Detect project type, export `ACTIVE_CONTEXTS`              | (sourced, not run)      |
-| `bin/validate-env.sh`   | Validate all prerequisite env vars are set                 | `--all`                 |
+| Script                  | Purpose                                                           | Flags                   |
+| ----------------------- | ----------------------------------------------------------------- | ----------------------- |
+| `bin/bootstrap.sh`      | One-command machine setup — secrets, symlinks, shell, venv        | (none)                  |
+| `bin/sync-settings.sh`  | Merge `settings.json` into VS Code user settings                  | `--dry-run`, `--stable` |
+| `bin/load-secrets.sh`   | Source `secrets/.env.agent` (non-sensitive config) into shell      | (sourced, not run)      |
+| `bin/run-with-secrets.sh`| Inject `secrets/.env.secrets` into a child process at runtime     | (wraps a command)       |
+| `bin/detect-context.sh` | Detect project type, export `ACTIVE_CONTEXTS`                     | (sourced, not run)      |
+| `bin/validate-env.sh`   | Validate env vars and hardening posture                           | `--all`                 |
 
 `sync-settings.sh` details:
 
@@ -349,7 +378,8 @@ echo $ACTIVE_CONTEXTS  # should include "nextjs"
 - **Don't use PHP?** Delete `instructions/php.instructions.md` and remove its `@` reference from `CLAUDE.md`
 - **Add a new stack?** Create `instructions/yourstack.instructions.md`, add a conditional `@` reference in `CLAUDE.md`, and add detection to `bin/detect-context.sh`
 - **Add a skill?** Create `skills/your-skill/SKILL.md` — VS Code discovers it automatically via the `instructionsFilesLocations` setting
-- **New secrets?** Add the key name to `.env.example`, add the value to `secrets/.env`
+- **New config?** Add the key to `.env.agent.example`, add the value to `secrets/.env.agent`
+- **New secrets?** Add the key to `.env.secrets.example`, add the value to `secrets/.env.secrets`
 - **Sync VS Code settings?** Run `bash ~/dotfiles/bin/sync-settings.sh --dry-run` to preview, then without `--dry-run` to apply
 
 ## Updating
@@ -377,10 +407,12 @@ On a VPS, skip `sync-settings.sh` — VS Code Remote SSH forwards settings from 
 - If it's a regular file (not a symlink), re-run `bash ~/dotfiles/bin/bootstrap.sh`
 - Check that `chat.instructionsFilesLocations` includes `"~/dotfiles": true` in your VS Code settings
 
-**`secrets/.env not found` warning on shell startup**
+**`secrets/.env.agent not found` warning on shell startup**
 
-- Run: `cp ~/dotfiles/.env.example ~/dotfiles/secrets/.env`
-- Fill in your API keys: `$EDITOR ~/dotfiles/secrets/.env`
+- Run: `cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent`
+- Fill in non-sensitive config: `$EDITOR ~/dotfiles/secrets/.env.agent`
+- Run: `cp ~/dotfiles/.env.secrets.example ~/dotfiles/secrets/.env.secrets`
+- Fill in API keys and tokens: `$EDITOR ~/dotfiles/secrets/.env.secrets`
 
 **`sync-settings.sh` fails on VPS**
 
@@ -402,7 +434,7 @@ On a VPS, skip `sync-settings.sh` — VS Code Remote SSH forwards settings from 
 | Decision                             | Rationale                                                                                                                                                                   |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `~/dotfiles` path hardcoded          | Every script, instruction, and shell snippet uses `~/dotfiles`. This is the contract — don't rename.                                                                        |
-| Secrets gitignored, template tracked | `secrets/` never leaves the machine. `.env.example` is the schema.                                                                                                          |
+| Secrets gitignored, template tracked | `secrets/` never leaves the machine. `.env.agent.example` and `.env.secrets.example` are the schemas.                                                                              |
 | Skills in repo, not `~/.agents/`     | Third-party skill managers update `~/.agents/skills/` independently. Our custom skills live in `~/dotfiles/skills/` so they're version-controlled and sync across machines. |
 | Python venv inside `secrets/`        | The venv is machine-specific (different OS, Python version) and gitignored alongside secrets. Rebuilt per-machine by `bootstrap.sh`.                                        |
 | JSONC settings, not JSON             | VS Code `settings.json` uses JSONC (comments, trailing commas). `sync-settings.sh` handles this with a Python JSONC parser.                                                 |
