@@ -147,7 +147,7 @@ Features are scored on four weighted axes:
 | `output/portfolio-data.json` | Structured JSON for programmatic use |
 | `output/state.json` | Persistent state supporting resume |
 | `output/screenshots/` | Annotated screenshots organized by session/feature |
-| `output/sessions/` | JSONL session logs for debugging |
+| `output/session_logs/` | JSONL session logs for debugging |
 
 ## Supported Frameworks
 

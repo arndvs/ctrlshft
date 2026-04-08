@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     config["_skip_server"] = args.skip_server
 
     session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    log_dir = Path(config.get("output_dir", "./output")) / "sessions"
+    log_dir = Path(config.get("output_dir", "./output"))
     log_dir.mkdir(parents=True, exist_ok=True)
 
     logger = SessionLogger(str(log_dir), session_id)
