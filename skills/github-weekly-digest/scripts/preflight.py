@@ -6,6 +6,7 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -37,7 +38,23 @@ def run_preflight(config_path: str) -> bool:
     else:
         print("  ✓ .gitignore present and covers config.json")
 
-    # 2. GitHub
+    # 2. Env var overlay check
+    _SECRET_VARS = ["GITHUB_TOKEN", "ANTHROPIC_API_KEY", "SANITY_TOKEN"]
+    env_present = [v for v in _SECRET_VARS if os.environ.get(v)]
+    env_missing = [v for v in _SECRET_VARS if not os.environ.get(v)]
+    if env_present:
+        print(f"  ✓ Env vars present: {', '.join(env_present)}")
+    if env_missing:
+        if all(config.get(k) for k in ["github_token", "anthropic_api_key", "sanity_token"]):
+            print(f"  ⚠  Env vars missing ({', '.join(env_missing)}) — falling back to config.json values")
+            print("     Recommended: use run-with-secrets.sh to inject tokens from .env.secrets")
+        else:
+            errors.append(
+                f"Secret env vars missing and not in config.json: {env_missing}. "
+                f"Run via: ~/dotfiles/bin/run-with-secrets.sh python -m scripts.preflight"
+            )
+
+    # 3. GitHub
     try:
         from github import Github
         gh = Github(config["github_token"])
@@ -56,7 +73,7 @@ def run_preflight(config_path: str) -> bool:
     except Exception as e:
         errors.append(f"GitHub API failed: {e}")
 
-    # 3. Anthropic
+    # 4. Anthropic
     try:
         import anthropic
         anthropic.Anthropic(api_key=config["anthropic_api_key"])
@@ -67,7 +84,7 @@ def run_preflight(config_path: str) -> bool:
     except Exception as e:
         errors.append(f"Anthropic config failed: {e}")
 
-    # 4. Sanity
+    # 5. Sanity
     try:
         from scripts.sanity_publisher import SanityPublisher
         publisher = SanityPublisher(config)
@@ -84,7 +101,7 @@ def run_preflight(config_path: str) -> bool:
     except Exception as e:
         errors.append(f"Sanity connection failed: {e}")
 
-    # 5. Prompt templates
+    # 6. Prompt templates
     from pathlib import Path as _Path
     pt = _Path("references/prompt_templates.md")
     if pt.exists():
@@ -97,7 +114,7 @@ def run_preflight(config_path: str) -> bool:
     else:
         print("  ⚠  references/prompt_templates.md not found (builtin prompts will be used)")
 
-    # 6. Output directory
+    # 7. Output directory
     try:
         from scripts.shared_utils import ensure_output_dir
         out = ensure_output_dir(config)
@@ -105,7 +122,7 @@ def run_preflight(config_path: str) -> bool:
     except Exception as e:
         errors.append(f"Could not create output directory: {e}")
 
-    # 7. private_repos config
+    # 8. private_repos config
     private_mode = config.get("private_repos", "include")
     valid_modes = ("include", "skip", "summarize_only")
     if private_mode not in valid_modes:

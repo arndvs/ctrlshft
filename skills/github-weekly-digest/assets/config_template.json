@@ -1,20 +1,15 @@
 {
-  "_comment": "Copy to config.json. Fill in values. Remove this _comment field. Add config.json to .gitignore.",
+  "_comment": "Copy to config.json. Tokens come from env vars via run-with-secrets.sh. Add config.json to .gitignore.",
 
   "github_username": "your-github-username",
-  "github_token": "ghp_...",
   "excluded_repos": [],
   "skip_forks": false,
   "include_orgs": [],
   "max_diff_files": 20,
   "private_repos": "include",
 
-  "anthropic_api_key": "sk-ant-...",
   "ai_model": "claude-sonnet-4-6",
 
-  "sanity_project_id": "your-project-id",
-  "sanity_dataset": "production",
-  "sanity_token": "sk...",
   "sanity_api_version": "2024-01-01",
 
   "digest": {

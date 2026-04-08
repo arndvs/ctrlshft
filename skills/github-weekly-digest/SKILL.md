@@ -21,19 +21,26 @@ Automated pipeline: GitHub commits → AI analysis → narrative blog post → S
 source ~/dotfiles/secrets/.venv/bin/activate
 pip install PyGithub anthropic requests
 
-# 2. Protect your secrets before anything else
-cp assets/.gitignore .gitignore
-
-# 3. Configure
+# 2. Configure non-sensitive settings
 cp assets/config_template.json config.json
-# Edit config.json — fill in all required fields
+# Edit config.json — fill in github_username, ai_model, digest preferences
 
-# 4. Add Sanity schema types (weeklyDigest + dailyDigest)
+# 3. Add tokens to secrets/.env.secrets (process-scoped, never in shell)
+# GITHUB_TOKEN=ghp_...
+# ANTHROPIC_API_KEY=sk-ant-...
+# SANITY_TOKEN=sk...
+# See ~/dotfiles/.env.secrets.example for the full list
+
+# 4. Add non-sensitive Sanity config to secrets/.env.agent
+# SANITY_PROJECT_ID=your-project-id
+# SANITY_DATASET=production
+
+# 5. Add Sanity schema types (weeklyDigest + dailyDigest)
 # Copy assets/sanity_schema.js to your Sanity project, import both exports, deploy:
 #   npx sanity deploy
 
-# 5. Pre-flight
-python -m scripts.preflight --config config.json
+# 6. Pre-flight (must run via run-with-secrets.sh to inject tokens)
+~/dotfiles/bin/run-with-secrets.sh python -m scripts.preflight --config config.json
 ```
 
 See `references/setup.md` for full token setup, org repo config, and private repo handling.
@@ -70,38 +77,41 @@ github-weekly-digest/
 
 ## Running
 
+All commands must be run via `run-with-secrets.sh` to inject API tokens:
+
 ```bash
 source ~/dotfiles/secrets/.venv/bin/activate  # always activate first
+alias digest='~/dotfiles/bin/run-with-secrets.sh python -m scripts.run_digest --config config.json'
 
 # Weekly (default)
-python -m scripts.run_digest --config config.json
+digest
 
 # Daily
-python -m scripts.run_digest --config config.json --cadence daily
+digest --cadence daily
 
 # Weekly rollup from saved daily files
-python -m scripts.run_digest --config config.json --cadence rollup
+digest --cadence rollup
 
 # Rollup + fetch any missing days from GitHub
-python -m scripts.run_digest --config config.json --cadence rollup --fill-gaps
+digest --cadence rollup --fill-gaps
 
 # Dry run (analyze, save files, don't publish)
-python -m scripts.run_digest --config config.json --dry-run
+digest --dry-run
 
 # Custom date range
-python -m scripts.run_digest --config config.json --since 2025-01-06 --until 2025-01-12
+digest --since 2025-01-06 --until 2025-01-12
 
 # Single repo (for testing)
-python -m scripts.run_digest --config config.json --repo my-project
+digest --repo my-project
 
 # Reuse saved analysis (skip AI re-analysis after a crash)
-python -m scripts.run_digest --config config.json --reuse-analysis
+digest --reuse-analysis
 
 # Force overwrite existing Sanity draft
-python -m scripts.run_digest --config config.json --force
+digest --force
 
 # Pre-flight only
-python -m scripts.preflight --config config.json
+~/dotfiles/bin/run-with-secrets.sh python -m scripts.preflight --config config.json
 ```
 
 ---
