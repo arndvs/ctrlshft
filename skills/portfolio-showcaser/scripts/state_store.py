@@ -117,10 +117,8 @@ class JsonStateStore:
 
         if focus == "responsive":
             pending = [f for f in pending if f.get("status") in ("screenshotted", "scored", "discovered")]
-        elif focus == "edge-cases":
+        elif focus == "edge_cases":
             pending = [f for f in pending if f.get("exploration_priority") in ("must", "should")]
-        elif focus == "freestyle":
-            pass
 
         def score_key(f: dict) -> int:
             try:
