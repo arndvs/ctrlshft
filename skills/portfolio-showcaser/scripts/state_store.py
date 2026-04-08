@@ -16,6 +16,7 @@ Usage:
 
 import json
 import os
+import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -50,6 +51,7 @@ class JsonStateStore:
 
     def save(self) -> None:
         """Atomic write: write to .tmp then rename."""
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp_path = tempfile.mkstemp(
             dir=self.state_path.parent,
             suffix=".tmp",
@@ -58,6 +60,8 @@ class JsonStateStore:
             os.write(fd, json.dumps(self._data, indent=2, default=str).encode("utf-8"))
             os.close(fd)
             fd = -1
+            if sys.platform == "win32" and self.state_path.exists():
+                self.state_path.unlink()
             Path(tmp_path).replace(self.state_path)
         except Exception:
             if fd >= 0:
