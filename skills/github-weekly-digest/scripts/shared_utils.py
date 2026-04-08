@@ -7,6 +7,7 @@ in this codebase — always use datetime.now(timezone.utc).
 
 import json
 import logging
+import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -16,7 +17,12 @@ from pathlib import Path
 # ── Config ────────────────────────────────────────────────────────────────────
 
 def load_config(config_path: str) -> dict:
-    """Load and validate config.json. Raises FileNotFoundError or ValueError."""
+    """Load config.json, then overlay secret fields from environment variables.
+
+    Non-sensitive config (github_username, ai_model, etc.) comes from config.json.
+    Sensitive credentials (tokens, API keys) are injected via env vars at runtime
+    using run-with-secrets.sh. Env vars always win over config.json values.
+    """
     path = Path(config_path)
     if not path.exists():
         raise FileNotFoundError(
@@ -26,6 +32,18 @@ def load_config(config_path: str) -> dict:
     with open(path) as f:
         config = json.load(f)
 
+    _ENV_OVERLAY = {
+        "github_token":      "GITHUB_TOKEN",
+        "anthropic_api_key":  "ANTHROPIC_API_KEY",
+        "sanity_token":       "SANITY_TOKEN",
+        "sanity_project_id":  "SANITY_PROJECT_ID",
+        "sanity_dataset":     "SANITY_DATASET",
+    }
+    for config_key, env_var in _ENV_OVERLAY.items():
+        val = os.environ.get(env_var)
+        if val:
+            config[config_key] = val
+
     required = [
         "github_username", "github_token",
         "anthropic_api_key",
@@ -34,8 +52,9 @@ def load_config(config_path: str) -> dict:
     missing = [k for k in required if not config.get(k)]
     if missing:
         raise ValueError(
-            f"config.json is missing required fields: {missing}\n"
-            f"See assets/config_template.json for all required fields."
+            f"Missing required config: {missing}\n"
+            f"Set via env vars (run-with-secrets.sh) or config.json.\n"
+            f"See assets/config_template.json and ~/dotfiles/.env.secrets.example."
         )
     return config
 
@@ -168,6 +187,19 @@ def save_json(path: Path, data) -> None:
     """Save dict or list as formatted JSON."""
     with open(path, "w") as f:
         json.dump(data, f, indent=2, default=str)
+
+
+def strip_fences(raw: str) -> str:
+    """Remove markdown code fences if the model wraps its JSON response."""
+    raw = raw.strip()
+    if raw.startswith("```"):
+        parts = raw.split("```")
+        if len(parts) >= 3:
+            content = parts[1]
+            if content.startswith("json"):
+                content = content[4:]
+            return content.strip()
+    return raw
 
 
 def cleanup_old_outputs(out_dir: Path, retain_days: int) -> None:

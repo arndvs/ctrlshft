@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Optional
 
 from scripts.github_fetcher import RepoActivity
-from scripts.shared_utils import get_logger, TokenUsage
+from scripts.shared_utils import get_logger, TokenUsage, strip_fences
 
 log = get_logger("analyzer")
 
@@ -165,6 +165,7 @@ class CommitAnalyzer:
         repo_data = self._format_repo_data(activity)
         prompt = template.replace("{repo_data}", repo_data)
 
+        raw = ""
         try:
             response = self.client.messages.create(
                 model=self.model,
@@ -181,7 +182,7 @@ class CommitAnalyzer:
             )
 
             raw = response.content[0].text.strip()
-            raw = _strip_fences(raw)
+            raw = strip_fences(raw)
             data = json.loads(raw)
 
             return RepoAnalysis(
@@ -205,7 +206,7 @@ class CommitAnalyzer:
 
         except json.JSONDecodeError as e:
             log.error(f"    JSON parse error for {activity.repo_name}: {e}")
-            log.error(f"    Raw: {raw[:300] if 'raw' in dir() else '(no response)'}")
+            log.error(f"    Raw: {raw[:300] if raw else '(no response)'}")
             return None
         except Exception as e:
             log.error(f"    API error for {activity.repo_name}: {e}")
@@ -246,17 +247,3 @@ class CommitAnalyzer:
                 lines.append(snippet[:400])
 
         return "\n".join(lines)
-
-
-def _strip_fences(raw: str) -> str:
-    """Remove markdown code fences if the model wraps its JSON response."""
-    raw = raw.strip()
-    if raw.startswith("```"):
-        parts = raw.split("```")
-        # parts[0] is empty, parts[1] is the fenced content, etc.
-        if len(parts) >= 3:
-            content = parts[1]
-            if content.startswith("json"):
-                content = content[4:]
-            return content.strip()
-    return raw

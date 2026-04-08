@@ -23,7 +23,7 @@ from pathlib import Path
 from scripts.commit_analyzer import RepoAnalysis
 from scripts.shared_utils import (
     get_logger, week_label, day_label, iso_date,
-    monday_of_week, TokenUsage,
+    monday_of_week, TokenUsage, strip_fences,
 )
 
 log = get_logger("writer")
@@ -205,6 +205,7 @@ class NarrativeWriter:
 
         max_tokens = 1500 if cadence == "daily" else 4096
 
+        raw = ""
         try:
             response = self.client.messages.create(
                 model=self.model,
@@ -221,7 +222,7 @@ class NarrativeWriter:
             )
 
             raw = response.content[0].text.strip()
-            raw = _strip_fences(raw)
+            raw = strip_fences(raw)
             data = json.loads(raw)
 
         except json.JSONDecodeError as e:
@@ -229,7 +230,7 @@ class NarrativeWriter:
             # Salvage: save raw response so user can manually recover
             if out_dir and date_prefix:
                 salvage_path = out_dir / f"{date_prefix}_narrative_raw.txt"
-                salvage_path.write_text(raw if "raw" in dir() else "(no response)")
+                salvage_path.write_text(raw or "(no response)")
                 log.error(f"  Raw response saved to: {salvage_path}")
                 log.error("  You can manually extract the post from that file.")
             raise RuntimeError(
@@ -330,15 +331,3 @@ class NarrativeWriter:
                 )
 
         return "\n".join(lines)
-
-
-def _strip_fences(raw: str) -> str:
-    raw = raw.strip()
-    if raw.startswith("```"):
-        parts = raw.split("```")
-        if len(parts) >= 3:
-            content = parts[1]
-            if content.startswith("json"):
-                content = content[4:]
-            return content.strip()
-    return raw
