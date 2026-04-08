@@ -23,7 +23,7 @@ Before running Google API scripts, activate the venv:
 source ~/dotfiles/secrets/.venv/bin/activate
 ```
 
-Credentials: Resolved via the `GCP_CREDENTIALS_FILE` environment variable (preferred), or auto-discovered from `~/dotfiles/secrets/*.json` if only one JSON file exists. Set the env var in `~/dotfiles/secrets/.env`.
+Credentials: Resolved via the `GCP_CREDENTIALS_FILE` environment variable (preferred), or auto-discovered from `~/dotfiles/secrets/*.json` if only one JSON file exists. Set the env var in `~/dotfiles/secrets/.env.agent`.
 
 Scopes:
 

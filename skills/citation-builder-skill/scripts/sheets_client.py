@@ -179,6 +179,7 @@ class SheetsClient:
         data = []
         for col_name, value in updates.items():
             if col_name not in COL:
+                print(f"  WARNING: update_domain() received unknown column '{col_name}' — skipping. Valid: {sorted(COL.keys())}")
                 continue
             col_letter = _col_index_to_letter(COL[col_name])
             data.append({

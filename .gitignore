@@ -9,11 +9,17 @@ __MACOSX
 .LSOverride
 Icon?
 
+# Python bytecode
+__pycache__/
+*.pyc
+
 # Secrets — NEVER commit
 secrets/
 .env
 .env.*
 !.env.example
+!.env.agent.example
+!.env.secrets.example
 *.vault
 credentials.*
 
@@ -27,3 +33,4 @@ working/
 skills/citation-builder-skill/config.json
 skills/citation-builder-skill/nap.json
 skills/citation-builder-skill/credentials.vault
+skills/github-weekly-digest/config.json

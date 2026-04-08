@@ -2,4 +2,4 @@ nap.json
 *.vault
 evidence/
 *.log
-sessions/
+__pycache__/
