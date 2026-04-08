@@ -38,10 +38,9 @@ PROJECT_SIGNATURES = [
 
 REQUIRED_CONFIG = {
     "repo_path": "Path to the project to analyze",
-    "output.evidence_path": "Where to store screenshots",
-    "output.report_path": "Where to write the portfolio document",
-    "output.state_file": "Path to the JSON state file",
-    "exploration.max_features_per_run": "Feature budget per run",
+    "output_dir": "Directory for reports and evidence",
+    "state_file": "Path to the JSON state file",
+    "exploration.max_features": "Feature budget per run",
 }
 
 
