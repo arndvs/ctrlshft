@@ -45,8 +45,9 @@ class ScreenshotManager:
         "misc",
     ]
 
-    def __init__(self, evidence_root: str):
-        self.evidence_root = Path(evidence_root)
+    def __init__(self, evidence_root: str, session_id: str = ""):
+        root = Path(evidence_root)
+        self.evidence_root = root / session_id if session_id else root
         self.evidence_root.mkdir(parents=True, exist_ok=True)
 
     def feature_dir(self, feature_id: str) -> Path:
