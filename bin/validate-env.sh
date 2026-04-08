@@ -51,12 +51,10 @@ echo "================================================"
 
 # ── Core vars (always checked) ────────────────────────────────────────────────
 echo
-echo "Core Variables:"
-_require PYTHONUTF8 "Should be 1 — set in secrets/.env"
-_require GITHUB_USERNAME "Set in secrets/.env"
-_recommend GITHUB_PACKAGE_REGISTRY_TOKEN "Needed for package publishing"
-_recommend OPENAI_API_KEY "Needed for AI skills"
-_recommend GCP_CREDENTIALS_FILE "Needed for Google API scripts"
+echo "Core Variables (from secrets/.env.agent):"
+_require PYTHONUTF8 "Should be 1 — set in secrets/.env.agent"
+_require GITHUB_USERNAME "Set in secrets/.env.agent"
+_recommend GCP_CREDENTIALS_FILE "Needed for Google API scripts — set in secrets/.env.agent"
 
 # ── Symlink / file checks ────────────────────────────────────────────────────
 echo
@@ -76,10 +74,22 @@ else
     _fail=1
 fi
 
-if [[ -f "$HOME/dotfiles/secrets/.env" ]]; then
-    green "  ✓ secrets/.env exists"
+if [[ -f "$HOME/dotfiles/secrets/.env.agent" ]]; then
+    green "  ✓ secrets/.env.agent exists"
 else
-    red "  ✗ secrets/.env missing — run: cp ~/dotfiles/.env.example ~/dotfiles/secrets/.env"
+    if [[ -f "$HOME/dotfiles/secrets/.env" ]]; then
+        yellow "  ~ secrets/.env exists (legacy) — migrate to .env.agent + .env.secrets"
+        _warn=1
+    else
+        red "  ✗ secrets/.env.agent missing — run: cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent"
+        _fail=1
+    fi
+fi
+
+if [[ -f "$HOME/dotfiles/secrets/.env.secrets" ]]; then
+    green "  ✓ secrets/.env.secrets exists"
+else
+    red "  ✗ secrets/.env.secrets missing — run: cp ~/dotfiles/.env.secrets.example ~/dotfiles/secrets/.env.secrets"
     _fail=1
 fi
 
@@ -118,18 +128,71 @@ if [[ -f "$HOME/.zshrc" ]]; then
         _warn=1
     fi
 fi
+# ── Hardening checks ─────────────────────────────────────────────────────────
+echo
+echo "Environment Hardening:"
 
+# Secrets should NOT be in shell environment
+if [[ -n "${OPENAI_API_KEY:-}" ]]; then
+    red "  ✗ OPENAI_API_KEY is in shell env — should only be in .env.secrets (process-scoped)"
+    _warn=1
+else
+    green "  ✓ OPENAI_API_KEY not in shell env (good — process-scoped only)"
+fi
+
+if [[ -n "${GITHUB_PACKAGE_REGISTRY_TOKEN:-}" ]]; then
+    red "  ✗ GITHUB_PACKAGE_REGISTRY_TOKEN is in shell env — should only be in .env.secrets"
+    _warn=1
+else
+    green "  ✓ GITHUB_PACKAGE_REGISTRY_TOKEN not in shell env (good)"
+fi
+
+if [[ -n "${CITATION_VAULT_KEY:-}" ]]; then
+    red "  ✗ CITATION_VAULT_KEY is in shell env — should only be in .env.secrets"
+    _warn=1
+else
+    green "  ✓ CITATION_VAULT_KEY not in shell env (good)"
+fi
+
+if [[ -n "${CITATION_EMAIL_PASSWORD:-}" ]]; then
+    red "  ✗ CITATION_EMAIL_PASSWORD is in shell env — should only be in .env.secrets"
+    _warn=1
+else
+    green "  ✓ CITATION_EMAIL_PASSWORD not in shell env (good)"
+fi
+
+if [[ -f "$HOME/.claude/settings.json" ]] && grep -q '"deny"' "$HOME/.claude/settings.json" 2>/dev/null; then
+    green "  ✓ Claude Code deny rules configured"
+else
+    yellow "  ~ Claude Code deny rules not found — recommended for agent hardening"
+    _warn=1
+fi
 # ── Citation-specific vars (only with --all) ──────────────────────────────────
 if $CHECK_ALL; then
     echo
-    echo "Citation Builder Variables:"
-    _require CITATION_VAULT_KEY "AES-256 vault key — generate with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
-    _require CITATION_EMAIL "IMAP email for verification polling"
-    _require CITATION_EMAIL_PASSWORD "IMAP password"
+    echo "Citation Builder Variables (from secrets/.env.agent):"
+    _require CITATION_EMAIL "IMAP email for verification polling — set in secrets/.env.agent"
     _recommend CITATION_IMAP_HOST "Defaults to imap.gmail.com if unset"
-    _require CITATION_VERIFICATION_EMAIL "Email for directory registrations"
+    _require CITATION_VERIFICATION_EMAIL "Email for directory registrations — set in secrets/.env.agent"
     _recommend CITATION_BUSINESS_EMAIL "Business email for high-priority directories"
-    _require CITATION_SPREADSHEET_ID "Google Sheet ID for campaign tracking"
+    _require CITATION_SPREADSHEET_ID "Google Sheet ID for campaign tracking — set in secrets/.env.agent"
+
+    echo
+    echo "Citation Secrets (checked in .env.secrets file — not loaded into shell):"
+    _SECRETS_FILE="$HOME/dotfiles/secrets/.env.secrets"
+    if [[ ! -f "$_SECRETS_FILE" ]]; then
+        red "  ✗ secrets/.env.secrets not found — run: cp ~/dotfiles/.env.secrets.example ~/dotfiles/secrets/.env.secrets"
+        _fail=1
+    else
+        for _svar in CITATION_VAULT_KEY CITATION_EMAIL_PASSWORD; do
+            if grep -q "^${_svar}=.\+" "$_SECRETS_FILE" 2>/dev/null; then
+                green "  ✓ $_svar defined in .env.secrets"
+            else
+                red "  ✗ $_svar missing or empty in .env.secrets"
+                _fail=1
+            fi
+        done
+    fi
 
     echo
     echo "Citation Files:"
