@@ -1,3 +1,8 @@
+---
+name: portfolio-showcaser
+description: Automated portfolio-ready codebase analysis and exploration. Discovers standout features, scores them for portfolio impact, starts the dev server, guides agent-driven browser exploration, and generates a markdown report with annotated screenshots. Use when the user wants to showcase a project, generate a portfolio report, prepare for interviews, or find the most impressive features in a codebase. Triggers on: "showcase my project", "portfolio report", "highlight my best features", "what's impressive about this codebase", "prepare for interview", "screenshot my project", "portfolio analysis".
+---
+
 # Portfolio Showcaser Skill
 
 Automated portfolio-ready codebase analysis and exploration. Discovers standout features, scores them for portfolio impact, starts the dev server, guides agent-driven browser exploration, and generates a markdown report with annotated screenshots.
