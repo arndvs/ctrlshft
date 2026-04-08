@@ -239,7 +239,7 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
     1. Call engine.explore_feature(feature, focus=focus)
     2. The method's docstring tells you what browser actions to perform
     3. Use screenshot_mgr.screenshot_path(feature_name, step_name) for paths
-    4. Use screenshot_mgr.annotate(screenshot_path, description) to add context
+    4. Use screenshot_mgr.annotate(screenshot_path, annotation) to add context
     5. If a feature fails, the circuit breaker increments
     6. After all features, optionally call engine.freestyle_explore(base_url)
 

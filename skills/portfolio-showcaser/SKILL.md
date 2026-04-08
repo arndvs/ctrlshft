@@ -117,7 +117,7 @@ During Phase 7, you control the browser. For each feature:
 2. **Wait** for the page to fully load (network idle)
 3. **Read** the focus mode docstring in `exploration_engine.py` for specific actions
 4. **Screenshot** using `screenshot_manager.screenshot_path(feature_name, step_name)`
-5. **Annotate** each screenshot with `screenshot_manager.annotate(path, description)`
+5. **Annotate** each screenshot with `screenshot_manager.annotate(screenshot_path, annotation)`
 6. **Update state** — the engine handles `set_status()` calls
 
 ### Screenshot Step Names
