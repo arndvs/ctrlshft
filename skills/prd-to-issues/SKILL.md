@@ -5,7 +5,7 @@ description: "Break a PRD into independently grabbable GitHub issues with depend
 
 # PRD to Issues
 
-Output "Read PRD to Issues skill." to chat to acknowledge your read this file.
+Output "Read PRD to Issues skill." to chat to acknowledge you read this file.
 
 Use this skill to create GitHub issues from a finalized PRD or plan. Use `technical-fellow` for deeper analysis and planning before issue creation.
 

@@ -5,7 +5,7 @@ description: "Core execution loop for implementing tasks. Use when asked to 'do 
 
 # Do Work
 
-Output "Read Do Work skill." to chat to acknowledge your read this file.
+Output "Read Do Work skill." to chat to acknowledge you read this file.
 
 ## Workflow
 

@@ -5,7 +5,7 @@ description: "Comprehensive implementation planning with vertical slices. Use wh
 
 # Technical Fellow
 
-Output "Technical Fellow ready." to acknowledge this file was read.
+Output "Read Technical Fellow skill." to chat to acknowledge you read this file.
 
 Use this skill for analysis and planning. Use `prd-to-issues` when ready to create GitHub issues from an existing PRD.
 

@@ -5,7 +5,7 @@ description: "Write a Product Requirements Document from a rough idea. Use when 
 
 # Write a PRD
 
-Output "Read Write a PRD skill." to chat to acknowledge your read this file.
+Output "Read Write a PRD skill." to chat to acknowledge you read this file.
 
 ## Process
 

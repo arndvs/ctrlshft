@@ -50,24 +50,6 @@
 	// =============================================================================
 	// LANGUAGE-SPECIFIC FORMATTERS
 	// =============================================================================
-	"[javascript]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode",
-		"editor.formatOnSave": true
-	},
-	"[javascriptreact]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode",
-		"editor.formatOnSave": true
-	},
-	"[typescript]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode",
-		"editor.formatOnSave": true,
-		"editor.formatOnSaveMode": "file"
-	},
-	"[typescriptreact]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode",
-		"editor.formatOnSave": true,
-		"editor.formatOnSaveMode": "file"
-	},
 	"[json]": {
 		"editor.defaultFormatter": "vscode.json-language-features"
 	},
@@ -338,10 +320,7 @@
 	// WORKBENCH & UI CUSTOMIZATION
 	// =============================================================================
 	"workbench.colorTheme": "IBM Carbon Color Theme",
-	"workbench.colorCustomizations": {
-		"editorStickyScroll.background": "#232323",
-		"editorStickyScrollHover.background": "#333333"
-	},
+	"workbench.colorCustomizations": {},
 	"workbench.browser.enableChatTools": true,
 	"workbench.browser.openLocalhostLinks": true,
 	"workbench.editor.allowOpenInModalEditor": false,

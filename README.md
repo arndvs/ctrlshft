@@ -24,7 +24,7 @@ Scope a feature. Ship it. Never leave your terminal.
 ```mermaid
 graph TD
     A[Human Intent] --> B["/grill-me — interrogation"]
-    B --> C["/write-a-prd — PRD → GitHub Issue"]
+    B --> C["/write-a-prd — Product Requirements Document (PRD) → GitHub Issue"]
     C --> D["/prd-to-issues — vertical slices → GitHub Issues"]
     D --> E["/do-work — Understand → Plan → Implement → Validate → Commit"]
     E -->|loop| E
@@ -78,10 +78,10 @@ skills/
 
 Secrets split into two tiers. Agents see config, never credentials.
 
-| File | In shell? | Agent-visible? | Contains |
-|---|---|---|---|
-| `secrets/.env.agent` | Yes | Yes | Usernames, hosts, IDs |
-| `secrets/.env.secrets` | No | No | API keys, tokens, passwords |
+| File                   | In shell? | Agent-visible? | Contains                    |
+| ---------------------- | --------- | -------------- | --------------------------- |
+| `secrets/.env.agent`   | Yes       | Yes            | Usernames, hosts, IDs       |
+| `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords |
 
 `run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see.
 
@@ -91,20 +91,20 @@ Secrets split into two tiers. Agents see config, never credentials.
 
 ### Workflow
 
-| Skill | What it does |
-|---|---|
-| `do-work` | Core execution loop — auto-detects your stack's feedback loops (package.json, Makefile, composer.json, pyproject.toml). Understand → Plan → Implement → Validate → Commit. Not hardcoded to any stack. |
-| `grill-me` | Interrogates you about a plan until reaching shared understanding. One question at a time with recommended answers. Explores the codebase instead of asking when it can. |
-| `write-a-prd` | Explores codebase, grills you, sketches deep module interfaces, writes PRD from template, submits as GitHub issue. |
-| `prd-to-issues` | Breaks a PRD into vertical slices — each independently shippable. Categorizes HITL vs AFK. Creates GitHub issues with blocking relationships + a QA issue. |
-| `technical-fellow` | Implementation planning — vertical slices, AFK/HITL classification, dependency graphs, acceptance criteria. |
-| `skill-scaffolder` | Meta-skill — scaffolds new agent skills from proven patterns. Interview → architecture matrix → complete directory. |
-| `explore` | Parallel subagent codebase exploration — decomposes a topic, spawns focused sub-agents, synthesizes a unified summary. |
-| `research` | Caches expensive exploration into a persistent `research.md` — staleness checks, lifecycle management, handoff to downstream skills. |
-| `codebase-audit` | Ruthless code audit — real problems only, grouped by severity. No manufactured issues, no padding. |
-| `improve-architecture` | Finds shallow-module clusters, spawns parallel design agents, recommends the strongest interface, files a GitHub RFC. |
-| `tdd` | Red-green refactor — failing test → implement → refactor. Backend only. One test per vertical slice. |
-| `systematic-debugging` | Root-cause-first — investigate → pattern analysis → hypothesis → fix. Stops guess-and-check thrashing. |
+| Skill                  | What it does                                                                                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `do-work`              | Core execution loop — auto-detects your stack's feedback loops (package.json, Makefile, composer.json, pyproject.toml). Understand → Plan → Implement → Validate → Commit. Not hardcoded to any stack. |
+| `grill-me`             | Interrogates you about a plan until reaching shared understanding. One question at a time with recommended answers. Explores the codebase instead of asking when it can.                               |
+| `write-a-prd`          | Explores codebase, grills you, sketches deep module interfaces, writes Product Requirements Document (PRD) from template, submits as GitHub issue.                                                     |
+| `prd-to-issues`        | Breaks a PRD into vertical slices — each independently shippable. Categorizes HITL vs AFK. Creates GitHub issues with blocking relationships + a QA issue.                                             |
+| `technical-fellow`     | Implementation planning — vertical slices, AFK/HITL classification, dependency graphs, acceptance criteria.                                                                                            |
+| `skill-scaffolder`     | Meta-skill — scaffolds new agent skills from proven patterns. Interview → architecture matrix → complete directory.                                                                                    |
+| `explore`              | Parallel subagent codebase exploration — decomposes a topic, spawns focused sub-agents, synthesizes a unified summary.                                                                                 |
+| `research`             | Caches expensive exploration into a persistent `research.md` — staleness checks, lifecycle management, handoff to downstream skills.                                                                   |
+| `codebase-audit`       | Ruthless code audit — real problems only, grouped by severity. No manufactured issues, no padding.                                                                                                     |
+| `improve-architecture` | Finds shallow-module clusters, spawns parallel design agents, recommends the strongest interface, files a GitHub RFC.                                                                                  |
+| `tdd`                  | Red-green refactor — failing test → implement → refactor. Backend only. One test per vertical slice.                                                                                                   |
+| `systematic-debugging` | Root-cause-first — investigate → pattern analysis → hypothesis → fix. Stops guess-and-check thrashing.                                                                                                 |
 
 ### Your local skills
 
@@ -118,14 +118,14 @@ Add your own to `skills/_local/your-skill/SKILL.md`. Auto-discovered immediately
 
 > **Status: infrastructure ready, activation pending.**
 
-shift is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for AFK mode, direct on host for HITL.
+shift is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
 
 ### Two modes
 
-| Mode | Script | Use when |
-|---|---|---|
-| HITL | `shift/once.sh` | Learning — runs once while you watch |
-| AFK | `shift/afk.sh` | Shipping — loops in Docker sandbox with a max iteration guard |
+| Mode | Script          | Use when                                                      |
+| ---- | --------------- | ------------------------------------------------------------- |
+| HITL | `shift/once.sh` | Learning — runs once while you watch                          |
+| AFK  | `shift/afk.sh`  | Shipping — loops in Docker sandbox with a max iteration guard |
 
 AFK mode: Claude picks a task, implements it, commits, closes the issue, picks the next one. Exits when the backlog is empty (`<promise>NO MORE TASKS</promise>`). You review PRs async.
 
@@ -210,19 +210,19 @@ docker sandbox run claude .
 
 `detect-context.sh` scans the current directory for these file signatures:
 
-| Signal | File | Context |
-|---|---|---|
-| Next.js | `next.config.*` | `nextjs` |
-| React Native | `"react-native"` in `package.json` | `react-native` |
-| React | `"react"` in `package.json` (if not Next/Native) | `react` |
-| Node | `package.json` | `node` |
-| TypeScript | `tsconfig.json` | `typescript` |
-| PHP | `composer.json` | `php` |
-| Sanity | `sanity.config.*`, `sanity.cli.*` | `sanity` |
-| Prisma | `prisma/schema.prisma` | `prisma` |
-| Docker | `Dockerfile`, `docker-compose.*`, `compose.*` | `docker` |
-| Python | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile` | `python` |
-| Laravel | `artisan` | `laravel` |
+| Signal       | File                                                        | Context        |
+| ------------ | ----------------------------------------------------------- | -------------- |
+| Next.js      | `next.config.*`                                             | `nextjs`       |
+| React Native | `"react-native"` in `package.json`                          | `react-native` |
+| React        | `"react"` in `package.json` (if not Next/Native)            | `react`        |
+| Node         | `package.json`                                              | `node`         |
+| TypeScript   | `tsconfig.json`                                             | `typescript`   |
+| PHP          | `composer.json`                                             | `php`          |
+| Sanity       | `sanity.config.*`, `sanity.cli.*`                           | `sanity`       |
+| Prisma       | `prisma/schema.prisma`                                      | `prisma`       |
+| Docker       | `Dockerfile`, `docker-compose.*`, `compose.*`               | `docker`       |
+| Python       | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile` | `python`       |
+| Laravel      | `artisan`                                                   | `laravel`      |
 
 Not all contexts have dedicated instruction files yet — detection scopes skill loading and can trigger custom instructions you add.
 
@@ -230,12 +230,12 @@ Not all contexts have dedicated instruction files yet — detection scopes skill
 
 ### Key VS Code settings
 
-| Setting | Value | Why |
-|---|---|---|
-| `chat.instructionsFilesLocations` | `{"~/dotfiles": true}` | Enables the entire instruction/skill discovery chain |
-| `chat.agent.maxRequests` | `100000` | Prevents agent from stopping mid-task |
-| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000` | Extended thinking for complex reasoning |
-| `chat.exploreAgent.defaultModel` | `Claude Opus 4.6` | Model selection for explore subagent |
+| Setting                                               | Value                  | Why                                                  |
+| ----------------------------------------------------- | ---------------------- | ---------------------------------------------------- |
+| `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true}` | Enables the entire instruction/skill discovery chain |
+| `chat.agent.maxRequests`                              | `100000`               | Prevents agent from stopping mid-task                |
+| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                | Extended thinking for complex reasoning              |
+| `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6`      | Model selection for explore subagent                 |
 
 ---
 
@@ -328,14 +328,14 @@ bash ~/dotfiles/bin/sync-settings.sh
 
 ## Customization
 
-| Want to... | Do this |
-|---|---|
-| Add a new stack | Create `instructions/yourstack.instructions.md`, add detection to `detect-context.sh`, reference in `CLAUDE.base.md`, re-run `bootstrap.sh` |
-| Add a public skill | Create `skills/your-skill/SKILL.md` — auto-discovered |
-| Add a private skill | Create `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored |
-| Add a private instruction | Create `instructions/_local/your-topic.instructions.md`, re-run `bootstrap.sh` |
-| Add config | Add key to `.env.agent.example`, value to `secrets/.env.agent` |
-| Add a secret | Add key to `.env.secrets.example`, value to `secrets/.env.secrets` |
+| Want to...                | Do this                                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Add a new stack           | Create `instructions/yourstack.instructions.md`, add detection to `detect-context.sh`, reference in `CLAUDE.base.md`, re-run `bootstrap.sh` |
+| Add a public skill        | Create `skills/your-skill/SKILL.md` — auto-discovered                                                                                       |
+| Add a private skill       | Create `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored                                                                    |
+| Add a private instruction | Create `instructions/_local/your-topic.instructions.md`, re-run `bootstrap.sh`                                                              |
+| Add config                | Add key to `.env.agent.example`, value to `secrets/.env.agent`                                                                              |
+| Add a secret              | Add key to `.env.secrets.example`, value to `secrets/.env.secrets`                                                                          |
 
 ## Updating
 
@@ -354,22 +354,27 @@ source ~/.bashrc
 <summary>Common issues</summary>
 
 **Instructions not loading in Copilot Chat**
+
 - `readlink ~/.claude/CLAUDE.md` — should point to `~/dotfiles/CLAUDE.md`
 - If not a symlink, re-run `bash ~/dotfiles/bin/bootstrap.sh`
 - Verify `chat.instructionsFilesLocations` has `"~/dotfiles": true`
 
 **`secrets/.env.agent not found` on shell startup**
+
 - `cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent`
 - Fill it in: `$EDITOR ~/dotfiles/secrets/.env.agent`
 
 **`sync-settings.sh` fails on VPS**
+
 - Expected. VS Code Remote SSH forwards local settings — don't run sync on VPS.
 
 **`ACTIVE_CONTEXTS` empty**
+
 - `grep "detect-context" ~/.bashrc` — if missing, re-run bootstrap
 - Detection runs on `cd` — navigate into a project first
 
 **Python venv broken**
+
 - `rm -rf ~/dotfiles/secrets/.venv && bash ~/dotfiles/bin/bootstrap.sh`
 
 </details>
