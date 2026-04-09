@@ -16,8 +16,7 @@ set -euo pipefail
 
 _SECRETS_FILE="$HOME/dotfiles/secrets/.env.secrets"
 
-# Legacy fallback for migration period
-_LEGACY_FILE="$HOME/dotfiles/secrets/.env"
+
 
 if [[ $# -eq 0 ]]; then
     echo "Usage: run-with-secrets.sh <command> [args...]" >&2
@@ -29,12 +28,6 @@ if [[ -f "$_SECRETS_FILE" ]]; then
     set -a
     # shellcheck disable=SC1090
     source <(tr -d '\r' < "$_SECRETS_FILE" | grep -v '^\s*#' | grep -v '^\s*$')
-    set +a
-elif [[ -f "$_LEGACY_FILE" ]]; then
-    printf '\033[33m[run-with-secrets] Using legacy secrets/.env — migrate to .env.secrets\033[0m\n' >&2
-    set -a
-    # shellcheck disable=SC1090
-    source <(tr -d '\r' < "$_LEGACY_FILE" | grep -v '^\s*#' | grep -v '^\s*$')
     set +a
 else
     printf '\033[31m[run-with-secrets] secrets/.env.secrets not found\033[0m\n' >&2

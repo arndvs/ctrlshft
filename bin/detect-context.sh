@@ -64,7 +64,7 @@ if [[ -f "prisma/schema.prisma" ]]; then
 fi
 
 # --- Docker ---
-if [[ -f "Dockerfile" ]] || [[ -f "docker-compose.yml" ]] || [[ -f "docker-compose.yaml" ]]; then
+if [[ -f "Dockerfile" ]] || [[ -f "docker-compose.yml" ]] || [[ -f "docker-compose.yaml" ]] || [[ -f "compose.yaml" ]] || [[ -f "compose.yml" ]]; then
     contexts="$contexts,docker"
 fi
 

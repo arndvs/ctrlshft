@@ -7,6 +7,8 @@ description: "Comprehensive implementation planning with vertical slices. Use wh
 
 Output "Technical Fellow ready." to acknowledge this file was read.
 
+Use this skill for analysis and planning. Use `prd-to-issues` when ready to create GitHub issues from an existing PRD.
+
 Act as a Senior Technical Fellow. Ultrathink. Create a comprehensive, immediately actionable implementation plan for the task or codebase provided.
 
 ## Role
@@ -28,7 +30,7 @@ Do not assume missing files exist. If something is absent, flag it as a dependen
 1. **Analyze** — decompose requirements into discrete components
 2. **Slice vertically** — each slice must wire through all layers end-to-end (tracer bullets). No "build all models, then all APIs, then all UI" — each slice delivers a working thin path
 3. **Classify** — label every slice as:
-   - **AFK** — fully autonomous, no human judgment needed. Ralph can execute this in a Docker sandbox
+   - **AFK** — fully autonomous, no human judgment needed. shift can execute this in a Docker sandbox
    - **HITL** — requires human review, taste decisions, or access to external systems the agent can't reach
 4. **Map dependencies** — identify blocking relationships between slices. Build a dependency graph
 5. **Prioritize** — critical bugs → dev infrastructure → tracer bullets → polish → refactors
@@ -78,9 +80,9 @@ Plans are executed by:
 
 - **Human** — reviews plans, makes taste decisions, runs HITL slices, QAs results, files new issues
 - **HITL Agent** — Claude with `--permission-mode accept-edits`, human watches and intervenes
-- **AFK Agent (Ralph)** — Claude in a Docker sandbox consuming a GitHub issues backlog autonomously
+- **AFK Agent (shift)** — Claude in a Docker sandbox consuming a GitHub issues backlog autonomously
 
-Slices labeled AFK will become GitHub issues for Ralph to pick up. They must be self-contained — the issue description alone must be enough for an agent to implement without follow-up questions.
+Slices labeled AFK will become GitHub issues for shift to pick up. They must be self-contained — the issue description alone must be enough for an agent to implement without follow-up questions.
 
 ## Quality Standards
 
@@ -109,3 +111,10 @@ Every slice must include:
 - Skip dependency mapping
 - Produce vague or unmeasurable acceptance criteria
 - Create horizontal slices (all models, then all APIs, then all UI)
+
+## Handoff
+
+After presenting the plan, offer the user:
+
+1. `/prd-to-issues` — create GitHub issues from this plan
+2. `/do-work` — start implementing the first slice immediately

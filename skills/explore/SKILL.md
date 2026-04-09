@@ -7,7 +7,7 @@ description: "Deep codebase exploration using parallel subagents. Use when asked
 
 Output "Read Explore skill." to chat to acknowledge you read this file.
 
-When tasked with understanding, auditing, or investigating any part of a codebase, spawn multiple sub-agents using the `explore` verb to maximize file coverage and depth. Use the `#runSubAgent` tool with `explore` in the prompt to trigger deep traversal mode, allowing the agent to recursively search through directories and files for relevant information.
+When tasked with understanding, auditing, or investigating any part of a codebase, spawn multiple sub-agents using the `explore` verb to maximize file coverage and depth. Use the `runSubagent` tool (or `search_subagent`) with `explore` in the prompt to trigger deep traversal mode, allowing the agent to recursively search through directories and files for relevant information.
 
 ## When to Use This
 
@@ -34,7 +34,7 @@ Trigger this approach when asked to:
 
 ## Rules
 
-- Always use the `#runSubAgent` tool and word **`explore`** when spawning sub-agents — this triggers deep file traversal mode to run MULTIPLE sub-agents in PARALLEL, maximizing coverage and depth
+- Always use the `runSubagent` tool (or `search_subagent`) and the word **`explore`** when spawning sub-agents — this triggers deep file traversal mode to run MULTIPLE sub-agents in PARALLEL, maximizing coverage and depth
 - Each sub-agent should have a **narrow, specific focus** — avoid broad prompts per agent
 - Do not rely on a single agent to cover the full topic
 - After all sub-agents complete, produce a **unified summary** with cross-references between areas

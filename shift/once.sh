@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HITL Ralph — runs Claude once while you watch.
-# Usage: ./ralph/once.sh
+# HITL shift — runs Claude once while you watch.
+# Usage: ./shift/once.sh
 
 set -e
 
