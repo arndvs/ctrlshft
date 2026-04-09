@@ -26,3 +26,8 @@ If working with Sentry, also read:
 
 If working on CSS, styling, or frontend UI, also read:
 @~/dotfiles/instructions/css.instructions.md
+
+## Local Instructions
+
+`bootstrap.sh` auto-appends `@`-references for any `*.instructions.md` files found in `instructions/local/`. Run `bootstrap.sh` after adding new local instruction files.
+
