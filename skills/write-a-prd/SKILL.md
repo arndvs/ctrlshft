@@ -20,32 +20,41 @@ description: "Write a Product Requirements Document from a rough idea. Use when 
 # [Feature Name]
 
 ## Problem Statement
+
 [What problem are we solving? Who has this problem? Why does it matter?]
 
 ## Solution
+
 [High-level description of the approach]
 
 ## User Stories
+
 1. [As a ____, I want ____ so that ____]
 2. ...
 
 ## Implementation Decisions
 
 ### Modules
+
 [Break down into logical modules/components]
 
 ### Technical Decisions
+
 [Key architectural choices, libraries, patterns]
 
 ### Schema Changes
+
 [Database migrations, new tables/columns, API changes]
 
 ## Testing
+
 [What needs to be tested and how]
 
 ## Out of Scope
+
 [Explicitly list what this PRD does NOT cover]
 
 ## Further Notes
+
 [Anything else relevant — edge cases, open questions, future considerations]
 ```

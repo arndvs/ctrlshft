@@ -66,6 +66,7 @@ A final slice (always HITL) that describes how the human verifies everything wor
 ## Execution Context
 
 Plans are executed by:
+
 - **Human** — reviews plans, makes taste decisions, runs HITL slices, QAs results, files new issues
 - **HITL Agent** — Claude with `--permission-mode accept-edits`, human watches and intervenes
 - **AFK Agent (Ralph)** — Claude in a Docker sandbox consuming a GitHub issues backlog autonomously

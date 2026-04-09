@@ -115,23 +115,23 @@ Ralph is a bash loop that runs Claude autonomously inside a Docker sandbox, cons
 
 #### Workflow Skills
 
-| Skill | Purpose |
-|---|---|
-| `do-work` | Core execution loop — Understand → Plan → Implement → Validate → Commit. Auto-detects feedback loops per stack. |
-| `grill-me` | Pre-planning interrogation — one question at a time with recommended answers. Explores codebase to answer questions when possible. |
-| `write-a-prd` | PRD authoring — explores codebase, grills user, writes PRD from template, submits as GitHub issue. |
-| `prd-to-issues` | PRD decomposition — breaks PRD into vertical slices, categorizes HITL/AFK, creates GitHub issues with dependency graph + QA issue. |
+| Skill                  | Purpose                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `do-work`              | Core execution loop — Understand → Plan → Implement → Validate → Commit. Auto-detects feedback loops per stack.                      |
+| `grill-me`             | Pre-planning interrogation — one question at a time with recommended answers. Explores codebase to answer questions when possible.   |
+| `write-a-prd`          | PRD authoring — explores codebase, grills user, writes PRD from template, submits as GitHub issue.                                   |
+| `prd-to-issues`        | PRD decomposition — breaks PRD into vertical slices, categorizes HITL/AFK, creates GitHub issues with dependency graph + QA issue.   |
 | `improve-architecture` | Codebase health — identifies shallow modules, spawns parallel design agents, recommends interface improvements via GitHub issue RFC. |
 
 #### Automation Skills
 
-| Skill | Purpose |
-|---|---|
-| `citation-builder-skill` | Automated local SEO citation building — browser form automation, Google Sheets tracking, email verification, NAP accuracy scoring. |
-| `github-weekly-digest` | "What I shipped" pipeline — GitHub commits → per-repo AI analysis → narrative blog post → Sanity CMS draft. Daily/weekly/rollup cadences. |
-| `portfolio-showcaser` | Browser-driven portfolio analysis — code analysis, feature discovery, 4-axis scoring, dev server interaction, screenshot capture. |
-| `skill-scaffolder` | Meta-skill for creating new agent skills — generates complete skill directories following proven patterns. |
-| `systematic-debugging` | Root-cause-first debugging — four-phase process (investigate → pattern analysis → hypothesis → implementation). Prevents guess-and-check thrashing. |
+| Skill                    | Purpose                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `citation-builder-skill` | Automated local SEO citation building — browser form automation, Google Sheets tracking, email verification, NAP accuracy scoring.                  |
+| `github-weekly-digest`   | "What I shipped" pipeline — GitHub commits → per-repo AI analysis → narrative blog post → Sanity CMS draft. Daily/weekly/rollup cadences.           |
+| `portfolio-showcaser`    | Browser-driven portfolio analysis — code analysis, feature discovery, 4-axis scoring, dev server interaction, screenshot capture.                   |
+| `skill-scaffolder`       | Meta-skill for creating new agent skills — generates complete skill directories following proven patterns.                                          |
+| `systematic-debugging`   | Root-cause-first debugging — four-phase process (investigate → pattern analysis → hypothesis → implementation). Prevents guess-and-check thrashing. |
 
 **Third-party skills** (installed via `find-skills`) live in `~/.agents/skills/` and are symlinked into `~/.copilot/skills/`. Not tracked in this repo.
 
@@ -139,29 +139,29 @@ Ralph is a bash loop that runs Claude autonomously inside a Docker sandbox, cons
 
 `CLAUDE.md` always loads `global.instructions.md` first, then conditionally loads domain-specific files:
 
-| File | Loads when | What it enforces |
-|---|---|---|
-| `global.instructions.md` | Always | DRY, no comments, early returns, strict validation, env-var-only secrets, skill self-learning, code formatting, deep thinking |
-| `nextjs.instructions.md` | Next.js project | Next.js 16 / React 19 / TypeScript / JS patterns |
-| `php.instructions.md` | PHP project | PHP 8.4+ strict OOP |
-| `sanity.instructions.md` | Sanity project | Sanity MCP server reference |
-| `sentry.instructions.md` | Sentry tasks | Sentry MCP server reference |
-| `google-docs.instructions.md` | Google API tasks | Service account auth, Sheets/Docs/Slides/Drive API |
-| `css.instructions.md` | CSS / frontend UI | CSS nesting, container queries, logical properties, subgrid |
-| `copywriting.instructions.md` | Copy / ads / design | Ad structure, headline formulas, email sequences, design taste |
-| `codebase-audit.instructions.md` | Audit tasks | Points to `prompts/codebase-audit.txt` |
-| `exploration.instructions.md` | "explore" tasks | Multi-subagent codebase exploration methodology |
-| `technical-fellow.instructions.md` | "technical fellow" | Tracer-bullet-aware planning with HITL/AFK classification |
-| `atomic-commits.instructions.md` | "atomic commits" | One logical change per commit, conventional commit messages |
+| File                               | Loads when          | What it enforces                                                                                                              |
+| ---------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `global.instructions.md`           | Always              | DRY, no comments, early returns, strict validation, env-var-only secrets, skill self-learning, code formatting, deep thinking |
+| `nextjs.instructions.md`           | Next.js project     | Next.js 16 / React 19 / TypeScript / JS patterns                                                                              |
+| `php.instructions.md`              | PHP project         | PHP 8.4+ strict OOP                                                                                                           |
+| `sanity.instructions.md`           | Sanity project      | Sanity MCP server reference                                                                                                   |
+| `sentry.instructions.md`           | Sentry tasks        | Sentry MCP server reference                                                                                                   |
+| `google-docs.instructions.md`      | Google API tasks    | Service account auth, Sheets/Docs/Slides/Drive API                                                                            |
+| `css.instructions.md`              | CSS / frontend UI   | CSS nesting, container queries, logical properties, subgrid                                                                   |
+| `copywriting.instructions.md`      | Copy / ads / design | Ad structure, headline formulas, email sequences, design taste                                                                |
+| `codebase-audit.instructions.md`   | Audit tasks         | Points to `prompts/codebase-audit.txt`                                                                                        |
+| `exploration.instructions.md`      | "explore" tasks     | Multi-subagent codebase exploration methodology                                                                               |
+| `technical-fellow.instructions.md` | "technical fellow"  | Tracer-bullet-aware planning with HITL/AFK classification                                                                     |
+| `atomic-commits.instructions.md`   | "atomic commits"    | One logical change per commit, conventional commit messages                                                                   |
 
 ### Environment Hardening
 
 Secrets are split into two tiers — agents see config but never credentials:
 
-| File | Sourced into shell? | Agent-visible? | Contents |
-|---|---|---|---|
-| `secrets/.env.agent` | Yes (via `load-secrets.sh`) | Yes (in shell env) | Usernames, hosts, spreadsheet IDs, flags |
-| `secrets/.env.secrets` | **No** | **No** | API keys, tokens, passwords |
+| File                   | Sourced into shell?         | Agent-visible?     | Contents                                 |
+| ---------------------- | --------------------------- | ------------------ | ---------------------------------------- |
+| `secrets/.env.agent`   | Yes (via `load-secrets.sh`) | Yes (in shell env) | Usernames, hosts, spreadsheet IDs, flags |
+| `secrets/.env.secrets` | **No**                      | **No**             | API keys, tokens, passwords              |
 
 **How secrets reach scripts:**
 
@@ -184,32 +184,32 @@ Secrets are split into two tiers — agents see config but never credentials:
 
 `bin/detect-context.sh` scans the current directory for file signatures and exports `ACTIVE_CONTEXTS`:
 
-| Signal | File | Context |
-|---|---|---|
-| Next.js | `next.config.*` | `nextjs` |
-| React Native | `"react-native"` in `package.json` | `react-native` |
-| React | `"react"` in `package.json` (if not Next/Native) | `react` |
-| Node | `package.json` | `node` |
-| TypeScript | `tsconfig.json` | `typescript` |
-| PHP | `composer.json` | `php` |
-| Sanity | `sanity.config.*`, `sanity.cli.*` | `sanity` |
-| Prisma | `prisma/schema.prisma` | `prisma` |
-| Docker | `Dockerfile`, `docker-compose.*` | `docker` |
-| Python | `requirements.txt`, `pyproject.toml`, `setup.py` | `python` |
-| Laravel | `artisan` | `laravel` |
+| Signal       | File                                             | Context        |
+| ------------ | ------------------------------------------------ | -------------- |
+| Next.js      | `next.config.*`                                  | `nextjs`       |
+| React Native | `"react-native"` in `package.json`               | `react-native` |
+| React        | `"react"` in `package.json` (if not Next/Native) | `react`        |
+| Node         | `package.json`                                   | `node`         |
+| TypeScript   | `tsconfig.json`                                  | `typescript`   |
+| PHP          | `composer.json`                                  | `php`          |
+| Sanity       | `sanity.config.*`, `sanity.cli.*`                | `sanity`       |
+| Prisma       | `prisma/schema.prisma`                           | `prisma`       |
+| Docker       | `Dockerfile`, `docker-compose.*`                 | `docker`       |
+| Python       | `requirements.txt`, `pyproject.toml`, `setup.py` | `python`       |
+| Laravel      | `artisan`                                        | `laravel`      |
 
 The `.bashrc` integration re-runs detection on every `cd`.
 
 ### Key VS Code Settings
 
-| Setting | Value | Why |
-|---|---|---|
-| `chat.instructionsFilesLocations` | `{"~/dotfiles": true}` | Enables the entire instruction/skill discovery chain |
-| `chat.agent.maxRequests` | `100000` | Prevents agent from stopping mid-task |
-| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000` | Extended thinking for complex reasoning |
-| `github.copilot.chat.responsesApiReasoningEffort` | `xhigh` | Maximum reasoning effort |
-| `chat.exploreAgent.defaultModel` | `Claude Opus 4.6` | Model selection for explore subagent |
-| `claudeCode.allowDangerouslySkipPermissions` | `true` | Claude Code auto-approve |
+| Setting                                               | Value                  | Why                                                  |
+| ----------------------------------------------------- | ---------------------- | ---------------------------------------------------- |
+| `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true}` | Enables the entire instruction/skill discovery chain |
+| `chat.agent.maxRequests`                              | `100000`               | Prevents agent from stopping mid-task                |
+| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                | Extended thinking for complex reasoning              |
+| `github.copilot.chat.responsesApiReasoningEffort`     | `xhigh`                | Maximum reasoning effort                             |
+| `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6`      | Model selection for explore subagent                 |
+| `claudeCode.allowDangerouslySkipPermissions`          | `true`                 | Claude Code auto-approve                             |
 
 ## Ralph: Autonomous Agent Loop
 
@@ -302,12 +302,12 @@ $EDITOR ~/dotfiles/secrets/.env.secrets        # fill in API keys
 source ~/.bashrc
 ```
 
-| Concern | Local machine | VPS |
-|---|---|---|
-| VS Code settings | Run `sync-settings.sh` | Forwarded via Remote SSH |
-| `~/.claude/CLAUDE.md` | Symlink (or copy on Windows) | Symlink |
-| `secrets/.env.*` | Your local API keys | Same keys or VPS-specific overrides |
-| Python venv | Created by bootstrap | Created by bootstrap |
+| Concern               | Local machine                | VPS                                 |
+| --------------------- | ---------------------------- | ----------------------------------- |
+| VS Code settings      | Run `sync-settings.sh`       | Forwarded via Remote SSH            |
+| `~/.claude/CLAUDE.md` | Symlink (or copy on Windows) | Symlink                             |
+| `secrets/.env.*`      | Your local API keys          | Same keys or VPS-specific overrides |
+| Python venv           | Created by bootstrap         | Created by bootstrap                |
 
 **VPS verification:**
 
@@ -389,14 +389,14 @@ cd ~/your-nextjs-project && echo $ACTIVE_CONTEXTS
 
 ## Scripts Reference
 
-| Script | Purpose | Flags |
-|---|---|---|
-| `bin/bootstrap.sh` | One-command machine setup — secrets, symlinks, shell, venv | (none) |
-| `bin/sync-settings.sh` | Merge `settings.json` into VS Code user settings | `--dry-run`, `--stable` |
-| `bin/load-secrets.sh` | Source `secrets/.env.agent` (non-sensitive config) into shell | (sourced, not run) |
-| `bin/run-with-secrets.sh` | Inject `secrets/.env.secrets` into a child process at runtime | (wraps a command) |
-| `bin/detect-context.sh` | Detect project type, export `ACTIVE_CONTEXTS` | (sourced, not run) |
-| `bin/validate-env.sh` | Validate env vars and hardening posture | `--all` |
+| Script                    | Purpose                                                       | Flags                   |
+| ------------------------- | ------------------------------------------------------------- | ----------------------- |
+| `bin/bootstrap.sh`        | One-command machine setup — secrets, symlinks, shell, venv    | (none)                  |
+| `bin/sync-settings.sh`    | Merge `settings.json` into VS Code user settings              | `--dry-run`, `--stable` |
+| `bin/load-secrets.sh`     | Source `secrets/.env.agent` (non-sensitive config) into shell | (sourced, not run)      |
+| `bin/run-with-secrets.sh` | Inject `secrets/.env.secrets` into a child process at runtime | (wraps a command)       |
+| `bin/detect-context.sh`   | Detect project type, export `ACTIVE_CONTEXTS`                 | (sourced, not run)      |
+| `bin/validate-env.sh`     | Validate env vars and hardening posture                       | `--all`                 |
 
 ## Customization
 

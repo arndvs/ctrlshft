@@ -20,6 +20,7 @@ Use subagents to explore the codebase organically. Note where you experience fri
 ### 2. Present Candidates
 
 Present 3-5 clusters of shallow modules that should be deepened. For each candidate, explain:
+
 - Which files/modules are involved
 - Why they're coupled together
 - What friction they create

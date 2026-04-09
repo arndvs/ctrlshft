@@ -57,8 +57,6 @@ After updating, tell the user: "Updated [skill-name] skill: [one-sentence summar
 Read the relevant SKILL.md in full, find the most suitable place to integrate the information in a DRY way, and edit it inline. Only fall back to `## Lessons Learned` if no better location exists. Confirm with: "Saved to [skill-name] skill: [one-sentence summary]."
 </skill-self-learning>
 
-
-
 <database>
 - Do NOT create updated_at column when making new database tables, I do not care about tracking updates
 </database>
@@ -78,4 +76,3 @@ Read the relevant SKILL.md in full, find the most suitable place to integrate th
 <thinking>
 - You must engage in exhaustive, deep-level reasoning. Think deeply about edge cases, data integrity, and architectural consequences before writing code and after refactorings.
 </thinking>
-

@@ -34,8 +34,10 @@ description: "Break a PRD into independently grabbable GitHub issues with depend
 **Blocked by:** #[issue-number], #[issue-number]
 
 ## Description
+
 [What this slice accomplishes end-to-end]
 
 ## Acceptance Criteria
+
 - [ ] [Specific, testable criteria]
 ```
