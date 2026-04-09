@@ -27,7 +27,7 @@ Trigger this approach when asked to:
 
 ## Rules
 
-- Always use the `#runSubAgent` tool and word **`explore`** when spawning sub-agents — this triggers deep file traversal mode
+- Always use the `#runSubAgent` tool and word **`explore`** when spawning sub-agents — this triggers deep file traversal mode to run MULTIPLE sub-agents in PARALLEL, maximizing coverage and depth
 - Each sub-agent should have a **narrow, specific focus** — avoid broad prompts per agent
 - Do not rely on a single agent to cover the full topic
 - After all sub-agents complete, produce a **unified summary** with cross-references between areas
