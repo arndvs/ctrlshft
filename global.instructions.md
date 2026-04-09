@@ -34,6 +34,7 @@ Output "Read global instructions." to chat to acknowledge your read this file.
 - When an API call fails (expired token, auth error, missing permissions), STOP IMMEDIATELY. Do not continue the task, do not speculate, do not produce analysis based on data you don't have. Tell me the exact error, which token/key needs updating and in which file, then wait for me to fix it before continuing
 - After your are done, remove unused imports, scan for DRY violations, broken code, hidden bugs, overengineering, edge cases, your last code changes not being reflected everywhere else in the app
 - When starting long-running server processes (Java servers, dev servers, etc.) from a terminal, ALWAYS redirect output to a log file AND close stdin to prevent VS Code's terminal output monitor from detecting false input prompts: `command > /tmp/server.log 2>&1 < /dev/null &`, and ALWAYS use isBackground: true. Then read the log file with `tail` or `cat` to check output
+- Prefer clearing context and starting fresh over compacting. Repeated compaction leaves sediment — each round loses nuance and accumulates errors. When context is high, commit and start a new conversation
 
 </general>
 
