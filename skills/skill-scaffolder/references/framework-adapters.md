@@ -6,27 +6,28 @@ Reference for skills that need to spin up a local development server. Detect the
 
 ## Detection Signatures
 
-| Framework | File Signature | Package Dependency |
-|---|---|---|
-| Next.js | `next.config.*` | `next` |
-| Remix | `remix.config.*` | `@remix-run/react` |
-| Vite + React | `vite.config.*` | `react`, `vite` |
-| Create React App | — | `react-scripts` |
-| Nuxt | `nuxt.config.*` | `nuxt` |
-| SvelteKit | `svelte.config.*` | `@sveltejs/kit` |
-| Angular | `angular.json` | `@angular/core` |
-| Astro | `astro.config.*` | `astro` |
-| Gatsby | `gatsby-config.*` | `gatsby` |
-| Django | `manage.py` | `django` |
-| Flask | — | `flask` |
-| FastAPI | — | `fastapi` |
-| Rails | `Gemfile` | `rails` |
-| Laravel | `artisan` | `laravel/framework` |
-| Spring Boot | `pom.xml` or `build.gradle` | `spring-boot` |
+| Framework        | File Signature              | Package Dependency  |
+| ---------------- | --------------------------- | ------------------- |
+| Next.js          | `next.config.*`             | `next`              |
+| Remix            | `remix.config.*`            | `@remix-run/react`  |
+| Vite + React     | `vite.config.*`             | `react`, `vite`     |
+| Create React App | —                           | `react-scripts`     |
+| Nuxt             | `nuxt.config.*`             | `nuxt`              |
+| SvelteKit        | `svelte.config.*`           | `@sveltejs/kit`     |
+| Angular          | `angular.json`              | `@angular/core`     |
+| Astro            | `astro.config.*`            | `astro`             |
+| Gatsby           | `gatsby-config.*`           | `gatsby`            |
+| Django           | `manage.py`                 | `django`            |
+| Flask            | —                           | `flask`             |
+| FastAPI          | —                           | `fastapi`           |
+| Rails            | `Gemfile`                   | `rails`             |
+| Laravel          | `artisan`                   | `laravel/framework` |
+| Spring Boot      | `pom.xml` or `build.gradle` | `spring-boot`       |
 
 ## Package Manager Detection
 
 Check in order:
+
 1. `bun.lockb` → `bun`
 2. `pnpm-lock.yaml` → `pnpm`
 3. `yarn.lock` → `yarn`

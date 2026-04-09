@@ -36,6 +36,7 @@ playwright install chromium
 ### For Generated Skills That Use Email Verification
 
 IMAP:
+
 ```bash
 export {PREFIX}_EMAIL="citations@yourdomain.com"
 export {PREFIX}_EMAIL_PASSWORD="your-password"
@@ -76,6 +77,7 @@ creds_file = discover_credentials(config)
 ```
 
 Resolution order:
+
 1. `GCP_CREDENTIALS_FILE` environment variable
 2. `config["credentials_file"]` if set
 3. Auto-discovery: glob `~/dotfiles/secrets/*.json` for service account files

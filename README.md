@@ -21,18 +21,17 @@ bash ~/dotfiles/bin/bootstrap.sh
 
 Scope a feature. Ship it. Never leave your terminal.
 
-```
-/grill-me          Extract requirements — one question at a time
-      ↓
-/write-a-prd       Write a PRD → submit as GitHub issue
-      ↓
-/prd-to-issues     Break PRD into vertical slices → GitHub issues with deps
-      ↓
-/do-work           Understand → Plan → Implement → Validate → Commit
-      ↓  (loops until done)
-shift              AFK loop — picks issues, ships code, closes tickets, repeats
-      ↓
-/improve-architecture   Periodic codebase health → RFC issues → back into the loop
+```mermaid
+graph TD
+    A[Human Intent] --> B["/grill-me — interrogation"]
+    B --> C["/write-a-prd — PRD → GitHub Issue"]
+    C --> D["/prd-to-issues — vertical slices → GitHub Issues"]
+    D --> E["/do-work — Understand → Plan → Implement → Validate → Commit"]
+    E -->|loop| E
+    E --> F["shift — AFK loop consuming GitHub issues backlog"]
+    F -->|loop| F
+    F --> G["Human QA + /improve-architecture"]
+    G -->|new issues| D
 ```
 
 Use any skill individually or chain them. The planning pipeline (grill-me → write-a-prd → prd-to-issues → do-work) hands off between stages.

@@ -11,6 +11,7 @@ Complete code patterns extracted from the citation-builder-skill. Each pattern i
 **Purpose:** Load secrets from env files, merge with config.json, validate everything.
 
 **Customization points:**
+
 - `_ENV_FILES` — which `.env` files to load
 - `ENV_PREFIX` — skill-specific env var prefix (e.g., `PORTFOLIO_`, `SCRAPER_`)
 - `validate_config()` — required keys dict
@@ -195,6 +196,7 @@ def discover_credentials(config: dict = None) -> str:
 **Purpose:** Persistent, human-readable state tracking with exponential backoff retry.
 
 **Customization points:**
+
 - `COL` — column name → index mapping
 - `HEADERS` — header row
 - `STATUS_CODES` — valid statuses
@@ -700,6 +702,7 @@ class SessionLogger:
 **Purpose:** Evidence capture with timestamped, step-ordered filenames per work unit.
 
 **Customization points:**
+
 - `STEP_ORDER` — replace with the workflow steps for your skill's domain
 - `domain_dir` → rename to `unit_dir` if "domain" doesn't fit your work unit
 
