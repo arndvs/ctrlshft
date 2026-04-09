@@ -19,24 +19,31 @@ Audit only what's provided. Do not assume missing files exist. This could be:
 Report in this exact format, grouped by severity:
 
 ## CRITICAL — Will cause bugs or data loss
+
 - [file:line] What's wrong and why it will break
 
 ## SECURITY — Exploitable vulnerabilities
+
 - [file:line] The vulnerability and how it's exploitable
 
 ## DEAD CODE — Unused files, functions, imports, variables
+
 - [file:line] What's dead and safe to delete
 
 ## LOGIC ERRORS — Code that doesn't do what the author intended
+
 - [file:line] What it does vs what it should do
 
 ## RACE CONDITIONS & EDGE CASES — Concurrent access, null states, empty arrays, off-by-one
+
 - [file:line] The scenario that triggers the bug
 
 ## DRY VIOLATIONS — Duplicated logic that should be consolidated
+
 - [file:line] and [file:line] do the same thing
 
 ## INCONSISTENCIES — Same pattern done 2 different ways
+
 - [file:line] vs [file:line] — which convention to pick and why
 
 ## Rules

@@ -21,6 +21,7 @@ Cache expensive exploration into a persistent research.md so implementation conv
 ### 1. Check for Existing Research
 
 If research.md already exists in the project root:
+
 - Read it fully
 - Check the `Generated` date in the header
 - If <7 days old and topic matches: use it as-is, skip to handoff
@@ -72,6 +73,7 @@ Topic: [one-line summary]
 ### 5. Handoff
 
 After research is complete, offer the user three paths:
+
 1. /write-a-prd — capture findings as a formal PRD
 2. /do-work — start implementing with research.md as context
 3. Continue exploring — spawn additional sub-agents for open questions

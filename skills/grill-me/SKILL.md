@@ -16,6 +16,7 @@ If a question can be answered by exploring the codebase, explore the codebase in
 ## Handoff
 
 After reaching shared understanding, offer the user three paths:
+
 1. /write-a-prd — capture decisions as a formal PRD
 2. /prd-to-issues — break directly into GitHub issues
 3. /do-work — start implementing immediately

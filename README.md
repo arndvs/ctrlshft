@@ -399,7 +399,7 @@ cd ~/your-nextjs-project && echo $ACTIVE_CONTEXTS
 | Script                    | Purpose                                                       | Flags                   |
 | ------------------------- | ------------------------------------------------------------- | ----------------------- |
 | `bin/bootstrap.sh`        | One-command machine setup — secrets, symlinks, shell, venv    | (none)                  |
-| `bin/agent-shell.sh`      | Launch a secrets-free shell for AI agent sessions              | (none)                  |
+| `bin/agent-shell.sh`      | Launch a secrets-free shell for AI agent sessions             | (none)                  |
 | `bin/sync-settings.sh`    | Merge `settings.json` into VS Code user settings              | `--dry-run`, `--stable` |
 | `bin/load-secrets.sh`     | Source `secrets/.env.agent` (non-sensitive config) into shell | (sourced, not run)      |
 | `bin/run-with-secrets.sh` | Inject `secrets/.env.secrets` into a child process at runtime | (wraps a command)       |
