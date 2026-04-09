@@ -1,6 +1,6 @@
 Output "Read exploration instructions." to chat to acknowledge you read this file.
 
-When tasked with understanding, auditing, or investigating any part of a codebase, spawn multiple sub-agents using the `explore` verb to maximize file coverage and depth. Use the #runSubAgent tool with `explore` in the prompt to trigger deep traversal mode, allowing the agent to recursively search through directories and files for relevant information.
+When tasked with understanding, auditing, or investigating any part of a codebase, spawn multiple sub-agents using the `explore` verb to maximize file coverage and depth. Use the `#runSubAgent` tool with `explore` in the prompt to trigger deep traversal mode, allowing the agent to recursively search through directories and files for relevant information.
 
 ## When to Use This
 
@@ -27,7 +27,7 @@ Trigger this approach when asked to:
 
 ## Rules
 
-- Always use the word **`explore`** when spawning sub-agents — this triggers deep file traversal mode
+- Always use the `#runSubAgent` tool and word **`explore`** when spawning sub-agents — this triggers deep file traversal mode
 - Each sub-agent should have a **narrow, specific focus** — avoid broad prompts per agent
 - Do not rely on a single agent to cover the full topic
 - After all sub-agents complete, produce a **unified summary** with cross-references between areas
