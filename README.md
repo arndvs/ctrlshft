@@ -118,7 +118,7 @@ Ralph is a bash loop that runs Claude autonomously inside a Docker sandbox, cons
 
 | Skill                  | Purpose                                                                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `do-work`              | Core execution loop — Understand → Plan → Implement → Validate → Commit → Context Check. Auto-detects feedback loops per stack.    |
+| `do-work`              | Core execution loop — Understand → Plan → Implement → Validate → Commit → Context Check. Auto-detects feedback loops per stack.      |
 | `grill-me`             | Pre-planning interrogation — one question at a time with recommended answers. Explores codebase to answer questions when possible.   |
 | `write-a-prd`          | PRD authoring — explores codebase, grills user, sketches modules (deep module analysis), writes PRD from template → GitHub issue.    |
 | `prd-to-issues`        | PRD decomposition — breaks PRD into vertical slices, categorizes HITL/AFK, creates GitHub issues with dependency graph + QA issue.   |

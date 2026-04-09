@@ -47,7 +47,6 @@
 	"prettier.useEditorConfig": true,
 	"prettier.resolveGlobalModules": true,
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
-
 	// =============================================================================
 	// LANGUAGE-SPECIFIC FORMATTERS
 	// =============================================================================
