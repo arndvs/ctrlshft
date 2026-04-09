@@ -192,7 +192,7 @@ docker sandbox run claude .
 │   └── prompt.md                    shared agent prompt
 ├── bin/
 │   ├── bootstrap.sh                 one-command setup, idempotent
-│   ├── agent-shell.sh               secrets-free shell for agent sessions
+│   ├── agent-shell.sh               launches secrets-free shell for agent sessions
 │   ├── sync-settings.sh             merge VS Code settings
 │   ├── load-secrets.sh              sources .env.agent into shell
 │   ├── run-with-secrets.sh          injects .env.secrets into child process
