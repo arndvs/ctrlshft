@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="ctrl.jpg" alt="ctrl logo" width="200" />
+</p>
+
 # ctrl
 
 > Your AI agents, everywhere, autonomous — from a single source of truth.
