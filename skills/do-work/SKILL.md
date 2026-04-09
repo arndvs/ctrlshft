@@ -1,8 +1,11 @@
 ---
+name: do-work
 description: "Core execution loop for implementing tasks. Use when asked to 'do work', 'implement', 'build this', 'fix this', or when working through a plan or backlog item."
 ---
 
 # Do Work
+
+Output "Read Do Work skill." to chat to acknowledge your read this file.
 
 ## Workflow
 
@@ -35,3 +38,9 @@ If no feedback loops are detected, tell the user and ask what validation command
 ### 5. Commit
 
 Once validation passes, commit the work using atomic commit format (one logical change per commit, conventional commit message).
+
+### 6. Context Check
+
+If this is one phase of a multi-phase plan, clear context before starting the next phase. Pass `@prd` and `@plan` to the fresh context.
+
+If context usage is over 40%, clear and start fresh — you're leaving the smart zone where output quality is highest.

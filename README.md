@@ -88,6 +88,7 @@ Ralph is a bash loop that runs Claude autonomously inside a Docker sandbox, cons
 │   ├── write-a-prd/                     PRD authoring → GitHub issue
 │   ├── prd-to-issues/                   PRD → vertical slices → GitHub issues
 │   ├── improve-architecture/            codebase health → RFC issues
+│   ├── tdd/                             red-green refactor (backend-only)
 │   ├── citation-builder-skill/          automated SEO citation building pipeline
 │   ├── github-weekly-digest/            GitHub commits → AI → blog post → Sanity CMS
 │   ├── portfolio-showcaser/             browser-driven portfolio screenshots + reports
@@ -117,11 +118,12 @@ Ralph is a bash loop that runs Claude autonomously inside a Docker sandbox, cons
 
 | Skill                  | Purpose                                                                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `do-work`              | Core execution loop — Understand → Plan → Implement → Validate → Commit. Auto-detects feedback loops per stack.                      |
+| `do-work`              | Core execution loop — Understand → Plan → Implement → Validate → Commit → Context Check. Auto-detects feedback loops per stack.    |
 | `grill-me`             | Pre-planning interrogation — one question at a time with recommended answers. Explores codebase to answer questions when possible.   |
-| `write-a-prd`          | PRD authoring — explores codebase, grills user, writes PRD from template, submits as GitHub issue.                                   |
+| `write-a-prd`          | PRD authoring — explores codebase, grills user, sketches modules (deep module analysis), writes PRD from template → GitHub issue.    |
 | `prd-to-issues`        | PRD decomposition — breaks PRD into vertical slices, categorizes HITL/AFK, creates GitHub issues with dependency graph + QA issue.   |
 | `improve-architecture` | Codebase health — identifies shallow modules, spawns parallel design agents, recommends interface improvements via GitHub issue RFC. |
+| `tdd`                  | Red-green refactor — write failing test → implement → refactor. Backend-only. One test per vertical slice, one slice at a time.      |
 
 #### Automation Skills
 

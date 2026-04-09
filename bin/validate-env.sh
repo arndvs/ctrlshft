@@ -132,33 +132,54 @@ fi
 echo
 echo "Environment Hardening:"
 
-# Secrets should NOT be in shell environment
+# Secrets should NOT be in shell environment — hard failure if leaked
 if [[ -n "${OPENAI_API_KEY:-}" ]]; then
     red "  ✗ OPENAI_API_KEY is in shell env — should only be in .env.secrets (process-scoped)"
-    _warn=1
+    _fail=1
 else
     green "  ✓ OPENAI_API_KEY not in shell env (good — process-scoped only)"
 fi
 
 if [[ -n "${GITHUB_PACKAGE_REGISTRY_TOKEN:-}" ]]; then
     red "  ✗ GITHUB_PACKAGE_REGISTRY_TOKEN is in shell env — should only be in .env.secrets"
-    _warn=1
+    _fail=1
 else
     green "  ✓ GITHUB_PACKAGE_REGISTRY_TOKEN not in shell env (good)"
 fi
 
 if [[ -n "${CITATION_VAULT_KEY:-}" ]]; then
     red "  ✗ CITATION_VAULT_KEY is in shell env — should only be in .env.secrets"
-    _warn=1
+    _fail=1
 else
     green "  ✓ CITATION_VAULT_KEY not in shell env (good)"
 fi
 
 if [[ -n "${CITATION_EMAIL_PASSWORD:-}" ]]; then
     red "  ✗ CITATION_EMAIL_PASSWORD is in shell env — should only be in .env.secrets"
-    _warn=1
+    _fail=1
 else
     green "  ✓ CITATION_EMAIL_PASSWORD not in shell env (good)"
+fi
+
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    red "  ✗ GITHUB_TOKEN is in shell env — should only be in .env.secrets"
+    _fail=1
+else
+    green "  ✓ GITHUB_TOKEN not in shell env (good)"
+fi
+
+if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+    red "  ✗ ANTHROPIC_API_KEY is in shell env — should only be in .env.secrets"
+    _fail=1
+else
+    green "  ✓ ANTHROPIC_API_KEY not in shell env (good)"
+fi
+
+if [[ -n "${SANITY_TOKEN:-}" ]]; then
+    red "  ✗ SANITY_TOKEN is in shell env — should only be in .env.secrets"
+    _fail=1
+else
+    green "  ✓ SANITY_TOKEN not in shell env (good)"
 fi
 
 if [[ -f "$HOME/.claude/settings.json" ]] && grep -q '"deny"' "$HOME/.claude/settings.json" 2>/dev/null; then

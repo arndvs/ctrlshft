@@ -1,8 +1,11 @@
 ---
+name: improve-architecture
 description: "Explore the codebase for architectural improvements using deep module analysis. Use when asked to 'improve architecture', 'improve codebase', 'find shallow modules', 'refactor architecture', or for periodic codebase health checks."
 ---
 
 # Improve Codebase Architecture
+
+Output "Read Improve Codebase Architecture skill." to chat to acknowledge your read this file.
 
 A deep module has a small interface hiding a large implementation. This skill finds opportunities to deepen your codebase.
 

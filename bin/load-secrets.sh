@@ -12,9 +12,6 @@
 
 _DOTFILES_ENV_AGENT="$HOME/dotfiles/secrets/.env.agent"
 
-# Legacy fallback — source old .env only if .env.agent doesn't exist yet (migration period)
-_DOTFILES_ENV_LEGACY="$HOME/dotfiles/secrets/.env"
-
 _source_env() {
     local _tmp
     _tmp=$(mktemp) || { printf '\033[31m[dotfiles] mktemp failed — cannot load %s\033[0m\n' "$1" >&2; return 1; }
@@ -27,14 +24,10 @@ _source_env() {
 
 if [ -f "$_DOTFILES_ENV_AGENT" ]; then
     _source_env "$_DOTFILES_ENV_AGENT"
-elif [ -f "$_DOTFILES_ENV_LEGACY" ]; then
-    printf '\033[33m[dotfiles] Using legacy secrets/.env — migrate to .env.agent + .env.secrets\033[0m\n' >&2
-    printf '\033[33m[dotfiles] See: ~/dotfiles/.env.agent.example and ~/dotfiles/.env.secrets.example\033[0m\n' >&2
-    _source_env "$_DOTFILES_ENV_LEGACY"
 else
     printf '\033[33m[dotfiles] secrets/.env.agent not found — run: cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent\033[0m\n' >&2
 fi
 
 unset -f _source_env
 
-unset _DOTFILES_ENV_AGENT _DOTFILES_ENV_LEGACY
+unset _DOTFILES_ENV_AGENT

@@ -4,7 +4,7 @@ set -euo pipefail
 SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_DIR="$SKILL_DIR/logs"
 
-THIS_MONDAY=$(date -d "last monday" +%Y-%m-%d 2>/dev/null || date -v-sat -v-5d +%Y-%m-%d)
+THIS_MONDAY=$(date -d "last monday" +%Y-%m-%d 2>/dev/null || date -v-monday -v-1w +%Y-%m-%d)
 FRIDAY=$(date -d "yesterday" +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)
 
 mkdir -p "$LOG_DIR"

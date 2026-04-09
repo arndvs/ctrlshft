@@ -4,7 +4,5 @@
 			"path": "."
 		}
 	],
-	"settings": {
-		"workbench.colorTheme": "Night Owl Black"
-	}
+	"settings": {}
 }
