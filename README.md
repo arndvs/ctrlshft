@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="ctrl.jpg" alt="ctrl logo" width="200" />
+  <img src="assets/ctrl.jpg" alt="ctrl logo" width="200" />
 </p>
 
 # ctrl
