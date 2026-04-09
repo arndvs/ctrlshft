@@ -1,5 +1,14 @@
 Output "Read NextJS instructions." to chat to acknowledge your read this file.
 
+<javascript>
+- Only use console.error or console.log or console.warning as a final catch in the app to log an error. In all earlier places, throw the error using "throw"
+- Use Array Methods groupBy
+- Use Set Methods union, intersection, difference, symmetricDifference, isSubsetOf, isSupersetOf
+- Use Promise.withResolvers
+- Use RegExp v Flag
+- Use Iterator Helpers values(), keys(), entries(), map(), filter(), reduce(), find(), some(), every(), toArray()
+</javascript>
+
 <general_nextjs>
 
 - Use icons from lucide-react package.
