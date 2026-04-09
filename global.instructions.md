@@ -16,7 +16,6 @@ Output "Read global instructions." to chat to acknowledge your read this file.
 - Never add a defensive fix using a fallback
 - If front-end or back-end get an unexpected response, print the raw response to help me debug
 - Before using any CSS variable, class, JS function, or utility, verify it actually exists in the codebase. Search for its definition first — never assume a name exists based on convention or naming patterns
-- Do not comment your code
 - When reorganizing or moving elements, check and fix spacing
 - When adding objects such as routes, models, stylesheets, scripts, utils etc. always read a sample existing route to learn about our design patterns and follow them
 - Before changing any shared method, class, or convention, always scan for all existing usages first to understand the established pattern, then follow it consistently
@@ -25,8 +24,7 @@ Output "Read global instructions." to chat to acknowledge your read this file.
 - Use modern APIs and patterns over legacy approaches. Baseline browser support is February 2026
 - When I upload an image for you, describe it with pixel perfect accuracy and aim to replicate it perfectly as close to the image as possible
 - Don't hide functionality in methods appearing as getters or checks.
-- Create skills in ~/dotfiles/skills/ (symlinked to ~/.claude/skills). This is the single source of truth for all skills across all machines
-- Anthropic only: Always use model: "opus" for all Task tool subagents. Never downgrade to haiku or sonnet
+- Create skills in ~/dotfiles/skills/ (symlinked to ~/.claude/skills). Local skills go in ~/dotfiles/skills/local/ (gitignored)
 - For longer operations or migrations, keep scratchdisks, temp data or progress file in a working/ directory in root folder to prevent losing them when the conversation gets compacted. Write long terminal scripts to a temp file in working/ dir with `create_file` first, then execute it with a simple one-line command
 - Never inline multi-line content or text containing quotes in terminal commands. VS Code's `sendText()` corrupts heredocs over ~700 chars and zsh gets stuck in `dquote>` on unmatched quotes. Instead: use `create_file` to write the content to a temp file (e.g. /tmp/body.txt), then either run the file directly or write a small Python wrapper to /tmp/ that reads the file and passes it via subprocess. This covers heredocs, inline scripts, and CLI arguments like `--body "..."`.
 - NEVER print credentials: Not in logs, not in error messages, not in agent outputs.
@@ -36,8 +34,7 @@ Output "Read global instructions." to chat to acknowledge your read this file.
 - When an API call fails (expired token, auth error, missing permissions), STOP IMMEDIATELY. Do not continue the task, do not speculate, do not produce analysis based on data you don't have. Tell me the exact error, which token/key needs updating and in which file, then wait for me to fix it before continuing
 - After your are done, remove unused imports, scan for DRY violations, broken code, hidden bugs, overengineering, edge cases, your last code changes not being reflected everywhere else in the app
 - When starting long-running server processes (Java servers, dev servers, etc.) from a terminal, ALWAYS redirect output to a log file AND close stdin to prevent VS Code's terminal output monitor from detecting false input prompts: `command > /tmp/server.log 2>&1 < /dev/null &`, and ALWAYS use isBackground: true. Then read the log file with `tail` or `cat` to check output
-- When reading skills, you MUST read the ENTIRE SKILL.md file in FULL from line 1 to the end. Use read_file with startLine 1 and endLine 10000. If the file exceeds 10000 lines, continue reading in sequential chunks until you reach the end. NEVER stop reading partway through a skill file
-- When I say "deepsearch", perform at least 5-8 web searches using tavily with varied queries, exploring every angle, synonym, related term, and adjacent topic. Do NOT stop after 2-3 searches. Keep going until results fully repeat with nothing new. Use different phrasings, specific names, niche forums, GitHub forks, PRs, and alternate keywords for each query batch
+
 </general>
 
 <skill-context>
@@ -75,9 +72,7 @@ Standard forward-pass files: plan.md (current plan/PRD), research.md (cached exp
 Aspirational: if context usage is over 40%, proactively suggest wrapping up — but this is a nudge, not an enforceable threshold.
 </handoff>
 
-<database>
-- Do NOT create updated_at column when making new database tables, I do not care about tracking updates
-</database>
+
 
 <code_formatting>
 
@@ -85,9 +80,6 @@ Aspirational: if context usage is over 40%, proactively suggest wrapping up — 
 - Put conditions multiline. Do not wrap single if, else etc. statements. Never put the condition and body on the same line — always break after the condition: `if (x)\n    doSomething();` not `if (x) doSomething();`
 - Single-line conditions without braces
 - Empty line before the start of `if`, `for`, `while`, `foreach`, `try` blocks — not before continuation keywords (`else`, `else if`, `catch`, `finally`)
-- Vertically align `=` in consecutive assignment blocks (not separated by blank lines, comments, or other statements). The longest variable gets exactly 1 space before `=`; shorter variables pad to match
-- In associative arrays, vertically align `=>` arrows. The longest key gets exactly 1 space before `=>`; shorter keys pad to match
-- Do not align `=>` in match expressions. Use a single space before `=>`
 - Never put multiple statements on a single line inside braces. Always expand to multiple lines
   </code_formatting>
 
