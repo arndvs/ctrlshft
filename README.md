@@ -19,12 +19,19 @@ Clone to `~/dotfiles` on every machine (Windows, Linux VPS, macOS). One `git pul
 │   ├── sanity.instructions.md      Sanity CMS MCP tools reference
 │   ├── sentry.instructions.md      Sentry MCP tools reference
 │   ├── google-docs.instructions.md Google API (Sheets, Docs, Slides, Drive)
-│   └── codebase-audit.instructions.md  Audit methodology
+│   ├── codebase-audit.instructions.md  Audit methodology
+│   ├── exploration.instructions.md     Codebase exploration and investigation
+│   ├── technical-fellow.instructions.md Technical fellow planning role
+│   └── atomic-commits.md              Atomic commit workflow rules
 ├── skills/                     ← custom skills (auto-discovered by VS Code)
 │   ├── citation-builder-skill/     automated SEO citation building pipeline
+│   ├── github-weekly-digest/       GitHub commits → AI analysis → blog post → Sanity CMS
+│   ├── portfolio-showcaser/        browser-driven portfolio screenshots + reports
+│   ├── skill-scaffolder/           meta-skill for creating new agent skills
 │   └── systematic-debugging/       root-cause-first debugging methodology
 ├── prompts/                    ← reusable prompt templates
-│   └── codebase-audit.txt          ruthless audit prompt
+│   ├── codebase-audit.txt          ruthless audit prompt
+│   └── technical-fellow.md         technical fellow planning format
 ├── bin/                        ← shell scripts sourced in .bashrc
 │   ├── load-secrets.sh             sources secrets/.env.agent into shell (non-sensitive only)
 │   ├── run-with-secrets.sh         injects secrets/.env.secrets into a child process
@@ -125,6 +132,9 @@ Skills are self-contained knowledge packages in `skills/`. Each has a `SKILL.md`
 | Skill                    | Purpose                                                                                                                                                                                 |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `citation-builder-skill` | Automated local SEO citation building — browser form automation, Google Sheets tracking, email verification, NAP accuracy scoring. Full pipeline from domain list to verified listings. |
+| `github-weekly-digest`   | Automated "what I shipped" pipeline — GitHub commits → per-repo AI analysis → narrative blog post → Sanity CMS draft. Three cadences: daily dev log, weekly post, rollup from daily files. Includes cron wrappers for VPS automation. |
+| `portfolio-showcaser`    | Browser-driven portfolio analysis — code analysis, feature discovery, 4-axis scoring, dev server interaction, screenshot capture, and markdown+JSON report generation. 8-phase pipeline with resume support. |
+| `skill-scaffolder`       | Meta-skill for creating new agent skills — generates complete skill directories with SKILL.md, scripts, config, and references following proven patterns. |
 | `systematic-debugging`   | Root-cause-first debugging methodology — four-phase process (investigate → pattern analysis → hypothesis → implementation). Prevents guess-and-check thrashing.                         |
 
 **Third-party skills** (installed via Copilot skill managers like `find-skills`) live in `~/.agents/skills/` and are symlinked into `~/.copilot/skills/` for VS Code discovery. These are not tracked in this repo — they update independently via their own package managers.
@@ -142,10 +152,16 @@ Skills are self-contained knowledge packages in `skills/`. Each has a `SKILL.md`
 | `sentry.instructions.md`         | Sentry tasks     | Sentry MCP server reference — issue triage, error investigation, release correlation                                       |
 | `google-docs.instructions.md`    | Google API tasks | Service account auth, Sheets/Docs/Slides/Drive API patterns, credential auto-discovery                                     |
 | `codebase-audit.instructions.md` | Audit tasks      | Points to the audit prompt in `prompts/codebase-audit.txt`                                                                 |
+| `exploration.instructions.md`    | "explore" tasks  | Codebase exploration, investigation, and architecture understanding methodology                                              |
+| `technical-fellow.instructions.md`| "technical fellow" | Technical fellow role — ultra-specific implementation plans with action items, team roles, and checklists                  |
+| `atomic-commits.md`              | "atomic commits" | Atomic commit workflow — one logical change per commit, stage carefully, conventional commit messages                        |
 
 ### Prompts
 
-`prompts/codebase-audit.txt` — a reusable audit prompt for a "ruthless senior staff engineer" code review. Reports only real problems grouped by severity (critical, security, dead code, logic errors, race conditions, DRY violations, inconsistencies). No filler.
+| Prompt | Purpose |
+|---|---|
+| `prompts/codebase-audit.txt` | Ruthless senior staff engineer code review — only real problems grouped by severity (critical, security, dead code, logic errors, race conditions, DRY violations, inconsistencies) |
+| `prompts/technical-fellow.md` | Technical fellow planning template — ultra-specific implementation plans with action items, team roles, collaboration framework, and implementation checklists |
 
 ### Key VS Code Settings
 
@@ -173,6 +189,10 @@ Skills are self-contained knowledge packages in `skills/`. Each has a `SKILL.md`
 | Google Cloud     | `.env.agent`  | `GCP_CREDENTIALS_FILE`                                                  | Google Sheets/Docs/Drive API scripts |
 | Citation (config)| `.env.agent`  | `CITATION_EMAIL`, `CITATION_SPREADSHEET_ID`, `CITATION_IMAP_HOST`, etc. | Citation campaign automation         |
 | Citation (secret)| `.env.secrets`| `CITATION_VAULT_KEY`, `CITATION_EMAIL_PASSWORD`                         | Citation credential vault, IMAP auth |
+| Anthropic        | `.env.secrets`| `ANTHROPIC_API_KEY`                                                     | GitHub digest AI analysis, narrative generation |
+| GitHub (token)   | `.env.secrets`| `GITHUB_TOKEN`                                                          | GitHub digest repo/commit fetching |
+| Sanity           | `.env.agent`  | `SANITY_PROJECT_ID`, `SANITY_DATASET`                                   | GitHub digest + portfolio CMS publishing |
+| Sanity (secret)  | `.env.secrets`| `SANITY_TOKEN`                                                          | Sanity API write access |
 
 ## Prerequisites
 
