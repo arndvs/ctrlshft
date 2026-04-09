@@ -13,7 +13,7 @@ Output "Read Write a PRD skill." to chat to acknowledge your read this file.
 
 2. Explore the codebase to understand the existing architecture, conventions, data models, and relevant code paths.
 
-3. Interview the user relentlessly about every aspect of this plan until reaching a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer. Ask questions one at a time. If a question can be answered by exploring the codebase, explore the codebase instead.
+3. Interview the user following the grill-me skill pattern — ask questions one at a time, provide recommended answers, explore the codebase when a question can be answered by code. Focus questions on the problem domain, solution approach, edge cases, and module boundaries.
 
 4. Sketch modules — before writing the PRD, identify the major modules to build or modify. For each module: describe its public interface (what callers see), look for opportunities to extract deep modules (thin interface hiding large implementation), and determine the test boundary (where tests should verify behavior). Confirm module boundaries with the user.
 
