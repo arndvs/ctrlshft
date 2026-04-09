@@ -24,7 +24,7 @@ fi
 # Shared rcfile content — used by both Windows and Linux/macOS paths
 _AGENT_RCFILE=$(cat << 'RCEOF'
 # Minimal agent-safe rc
-source ~/dotfiles/secrets/.env.agent 2>/dev/null
+source <(tr -d '\r' < ~/dotfiles/secrets/.env.agent) 2>/dev/null
 [[ -f ~/dotfiles/bin/detect-context.sh ]] && source ~/dotfiles/bin/detect-context.sh > /dev/null 2>&1
 _load_context() { [[ -f ~/dotfiles/bin/detect-context.sh ]] && source ~/dotfiles/bin/detect-context.sh > /dev/null 2>&1; }
 cd() { builtin cd "$@" && _load_context; }

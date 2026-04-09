@@ -218,7 +218,7 @@ elif [[ -d "$VENV_DIR" ]]; then
     [[ -f "$VENV_DIR/Scripts/python.exe" ]] && _venv_python="$VENV_DIR/Scripts/python.exe"
     [[ -f "$VENV_DIR/bin/python" ]] && _venv_python="$VENV_DIR/bin/python"
     if [[ -n "$_venv_python" ]] && "$_venv_python" --version &>/dev/null; then
-        yellow "  Venv already exists at $VENV_DIR — skipping"
+        yellow "  Venv already exists at $VENV_DIR — skipping creation"
     else
         red "  Venv directory exists but Python binary is broken: $VENV_DIR"
         red "  Fix with: rm -rf $VENV_DIR && bash ~/dotfiles/bin/bootstrap.sh"
@@ -227,23 +227,18 @@ elif [[ -d "$VENV_DIR" ]]; then
 else
     green "  Creating venv with $PYTHON..."
     "$PYTHON" -m venv "$VENV_DIR"
+    green "  Venv created"
+fi
 
-    # Activate (cross-platform)
-    if [[ "$OS" == "windows" ]]; then
-        source "$VENV_DIR/Scripts/activate"
-    else
-        source "$VENV_DIR/bin/activate"
+# Install local skill packages (runs on every bootstrap, not just venv creation)
+if [[ -d "$VENV_DIR" ]]; then
+    _venv_pip=""
+    [[ -f "$VENV_DIR/Scripts/pip.exe" ]] && _venv_pip="$VENV_DIR/Scripts/pip.exe"
+    [[ -f "$VENV_DIR/bin/pip" ]] && _venv_pip="$VENV_DIR/bin/pip"
+    if [[ -n "$_venv_pip" ]] && [[ -f "$DOTFILES/skills/local/requirements.txt" ]]; then
+        "$_venv_pip" install --quiet -r "$DOTFILES/skills/local/requirements.txt"
+        green "  Installed local skill packages from skills/local/requirements.txt"
     fi
-
-    pip install --quiet google-auth google-auth-httplib2 google-api-python-client
-
-    # Install local skill packages if requirements.txt exists
-    if [[ -f "$DOTFILES/skills/local/requirements.txt" ]]; then
-        pip install --quiet -r "$DOTFILES/skills/local/requirements.txt"
-        green "  Installed local skill packages"
-    fi
-
-    green "  Venv created and base packages installed"
 fi
 
 # ── 6. Supply chain attack protection ─────────────────────────────────────────

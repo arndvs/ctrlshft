@@ -10,7 +10,7 @@ Check the $ACTIVE_CONTEXTS environment variable (set by ~/dotfiles/bin/detect-co
 - `php` or `laravel` → @~/dotfiles/instructions/php.instructions.md
 - `sanity` → @~/dotfiles/instructions/sanity.instructions.md
 
-If $ACTIVE*CONTEXTS is not set, fall back to checking for file signatures (next.config.*, composer.json, sanity.config.\_, etc.) and load the matching instructions above.
+If `$ACTIVE_CONTEXTS` is not set, fall back to checking for file signatures (`next.config.*`, `composer.json`, `sanity.config.*`, etc.) and load the matching instructions above.
 
 Output "Active: [list of detected contexts]." to chat (e.g. "Active: nextjs, sanity."). If no contexts were detected, output "Active: none."
 
@@ -26,7 +26,3 @@ If working with Sentry, also read:
 
 If working on CSS, styling, or frontend UI, also read:
 @~/dotfiles/instructions/css.instructions.md
-
-## Local Instructions
-
-`bootstrap.sh` auto-appends `@`-references for any `*.instructions.md` files found in `instructions/local/`. Run `bootstrap.sh` after adding new local instruction files.
