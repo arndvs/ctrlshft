@@ -305,6 +305,8 @@ def merge_daily_analyses(daily_analyses_list: list) -> list:
                     if s not in seen_s:
                         ex.skills_demonstrated.append(s)
                         seen_s.add(s)
+                if a.work_summary and a.work_summary != ex.work_summary:
+                    ex.work_summary += " " + a.work_summary
                 if a.interesting and not ex.interesting:
                     ex.interesting = True
                     ex.interesting_reason = a.interesting_reason
