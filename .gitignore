@@ -29,5 +29,5 @@ working/
 CLAUDE.md
 
 # Local skills and instructions (created by bootstrap.sh, tracked privately via nested git repos)
-skills/local/
-instructions/local/
+skills/_local/
+instructions/_local/

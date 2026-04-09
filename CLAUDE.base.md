@@ -29,5 +29,5 @@ If working on CSS, styling, or frontend UI, also read:
 
 ## Local Instructions
 
-`bootstrap.sh` auto-appends `@`-references for any `*.instructions.md` files found in `instructions/local/`. Run `bootstrap.sh` after adding new local instruction files.
+`bootstrap.sh` auto-appends `@`-references for any `*.instructions.md` files found in `instructions/_local/`. Run `bootstrap.sh` after adding new local instruction files.
 

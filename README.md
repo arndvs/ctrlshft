@@ -58,20 +58,20 @@ detect-context.sh → ACTIVE_CONTEXTS=nextjs,prisma,sanity
   ↓
 loads matching instructions/*.md
   ↓
-skills/ auto-discovered — workflow + your personal local/ skills
+skills/ auto-discovered — workflow + your personal _local/ skills
 ```
 
 The single setting that makes this work: `"chat.instructionsFilesLocations": {"~/dotfiles": true}` — included in the managed `settings.json` and applied by `sync-settings.sh`.
 
 ### Your personal layer, gitignored
 
-`skills/local/` and `instructions/local/` are gitignored directories inside the repo. Drop your private, domain-specific, or business-specific skills there. They're auto-discovered by VS Code and Claude Code alongside the public skills — but they never leave your machine unless you push them somewhere private.
+`skills/_local/` and `instructions/_local/` are gitignored directories inside the repo. Drop your private, domain-specific, or business-specific skills there. They're auto-discovered by VS Code and Claude Code alongside the public skills — but they never leave your machine unless you push them somewhere private.
 
 ```
 skills/
 ├── do-work/           ← public, tracked
 ├── systematic-debugging/   ← public, tracked
-└── local/             ← GITIGNORED — yours alone
+└── _local/            ← GITIGNORED — yours alone
     └── your-skill/SKILL.md
 ```
 
@@ -109,7 +109,7 @@ Secrets split into two tiers. Agents see config, never credentials.
 
 ### Your local skills
 
-Add your own to `skills/local/your-skill/SKILL.md`. Auto-discovered immediately. Gitignored. Can be a private git repo inside the directory if you want version control.
+Add your own to `skills/_local/your-skill/SKILL.md`. Auto-discovered immediately. Gitignored. Can be a private git repo inside the directory if you want version control.
 
 ---
 
@@ -173,7 +173,7 @@ docker sandbox run claude .
 │   ├── sentry.instructions.md
 │   ├── google-docs.instructions.md
 │   ├── css.instructions.md
-│   └── local/                       ← GITIGNORED — your private instructions
+│   └── _local/                      ← GITIGNORED — your private instructions
 ├── skills/
 │   ├── do-work/
 │   ├── grill-me/
@@ -187,7 +187,7 @@ docker sandbox run claude .
 │   ├── improve-architecture/
 │   ├── tdd/
 │   ├── systematic-debugging/
-│   └── local/                       ← GITIGNORED — your private skills
+│   └── _local/                      ← GITIGNORED — your private skills
 ├── shift/
 │   ├── afk.sh                       AFK autonomous loop
 │   ├── once.sh                      HITL single-run
@@ -246,7 +246,7 @@ Bootstrap is idempotent — safe to re-run. It handles:
 - Generating `CLAUDE.md` from `CLAUDE.base.md` + your local instruction files
 - Creating `secrets/.env.agent` and `secrets/.env.secrets` from templates
 - Symlinking `~/.claude/CLAUDE.md` and `~/.claude/skills/`
-- Creating `skills/local/` and `instructions/local/`
+- Creating `skills/_local/` and `instructions/_local/`
 - Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc`
 - Creating the Python venv
 
@@ -324,8 +324,8 @@ bash ~/dotfiles/bin/sync-settings.sh
 |---|---|
 | Add a new stack | Create `instructions/yourstack.instructions.md`, add detection to `detect-context.sh`, reference in `CLAUDE.base.md`, re-run `bootstrap.sh` |
 | Add a public skill | Create `skills/your-skill/SKILL.md` — auto-discovered |
-| Add a private skill | Create `skills/local/your-skill/SKILL.md` — auto-discovered, gitignored |
-| Add a private instruction | Create `instructions/local/your-topic.instructions.md`, re-run `bootstrap.sh` |
+| Add a private skill | Create `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored |
+| Add a private instruction | Create `instructions/_local/your-topic.instructions.md`, re-run `bootstrap.sh` |
 | Add config | Add key to `.env.agent.example`, value to `secrets/.env.agent` |
 | Add a secret | Add key to `.env.secrets.example`, value to `secrets/.env.secrets` |
 
