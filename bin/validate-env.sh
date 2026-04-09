@@ -2,8 +2,7 @@
 # validate-env.sh — Validate all prerequisite environment variables are set.
 #
 # Usage:
-#   bash ~/dotfiles/bin/validate-env.sh          # check core vars only
-#   bash ~/dotfiles/bin/validate-env.sh --all    # check core + citation vars
+#   bash ~/dotfiles/bin/validate-env.sh
 #
 # Exit code: 0 if all required vars pass, 1 if any are missing.
 
@@ -12,11 +11,6 @@ set -euo pipefail
 green()  { printf '\033[32m%s\033[0m\n' "$*"; }
 yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
 red()    { printf '\033[31m%s\033[0m\n' "$*"; }
-
-CHECK_ALL=false
-for arg in "$@"; do
-    [[ "$arg" == "--all" ]] && CHECK_ALL=true
-done
 
 _fail=0
 _warn=0
@@ -147,20 +141,6 @@ else
     green "  ✓ GITHUB_PACKAGE_REGISTRY_TOKEN not in shell env (good)"
 fi
 
-if [[ -n "${CITATION_VAULT_KEY:-}" ]]; then
-    red "  ✗ CITATION_VAULT_KEY is in shell env — should only be in .env.secrets"
-    _fail=1
-else
-    green "  ✓ CITATION_VAULT_KEY not in shell env (good)"
-fi
-
-if [[ -n "${CITATION_EMAIL_PASSWORD:-}" ]]; then
-    red "  ✗ CITATION_EMAIL_PASSWORD is in shell env — should only be in .env.secrets"
-    _fail=1
-else
-    green "  ✓ CITATION_EMAIL_PASSWORD not in shell env (good)"
-fi
-
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
     red "  ✗ GITHUB_TOKEN is in shell env — should only be in .env.secrets"
     _fail=1
@@ -175,56 +155,12 @@ else
     green "  ✓ ANTHROPIC_API_KEY not in shell env (good)"
 fi
 
-if [[ -n "${SANITY_TOKEN:-}" ]]; then
-    red "  ✗ SANITY_TOKEN is in shell env — should only be in .env.secrets"
-    _fail=1
-else
-    green "  ✓ SANITY_TOKEN not in shell env (good)"
-fi
-
 if [[ -f "$HOME/.claude/settings.json" ]] && grep -q '"deny"' "$HOME/.claude/settings.json" 2>/dev/null; then
     green "  ✓ Claude Code deny rules configured"
 else
     yellow "  ~ Claude Code deny rules not found — recommended for agent hardening"
     _warn=1
 fi
-# ── Citation-specific vars (only with --all) ──────────────────────────────────
-if $CHECK_ALL; then
-    echo
-    echo "Citation Builder Variables (from secrets/.env.agent):"
-    _require CITATION_EMAIL "IMAP email for verification polling — set in secrets/.env.agent"
-    _recommend CITATION_IMAP_HOST "Defaults to imap.gmail.com if unset"
-    _require CITATION_VERIFICATION_EMAIL "Email for directory registrations — set in secrets/.env.agent"
-    _recommend CITATION_BUSINESS_EMAIL "Business email for high-priority directories"
-    _require CITATION_SPREADSHEET_ID "Google Sheet ID for campaign tracking — set in secrets/.env.agent"
-
-    echo
-    echo "Citation Secrets (checked in .env.secrets file — not loaded into shell):"
-    _SECRETS_FILE="$HOME/dotfiles/secrets/.env.secrets"
-    if [[ ! -f "$_SECRETS_FILE" ]]; then
-        red "  ✗ secrets/.env.secrets not found — run: cp ~/dotfiles/.env.secrets.example ~/dotfiles/secrets/.env.secrets"
-        _fail=1
-    else
-        for _svar in CITATION_VAULT_KEY CITATION_EMAIL_PASSWORD; do
-            if grep -q "^${_svar}=.\+" "$_SECRETS_FILE" 2>/dev/null; then
-                green "  ✓ $_svar defined in .env.secrets"
-            else
-                red "  ✗ $_svar missing or empty in .env.secrets"
-                _fail=1
-            fi
-        done
-    fi
-
-    echo
-    echo "Citation Files:"
-    if [[ -f "$HOME/dotfiles/skills/citation-builder-skill/config.json" ]]; then
-        green "  ✓ citation config.json exists"
-    else
-        red "  ✗ citation config.json missing — run: cp config.example.json config.json"
-        _fail=1
-    fi
-fi
-
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo
 echo "================================================"
