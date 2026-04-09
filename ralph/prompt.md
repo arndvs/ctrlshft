@@ -18,6 +18,10 @@ If there are no more tasks to complete, output <promise>NO MORE TASKS</promise>.
 
 Explore the repo to understand the codebase structure and the relevant code for the current task.
 
+## Skills
+
+Before starting implementation, check if any skills in ~/.claude/skills/ apply to the current task type. If the task involves debugging, load systematic-debugging. If it needs tests first, load tdd. If it needs a plan, load do-work. Load the relevant SKILL.md before proceeding.
+
 ## Implementation
 
 Complete the task as described in the issue.

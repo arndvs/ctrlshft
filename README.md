@@ -26,10 +26,10 @@ VS Code opens any project
   ↓
 chat.instructionsFilesLocations: {"~/dotfiles": true}
   ↓ discovers
-CLAUDE.md → @global.instructions.md → conditional @instructions/*.md
-  ↓ based on workspace files
-detect-context.sh → ACTIVE_CONTEXTS=nextjs,prisma,sanity
-  ↓ agents load only matching skills
+CLAUDE.md → @global.instructions.md
+  ↓ reads $ACTIVE_CONTEXTS (set by detect-context.sh)
+ACTIVE_CONTEXTS=nextjs,prisma,sanity → loads matching @instructions/*.md
+  ↓ skills auto-discovered by VS Code
 skills/do-work/SKILL.md, skills/grill-me/SKILL.md, etc.
 ```
 
@@ -67,38 +67,43 @@ Ralph is a bash loop that runs Claude autonomously inside a Docker sandbox, cons
 
 ```
 ~/dotfiles/
-├── CLAUDE.md                        ← entry point — routes to instructions
-├── global.instructions.md           ← universal coding rules (81 lines, always loaded)
+├── CLAUDE.md                        ← entry point — routes to instructions via $ACTIVE_CONTEXTS
+├── global.instructions.md           ← universal coding rules (always loaded)
 ├── settings.json                    ← VS Code settings (~220 settings)
-├── instructions/                    ← conditionally loaded per workspace
+├── dotfiles.code-workspace          ← VS Code workspace file
+├── .env.agent.example               ← template for non-sensitive config
+├── .env.secrets.example             ← template for credentials
+├── instructions/                    ← domain-specific rules, loaded per workspace context
 │   ├── nextjs.instructions.md           Next.js 16 / TypeScript / React 19 / JS rules
 │   ├── php.instructions.md              PHP 8.4+ OOP
 │   ├── sanity.instructions.md           Sanity CMS MCP tools reference
 │   ├── sentry.instructions.md          Sentry MCP tools reference
 │   ├── google-docs.instructions.md      Google API (Sheets, Docs, Slides, Drive)
 │   ├── css.instructions.md              CSS nesting, container queries, modern patterns
-│   ├── copywriting.instructions.md      Ad copy, email sequences, headline formulas, design
-│   ├── codebase-audit.instructions.md   Audit methodology
-│   ├── exploration.instructions.md      Codebase exploration and investigation
-│   ├── technical-fellow.instructions.md Technical fellow planning role
-│   └── atomic-commits.instructions.md   Atomic commit workflow rules
+│   └── copywriting.instructions.md      Ad copy, email sequences, headline formulas, design
 ├── skills/                          ← auto-discovered by VS Code
-│   ├── do-work/                         core execution loop
+│   ├── do-work/                         core execution loop (plan → execute → clear)
 │   ├── grill-me/                        pre-planning interrogation
 │   ├── write-a-prd/                     PRD authoring → GitHub issue
 │   ├── prd-to-issues/                   PRD → vertical slices → GitHub issues
+│   ├── technical-fellow/                implementation planning with vertical slices
+│   ├── explore/                         parallel subagent codebase exploration
+│   ├── research/                        cache exploration into persistent research.md
+│   ├── codebase-audit/                  ruthless code audit methodology
 │   ├── improve-architecture/            codebase health → RFC issues
 │   ├── tdd/                             red-green refactor (backend-only)
+│   ├── systematic-debugging/            root-cause-first debugging methodology
 │   ├── citation-builder-skill/          automated SEO citation building pipeline
 │   ├── github-weekly-digest/            GitHub commits → AI → blog post → Sanity CMS
 │   ├── portfolio-showcaser/             browser-driven portfolio screenshots + reports
-│   ├── skill-scaffolder/                meta-skill for creating new agent skills
-│   └── systematic-debugging/            root-cause-first debugging methodology
-├── prompts/                         ← reusable prompt templates
-│   ├── codebase-audit.txt               ruthless audit prompt
-│   └── technical-fellow.md              tracer-bullet-aware planning format
+│   └── skill-scaffolder/                meta-skill for creating new agent skills
+├── ralph/                           ← autonomous agent loop
+│   ├── afk.sh                           AFK loop consuming GitHub issues backlog
+│   ├── once.sh                          HITL single-run mode
+│   └── prompt.md                        shared agent prompt
 ├── bin/                             ← shell scripts sourced in .bashrc
 │   ├── bootstrap.sh                     one-command setup for a fresh machine
+│   ├── agent-shell.sh                   launch a secrets-free shell for agent sessions
 │   ├── sync-settings.sh                 merge VS Code settings from dotfiles
 │   ├── load-secrets.sh                  sources secrets/.env.agent into shell
 │   ├── run-with-secrets.sh              injects secrets/.env.secrets into child process
@@ -118,10 +123,14 @@ Ralph is a bash loop that runs Claude autonomously inside a Docker sandbox, cons
 
 | Skill                  | Purpose                                                                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `do-work`              | Core execution loop — Understand → Plan → Implement → Validate → Commit → Context Check. Auto-detects feedback loops per stack.      |
-| `grill-me`             | Pre-planning interrogation — one question at a time with recommended answers. Explores codebase to answer questions when possible.   |
+| `do-work`              | Core execution loop — Understand → Plan → Implement → Validate → Commit. Auto-detects feedback loops per stack.                      |
+| `grill-me`             | Pre-planning interrogation — one question at a time with recommended answers. Hands off to prd/issues/do-work.                       |
 | `write-a-prd`          | PRD authoring — explores codebase, grills user, sketches modules (deep module analysis), writes PRD from template → GitHub issue.    |
 | `prd-to-issues`        | PRD decomposition — breaks PRD into vertical slices, categorizes HITL/AFK, creates GitHub issues with dependency graph + QA issue.   |
+| `technical-fellow`     | Implementation planning — vertical slices with AFK/HITL classification, dependency graphs, acceptance criteria.                      |
+| `explore`              | Parallel subagent codebase exploration — decomposes topic, spawns focused sub-agents, synthesizes unified summary.                   |
+| `research`             | Cache expensive exploration into persistent research.md — lifecycle management, staleness checks, handoff to downstream skills.      |
+| `codebase-audit`       | Ruthless code audit — reports only real problems grouped by severity. No manufactured issues.                                        |
 | `improve-architecture` | Codebase health — identifies shallow modules, spawns parallel design agents, recommends interface improvements via GitHub issue RFC. |
 | `tdd`                  | Red-green refactor — write failing test → implement → refactor. Backend-only. One test per vertical slice, one slice at a time.      |
 
@@ -139,22 +148,18 @@ Ralph is a bash loop that runs Claude autonomously inside a Docker sandbox, cons
 
 ### Instruction Files
 
-`CLAUDE.md` always loads `global.instructions.md` first, then conditionally loads domain-specific files:
+`CLAUDE.md` always loads `global.instructions.md` first, then loads domain-specific files based on `$ACTIVE_CONTEXTS` (set by `detect-context.sh`). Task-triggered workflows (audit, exploration, planning) are now skills, not instructions.
 
-| File                               | Loads when          | What it enforces                                                                                                              |
-| ---------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `global.instructions.md`           | Always              | DRY, no comments, early returns, strict validation, env-var-only secrets, skill self-learning, code formatting, deep thinking |
-| `nextjs.instructions.md`           | Next.js project     | Next.js 16 / React 19 / TypeScript / JS patterns                                                                              |
-| `php.instructions.md`              | PHP project         | PHP 8.4+ strict OOP                                                                                                           |
-| `sanity.instructions.md`           | Sanity project      | Sanity MCP server reference                                                                                                   |
-| `sentry.instructions.md`           | Sentry tasks        | Sentry MCP server reference                                                                                                   |
-| `google-docs.instructions.md`      | Google API tasks    | Service account auth, Sheets/Docs/Slides/Drive API                                                                            |
-| `css.instructions.md`              | CSS / frontend UI   | CSS nesting, container queries, logical properties, subgrid                                                                   |
-| `copywriting.instructions.md`      | Copy / ads / design | Ad structure, headline formulas, email sequences, design taste                                                                |
-| `codebase-audit.instructions.md`   | Audit tasks         | Points to `prompts/codebase-audit.txt`                                                                                        |
-| `exploration.instructions.md`      | "explore" tasks     | Multi-subagent codebase exploration methodology                                                                               |
-| `technical-fellow.instructions.md` | "technical fellow"  | Tracer-bullet-aware planning with HITL/AFK classification                                                                     |
-| `atomic-commits.instructions.md`   | "atomic commits"    | One logical change per commit, conventional commit messages                                                                   |
+| File                          | Loads when                     | What it enforces                                                                                                                              |
+| ----------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `global.instructions.md`      | Always                         | DRY, no comments, early returns, strict validation, env-var-only secrets, git commits, handoff protocol, skill self-learning, code formatting |
+| `nextjs.instructions.md`      | `ACTIVE_CONTEXTS` has `nextjs` | Next.js 16 / React 19 / TypeScript / JS patterns                                                                                              |
+| `php.instructions.md`         | `ACTIVE_CONTEXTS` has `php`    | PHP 8.4+ strict OOP                                                                                                                           |
+| `sanity.instructions.md`      | `ACTIVE_CONTEXTS` has `sanity` | Sanity MCP server reference                                                                                                                   |
+| `sentry.instructions.md`      | Sentry tasks                   | Sentry MCP server reference                                                                                                                   |
+| `google-docs.instructions.md` | Google API tasks               | Service account auth, Sheets/Docs/Slides/Drive API                                                                                            |
+| `css.instructions.md`         | CSS / frontend UI              | CSS nesting, container queries, logical properties, subgrid                                                                                   |
+| `copywriting.instructions.md` | Copy / ads / design            | Ad structure, headline formulas, email sequences, design taste                                                                                |
 
 ### Environment Hardening
 
@@ -394,6 +399,7 @@ cd ~/your-nextjs-project && echo $ACTIVE_CONTEXTS
 | Script                    | Purpose                                                       | Flags                   |
 | ------------------------- | ------------------------------------------------------------- | ----------------------- |
 | `bin/bootstrap.sh`        | One-command machine setup — secrets, symlinks, shell, venv    | (none)                  |
+| `bin/agent-shell.sh`      | Launch a secrets-free shell for AI agent sessions             | (none)                  |
 | `bin/sync-settings.sh`    | Merge `settings.json` into VS Code user settings              | `--dry-run`, `--stable` |
 | `bin/load-secrets.sh`     | Source `secrets/.env.agent` (non-sensitive config) into shell | (sourced, not run)      |
 | `bin/run-with-secrets.sh` | Inject `secrets/.env.secrets` into a child process at runtime | (wraps a command)       |
@@ -402,7 +408,7 @@ cd ~/your-nextjs-project && echo $ACTIVE_CONTEXTS
 
 ## Customization
 
-- **Add a new stack?** Create `instructions/yourstack.instructions.md`, add a conditional `@` reference in `CLAUDE.md`, and add detection to `bin/detect-context.sh`
+- **Add a new stack?** Create `instructions/yourstack.instructions.md`, add detection to `bin/detect-context.sh`, and map the context to the instruction file in `CLAUDE.md`'s Workspace-Detected Instructions section
 - **Add a skill?** Create `skills/your-skill/SKILL.md` — VS Code discovers it automatically via the `instructionsFilesLocations` setting
 - **Add a workflow skill?** Same as above, but update the Workflow section in this README
 - **New config?** Add the key to `.env.agent.example`, add the value to `secrets/.env.agent`

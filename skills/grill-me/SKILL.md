@@ -12,3 +12,13 @@ Interview me relentlessly about every aspect of this plan until we reach a share
 Ask the questions one at a time.
 
 If a question can be answered by exploring the codebase, explore the codebase instead.
+
+## Handoff
+
+After reaching shared understanding, offer the user three paths:
+
+1. /write-a-prd — capture decisions as a formal PRD
+2. /prd-to-issues — break directly into GitHub issues
+3. /do-work — start implementing immediately
+
+Let the user choose.

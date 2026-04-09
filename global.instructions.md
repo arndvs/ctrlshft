@@ -57,6 +57,24 @@ After updating, tell the user: "Updated [skill-name] skill: [one-sentence summar
 Read the relevant SKILL.md in full, find the most suitable place to integrate the information in a DRY way, and edit it inline. Only fall back to `## Lessons Learned` if no better location exists. Confirm with: "Saved to [skill-name] skill: [one-sentence summary]."
 </skill-self-learning>
 
+<git>
+- One logical change per commit. Never bundle unrelated fixes
+- Review `git diff --staged` before committing. No debug logs or dead code
+- Commit message format: `<type>(<scope>): <short description>` — types: feat, fix, refactor, chore, docs, test
+- Each commit must leave the codebase working — no broken states mid-task
+</git>
+
+<handoff>
+When I say "wrap up", "hand off", "fresh context", or when you notice your own outputs degrading (repeating yourself, losing track of earlier decisions, tool calls returning stale results): stop current work, commit what's done, and output a handoff block containing:
+  - Current plan file path (plan.md) or PRD issue number
+  - Research file path (research.md) if one exists
+  - List of files modified this session
+  - What's done vs what remains
+  - Exact command or @-references to start the next conversation
+Standard forward-pass files: plan.md (current plan/PRD), research.md (cached exploration findings). Store both in project root.
+Aspirational: if context usage is over 40%, proactively suggest wrapping up — but this is a nudge, not an enforceable threshold.
+</handoff>
+
 <database>
 - Do NOT create updated_at column when making new database tables, I do not care about tracking updates
 </database>
