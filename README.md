@@ -228,6 +228,15 @@ Not all contexts have dedicated instruction files yet — detection scopes skill
 
 </details>
 
+### Key VS Code settings
+
+| Setting | Value | Why |
+|---|---|---|
+| `chat.instructionsFilesLocations` | `{"~/dotfiles": true}` | Enables the entire instruction/skill discovery chain |
+| `chat.agent.maxRequests` | `100000` | Prevents agent from stopping mid-task |
+| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000` | Extended thinking for complex reasoning |
+| `chat.exploreAgent.defaultModel` | `Claude Opus 4.6` | Model selection for explore subagent |
+
 ---
 
 ## Installation
