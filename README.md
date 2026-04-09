@@ -1,464 +1,338 @@
 # ctrl
 
-Agent orchestration infrastructure for running multiple autonomous AI agents in parallel across local machines and VPS instances — from a single source of truth.
+> Your AI agents, everywhere, autonomous — from a single source of truth.
 
-Clone to `~/dotfiles` on every machine. One `git pull` updates instructions, skills, and shell config everywhere. Agents only load what's relevant to the current workspace (progressive disclosure). The endgame: Ralph loops consuming GitHub issues backlogs autonomously while you review and add new work.
+Most AI coding setups are per-machine and per-session. You paste the same instructions into every chat. You rebuild context from scratch. You watch agents stall on tasks that should run unattended.
 
-Forked from [kangarko/ai-files](https://github.com/kangarko/ai-files) and extended with environment hardening, cross-machine secret management, auto-context detection, workflow skills, and autonomous agent infrastructure.
+**ctrl** fixes that. Clone it to every machine. One `git pull` keeps your agents in sync. Agents load only what's relevant to the current workspace. The endgame: Ralph drains your GitHub issues backlog while you sleep.
 
-> **Note:** The GitHub repo is `arndvs/ctrl` but the on-disk path stays `~/dotfiles` — it's hardcoded across 40+ references and used as a convention by bootstrap, symlinks, and shell integration. The name doesn't matter on disk; `ctrl` is just the public-facing identity.
-
-## Architecture
-
-```mermaid
-graph TD
-    A[Human Intent] --> B["/grill-me — interrogation"]
-    B --> C["/write-a-prd — PRD → GitHub Issue"]
-    C --> D["/prd-to-issues — vertical slices → GitHub Issues"]
-    D --> E["/do-work — Understand → Plan → Implement → Validate → Commit"]
-    E -->|loop| E
-    E --> F["Ralph — AFK loop consuming GitHub issues backlog"]
-    F -->|loop| F
-    F --> G["Human QA + /improve-architecture"]
-    G -->|new issues| D
+```bash
+git clone https://github.com/arndvs/ctrl.git ~/dotfiles
+bash ~/dotfiles/bin/bootstrap.sh
 ```
 
+---
+
+## The pipeline
+
+Scope a feature. Ship it. Never leave your terminal.
+
 ```
-VS Code opens any project
+/grill-me          Extract requirements — one question at a time
+      ↓
+/write-a-prd       Write a PRD → submit as GitHub issue
+      ↓
+/prd-to-issues     Break PRD into vertical slices → GitHub issues with deps
+      ↓
+/do-work           Understand → Plan → Implement → Validate → Commit
+      ↓  (loops until done)
+Ralph              AFK loop — picks issues, ships code, closes tickets, repeats
+      ↓
+/improve-architecture   Periodic codebase health → RFC issues → back into the loop
+```
+
+Use any skill individually or chain them. The planning pipeline (grill-me → write-a-prd → prd-to-issues → do-work) hands off between stages.
+
+---
+
+## How it works
+
+### One repo, every machine
+
+Clone `ctrl` to `~/dotfiles` on your local machine, your VPS, anywhere. One `git pull` updates instructions, skills, and shell config everywhere. No drift. No re-setup.
+
+### Progressive disclosure
+
+`detect-context.sh` scans your working directory and exports `ACTIVE_CONTEXTS`. A Next.js project loads Next.js rules. A PHP project loads PHP rules. Nothing leaks between stacks. Agents stay focused.
+
+```
+VS Code opens a project
   ↓
-chat.instructionsFilesLocations: {"~/dotfiles": true}
-  ↓ discovers
-CLAUDE.md → @global.instructions.md
-  ↓ reads $ACTIVE_CONTEXTS (set by detect-context.sh)
-ACTIVE_CONTEXTS=nextjs,prisma,sanity → loads matching @instructions/*.md
-  ↓ skills auto-discovered by VS Code
-skills/do-work/SKILL.md, skills/grill-me/SKILL.md, etc.
-  ↓ local skills discovered too (gitignored, your own)
-skills/local/your-skill/SKILL.md
+CLAUDE.md → global.instructions.md (always loaded)
+  ↓
+detect-context.sh → ACTIVE_CONTEXTS=nextjs,prisma,sanity
+  ↓
+loads matching instructions/*.md
+  ↓
+skills/ auto-discovered — workflow + your personal local/ skills
 ```
 
-**Claude Code (CLI)** reads `~/.claude/CLAUDE.md` which references the same instruction files via `@` paths.
+The single setting that makes this work: `"chat.instructionsFilesLocations": {"~/dotfiles": true}` — included in the managed `settings.json` and applied by `sync-settings.sh`.
 
-**VS Code Copilot** discovers instructions and skills by scanning the `~/dotfiles` tree via the `chat.instructionsFilesLocations` setting.
+### Your personal layer, gitignored
 
-**`CLAUDE.md` is generated** — `bootstrap.sh` builds it from `CLAUDE.base.md` (tracked) plus any local instruction files in `instructions/local/`. Edit `CLAUDE.base.md` to change global instruction routing; local instructions are appended automatically.
-
-## Workflow
-
-The workflow skills compose into a pipeline. Use them individually or as a full sequence.
-
-### Planning Phase
-
-1. **`/grill-me`** — Interview you relentlessly about a plan or design until reaching shared understanding. Asks questions one at a time with recommended answers. If a question can be answered by exploring the codebase, it explores instead of asking.
-
-2. **`/write-a-prd`** — Explores the codebase, grills you about the problem, then writes a PRD from a template and submits it as a GitHub issue. Sections: problem statement, solution, user stories, implementation decisions, schema changes, testing, out of scope.
-
-3. **`/prd-to-issues`** — Breaks a PRD into independently grabbable GitHub issues using vertical slices (tracer bullets). Each slice wires through all layers end-to-end. Categorizes slices as AFK or HITL. Creates a final QA issue with a manual verification plan. Sets up blocking relationships between issues.
-
-### Execution Phase
-
-4. **`/do-work`** — Core execution loop: Understand → Plan (optional, skip if already planned) → Implement → Validate → Commit. Auto-detects feedback loops from the workspace (package.json scripts, composer.json, Makefile, pyproject.toml). Not hardcoded to any stack.
-
-### Review & Improve
-
-5. **`/improve-architecture`** — Explores the codebase for shallow-module clusters (interface nearly as complex as implementation). Presents candidates, spawns parallel subagents to produce diverse interface designs, recommends the strongest option, creates a GitHub issue RFC.
-
-### Autonomous Execution (Ralph)
-
-> **Status: Infrastructure ready, activation pending.** See [Ralph section](#ralph-autonomous-agent-loop) below.
-
-Ralph is a bash loop that runs Claude autonomously inside a Docker sandbox, consuming a GitHub issues backlog. The agent picks the highest-priority task, implements it, commits, closes/comments on the issue, and loops until the backlog is empty.
-
-## What's In The Box
+`skills/local/` and `instructions/local/` are gitignored directories inside the repo. Drop your private, domain-specific, or business-specific skills there. They're auto-discovered by VS Code and Claude Code alongside the public skills — but they never leave your machine unless you push them somewhere private.
 
 ```
-~/dotfiles/
-├── CLAUDE.base.md                   ← template for CLAUDE.md (tracked, edit this)
-├── CLAUDE.md                        ← GENERATED by bootstrap.sh (gitignored)
-├── global.instructions.md           ← universal coding rules (always loaded)
-├── settings.json                    ← VS Code settings (~220 settings)
-├── dotfiles.code-workspace          ← VS Code workspace file
-├── .env.agent.example               ← template for non-sensitive config
-├── .env.secrets.example             ← template for credentials
-├── instructions/                    ← domain-specific rules, loaded per workspace context
-│   ├── nextjs.instructions.md           Next.js 16 / TypeScript / React 19 / JS rules
-│   ├── php.instructions.md              PHP 8.4+ OOP
-│   ├── sanity.instructions.md           Sanity CMS MCP tools reference
-│   ├── sentry.instructions.md          Sentry MCP tools reference
-│   ├── google-docs.instructions.md      Google API (Sheets, Docs, Slides, Drive)
-│   ├── css.instructions.md              CSS nesting, container queries, modern patterns
-│   └── local/                       ← GITIGNORED — your personal instruction files
-│       └── (your-topic.instructions.md)
-├── skills/                          ← auto-discovered by VS Code
-│   ├── do-work/                         core execution loop (plan → execute → clear)
-│   ├── grill-me/                        pre-planning interrogation
-│   ├── write-a-prd/                     PRD authoring → GitHub issue
-│   ├── prd-to-issues/                   PRD → vertical slices → GitHub issues
-│   ├── technical-fellow/                implementation planning with vertical slices
-│   ├── explore/                         parallel subagent codebase exploration
-│   ├── research/                        cache exploration into persistent research.md
-│   ├── codebase-audit/                  ruthless code audit methodology
-│   ├── improve-architecture/            codebase health → RFC issues
-│   ├── tdd/                             red-green refactor (backend-only)
-│   ├── systematic-debugging/            root-cause-first debugging methodology
-│   └── local/                       ← GITIGNORED — your personal skills
-│       └── (your-skill/SKILL.md)
-├── ralph/                           ← autonomous agent loop
-│   ├── afk.sh                           AFK loop consuming GitHub issues backlog
-│   ├── once.sh                          HITL single-run mode
-│   └── prompt.md                        shared agent prompt
-├── bin/                             ← shell scripts sourced in .bashrc
-│   ├── bootstrap.sh                     one-command setup for a fresh machine
-│   ├── agent-shell.sh                   launch a secrets-free shell for agent sessions
-│   ├── sync-settings.sh                 merge VS Code settings from dotfiles
-│   ├── load-secrets.sh                  sources secrets/.env.agent into shell
-│   ├── run-with-secrets.sh              injects secrets/.env.secrets into child process
-│   ├── detect-context.sh                auto-detects project type → ACTIVE_CONTEXTS
-│   └── validate-env.sh                  validates env vars and hardening posture
-├── secrets/                         ← GITIGNORED — per-machine secrets
-│   ├── .env.agent                       non-sensitive config
-│   ├── .env.secrets                     credentials/tokens (process-scoped)
-│   ├── *.json                           GCP service account credentials
-│   └── .venv/                           shared Python venv
-└── working/                         ← GITIGNORED — scratch files
+skills/
+├── do-work/           ← public, tracked
+├── systematic-debugging/   ← public, tracked
+└── local/             ← GITIGNORED — yours alone
+    └── your-skill/SKILL.md
 ```
 
-### Skills
+### Hardened secrets
 
-#### Workflow Skills
+Secrets split into two tiers. Agents see config, never credentials.
 
-| Skill                  | Purpose                                                                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `do-work`              | Core execution loop — Understand → Plan → Implement → Validate → Commit. Auto-detects feedback loops per stack.                      |
-| `grill-me`             | Pre-planning interrogation — one question at a time with recommended answers. Hands off to prd/issues/do-work.                       |
-| `write-a-prd`          | PRD authoring — explores codebase, grills user, sketches modules (deep module analysis), writes PRD from template → GitHub issue.    |
-| `prd-to-issues`        | PRD decomposition — breaks PRD into vertical slices, categorizes HITL/AFK, creates GitHub issues with dependency graph + QA issue.   |
-| `technical-fellow`     | Implementation planning — vertical slices with AFK/HITL classification, dependency graphs, acceptance criteria.                      |
-| `explore`              | Parallel subagent codebase exploration — decomposes topic, spawns focused sub-agents, synthesizes unified summary.                   |
-| `research`             | Cache expensive exploration into persistent research.md — lifecycle management, staleness checks, handoff to downstream skills.      |
-| `codebase-audit`       | Ruthless code audit — reports only real problems grouped by severity. No manufactured issues.                                        |
-| `improve-architecture` | Codebase health — identifies shallow modules, spawns parallel design agents, recommends interface improvements via GitHub issue RFC. |
-| `tdd`                  | Red-green refactor — write failing test → implement → refactor. Backend-only. One test per vertical slice, one slice at a time.      |
-| `systematic-debugging` | Root-cause-first debugging — four-phase process (investigate → pattern analysis → hypothesis → implementation). Prevents guess-and-check thrashing. |
+| File | In shell? | Agent-visible? | Contains |
+|---|---|---|---|
+| `secrets/.env.agent` | Yes | Yes | Usernames, hosts, IDs |
+| `secrets/.env.secrets` | No | No | API keys, tokens, passwords |
 
-#### Local Skills (examples)
+`run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see.
 
-These live in `skills/local/` (gitignored). They won't appear when you clone — they're examples of what personal skills look like:
+---
 
-| Skill                    | Purpose                                                                                                                            |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `citation-builder-skill` | Automated local SEO citation building — browser form automation, Google Sheets tracking, email verification, NAP accuracy scoring. |
-| `github-weekly-digest`   | "What I shipped" pipeline — GitHub commits → per-repo AI analysis → narrative blog post → Sanity CMS draft.                        |
-| `portfolio-showcaser`    | Browser-driven portfolio analysis — code analysis, feature discovery, 4-axis scoring, dev server interaction, screenshot capture.  |
-| `skill-scaffolder`       | Meta-skill for creating new agent skills — generates complete skill directories following proven patterns.                         |
+## Skills
 
-**Third-party skills** (installed via `find-skills`) live in `~/.agents/skills/` and are symlinked into `~/.copilot/skills/`. Not tracked in this repo.
+### Workflow
 
-### Local Skills & Instructions
+| Skill | What it does |
+|---|---|
+| `do-work` | Core execution loop — auto-detects your stack's feedback loops (package.json, Makefile, composer.json, pyproject.toml). Understand → Plan → Implement → Validate → Commit. Not hardcoded to any stack. |
+| `grill-me` | Interrogates you about a plan until reaching shared understanding. One question at a time with recommended answers. Explores the codebase instead of asking when it can. |
+| `write-a-prd` | Explores codebase, grills you, sketches deep module interfaces, writes PRD from template, submits as GitHub issue. |
+| `prd-to-issues` | Breaks a PRD into vertical slices — each independently shippable. Categorizes HITL vs AFK. Creates GitHub issues with blocking relationships + a QA issue. |
+| `technical-fellow` | Implementation planning — vertical slices, AFK/HITL classification, dependency graphs, acceptance criteria. |
+| `skill-scaffolder` | Meta-skill — scaffolds new agent skills from proven patterns. Interview → architecture matrix → complete directory. |
+| `explore` | Parallel subagent codebase exploration — decomposes a topic, spawns focused sub-agents, synthesizes a unified summary. |
+| `research` | Caches expensive exploration into a persistent `research.md` — staleness checks, lifecycle management, handoff to downstream skills. |
+| `codebase-audit` | Ruthless code audit — real problems only, grouped by severity. No manufactured issues, no padding. |
+| `improve-architecture` | Finds shallow-module clusters, spawns parallel design agents, recommends the strongest interface, files a GitHub RFC. |
+| `tdd` | Red-green refactor — failing test → implement → refactor. Backend only. One test per vertical slice. |
+| `systematic-debugging` | Root-cause-first — investigate → pattern analysis → hypothesis → fix. Stops guess-and-check thrashing. |
 
-The `local/` directories are the personal layer — your niche skills and instruction files that shouldn't be in a public repo. They're gitignored in the parent repo but can be tracked privately via nested git repos inside each directory.
+### Your local skills
 
-```
-skills/local/              ← gitignored, your private skills
-instructions/local/        ← gitignored, your private instruction files
-```
+Add your own to `skills/local/your-skill/SKILL.md`. Auto-discovered immediately. Gitignored. Can be a private git repo inside the directory if you want version control.
 
-**How it works:**
+---
 
-- `bootstrap.sh` creates both `local/` directories on setup
-- VS Code discovers `skills/local/*/SKILL.md` automatically via the `~/.claude/skills → ~/dotfiles/skills/` symlink
-- `bootstrap.sh` scans `instructions/local/*.instructions.md` and appends `@`-references to the generated `CLAUDE.md`
-- Each `local/` directory can be its own git repo for private version control (`git init` inside)
-- `skills/local/requirements.txt` lists Python packages your local skills need — bootstrap installs them into the shared venv
+## Ralph: autonomous agent loop
 
-**To add a local skill:** create `skills/local/your-skill/SKILL.md` — it's auto-discovered immediately.
+> **Status: infrastructure ready, activation pending.**
 
-**To add a local instruction:** create `instructions/local/your-topic.instructions.md`, then re-run `bootstrap.sh` to regenerate `CLAUDE.md`.
+Ralph is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for AFK mode, direct on host for HITL.
 
-### Instruction Files
+### Two modes
 
-`CLAUDE.md` is generated from `CLAUDE.base.md` by `bootstrap.sh`. It always loads `global.instructions.md` first, then loads domain-specific files based on `$ACTIVE_CONTEXTS` (set by `detect-context.sh`). Task-triggered workflows (audit, exploration, planning) are now skills, not instructions.
+| Mode | Script | Use when |
+|---|---|---|
+| HITL | `ralph/once.sh` | Learning — runs once while you watch |
+| AFK | `ralph/afk.sh` | Shipping — loops in Docker sandbox with a max iteration guard |
 
-| File                          | Loads when                     | What it enforces                                                                                                                              |
-| ----------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `global.instructions.md`      | Always                         | DRY, early returns, strict validation, env-var-only secrets, git commits, handoff protocol, skill self-learning, code formatting              |
-| `nextjs.instructions.md`      | `ACTIVE_CONTEXTS` has `nextjs` | Next.js 16 / React 19 / TypeScript / JS patterns                                                                                              |
-| `php.instructions.md`         | `ACTIVE_CONTEXTS` has `php`    | PHP 8.4+ strict OOP                                                                                                                           |
-| `sanity.instructions.md`      | `ACTIVE_CONTEXTS` has `sanity` | Sanity MCP server reference                                                                                                                   |
-| `sentry.instructions.md`      | Sentry tasks                   | Sentry MCP server reference                                                                                                                   |
-| `google-docs.instructions.md` | Google API tasks               | Service account auth, Sheets/Docs/Slides/Drive API                                                                                            |
-| `css.instructions.md`         | CSS / frontend UI              | CSS nesting, container queries, logical properties, subgrid                                                                                   |
+AFK mode: Claude picks a task, implements it, commits, closes the issue, picks the next one. Exits when the backlog is empty (`<promise>NO MORE TASKS</promise>`). You review PRs async.
 
-Local instruction files (in `instructions/local/`) are appended to `CLAUDE.md` automatically by `bootstrap.sh`. They're gitignored — add your own domain-specific rules there.
+### Task priority order
 
-### Environment Hardening
+1. Critical bugfixes — blockers first
+2. Dev infrastructure — tests, types, scripts before features
+3. Tracer bullets — small end-to-end slices that validate approach
+4. Polish and quick wins
+5. Refactors
 
-Secrets are split into two tiers — agents see config but never credentials:
+### Docker sandboxing
 
-| File                   | Sourced into shell?         | Agent-visible?     | Contents                                 |
-| ---------------------- | --------------------------- | ------------------ | ---------------------------------------- |
-| `secrets/.env.agent`   | Yes (via `load-secrets.sh`) | Yes (in shell env) | Usernames, hosts, spreadsheet IDs, flags |
-| `secrets/.env.secrets` | **No**                      | **No**             | API keys, tokens, passwords              |
-
-**How secrets reach scripts:**
-
-1. `load-secrets.sh` sources **only** `.env.agent` into the shell (added to `.bashrc`)
-2. Scripts that need credentials run via `bin/run-with-secrets.sh`:
-   ```bash
-   ~/dotfiles/bin/run-with-secrets.sh python scripts/sheets_client.py
-   ```
-   This injects `.env.secrets` into the child process only — secrets vanish when it exits
-3. Scripts read everything from `os.environ` / `process.env` / `$VAR`
-4. If missing → hard error naming the var and pointing to the appropriate `.example` file
-
-**Agent-level protections:**
-
-- Claude Code deny rules in `~/.claude/settings.json` block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` patterns
-- Secrets never in shell environment — agents can't accidentally inherit them
-- `bin/validate-env.sh` checks that secrets are NOT leaking into the shell
-
-### Context Detection
-
-`bin/detect-context.sh` scans the current directory for file signatures and exports `ACTIVE_CONTEXTS`:
-
-| Signal       | File                                             | Context        |
-| ------------ | ------------------------------------------------ | -------------- |
-| Next.js      | `next.config.*`                                  | `nextjs`       |
-| React Native | `"react-native"` in `package.json`               | `react-native` |
-| React        | `"react"` in `package.json` (if not Next/Native) | `react`        |
-| Node         | `package.json`                                   | `node`         |
-| TypeScript   | `tsconfig.json`                                  | `typescript`   |
-| PHP          | `composer.json`                                  | `php`          |
-| Sanity       | `sanity.config.*`, `sanity.cli.*`                | `sanity`       |
-| Prisma       | `prisma/schema.prisma`                           | `prisma`       |
-| Docker       | `Dockerfile`, `docker-compose.*`                 | `docker`       |
-| Python       | `requirements.txt`, `pyproject.toml`, `setup.py` | `python`       |
-| Laravel      | `artisan`                                        | `laravel`      |
-
-The `.bashrc` integration re-runs detection on every `cd`.
-
-### Key VS Code Settings
-
-| Setting                                               | Value                  | Why                                                  |
-| ----------------------------------------------------- | ---------------------- | ---------------------------------------------------- |
-| `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true}` | Enables the entire instruction/skill discovery chain |
-| `chat.agent.maxRequests`                              | `100000`               | Prevents agent from stopping mid-task                |
-| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                | Extended thinking for complex reasoning              |
-| `github.copilot.chat.responsesApiReasoningEffort`     | `xhigh`                | Maximum reasoning effort                             |
-| `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6`      | Model selection for explore subagent                 |
-| `claudeCode.allowDangerouslySkipPermissions`          | `true`                 | Claude Code auto-approve                             |
-
-## Ralph: Autonomous Agent Loop
-
-> **Status: Infrastructure ready, activation pending.**
-
-The entire dotfiles infrastructure — symlinks across machines, bootstrap.sh idempotency, run-with-secrets.sh process isolation, VPS setup, Docker context detection — was built for autonomous parallel agents.
-
-### What Is Ralph
-
-Ralph is a loop. You run Claude in a bash loop with a shared prompt, consuming a backlog until tasks are complete. Not a framework — just a `for` loop around `claude --print` inside a Docker sandbox.
-
-### HITL vs AFK
-
-Two modes sharing the same prompt:
-
-- **HITL** (`ralph/once.sh`) — runs Claude once while you watch. Use this first to build confidence.
-- **AFK** (`ralph/afk.sh`) — loops autonomously with a max iteration guard. Claude picks a task, implements it, commits, closes/comments on the issue, then picks the next one. Exits when backlog is empty (`<promise>NO MORE TASKS</promise>`).
-
-### Docker Sandboxing
-
-`--dangerously-skip-permissions` needs containment. Docker sandbox isolates Claude in a micro-VM — can't reach host filesystem. Agent can run commands, write files, use git, but damage is contained.
+`--dangerously-skip-permissions` needs a cage. Docker isolates Claude in a micro-VM. It can run commands, write files, use git — but it can't reach your host filesystem.
 
 ```bash
 docker sandbox run claude .
 ```
 
-### GitHub Issues as Backlog
+### Activation checklist
 
-Instead of passing a PRD file, pass all open issues. Ralph does task selection using this priority order:
+- [ ] Claude Max subscription
+- [ ] Docker Desktop installed
+- [ ] `ralph/once.sh`, `ralph/afk.sh`, `ralph/prompt.md` in place
+- [ ] `gh auth login` inside the Docker sandbox
+- [ ] Deny rules validated in sandbox
+- [ ] 5–10 well-formed GitHub issues ready
+- [ ] Start HITL → graduate to AFK (1 iteration) → scale up
 
-1. **Critical bugfixes** — bugs can block other work
-2. **Development infrastructure** — tests, types, dev scripts need to be solid before features
-3. **Tracer bullets for new features** — small end-to-end slices that validate approach
-4. **Polish and quick wins** — small improvements and additions
-5. **Refactors** — code cleanup and improvements
+---
 
-The agent picks, implements, commits, closes/comments on the issue, loops. Human reviews async, adds new issues. This happens in parallel.
+## What's in the box
 
-### Activation Checklist
+```
+~/dotfiles/
+├── CLAUDE.base.md                   ← edit this — bootstrap generates CLAUDE.md from it
+├── CLAUDE.md                        ← GENERATED (gitignored)
+├── global.instructions.md           ← universal rules, always loaded
+├── settings.json                    ← ~220 VS Code settings
+├── instructions/
+│   ├── nextjs.instructions.md
+│   ├── php.instructions.md
+│   ├── sanity.instructions.md
+│   ├── sentry.instructions.md
+│   ├── google-docs.instructions.md
+│   ├── css.instructions.md
+│   └── local/                       ← GITIGNORED — your private instructions
+├── skills/
+│   ├── do-work/
+│   ├── grill-me/
+│   ├── write-a-prd/
+│   ├── prd-to-issues/
+│   ├── technical-fellow/
+│   ├── skill-scaffolder/
+│   ├── explore/
+│   ├── research/
+│   ├── codebase-audit/
+│   ├── improve-architecture/
+│   ├── tdd/
+│   ├── systematic-debugging/
+│   └── local/                       ← GITIGNORED — your private skills
+├── ralph/
+│   ├── afk.sh                       AFK autonomous loop
+│   ├── once.sh                      HITL single-run
+│   └── prompt.md                    shared agent prompt
+├── bin/
+│   ├── bootstrap.sh                 one-command setup, idempotent
+│   ├── agent-shell.sh               secrets-free shell for agent sessions
+│   ├── sync-settings.sh             merge VS Code settings
+│   ├── load-secrets.sh              sources .env.agent into shell
+│   ├── run-with-secrets.sh          injects .env.secrets into child process
+│   ├── detect-context.sh            exports ACTIVE_CONTEXTS
+│   └── validate-env.sh              validates env and hardening posture
+└── secrets/                         ← GITIGNORED
+    ├── .env.agent
+    ├── .env.secrets
+    └── .venv/
+```
 
-- [ ] Claude Max subscription (for autonomous usage)
-- [ ] Docker Desktop installed on execution machines
-- [ ] `ralph/` directory with `once.sh`, `afk.sh`, `prompt.md`
-- [ ] GitHub CLI authenticated in Docker sandbox (`gh auth login`)
-- [ ] Deny rules validated in sandbox environment
-- [ ] At least 5-10 well-formed GitHub issues to test with
-- [ ] Start HITL → graduate to AFK (max 1 iteration) → scale up
+<details>
+<summary>Context detection signals</summary>
+
+`detect-context.sh` scans the current directory for these file signatures:
+
+| Signal | File | Context |
+|---|---|---|
+| Next.js | `next.config.*` | `nextjs` |
+| React Native | `"react-native"` in `package.json` | `react-native` |
+| React | `"react"` in `package.json` (if not Next/Native) | `react` |
+| Node | `package.json` | `node` |
+| TypeScript | `tsconfig.json` | `typescript` |
+| PHP | `composer.json` | `php` |
+| Sanity | `sanity.config.*`, `sanity.cli.*` | `sanity` |
+| Prisma | `prisma/schema.prisma` | `prisma` |
+| Docker | `Dockerfile`, `docker-compose.*`, `compose.*` | `docker` |
+| Python | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile` | `python` |
+| Laravel | `artisan` | `laravel` |
+
+Not all contexts have dedicated instruction files yet — detection scopes skill loading and can trigger custom instructions you add.
+
+</details>
+
+---
 
 ## Installation
 
 <details>
-<summary>Quick Setup (Recommended)</summary>
+<summary>Quick setup (recommended)</summary>
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
 ```
 
-The bootstrap script is idempotent (safe to re-run) and handles:
+Bootstrap is idempotent — safe to re-run. It handles:
 
+- Generating `CLAUDE.md` from `CLAUDE.base.md` + your local instruction files
 - Creating `secrets/.env.agent` and `secrets/.env.secrets` from templates
-- Generating `CLAUDE.md` from `CLAUDE.base.md` + local instruction files
 - Symlinking `~/.claude/CLAUDE.md` and `~/.claude/skills/`
-- Creating `skills/local/` and `instructions/local/` directories
+- Creating `skills/local/` and `instructions/local/`
 - Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc`
-- Creating the Python venv and installing local skill packages
+- Creating the Python venv
 
-After running, fill in your config and secrets, then merge VS Code settings:
+After bootstrap:
 
 ```bash
-$EDITOR ~/dotfiles/secrets/.env.agent      # non-sensitive config (usernames, hosts, IDs)
-$EDITOR ~/dotfiles/secrets/.env.secrets    # API keys, tokens, passwords
-bash ~/dotfiles/bin/sync-settings.sh --dry-run   # preview changes
-bash ~/dotfiles/bin/sync-settings.sh              # merge into VS Code Insiders
+$EDITOR ~/dotfiles/secrets/.env.agent       # non-sensitive config
+$EDITOR ~/dotfiles/secrets/.env.secrets     # API keys and tokens
+bash ~/dotfiles/bin/sync-settings.sh        # merge VS Code settings
 source ~/.bashrc
 ```
 
-> On Windows, file symlinks require admin. The bootstrap copies `CLAUDE.md` instead and prints instructions for upgrading to a symlink. Directory symlinks (`~/.claude/skills/`) work without admin via Developer Mode.
+> **Windows:** file symlinks require admin. Bootstrap falls back to copying `CLAUDE.md` and prints upgrade instructions. Directory symlinks work via Developer Mode.
 
 </details>
 
 <details>
-<summary>VPS Setup</summary>
+<summary>VPS setup</summary>
 
-Clone and bootstrap — same as local, but **do not run `sync-settings.sh` on the VPS**. VS Code Remote SSH forwards your local settings automatically.
+Same as local — but skip `sync-settings.sh`. VS Code Remote SSH forwards your local settings automatically.
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
-$EDITOR ~/dotfiles/secrets/.env.agent          # fill in non-sensitive config
-$EDITOR ~/dotfiles/secrets/.env.secrets        # fill in API keys
+$EDITOR ~/dotfiles/secrets/.env.agent
+$EDITOR ~/dotfiles/secrets/.env.secrets
 source ~/.bashrc
 ```
 
-| Concern               | Local machine                | VPS                                 |
-| --------------------- | ---------------------------- | ----------------------------------- |
-| VS Code settings      | Run `sync-settings.sh`       | Forwarded via Remote SSH            |
-| `~/.claude/CLAUDE.md` | Symlink (or copy on Windows) | Symlink                             |
-| `secrets/.env.*`      | Your local API keys          | Same keys or VPS-specific overrides |
-| Python venv           | Created by bootstrap         | Created by bootstrap                |
-
-**VPS verification:**
+Verify:
 
 ```bash
-readlink ~/.claude/CLAUDE.md        # should point to ~/dotfiles/CLAUDE.md
-readlink ~/.claude/skills           # should point to ~/dotfiles/skills
-echo $GITHUB_USERNAME               # should print your username
+readlink ~/.claude/CLAUDE.md     # → ~/dotfiles/CLAUDE.md
+readlink ~/.claude/skills        # → ~/dotfiles/skills
+echo $GITHUB_USERNAME
 cd ~/some-project && echo $ACTIVE_CONTEXTS
 ```
 
 </details>
 
 <details>
-<summary>Manual Setup</summary>
-
-#### 1. Clone
+<summary>Manual setup</summary>
 
 ```bash
+# 1. Clone
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
-```
 
-#### 2. Symlink
-
-```bash
+# 2. Generate CLAUDE.md and symlink
+bash ~/dotfiles/bin/bootstrap.sh   # or manually:
 mkdir -p ~/.claude
-ln -sf ~/dotfiles/CLAUDE.md ~/.claude/CLAUDE.md    # generated by bootstrap.sh
+ln -sf ~/dotfiles/CLAUDE.md ~/.claude/CLAUDE.md
 ln -sf ~/dotfiles/skills ~/.claude/skills
-```
 
-#### 3. Secrets
-
-```bash
-mkdir -p ~/dotfiles/secrets
+# 3. Secrets
 cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent
 cp ~/dotfiles/.env.secrets.example ~/dotfiles/secrets/.env.secrets
-```
 
-#### 4. Shell integration
-
-Add to `~/.bashrc`:
-
-```bash
+# 4. Shell integration — add to ~/.bashrc
 [[ -f ~/dotfiles/bin/load-secrets.sh ]] && source ~/dotfiles/bin/load-secrets.sh
-
-_load_context() {
-    [[ -f ~/dotfiles/bin/detect-context.sh ]] \
-        && source ~/dotfiles/bin/detect-context.sh > /dev/null 2>&1
-}
+_load_context() { [[ -f ~/dotfiles/bin/detect-context.sh ]] && source ~/dotfiles/bin/detect-context.sh > /dev/null 2>&1; }
 cd() { builtin cd "$@" && _load_context; }
 _load_context
-```
 
-#### 5. VS Code settings
-
-```bash
+# 5. VS Code settings
 bash ~/dotfiles/bin/sync-settings.sh
-```
-
-The critical setting: `"chat.instructionsFilesLocations": {"~/dotfiles": true}`
-
-#### 6. Python venv
-
-```bash
-python3 -m venv ~/dotfiles/secrets/.venv
-source ~/dotfiles/secrets/.venv/bin/activate
-# Install local skill packages if you have any
-pip install -r ~/dotfiles/skills/local/requirements.txt
 ```
 
 </details>
 
-### Verify
-
-```bash
-bash ~/dotfiles/bin/validate-env.sh        # validates env vars and hardening
-echo $GITHUB_USERNAME                      # check secrets loaded
-cd ~/your-nextjs-project && echo $ACTIVE_CONTEXTS
-```
-
-## Scripts Reference
-
-| Script                    | Purpose                                                       | Flags                   |
-| ------------------------- | ------------------------------------------------------------- | ----------------------- |
-| `bin/bootstrap.sh`        | One-command machine setup — secrets, symlinks, shell, venv    | (none)                  |
-| `bin/agent-shell.sh`      | Launch a secrets-free shell for AI agent sessions             | (none)                  |
-| `bin/sync-settings.sh`    | Merge `settings.json` into VS Code user settings              | `--dry-run`, `--stable` |
-| `bin/load-secrets.sh`     | Source `secrets/.env.agent` (non-sensitive config) into shell | (sourced, not run)      |
-| `bin/run-with-secrets.sh` | Inject `secrets/.env.secrets` into a child process at runtime | (wraps a command)       |
-| `bin/detect-context.sh`   | Detect project type, export `ACTIVE_CONTEXTS`                 | (sourced, not run)      |
-| `bin/validate-env.sh`     | Validate env vars and hardening posture                       | (none)                  |
+---
 
 ## Customization
 
-- **Add a new stack?** Create `instructions/yourstack.instructions.md`, add detection to `bin/detect-context.sh`, and map the context to the instruction file in `CLAUDE.base.md`'s Workspace-Detected Instructions section. Re-run `bootstrap.sh` to regenerate `CLAUDE.md`.
-- **Add a skill?** Create `skills/your-skill/SKILL.md` — VS Code discovers it automatically via the `instructionsFilesLocations` setting
-- **Add a local skill?** Create `skills/local/your-skill/SKILL.md` — auto-discovered, gitignored
-- **Add a local instruction?** Create `instructions/local/your-topic.instructions.md`, then re-run `bootstrap.sh`
-- **Add a workflow skill?** Same as above, but update the Workflow section in this README
-- **New config?** Add the key to `.env.agent.example`, add the value to `secrets/.env.agent`
-- **New secrets?** Add the key to `.env.secrets.example`, add the value to `secrets/.env.secrets`
-- **Remove a stack?** Delete its instruction file and remove the `@` reference from `CLAUDE.base.md`. Re-run `bootstrap.sh`.
+| Want to... | Do this |
+|---|---|
+| Add a new stack | Create `instructions/yourstack.instructions.md`, add detection to `detect-context.sh`, reference in `CLAUDE.base.md`, re-run `bootstrap.sh` |
+| Add a public skill | Create `skills/your-skill/SKILL.md` — auto-discovered |
+| Add a private skill | Create `skills/local/your-skill/SKILL.md` — auto-discovered, gitignored |
+| Add a private instruction | Create `instructions/local/your-topic.instructions.md`, re-run `bootstrap.sh` |
+| Add config | Add key to `.env.agent.example`, value to `secrets/.env.agent` |
+| Add a secret | Add key to `.env.secrets.example`, value to `secrets/.env.secrets` |
 
 ## Updating
 
 ```bash
 cd ~/dotfiles && git pull
-bash ~/dotfiles/bin/bootstrap.sh        # re-validates symlinks, creates missing files
-bash ~/dotfiles/bin/sync-settings.sh    # merge any new VS Code settings (LOCAL only)
-source ~/.bashrc                        # pick up any new env vars
+bash ~/dotfiles/bin/bootstrap.sh        # re-validates, fixes stale symlinks
+bash ~/dotfiles/bin/sync-settings.sh    # local only — skip on VPS
+source ~/.bashrc
 ```
 
-On a VPS, skip `sync-settings.sh`.
+---
 
 ## Troubleshooting
 
@@ -466,36 +340,37 @@ On a VPS, skip `sync-settings.sh`.
 <summary>Common issues</summary>
 
 **Instructions not loading in Copilot Chat**
+- `readlink ~/.claude/CLAUDE.md` — should point to `~/dotfiles/CLAUDE.md`
+- If not a symlink, re-run `bash ~/dotfiles/bin/bootstrap.sh`
+- Verify `chat.instructionsFilesLocations` has `"~/dotfiles": true`
 
-- Verify the symlink: `readlink ~/.claude/CLAUDE.md` — should point to `~/dotfiles/CLAUDE.md`
-- If it's a regular file, re-run `bash ~/dotfiles/bin/bootstrap.sh`
-- Check that `chat.instructionsFilesLocations` includes `"~/dotfiles": true`
-
-**`secrets/.env.agent not found` warning on shell startup**
-
-- Run: `cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent`
-- Fill in config: `$EDITOR ~/dotfiles/secrets/.env.agent`
+**`secrets/.env.agent not found` on shell startup**
+- `cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent`
+- Fill it in: `$EDITOR ~/dotfiles/secrets/.env.agent`
 
 **`sync-settings.sh` fails on VPS**
+- Expected. VS Code Remote SSH forwards local settings — don't run sync on VPS.
 
-- Expected — VS Code Remote SSH forwards your local settings automatically
+**`ACTIVE_CONTEXTS` empty**
+- `grep "detect-context" ~/.bashrc` — if missing, re-run bootstrap
+- Detection runs on `cd` — navigate into a project first
 
-**`ACTIVE_CONTEXTS` not set / empty**
-
-- Verify: `grep "detect-context" ~/.bashrc`
-- If missing, re-run `bash ~/dotfiles/bin/bootstrap.sh`
-- Detection runs on `cd` — it reads the current directory's files
-
-**Python venv missing or broken**
-
-- Delete and recreate: `rm -rf ~/dotfiles/secrets/.venv && bash ~/dotfiles/bin/bootstrap.sh`
+**Python venv broken**
+- `rm -rf ~/dotfiles/secrets/.venv && bash ~/dotfiles/bin/bootstrap.sh`
 
 </details>
 
+---
+
 ## Prerequisites
 
-- [VS Code Insiders](https://code.visualstudio.com/insiders/)
-- [GitHub Copilot](https://github.com/features/copilot) subscription
+- [VS Code Insiders](https://code.visualstudio.com/insiders/) + [GitHub Copilot](https://github.com/features/copilot)
 - Git Bash (Windows) or bash (Linux/macOS)
-- Python 3.10+ (for venv and local skill dependencies)
-- Docker Desktop (for Ralph autonomous loops)
+- Python 3.10+
+- Docker Desktop (for Ralph)
+
+---
+
+Originally forked from [kangarko/ai-files](https://github.com/kangarko/ai-files).
+
+> **Note on the repo name:** The GitHub repo is `arndvs/ctrl` but the on-disk path is `~/dotfiles` — hardcoded across 40+ references. Clone it to `~/dotfiles` and leave it there. `ctrl` is the public identity; `~/dotfiles` is the convention.
