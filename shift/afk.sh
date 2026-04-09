@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# AFK Ralph — autonomous loop consuming GitHub issues backlog.
-# Usage: ./ralph/afk.sh [max_iterations]
+# AFK shift — autonomous loop consuming GitHub issues backlog.
+# Usage: ./shift/afk.sh [max_iterations]
 # Default: 5 iterations
 
 set -e
@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAX_ITERATIONS="${1:-5}"
 
 for i in $(seq 1 "$MAX_ITERATIONS"); do
-    echo "=== Ralph iteration $i of $MAX_ITERATIONS ==="
+    echo "=== shift iteration $i of $MAX_ITERATIONS ==="
 
     PREVIOUS_COMMITS=$(git log --oneline -5 2>/dev/null || echo "No commits yet")
 
@@ -32,9 +32,9 @@ $(cat "$SCRIPT_DIR/prompt.md")"
         "$prompt" 2>&1 | tee /dev/stderr | jq -r 'select(.type == "text") | .content' 2>/dev/null || true)
 
     if echo "$result" | grep -q '<promise>NO MORE TASKS</promise>'; then
-        echo "Ralph complete after $i iterations"
+        echo "shift complete after $i iterations"
         exit 0
     fi
 done
 
-echo "Ralph reached max iterations ($MAX_ITERATIONS)"
+echo "shift reached max iterations ($MAX_ITERATIONS)"

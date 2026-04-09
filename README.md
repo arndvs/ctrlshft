@@ -8,7 +8,7 @@
 
 Most AI coding setups are per-machine and per-session. You paste the same instructions into every chat. You rebuild context from scratch. You watch agents stall on tasks that should run unattended.
 
-**ctrl** fixes that. Clone it to every machine. One `git pull` keeps your agents in sync. Agents load only what's relevant to the current workspace. The endgame: Ralph drains your GitHub issues backlog while you sleep.
+**ctrl** fixes that. Clone it to every machine. One `git pull` keeps your agents in sync. Agents load only what's relevant to the current workspace. The endgame: start a shift and wake up to closed issues.
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
@@ -30,7 +30,7 @@ Scope a feature. Ship it. Never leave your terminal.
       ↓
 /do-work           Understand → Plan → Implement → Validate → Commit
       ↓  (loops until done)
-Ralph              AFK loop — picks issues, ships code, closes tickets, repeats
+shift              AFK loop — picks issues, ships code, closes tickets, repeats
       ↓
 /improve-architecture   Periodic codebase health → RFC issues → back into the loop
 ```
@@ -113,18 +113,20 @@ Add your own to `skills/local/your-skill/SKILL.md`. Auto-discovered immediately.
 
 ---
 
-## Ralph: autonomous agent loop
+## shift: autonomous agent loop
+
+> `ctrl` is the system. `shift` is the worker. **ctrl+shift** — you define the rules, shift executes them.
 
 > **Status: infrastructure ready, activation pending.**
 
-Ralph is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for AFK mode, direct on host for HITL.
+shift is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for AFK mode, direct on host for HITL.
 
 ### Two modes
 
 | Mode | Script | Use when |
 |---|---|---|
-| HITL | `ralph/once.sh` | Learning — runs once while you watch |
-| AFK | `ralph/afk.sh` | Shipping — loops in Docker sandbox with a max iteration guard |
+| HITL | `shift/once.sh` | Learning — runs once while you watch |
+| AFK | `shift/afk.sh` | Shipping — loops in Docker sandbox with a max iteration guard |
 
 AFK mode: Claude picks a task, implements it, commits, closes the issue, picks the next one. Exits when the backlog is empty (`<promise>NO MORE TASKS</promise>`). You review PRs async.
 
@@ -148,7 +150,7 @@ docker sandbox run claude .
 
 - [ ] Claude Max subscription
 - [ ] Docker Desktop installed
-- [ ] `ralph/once.sh`, `ralph/afk.sh`, `ralph/prompt.md` in place
+- [ ] `shift/once.sh`, `shift/afk.sh`, `shift/prompt.md` in place
 - [ ] `gh auth login` inside the Docker sandbox
 - [ ] Deny rules validated in sandbox
 - [ ] 5–10 well-formed GitHub issues ready
@@ -186,7 +188,7 @@ docker sandbox run claude .
 │   ├── tdd/
 │   ├── systematic-debugging/
 │   └── local/                       ← GITIGNORED — your private skills
-├── ralph/
+├── shift/
 │   ├── afk.sh                       AFK autonomous loop
 │   ├── once.sh                      HITL single-run
 │   └── prompt.md                    shared agent prompt
@@ -371,10 +373,10 @@ source ~/.bashrc
 - [VS Code Insiders](https://code.visualstudio.com/insiders/) + [GitHub Copilot](https://github.com/features/copilot)
 - Git Bash (Windows) or bash (Linux/macOS)
 - Python 3.10+
-- Docker Desktop (for Ralph)
+- Docker Desktop (for shift)
 
 ---
 
 Originally forked from [kangarko/ai-files](https://github.com/kangarko/ai-files).
 
-> **Note on the repo name:** The GitHub repo is `arndvs/ctrl` but the on-disk path is `~/dotfiles` — hardcoded across 40+ references. Clone it to `~/dotfiles` and leave it there. `ctrl` is the public identity; `~/dotfiles` is the convention.
+> **Naming conventions:** The GitHub repo is `arndvs/ctrl` but the on-disk path is `~/dotfiles` — hardcoded across 40+ references. Clone it to `~/dotfiles` and leave it there. `ctrl` is the system, `shift` is the autonomous agent loop. The pairing is deliberate: **ctrl+shift** — you define the rules, shift executes them.
