@@ -231,14 +231,21 @@ else
 fi
 
 # ~/.config/uv/uv.toml — refuse uv/Python packages published < 7 days ago
+# uv requires an ISO date (YYYY-MM-DD), so we compute 7 days ago at bootstrap time.
+# Re-run bootstrap periodically to advance the date.
 UV_CONFIG_DIR="$HOME/.config/uv"
 UV_CONFIG="$UV_CONFIG_DIR/uv.toml"
-if [[ -f "$UV_CONFIG" ]] && grep -qF "exclude-newer" "$UV_CONFIG"; then
-    yellow "  ~/.config/uv/uv.toml already has exclude-newer — skipping"
+UV_DATE=$(date -d "-7 days" +%Y-%m-%d 2>/dev/null || date -v-7d +%Y-%m-%d 2>/dev/null || echo "")
+if [[ -z "$UV_DATE" ]]; then
+    yellow "  Could not compute date — skipping uv exclude-newer"
+elif [[ -f "$UV_CONFIG" ]] && grep -qF "exclude-newer" "$UV_CONFIG"; then
+    # Update existing date to current run
+    sed -i.bak "s/exclude-newer = \".*\"/exclude-newer = \"$UV_DATE\"/" "$UV_CONFIG" && rm -f "$UV_CONFIG.bak"
+    green "  Updated exclude-newer = \"$UV_DATE\" in ~/.config/uv/uv.toml"
 else
     mkdir -p "$UV_CONFIG_DIR"
-    echo 'exclude-newer = "7 days"' >> "$UV_CONFIG"
-    green "  Added exclude-newer = \"7 days\" to ~/.config/uv/uv.toml"
+    echo "exclude-newer = \"$UV_DATE\"" >> "$UV_CONFIG"
+    green "  Added exclude-newer = \"$UV_DATE\" to ~/.config/uv/uv.toml"
 fi
 
 # ── 7. Validation ─────────────────────────────────────────────────────────────

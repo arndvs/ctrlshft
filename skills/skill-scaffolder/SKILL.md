@@ -14,6 +14,8 @@ description: >
 
 Creates production-ready agent skills that follow the proven agentic pipeline architecture: Python scripts provide the scaffolding (state management, config, error handling), while the VS Code Copilot agent provides the runtime muscle (browser interactions, code analysis, decision-making).
 
+Output "Read Skill Scaffolder skill." to chat to acknowledge your read this file.
+
 ---
 
 ## When to Use This Skill
@@ -46,16 +48,17 @@ Skip questions where the answer is obvious from context. For example, if the use
 
 Based on the interview answers, select which modules to include:
 
-| Question | If YES, include | If NO, skip |
-|---|---|---|
-| Browser needed? | `browser_adapter.py` + screenshot tools | Omit browser modules |
-| State tracking = Sheets? | `sheets_client.py` + `setup_sheet.py` | Use `state_store.py` (JSON/SQLite) |
-| Authentication? | `credential_vault.py` | Omit vault |
-| Evidence capture? | `screenshot_manager.py` | Omit screenshots |
-| Dual-mode execution? | `browser_adapter.py` with both adapters | Single adapter only |
-| Email verification? | `email_handler.py` | Omit email |
+| Question                 | If YES, include                         | If NO, skip                        |
+| ------------------------ | --------------------------------------- | ---------------------------------- |
+| Browser needed?          | `browser_adapter.py` + screenshot tools | Omit browser modules               |
+| State tracking = Sheets? | `sheets_client.py` + `setup_sheet.py`   | Use `state_store.py` (JSON/SQLite) |
+| Authentication?          | `credential_vault.py`                   | Omit vault                         |
+| Evidence capture?        | `screenshot_manager.py`                 | Omit screenshots                   |
+| Dual-mode execution?     | `browser_adapter.py` with both adapters | Single adapter only                |
+| Email verification?      | `email_handler.py`                      | Omit email                         |
 
 **Always include** (every skill gets these):
+
 - `SKILL.md`
 - `config.example.json` + `config.json`
 - `scripts/__init__.py`
@@ -94,6 +97,7 @@ Every generated skill follows this layout:
 Generate files in this exact order. Each file must be complete, production-ready, with no TODOs or placeholders in code (config templates may have `YOUR_*_HERE` placeholders).
 
 **Code generation rules (apply to ALL generated Python files):**
+
 - No `# comment` lines — per global instructions, do not comment generated code
 - No `pass` statements — every method must have a real implementation
 - No commented-out code — if a pattern has `CUSTOMIZE:` markers, replace them with actual code
@@ -148,6 +152,7 @@ Generate using **Patterns 1, 2, and 3** from `references/pattern-catalog.md`. Cu
 - `NOTE_MAX_LEN` constant
 
 Must include these functions:
+
 - `load_env()` / `ensure_env()` — idempotent env loading from `~/dotfiles/secrets/.env.agent` and `.env.secrets`
 - `resolve_path(p)` — expand `~` and resolve to absolute
 - `discover_credentials(config)` — GCP service account auto-discovery (only if using Sheets)
@@ -156,6 +161,7 @@ Must include these functions:
 - `due_date(days)` — date offset helper
 
 Must include these classes:
+
 - `CircuitBreaker(threshold)` — consecutive failure tracking
 
 ### Step 4: `scripts/session_logger.py`
@@ -174,6 +180,7 @@ The class structure (timestamped filenames, step ordering, `capture()` that neve
 ### Step 6: `scripts/sheets_client.py` + `scripts/setup_sheet.py` (if Google Sheets state store)
 
 Generate the `SheetsClient` using **Pattern 4** from `references/pattern-catalog.md`. Customize:
+
 - `COL` dict — column index mapping for the new skill's schema
 - `HEADERS` list — column header names
 - `STATUS_CODES` set — valid statuses for this skill
@@ -201,12 +208,14 @@ Generate using **Pattern 7** from `references/pattern-catalog.md`. Full AES-256 
 Generate using **Pattern 6** from `references/pattern-catalog.md`. Each check prints ✓/✗, collects all errors, fails at end with summary.
 
 Standard checks for every skill:
+
 1. Config structure valid
 2. Required env vars set
 3. Output directories writable
 4. Data source accessible
 
 Conditional checks:
+
 - Google Sheets connectivity (if Sheets state store)
 - Vault key valid (if credential vault)
 - Playwright browsers installed (if VPS mode)
@@ -227,6 +236,7 @@ This is the most important generated file. The orchestrator follows the **Patter
 7. State store is updated after every phase — never left un-persisted
 
 **Generation rules:**
+
 - Replace `{Name}` with PascalCase skill name (e.g., `PortfolioRunner`)
 - Replace `{name}` with snake_case skill name (e.g., `portfolio`)
 - Import the ACTUAL state store class (not a comment) — `from scripts.sheets_client import SheetsClient` or `from scripts.state_store import JsonStateStore`
@@ -242,7 +252,7 @@ The most critical file. This is what the agent reads to understand how to operat
 
 ```markdown
 ---
-name: {skill-name}
+name: { skill-name }
 description: >
   {One paragraph description. Include trigger phrases:
   "Use when the user wants to...", "Triggers on: phrase1, phrase2, phrase3".}
@@ -257,6 +267,7 @@ description: >
 ## First-Time Setup
 
 {Step-by-step setup instructions. Include:
+
 - Venv activation
 - Dependency installation
 - Config file creation
@@ -314,6 +325,7 @@ description: >
 ### Step 13: `references/setup.md`
 
 Environment setup guide covering:
+
 - Python venv activation
 - Google credentials (if Sheets)
 - Playwright installation (if VPS mode)
@@ -352,16 +364,16 @@ When writing phase methods for the orchestrator, follow these rules:
 
 ## Naming Conventions
 
-| Item | Convention | Example |
-|---|---|---|
-| Skill directory | `kebab-case` | `repo-portfolio` |
-| Python modules | `snake_case.py` | `feature_discovery.py` |
-| Orchestrator class | `PascalCase + Runner` | `PortfolioRunner` |
-| Config env prefix | `UPPER_SNAKE` | `PORTFOLIO_` |
-| State store columns | `snake_case` | `feature_name` |
-| Status codes | `snake_case` | `in_progress` |
-| Evidence directories | `sanitized_domain` | `github_com_user_repo` |
-| Session logs | `session_{timestamp}.jsonl` | `session_20260402_143022.jsonl` |
+| Item                 | Convention                  | Example                         |
+| -------------------- | --------------------------- | ------------------------------- |
+| Skill directory      | `kebab-case`                | `repo-portfolio`                |
+| Python modules       | `snake_case.py`             | `feature_discovery.py`          |
+| Orchestrator class   | `PascalCase + Runner`       | `PortfolioRunner`               |
+| Config env prefix    | `UPPER_SNAKE`               | `PORTFOLIO_`                    |
+| State store columns  | `snake_case`                | `feature_name`                  |
+| Status codes         | `snake_case`                | `in_progress`                   |
+| Evidence directories | `sanitized_domain`          | `github_com_user_repo`          |
+| Session logs         | `session_{timestamp}.jsonl` | `session_20260402_143022.jsonl` |
 
 ---
 
@@ -369,17 +381,17 @@ When writing phase methods for the orchestrator, follow these rules:
 
 When a skill uses browser automation in VS Code mode, the agent uses these deferred tools (load via `tool_search_tool_regex` before first use):
 
-| Tool | Purpose |
-|---|---|
-| `open_browser_page` | Navigate to a URL |
-| `read_page` | Get page DOM/text content |
-| `click_element` | Click by selector or text |
-| `type_in_page` | Fill form fields |
-| `screenshot_page` | Capture page state |
-| `hover_element` | Hover for tooltips/dropdowns |
-| `handle_dialog` | Accept/dismiss browser dialogs |
-| `navigate_page` | Go back/forward/reload |
-| `drag_element` | Drag and drop |
+| Tool                | Purpose                        |
+| ------------------- | ------------------------------ |
+| `open_browser_page` | Navigate to a URL              |
+| `read_page`         | Get page DOM/text content      |
+| `click_element`     | Click by selector or text      |
+| `type_in_page`      | Fill form fields               |
+| `screenshot_page`   | Capture page state             |
+| `hover_element`     | Hover for tooltips/dropdowns   |
+| `handle_dialog`     | Accept/dismiss browser dialogs |
+| `navigate_page`     | Go back/forward/reload         |
+| `drag_element`      | Drag and drop                  |
 
 The SKILL.md must instruct the agent to load these tools before starting browser phases.
 
@@ -417,9 +429,10 @@ After generating all files, run through `references/skill-checklist.md` — it c
 
 ## Example: Generating a Portfolio Skill
 
-User says: *"Create a skill that audits a GitHub repo, identifies all features, spins up the frontend, screenshots each feature, and generates a portfolio document."*
+User says: _"Create a skill that audits a GitHub repo, identifies all features, spins up the frontend, screenshots each feature, and generates a portfolio document."_
 
 **Interview answers (inferred):**
+
 1. Name: `repo-portfolio`
 2. Summary: Audit a repo, discover features, run locally, document with screenshots
 3. Work unit: feature/route
@@ -432,6 +445,7 @@ User says: *"Create a skill that audits a GitHub repo, identifies all features, 
 10. Data source: Git repo URL → code analysis discovers features
 
 **Generated modules:**
+
 - `shared_utils.py` ✓ (always)
 - `session_logger.py` ✓ (always)
 - `preflight.py` ✓ (always)
@@ -446,6 +460,7 @@ User says: *"Create a skill that audits a GitHub repo, identifies all features, 
 - `report_generator.py` ✓ (domain-specific: markdown portfolio output)
 
 **Omitted:**
+
 - `credential_vault.py` (no auth)
 - `email_handler.py` (no email verification)
 - `state_store.py` (using Sheets instead)

@@ -116,6 +116,58 @@ RULES:
 DIGEST DATA:
 {digest_data}"""
 
+_BUILTIN_ROLLUP_PROMPT = """\
+You are writing a "what I shipped this week" blog post for a personal developer website.
+This post is synthesized from MULTIPLE pre-analyzed daily snapshots — one per day the developer was active.
+
+Your job is to weave a cohesive weekly narrative arc from these daily snapshots.
+Show how the work evolved day by day. Connect threads across days.
+Don't just list Monday's work then Tuesday's work — tell the story of the whole week.
+
+Audience: other developers, potential employers, potential clients.
+Tone: first-person, casual-but-professional. Written by a dev for devs. Honest, specific.
+Voice: {author_voice}
+
+Produce a JSON object with this EXACT schema:
+{{
+  "title": "punchy specific title — e.g. 'Shipped: Auth Refactor, CLI v2, and Too Many CSS Tweaks'",
+  "slug": "url-safe-version-of-title-max-80-chars",
+  "excerpt": "1-2 sentences for post cards and social previews",
+  "tags": ["lowercase-tag"],
+  "body_markdown": "the full blog post in markdown"
+}}
+
+BODY STRUCTURE (write as body_markdown, use \\n for newlines in the JSON string):
+
+## [1-2 casual sentences — the week's overall throughline or arc]
+
+### [Project Name]
+[2-4 sentences: what evolved over the week, how it progressed day by day,
+what problem it solves, any interesting angle. First person. Specific. Under 100 words per project.]
+
+[Repeat ### section for each featured project]
+
+## Also shipped
+- [one-liner for each lower-signal item: dependency updates, minor fixes, config tweaks]
+
+## By the numbers
+- [X] commits across [Y] repos
+- +[N] lines added, -[M] removed
+[add any other notable stat]
+
+[Optional: one closing sentence — what's next or a brief reflection]
+
+RULES:
+- body_markdown is a single JSON string value with \\n for newlines
+- Use ## and ### only (not # or ####)
+- Do NOT use: "leveraged", "implemented", "utilized", "robust", "seamless"
+- Do NOT mention AI generating this
+- Weave a narrative arc — show progression across the week, not isolated daily dumps
+- Respond with ONLY the JSON object
+
+DIGEST DATA:
+{digest_data}"""
+
 _BUILTIN_DAILY_PROMPT = """\
 You are writing a brief "what I pushed today" developer log entry for a personal website.
 
@@ -193,6 +245,8 @@ class NarrativeWriter:
         # Load prompt fresh each call so edits take effect immediately
         if cadence == "daily":
             template = _load_prompt("DAILY_NARRATIVE_PROMPT", _BUILTIN_DAILY_PROMPT)
+        elif cadence == "rollup":
+            template = _load_prompt("ROLLUP_NARRATIVE_PROMPT", _BUILTIN_ROLLUP_PROMPT)
         else:
             template = _load_prompt("WEEKLY_NARRATIVE_PROMPT", _BUILTIN_WEEKLY_PROMPT)
 

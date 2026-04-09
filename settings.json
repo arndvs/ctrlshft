@@ -11,7 +11,6 @@
 	"js/ts.format.enable": false,
 	"js/ts.tsserver.experimental.enableProjectDiagnostics": true,
 	"js/ts.tsserver.maxTsServerMemory": 4096,
-	"js/ts.format.enabled": false,
 	"js/ts.implicitProjectConfig.checkJs": true,
 	"js/ts.suggest.completeFunctionCalls": true,
 	// =============================================================================
@@ -48,7 +47,6 @@
 	"prettier.useEditorConfig": true,
 	"prettier.resolveGlobalModules": true,
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"formate.enable": false,
 	// =============================================================================
 	// LANGUAGE-SPECIFIC FORMATTERS
 	// =============================================================================
@@ -271,10 +269,7 @@
 	// =============================================================================
 	"roo-code-nightly.debug": false,
 	"roo-code-nightly.allowedCommands": [
-		"*",
-		"git log",
-		"git diff",
-		"git show"
+		"*"
 	],
 	"roo-code-nightly.deniedCommands": [],
 	"roo-code-nightly.maximumIndexedFilesForFileSearch": 100000,
