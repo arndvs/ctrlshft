@@ -8,7 +8,7 @@ Usage:
     from scripts.session_logger import SessionLogger
 
     logger = SessionLogger(evidence_path="./evidence/")
-    logger.log_event("/dashboard", "screenshotted", {"viewport": "desktop"})
+    logger.log_event("screenshotted", feature="/dashboard", data={"viewport": "desktop"})
     logger.log_error("/checkout", error=e, phase=5)
     logger.close()
 """
@@ -49,7 +49,7 @@ class SessionLogger:
 
     def log_error(self, feature: str, error: Exception, phase: int = None) -> None:
         """Log an error with full traceback."""
-        self.log_event(feature, "error", {
+        self.log_event("error", feature=feature, data={
             "phase": phase,
             "error_type": type(error).__name__,
             "error_msg": str(error),

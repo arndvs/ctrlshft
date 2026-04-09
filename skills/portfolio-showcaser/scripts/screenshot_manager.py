@@ -10,7 +10,7 @@ Usage:
 
     sm = ScreenshotManager("./evidence/")
     path = sm.screenshot_path("dashboard", "feature_detail", viewport="1440x900")
-    sm.annotate("dashboard", "feature_detail", "Real-time analytics with live WebSocket feeds")
+    sm.annotate("./evidence/dashboard/04_feature_detail_143022.png", "Real-time analytics with live WebSocket feeds")
     paths = sm.get_evidence_paths("dashboard")
 """
 
@@ -84,7 +84,7 @@ class ScreenshotManager:
             print(f"  ⚠  Screenshot failed ({step}): {e}")
             return path, False
 
-    def annotate(self, feature_id: str, screenshot_path: str, annotation: str) -> str:
+    def annotate(self, screenshot_path: str, annotation: str) -> str:
         """
         Write a .txt sidecar annotation file next to a screenshot.
         Returns the annotation file path.

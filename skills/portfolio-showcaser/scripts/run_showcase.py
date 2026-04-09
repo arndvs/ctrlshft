@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     config["_skip_server"] = args.skip_server
 
     session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    log_dir = Path(config.get("output_dir", "./output")) / "sessions"
+    log_dir = Path(config.get("output_dir", "./output"))
     log_dir.mkdir(parents=True, exist_ok=True)
 
     logger = SessionLogger(str(log_dir), session_id)
@@ -77,7 +77,6 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
     phase 6 (explore). All other phases run automatically.
     """
 
-    # ── Phase 1: Preflight ───────────────────────────────────────────
     print("━" * 60)
     print("Phase 1/8: Preflight checks")
     print("━" * 60)
@@ -92,7 +91,6 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
     print("✅ Preflight passed.\n")
     logger.log_event("preflight_passed", feature="orchestrator")
 
-    # ── Phase 2: Analyze codebase ────────────────────────────────────
     print("━" * 60)
     print("Phase 2/8: Analyzing codebase")
     print("━" * 60)
@@ -108,7 +106,6 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
     print(f"  Files:     {analysis['file_stats']['total_files']}")
     logger.log_event("analysis_complete", feature="orchestrator", data={"framework": analysis["framework"]})
 
-    # ── Phase 3: Discover features ───────────────────────────────────
     print(f"\n{'━' * 60}")
     print("Phase 3/8: Discovering features")
     print("━" * 60)
@@ -124,7 +121,6 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
 
     logger.log_event("discovery_complete", feature="orchestrator", data={"count": len(features)})
 
-    # ── Phase 4: Score and rank ──────────────────────────────────────
     print(f"\n{'━' * 60}")
     print("Phase 4/8: Scoring features")
     print("━" * 60)
@@ -138,7 +134,6 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
 
     logger.log_event("scoring_complete", feature="orchestrator", data={"top_count": len(scored)})
 
-    # ── Phase 5: Initialize state & output ───────────────────────────
     print(f"\n{'━' * 60}")
     print("Phase 5/8: Setting up state and output")
     print("━" * 60)
@@ -176,7 +171,6 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
         _generate_report(config, analysis, scored, state, screenshot_mgr, logger)
         return 0
 
-    # ── Phase 6: Install deps & start server ─────────────────────────
     runner = None
     if not config.get("_skip_server"):
         print(f"\n{'━' * 60}")
@@ -208,7 +202,6 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
         print("Phase 6/8: Skipping server (--skip-server)")
         print("━" * 60)
 
-    # ── Phase 7: Explore features ────────────────────────────────────
     print(f"\n{'━' * 60}")
     print("Phase 7/8: Exploring features")
     print("━" * 60)
@@ -231,21 +224,6 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
 
     print(f"  Focus: {focus}")
     print(f"  Features to explore: {len(explore_list)}")
-
-    """
-    Agent: THIS IS WHERE YOU TAKE OVER.
-
-    For each feature in explore_list:
-    1. Call engine.explore_feature(feature, focus=focus)
-    2. The method's docstring tells you what browser actions to perform
-    3. Use screenshot_mgr.screenshot_path(feature_name, step_name) for paths
-    4. Use screenshot_mgr.annotate(screenshot_path, description) to add context
-    5. If a feature fails, the circuit breaker increments
-    6. After all features, optionally call engine.freestyle_explore(base_url)
-
-    The explore methods return empty dicts — YOU fill them with actual data
-    from your browser observations.
-    """
 
     explored = 0
     for feature in explore_list:
@@ -274,7 +252,6 @@ def _run_pipeline(config: dict, logger: SessionLogger, session_id: str) -> int:
     print(f"\n  Explored {explored}/{len(explore_list)} features")
     logger.log_event("exploration_complete", feature="orchestrator", data={"explored": explored})
 
-    # ── Phase 8: Generate report ─────────────────────────────────────
     _generate_report(config, analysis, scored, state, screenshot_mgr, logger)
 
     state.record_run(session_id, {

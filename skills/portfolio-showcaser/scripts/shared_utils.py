@@ -37,8 +37,12 @@ PROJECT_SIGNATURES = [
 REQUIRED_CONFIG = {
     "repo_path": "Path to the project to analyze",
     "output_dir": "Directory for reports and evidence",
+    "screenshots_dir": "Directory for screenshot evidence",
+    "report_filename": "Name of the markdown report file",
     "state_file": "Path to the JSON state file",
     "exploration.max_features": "Feature budget per run",
+    "exploration.port": "Dev server port number",
+    "session.circuit_breaker_threshold": "Consecutive failures before stopping",
 }
 
 
@@ -205,9 +209,6 @@ class CircuitBreaker:
         return self.consecutive_failures >= self.threshold
 
     def record_success(self) -> None:
-        self.consecutive_failures = 0
-
-    def reset(self):
         self.consecutive_failures = 0
 
     @property

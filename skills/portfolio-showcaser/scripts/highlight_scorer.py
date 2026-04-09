@@ -177,9 +177,6 @@ def _score_demonstrability(f_type: str, meta: dict, name: str) -> int:
     if any(kw in name for kw in interactive_keywords):
         score += 1
 
-    if meta.get("dynamic"):
-        score += 0
-
     return max(min(score, 5), 1)
 
 
