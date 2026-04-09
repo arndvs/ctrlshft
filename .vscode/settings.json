@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "Agentic",
+        "arndvs",
         "autofetch",
         "canva",
         "codesearch",
@@ -8,11 +9,22 @@
         "esbenp",
         "expanduser",
         "googleapiclient",
+        "grabbable",
+        "HITL",
         "httplib",
         "intelephense",
+        "kangarko",
+        "laravel",
+        "pyproject",
+        "readlink",
+        "Sandboxing",
+        "scaffolder",
+        "showcaser",
+        "subgrid",
         "tavily",
         "venv",
         "websearch",
-        "xhigh"
+        "xhigh",
+        "yourstack"
     ]
 }
