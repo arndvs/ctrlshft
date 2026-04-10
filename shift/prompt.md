@@ -1,3 +1,6 @@
+<!-- prompt.md — Shared system prompt injected into shift/afk.sh and shift/once.sh.
+     Defines task selection priority and completion signals for autonomous agent loops. -->
+
 GitHub issues are provided at the start of context. These are your open tasks.
 
 You've also been passed a file containing the last few commits. Read these to understand the work that has been done.
@@ -11,6 +14,8 @@ Pick the next task based on this priority order:
 3. Tracer bullets for new features — small end-to-end slices that validate approach
 4. Polish and quick wins — small improvements and additions
 5. Refactors — code cleanup and improvements
+
+Before starting work on an issue, assign it to yourself using `gh issue edit <number> --add-assignee @me`. Skip issues already assigned to someone else.
 
 If there are no more tasks to complete, output <promise>NO MORE TASKS</promise>.
 

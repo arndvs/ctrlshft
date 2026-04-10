@@ -1,3 +1,7 @@
+<!-- global.instructions.md — Universal agent rules loaded for every workspace.
+     Referenced by CLAUDE.md via @~/dotfiles/global.instructions.md.
+     Always loaded regardless of ACTIVE_CONTEXTS. -->
+
 Output "Read global instructions." to chat to acknowledge your read this file.
 
 <general>
@@ -24,7 +28,7 @@ Output "Read global instructions." to chat to acknowledge your read this file.
 - Use modern APIs and patterns over legacy approaches. Baseline browser support is February 2026
 - When I upload an image for you, describe it with pixel perfect accuracy and aim to replicate it perfectly as close to the image as possible
 - Don't hide functionality in methods appearing as getters or checks.
-- Create skills in ~/dotfiles/skills/ (symlinked to ~/.claude/skills). Local skills go in ~/dotfiles/skills/local/ (gitignored)
+- Create skills in ~/dotfiles/skills/ (symlinked to ~/.claude/skills). Local skills go in ~/dotfiles/skills/_local/ (gitignored)
 - For longer operations or migrations, keep scratchdisks, temp data or progress file in a working/ directory in root folder to prevent losing them when the conversation gets compacted. Write long terminal scripts to a temp file in working/ dir with `create_file` first, then execute it with a simple one-line command
 - Never inline multi-line content or text containing quotes in terminal commands. VS Code's `sendText()` corrupts heredocs over ~700 chars and zsh gets stuck in `dquote>` on unmatched quotes. Instead: use `create_file` to write the content to a temp file (e.g. /tmp/body.txt), then either run the file directly or write a small Python wrapper to /tmp/ that reads the file and passes it via subprocess. This covers heredocs, inline scripts, and CLI arguments like `--body "..."`.
 - NEVER print credentials: Not in logs, not in error messages, not in agent outputs.
@@ -72,8 +76,6 @@ When I say "wrap up", "hand off", "fresh context", or when you notice your own o
 Standard forward-pass files: plan.md (current plan/PRD), research.md (cached exploration findings). Store both in project root.
 Aspirational: if context usage is over 40%, proactively suggest wrapping up — but this is a nudge, not an enforceable threshold.
 </handoff>
-
-
 
 <code_formatting>
 

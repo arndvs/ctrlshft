@@ -12,19 +12,30 @@
 #   bash ~/dotfiles/bin/agent-shell.sh
 #   code-insiders .
 
+# Guard: when sourced, save and restore shell options so set -euo pipefail
+# doesn't bleed into the parent session.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+    _as_oldopts=$(set +o)
+    trap 'eval "$_as_oldopts"; unset _as_oldopts' RETURN
+fi
 set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
 _AGENT_ENV="$HOME/dotfiles/secrets/.env.agent"
 
 if [[ ! -f "$_AGENT_ENV" ]]; then
     printf '\033[31m[agent-shell] secrets/.env.agent not found\033[0m\n' >&2
-    exit 1
+    # Use return when sourced, exit when executed directly
+    return 1 2>/dev/null || exit 1
 fi
 
 # Shared rcfile content — used by both Windows and Linux/macOS paths
 _AGENT_RCFILE=$(cat << 'RCEOF'
 # Minimal agent-safe rc
+set -a
 source <(tr -d '\r' < ~/dotfiles/secrets/.env.agent) 2>/dev/null
+set +a
 [[ -f ~/dotfiles/bin/detect-context.sh ]] && source ~/dotfiles/bin/detect-context.sh > /dev/null 2>&1
 _load_context() { [[ -f ~/dotfiles/bin/detect-context.sh ]] && source ~/dotfiles/bin/detect-context.sh > /dev/null 2>&1; }
 cd() { builtin cd "$@" && _load_context; }
@@ -32,8 +43,8 @@ PS1='\[\033[33m\][agent-shell]\[\033[0m\] \w\$ '
 RCEOF
 )
 
-case "$(uname -s)" in
-    MINGW*|MSYS*|CYGWIN*)
+case "$(detect_os)" in
+    windows)
         # env -i strips MSYS2 internals (MSYSTEM, TMP, path translation) — skip it on Windows
         printf '\033[33m[agent-shell] Git Bash detected — skipping env -i (not supported)\033[0m\n' >&2
         exec bash --rcfile <(printf '%s' "$_AGENT_RCFILE")

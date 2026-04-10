@@ -5,7 +5,7 @@ description: "Red-green refactor workflow for test-driven development. Use when 
 
 # TDD (Red-Green Refactor)
 
-Output "Read TDD skill." to chat to acknowledge your read this file.
+Output "Read TDD skill." to chat to acknowledge you read this file.
 
 ## Scope
 

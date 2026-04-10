@@ -1,4 +1,4 @@
-Output "Read Google Docs." to chat to acknowledge your read this file.
+Output "Read Google Docs." to chat to acknowledge you read this file.
 
 If the task involves Google Sheets, Docs, or Slides, follow these instructions to authenticate and interact with Google APIs. Keep credentials secure and never share them publicly.
 

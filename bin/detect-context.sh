@@ -54,7 +54,7 @@ if [[ -f "composer.json" ]]; then
 fi
 
 # --- Sanity CMS ---
-if [[ -f "sanity.config.ts" ]] || [[ -f "sanity.config.js" ]] || [[ -f "sanity.cli.ts" ]] || [[ -f "sanity.cli.js" ]]; then
+if [[ -f "sanity.config.ts" ]] || [[ -f "sanity.config.js" ]] || [[ -f "sanity.config.mjs" ]] || [[ -f "sanity.config.mts" ]] || [[ -f "sanity.cli.ts" ]] || [[ -f "sanity.cli.js" ]]; then
     contexts="$contexts,sanity"
 fi
 

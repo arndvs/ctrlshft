@@ -5,7 +5,7 @@ description: "Core execution loop for implementing tasks. Use when asked to 'do 
 
 # Do Work
 
-Output "Read Do Work skill." to chat to acknowledge your read this file.
+Output "Read Do Work skill." to chat to acknowledge you read this file.
 
 ## Workflow
 
@@ -41,6 +41,6 @@ Once validation passes, commit the work using atomic commit format (one logical 
 
 ### 6. Context Check
 
-If this is one phase of a multi-phase plan, clear context before starting the next phase. Pass `@prd` and `@plan` to the fresh context.
+If this is one phase of a multi-phase plan, suggest wrapping up and starting a fresh conversation. Pass `@prd` and `@plan` to the fresh context.
 
-If context usage is over 40%, clear and start fresh — you're leaving the smart zone where output quality is highest.
+If context usage is over 40%, suggest wrapping up — you're leaving the smart zone where output quality is highest.

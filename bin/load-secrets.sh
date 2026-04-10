@@ -13,12 +13,13 @@
 _DOTFILES_ENV_AGENT="$HOME/dotfiles/secrets/.env.agent"
 
 _source_env() {
-    local _tmp
+    local _tmp _prev_allexport
+    _prev_allexport=$(set +o | grep allexport)
     _tmp=$(mktemp) || { printf '\033[31m[dotfiles] mktemp failed — cannot load %s\033[0m\n' "$1" >&2; return 1; }
     tr -d '\r' < "$1" > "$_tmp"
     set -a
-    source "$_tmp"
-    set +a
+    source "$_tmp" 2>/dev/null
+    eval "$_prev_allexport"
     rm -f "$_tmp"
 }
 

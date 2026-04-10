@@ -1,35 +1,32 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # AFK shift — autonomous loop consuming GitHub issues backlog.
 # Usage: ./shift/afk.sh [max_iterations]
 # Default: 5 iterations
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAX_ITERATIONS="${1:-5}"
+LOCKFILE="/tmp/shift-afk.lock"
+
+# Concurrency guard — only one AFK shift at a time
+if [[ -f "$LOCKFILE" ]] && kill -0 "$(cat "$LOCKFILE")" 2>/dev/null; then
+    echo "shift already running (PID $(cat "$LOCKFILE"))" >&2
+    exit 1
+fi
+echo $$ > "$LOCKFILE"
+trap 'rm -f "$LOCKFILE"' EXIT
 
 for i in $(seq 1 "$MAX_ITERATIONS"); do
     echo "=== shift iteration $i of $MAX_ITERATIONS ==="
 
-    PREVIOUS_COMMITS=$(git log --oneline -5 2>/dev/null || echo "No commits yet")
-
-    issues=$(gh issue list --state open --json number,title,body,comments 2>/dev/null || echo "[]")
-
-    prompt="<github-issues>
-$issues
-</github-issues>
-
-<previous-commits>
-$PREVIOUS_COMMITS
-</previous-commits>
-
-$(cat "$SCRIPT_DIR/prompt.md")"
+    source "$SCRIPT_DIR/_build_prompt.sh"
 
     result=$(docker sandbox run claude . \
         --print \
         --output-format stream-json \
-        "$prompt" 2>&1 | tee /dev/stderr | jq -r 'select(.type == "text") | .content' 2>/dev/null || true)
+        "$PROMPT" 2>/dev/null | tee /dev/stderr | jq -r 'select(.type == "text") | .content' 2>/dev/null || true)
 
     if echo "$result" | grep -q '<promise>NO MORE TASKS</promise>'; then
         echo "shift complete after $i iterations"

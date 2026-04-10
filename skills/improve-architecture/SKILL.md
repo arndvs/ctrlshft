@@ -5,7 +5,7 @@ description: "Explore the codebase for architectural improvements using deep mod
 
 # Improve Codebase Architecture
 
-Output "Read Improve Codebase Architecture skill." to chat to acknowledge your read this file.
+Output "Read Improve Codebase Architecture skill." to chat to acknowledge you read this file.
 
 A deep module has a small interface hiding a large implementation. This skill finds opportunities to deepen your codebase.
 

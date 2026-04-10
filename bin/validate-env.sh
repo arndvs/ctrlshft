@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# validate-env.sh — Validate all prerequisite environment variables are set.
+# validate-env.sh — Validate environment variables and hardening posture.
+#
+# Checks: required env vars, file system (symlinks, secrets files, venv),
+# shell integration, and hardening (secrets not leaked into shell, deny rules).
 #
 # Usage:
 #   bash ~/dotfiles/bin/validate-env.sh
 #
-# Exit code: 0 if all required vars pass, 1 if any are missing.
+# Exit code: 0 if all required checks pass, 1 if any fail.
 
 set -euo pipefail
 
-green()  { printf '\033[32m%s\033[0m\n' "$*"; }
-yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
-red()    { printf '\033[31m%s\033[0m\n' "$*"; }
+source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
 _fail=0
 _warn=0
@@ -89,9 +90,7 @@ fi
 
 VENV_DIR="$HOME/dotfiles/secrets/.venv"
 if [[ -d "$VENV_DIR" ]]; then
-    _venv_python=""
-    [[ -f "$VENV_DIR/Scripts/python.exe" ]] && _venv_python="$VENV_DIR/Scripts/python.exe"
-    [[ -f "$VENV_DIR/bin/python" ]] && _venv_python="$VENV_DIR/bin/python"
+    find_venv_python
     if [[ -n "$_venv_python" ]] && "$_venv_python" --version &>/dev/null; then
         green "  ✓ Python venv functional"
     else

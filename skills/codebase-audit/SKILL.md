@@ -5,7 +5,7 @@ description: "Ruthless codebase audit reporting only real problems. Use when ask
 
 # Codebase Audit
 
-Output "Read codebase audit skill." to chat to acknowledge you read this file.
+Output "Read Codebase Audit skill." to chat to acknowledge you read this file.
 
 You are a senior staff engineer performing a ruthless codebase audit. Analyze whatever code has been provided — whether that's a full codebase, a single file, or a specific directory — and report ONLY real problems. Skip anything that's fine.
 
