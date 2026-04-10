@@ -21,27 +21,12 @@ trap 'rm -f "$LOCKFILE"' EXIT
 for i in $(seq 1 "$MAX_ITERATIONS"); do
     echo "=== shift iteration $i of $MAX_ITERATIONS ==="
 
-    PREVIOUS_COMMITS=$(git log --oneline -5 2>/dev/null || echo "No commits yet")
-
-    issues=$(gh issue list --state open --json number,title,body,comments 2>/dev/null || echo "[]")
-
-    # Sanitize issue content — escape XML-like closing tags to prevent prompt injection
-    issues=$(printf '%s' "$issues" | sed 's|</github-issues>|\&lt;/github-issues\&gt;|g; s|</previous-commits>|\&lt;/previous-commits\&gt;|g')
-
-    prompt="<github-issues>
-$issues
-</github-issues>
-
-<previous-commits>
-$PREVIOUS_COMMITS
-</previous-commits>
-
-$(cat "$SCRIPT_DIR/prompt.md")"
+    source "$SCRIPT_DIR/_build_prompt.sh"
 
     result=$(docker sandbox run claude . \
         --print \
         --output-format stream-json \
-        "$prompt" 2>/dev/null | tee /dev/stderr | jq -r 'select(.type == "text") | .content' 2>/dev/null || true)
+        "$PROMPT" 2>/dev/null | tee /dev/stderr | jq -r 'select(.type == "text") | .content' 2>/dev/null || true)
 
     if echo "$result" | grep -q '<promise>NO MORE TASKS</promise>'; then
         echo "shift complete after $i iterations"
