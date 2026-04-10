@@ -120,16 +120,29 @@ Add your own to `skills/_local/your-skill/SKILL.md`. Auto-discovered immediately
 
 > **Status: infrastructure ready, testing in HITL mode.**
 
-shift is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
+shift is a bash loop that runs Claude against your GitHub issues backlog — sandboxed in a Docker microVM for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL). It's not a framework — it's four files and a prompt.
 
 ### Two modes
 
-| Mode | Script          | Use when                                                      |
-| ---- | --------------- | ------------------------------------------------------------- |
-| HITL | `shift/once.sh` | Learning — runs once while you watch                          |
-| AFK  | `shift/afk.sh`  | Shipping — loops in Docker sandbox with a max iteration guard |
+| Mode | Script           | Use when                                                      |
+| ---- | ---------------- | ------------------------------------------------------------- |
+| HITL | `shift/once.sh`  | Learning — runs once while you watch                          |
+| AFK  | `shift/afk.sh`   | Shipping — loops in Docker Sandbox with a max iteration guard |
 
-AFK mode: Claude picks a task, implements it, commits, closes the issue, picks the next one. Exits when the backlog is empty (`<promise>NO MORE TASKS</promise>`). You review PRs async.
+**HITL:** Claude runs once with `--permission-mode accept-edits` — you see every change and can intervene. Start here.
+
+**AFK:** Claude loops inside a [Docker Sandbox](https://docs.docker.com/ai/sandboxes/) (isolated microVM). Each iteration: pick a task → implement → commit → close issue → repeat. Exits when the backlog is empty or max iterations reached.
+
+### How the prompt is built
+
+`_build_prompt.sh` assembles a fresh prompt before each iteration:
+
+1. Fetches open GitHub issues via `gh issue list --state open --json number,title,body,comments`
+2. Grabs the last 5 git commits for context
+3. Wraps both in XML tags with basic injection sanitization
+4. Appends `prompt.md` — task selection priority, skill loading, feedback loops, commit rules
+
+The assembled prompt is passed to Claude as a single argument. Both `afk.sh` and `once.sh` source `_build_prompt.sh` to build `$PROMPT`.
 
 ### Task priority order
 
@@ -139,21 +152,114 @@ AFK mode: Claude picks a task, implements it, commits, closes the issue, picks t
 4. Polish and quick wins
 5. Refactors
 
-### Docker sandboxing
+### How ctrl mounts into the sandbox
 
-`--dangerously-skip-permissions` needs a cage. Docker isolates Claude in a micro-VM. It can run commands, write files, use git — but it can't reach your host filesystem.
+The key design: `sbx run` accepts multiple workspace paths. ctrl mounts `~/dotfiles` read-only alongside the target project so the agent gets your full instruction set, skills, and global rules inside the sandbox — without copying anything:
 
 ```bash
-docker sandbox run claude .
+sbx run claude . ~/dotfiles:ro
+```
+
+| Mount               | Access     | Contains                                          |
+| ------------------- | ---------- | ------------------------------------------------- |
+| `.` (project)       | read-write | The codebase the agent works on                   |
+| `~/dotfiles` (ctrl) | read-only  | Instructions, skills, global rules, shift prompt   |
+
+Inside the sandbox, `~/.claude/CLAUDE.md` and `~/.claude/skills/` resolve through the symlinks set up by `bootstrap.sh`, which point into `~/dotfiles`. The read-only mount means the agent benefits from every skill and instruction without being able to modify them.
+
+### Docker Sandboxes setup
+
+shift uses [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx` CLI) — lightweight microVMs with their own Docker daemon, filesystem, and network. **Docker Desktop is not required.**
+
+#### shift prerequisites
+
+| Requirement                    | Install                                                                                                                    |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `sbx` CLI                     | macOS: `brew install docker/tap/sbx` · Windows: download from [sbx-releases](https://github.com/docker/sbx-releases/releases) |
+| Windows Hypervisor Platform    | `Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All` (elevated PowerShell, Windows only)            |
+| `gh` (GitHub CLI)              | macOS: `brew install gh` · Windows: `winget install GitHub.cli` · [cli.github.com](https://cli.github.com/)                |
+| `jq`                           | macOS: `brew install jq` · Windows: `winget install jqlang.jq` · [jqlang.github.io/jq](https://jqlang.github.io/jq/download/) |
+| Claude subscription            | Claude Max, Team, or Enterprise (for sandbox OAuth)                                                                        |
+
+#### One-time setup
+
+```bash
+# 1. Sign in to Docker
+sbx login
+
+# 2. Choose a network policy when prompted:
+#    Balanced (recommended) — permits common dev services, blocks everything else
+
+# 3. Store GitHub token for the sandbox
+sbx secret set -g github -t "$(gh auth token)"
+
+# 4. Verify secrets
+sbx secret ls
+```
+
+Claude authentication happens inside the sandbox on first run — use the `/login` command when prompted. The session token persists on your host and is injected by a proxy, never stored inside the sandbox.
+
+### Running shift
+
+**Always `cd` into the target project first.** shift operates on the current working directory.
+
+```bash
+cd ~/your-project
+
+# HITL — run once while you watch
+bash ~/dotfiles/shift/once.sh
+
+# AFK — autonomous loop (default: 5 iterations)
+bash ~/dotfiles/shift/afk.sh
+
+# AFK — custom iteration count
+bash ~/dotfiles/shift/afk.sh 20
+```
+
+The AFK loop exits when:
+- Claude outputs `<promise>NO MORE TASKS</promise>` (backlog empty)
+- Max iterations reached (default: 5, pass a number as the first argument)
+- A lockfile conflict is detected (another shift is already running)
+
+### Branch mode (optional)
+
+By default, shift commits directly to your working tree. For safer AFK runs, use `--branch` to give the agent its own git worktree:
+
+```bash
+# Edit afk.sh to add --branch auto:
+sbx run --name shift-afk --branch auto claude . ~/dotfiles:ro -- ...
+```
+
+This creates a worktree under `.sbx/` in your project root. Review changes before merging:
+
+```bash
+cd .sbx/<sandbox-name>-worktrees/<branch>
+git log
+git push -u origin <branch>
+gh pr create
+```
+
+Add `.sbx/` to your project's `.gitignore` or global gitignore when using branch mode.
+
+### Managing sandboxes
+
+```bash
+sbx ls                         # list running sandboxes
+sbx stop <name>                # pause (installed packages, config preserved)
+sbx rm <name>                  # delete (reclaims disk)
+sbx exec -it <name> bash       # shell into a running sandbox
+sbx policy ls                  # check network rules
+sbx policy allow network <host> # allow a blocked host
 ```
 
 ### Activation checklist
 
-- [ ] Claude Max subscription
-- [ ] Docker Desktop installed
-- [ ] `shift/once.sh`, `shift/afk.sh`, `shift/prompt.md` in place
-- [ ] `gh auth login` inside the Docker sandbox
-- [ ] Deny rules validated in sandbox
+- [ ] `sbx` CLI installed and `sbx login` completed
+- [ ] `sbx secret set -g github -t "$(gh auth token)"` — GitHub access for the sandbox
+- [ ] `gh` CLI installed and authenticated (`gh auth login`)
+- [ ] `jq` installed
+- [ ] Claude Max/Team/Enterprise subscription
+- [ ] `bootstrap.sh` run (symlinks `~/.claude/CLAUDE.md` and `~/.claude/skills/`)
 - [ ] 5–10 well-formed GitHub issues ready
 - [ ] Start HITL → graduate to AFK (1 iteration) → scale up
 
@@ -196,6 +302,7 @@ docker sandbox run claude .
 ├── shift/
 │   ├── afk.sh                       AFK autonomous loop
 │   ├── once.sh                      HITL single-run
+│   ├── _build_prompt.sh             shared prompt builder (sourced by afk/once)
 │   └── prompt.md                    shared agent prompt
 ├── bin/
 │   ├── bootstrap.sh                 one-command setup, idempotent
@@ -387,6 +494,35 @@ source ~/.bashrc
 
 - `rm -rf ~/dotfiles/secrets/.venv && bash ~/dotfiles/bin/bootstrap.sh`
 
+**shift: `sbx: command not found`**
+
+- Install the `sbx` CLI: macOS `brew install docker/tap/sbx`, Windows download from [sbx-releases](https://github.com/docker/sbx-releases/releases)
+- `sbx` is a standalone tool — Docker Desktop is not required
+
+**shift: `gh: command not found` or empty issue list**
+
+- Install GitHub CLI: `brew install gh` or [cli.github.com](https://cli.github.com/)
+- Authenticate: `gh auth login`
+- Verify: `gh issue list` in the target project
+
+**shift: sandbox can't reach GitHub or APIs**
+
+- Check network policy: `sbx policy ls`
+- Allow a blocked host: `sbx policy allow network <hostname>`
+- Balanced policy (chosen during `sbx login`) permits common dev services by default
+
+**shift: Claude not authenticated inside sandbox**
+
+- On first run, use `/login` when Claude prompts for authentication
+- The session token persists across sandbox restarts
+- Alternatively: `sbx secret set -g anthropic` to use an API key
+
+**shift: skills/instructions not available in sandbox**
+
+- Verify `bootstrap.sh` was run (`readlink ~/.claude/CLAUDE.md` should point to `~/dotfiles/CLAUDE.md`)
+- The AFK script mounts `~/dotfiles:ro` — check the mount is correct in `afk.sh`
+- Shell into the sandbox to verify: `sbx exec -it <name> bash`, then `ls ~/dotfiles/`
+
 </details>
 
 ---
@@ -397,7 +533,9 @@ source ~/.bashrc
 - [GitHub Copilot](https://github.com/features/copilot) (optional — enhances agent mode but ctrl works with Claude Code alone)
 - Git Bash (Windows) or bash (Linux/macOS)
 - Python 3.10+
-- Docker Desktop (for shift)
+- [`sbx` CLI](https://docs.docker.com/ai/sandboxes/get-started/) (for shift AFK mode — Docker Desktop not required)
+- [GitHub CLI (`gh`)](https://cli.github.com/) (for shift — fetches issues for the prompt)
+- `jq` (for shift — parses Claude's stream-json output)
 
 ---
 

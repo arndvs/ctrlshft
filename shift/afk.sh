@@ -7,6 +7,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CTRL_DIR="$(dirname "$SCRIPT_DIR")"
 MAX_ITERATIONS="${1:-5}"
 LOCKFILE="/tmp/shift-afk.lock"
 
@@ -23,8 +24,8 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
 
     source "$SCRIPT_DIR/_build_prompt.sh"
 
-    result=$(docker sandbox run claude . \
-        --print \
+    result=$(sbx run --name shift-afk claude . "$CTRL_DIR:ro" \
+        -- --print \
         --output-format stream-json \
         "$PROMPT" 2>/dev/null | tee /dev/stderr | jq -r 'select(.type == "text") | .content' 2>/dev/null || true)
 
