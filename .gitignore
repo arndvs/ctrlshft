@@ -19,6 +19,7 @@ secrets/
 .env.*
 !.env.agent.example
 !.env.secrets.example
+!.env.citation.example
 *.vault
 credentials.*
 
