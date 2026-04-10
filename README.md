@@ -107,7 +107,7 @@ VS Code opens a project
   ↓
 CLAUDE.md → global.instructions.md (always loaded)
   ↓
-detect-context.sh → ACTIVE_CONTEXTS=nextjs,prisma,sanity
+detect-context.sh → ACTIVE_CONTEXTS=general,nextjs,node,typescript,sanity,prisma
   ↓
 loads matching instructions/*.md
   ↓
@@ -137,7 +137,7 @@ Secrets split into two tiers. Agents see config, never credentials.
 | `secrets/.env.agent`   | Yes       | Yes            | Usernames, hosts, IDs       |
 | `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords |
 
-`run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see.
+`run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. For defense in depth, configure Claude Code deny rules to block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level — `validate-env.sh` warns if these are missing from `~/.claude/settings.json`.
 
 ---
 
@@ -181,7 +181,7 @@ shift is not a framework. It's a bash loop that runs Claude against your GitHub 
 | HITL | `shift/once.sh` | Learning — runs once while you watch                          |
 | AFK  | `shift/afk.sh`  | Shipping — loops in Docker sandbox with a max iteration guard |
 
-**HITL:** Claude runs once with `--permission-mode accept-edits` — you see every change and can intervene. Start here.
+**HITL:** Claude runs once with `--permission-mode accept-edits` — file edits are auto-accepted, but you can intervene on shell commands and other operations. Start here.
 
 **AFK:** Claude loops inside a [Docker Sandbox](https://docs.docker.com/ai/sandboxes/) (isolated microVM). Each iteration: pick a task → implement → commit → close issue → repeat. Exits when the backlog is empty or max iterations reached.
 
@@ -194,7 +194,7 @@ shift is not a framework. It's a bash loop that runs Claude against your GitHub 
 3. Wraps both in XML tags with basic injection sanitization
 4. Appends `prompt.md` — task selection priority, skill loading, feedback loops, commit rules
 
-The assembled prompt is passed to Claude as a single argument. Both `afk.sh` and `once.sh` source `_build_prompt.sh` to build `$PROMPT`.
+The assembled prompt is written to a temp file and piped via stdin to avoid ARG_MAX limits. Both `afk.sh` and `once.sh` source `_build_prompt.sh` to build `$PROMPT_FILE`.
 
 ### Task priority order
 
@@ -272,7 +272,8 @@ The AFK loop exits when:
 
 - Claude outputs `<promise>NO MORE TASKS</promise>` (backlog empty)
 - Max iterations reached (default: 5, pass a number as the first argument)
-- A lockfile conflict is detected (another shift is already running)
+
+A lock directory (`/tmp/shift-afk.lock`) prevents concurrent runs — a second invocation exits immediately with "shift already running".
 
 ### Branch mode (optional)
 
@@ -383,13 +384,13 @@ sbx policy allow network <host> # allow a blocked host
 
 | Signal       | File                                                          | Context        |
 | ------------ | ------------------------------------------------------------- | -------------- |
-| Next.js      | `next.config.*`                                               | `nextjs`       |
+| Next.js      | `next.config.{ts,js,mjs}`                                     | `nextjs`       |
 | React Native | `"react-native"` in `package.json`                            | `react-native` |
 | React        | `"react"` in `package.json` (if not Next/Native)              | `react`        |
 | Node         | `package.json`                                                | `node`         |
 | TypeScript   | `tsconfig.json`                                               | `typescript`   |
 | PHP          | `composer.json`                                               | `php`          |
-| Sanity       | `sanity.config.*`, `sanity.cli.*`                             | `sanity`       |
+| Sanity       | `sanity.config.{ts,js,mjs,mts}`, `sanity.cli.{ts,js}`        | `sanity`       |
 | Prisma       | `prisma/schema.prisma`                                        | `prisma`       |
 | Docker       | `Dockerfile`, `docker-compose.yml/.yaml`, `compose.yml/.yaml` | `docker`       |
 | Python       | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile`   | `python`       |
@@ -438,7 +439,9 @@ Bootstrap is idempotent — safe to re-run. It handles:
 - Creating `secrets/.env.agent` and `secrets/.env.secrets` from templates
 - Symlinking `~/.claude/CLAUDE.md` and `~/.claude/skills/`
 - Creating `skills/_local/` and `instructions/_local/`
-- Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc`
+- Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc` / `~/.zshrc`
+- Appending `min-release-age=7` to `~/.npmrc` (supply chain protection)
+- Adding `exclude-newer` to `~/.config/uv/uv.toml` (supply chain protection)
 - Creating the Python venv
 
 After bootstrap:

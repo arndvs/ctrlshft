@@ -193,9 +193,7 @@ Be sure to review the Source Lib folder which contains hooks, styles, types, and
 
 - Maintain shadcn's component prop structure
 - Use shadcn's design tokens for spacing, typography, and colors
-- **REQUIRED:** All components MUST support dark mode using DMDS surface tokens
-  - Use `dark:bg-surface-1`, `dark:bg-surface-2`, `dark:bg-surface-accent` instead of hardcoded colors
-  - Use `text-foreground` and `text-muted-foreground` for all text colors
+- Follow the dark mode rules in the **Required Dark Mode Support** section above
 
 ### 7. Server Components vs Client Components
 

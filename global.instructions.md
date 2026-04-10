@@ -2,7 +2,7 @@
      Referenced by CLAUDE.md via @~/dotfiles/global.instructions.md.
      Always loaded regardless of ACTIVE_CONTEXTS. -->
 
-Output "Read global instructions." to chat to acknowledge your read this file.
+Output "Read global instructions." to chat to acknowledge you read this file.
 
 <general>
 - ALWAYS follow all rules below carefully & to the letter
