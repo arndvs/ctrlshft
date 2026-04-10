@@ -22,3 +22,5 @@ After reaching shared understanding, offer the user three paths:
 3. /do-work — start implementing immediately
 
 Let the user choose.
+
+If context fills up during the interview, follow the standard handoff protocol — persist decisions made so far to `working/` and provide the pickup command.

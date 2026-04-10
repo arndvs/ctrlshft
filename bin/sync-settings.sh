@@ -27,9 +27,9 @@ done
 
 # ── Guard: skip on VPS / Remote SSH targets ───────────────────────────────────
 if [[ -d "$HOME/.vscode-server" ]]; then
-    echo "Error: This appears to be a VS Code Remote SSH target (VPS)."
-    echo "VS Code settings are managed on your LOCAL machine — Remote SSH forwards them automatically."
-    echo "Run sync-settings.sh on your local machine instead."
+    red "This appears to be a VS Code Remote SSH target (VPS)." >&2
+    echo "VS Code settings are managed on your LOCAL machine — Remote SSH forwards them automatically." >&2
+    echo "Run sync-settings.sh on your local machine instead." >&2
     exit 1
 fi
 
@@ -64,20 +64,20 @@ esac
 DOTFILES_SETTINGS="$HOME/dotfiles/settings.json"
 
 if [[ ! -f "$DOTFILES_SETTINGS" ]]; then
-    echo "Error: $DOTFILES_SETTINGS not found"
+    red "$DOTFILES_SETTINGS not found" >&2
     exit 1
 fi
 
 if [[ ! -f "$USER_SETTINGS" ]]; then
-    echo "Error: $USER_SETTINGS not found"
-    echo "Open VS Code at least once to create the settings file."
+    red "$USER_SETTINGS not found" >&2
+    echo "Open VS Code at least once to create the settings file." >&2
     exit 1
 fi
 
 # ── Find Python ───────────────────────────────────────────────────────────────
 VENV_DIR="$HOME/dotfiles/secrets/.venv"
 if ! find_python; then
-    echo "Error: Python not found"
+    red "Python not found" >&2
     exit 1
 fi
 

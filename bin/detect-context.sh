@@ -23,7 +23,7 @@ set -euo pipefail
 contexts="general"
 
 # --- Next.js ---
-if [[ -f "next.config.ts" ]] || [[ -f "next.config.js" ]] || [[ -f "next.config.mjs" ]]; then
+if [[ -f "next.config.ts" ]] || [[ -f "next.config.js" ]] || [[ -f "next.config.mjs" ]] || [[ -f "next.config.mts" ]]; then
     contexts="$contexts,nextjs"
 fi
 
@@ -34,7 +34,7 @@ fi
 
 # --- React (non-Next, non-Native) ---
 # Must come AFTER react-native check — both match "react" in package.json
-if [[ -f "package.json" ]] && grep -q '"react"' package.json 2>/dev/null; then
+if [[ -f "package.json" ]] && grep -qE '"react"\s*:' package.json 2>/dev/null; then
     if [[ "$contexts" != *"nextjs"* && "$contexts" != *"react-native"* ]]; then
         contexts="$contexts,react"
     fi

@@ -12,7 +12,7 @@ Output "Read NextJS instructions." to chat to acknowledge you read this file.
 <general_nextjs>
 
 - Use icons from lucide-react package.
-- Do not overengineer solutions. Avoid creating new types unless absolutely needed and minimize changes. Check for duplicated types. Use a types.ts class to store all types.
+- Do not overengineer solutions. Avoid creating new types unless absolutely needed and minimize changes. Check for duplicated types. Use a types.ts file to store all types.
   </general_nextjs>
 
 <formatting_nextjs>
@@ -44,7 +44,7 @@ Output "Read NextJS instructions." to chat to acknowledge you read this file.
 - Use ESM Path Helpers
 - Use Object.groupBy and Map.groupBy
 - Next.js 16 uses Turbopack as the default bundler for development. No additional configuration is needed.
-- Use Cache Components with "use cache":
+- Use Cache Components with "use cache" (requires Next.js 15+ with dynamicIO flag):
 
 ```typescript
 async function ProductList() {
@@ -66,7 +66,7 @@ async function getData() {
 }
 ```
 
-- Use proxy.ts instead of middleware.ts
+- Use proxy.ts instead of middleware.ts (requires Next.js 15.3+)
 - Always Await Dynamic APIs params, searchParams, cookies, headers
 - Use React 19 Features:
 

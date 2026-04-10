@@ -35,8 +35,9 @@ find_python() {
     elif [[ -f "$VENV_DIR/bin/python" ]]; then
         PYTHON="$VENV_DIR/bin/python"
     else
+        local cmd
         for cmd in python3 python; do
-            if "$cmd" --version &>/dev/null 2>&1; then
+            if "$cmd" --version &>/dev/null; then
                 PYTHON="$cmd"
                 break
             fi
@@ -50,6 +51,9 @@ find_python() {
 # Requires VENV_DIR to be set.
 find_venv_python() {
     _venv_python=""
-    [[ -f "$VENV_DIR/Scripts/python.exe" ]] && _venv_python="$VENV_DIR/Scripts/python.exe"
-    [[ -f "$VENV_DIR/bin/python" ]] && _venv_python="$VENV_DIR/bin/python"
+    if [[ -f "$VENV_DIR/Scripts/python.exe" ]]; then
+        _venv_python="$VENV_DIR/Scripts/python.exe"
+    elif [[ -f "$VENV_DIR/bin/python" ]]; then
+        _venv_python="$VENV_DIR/bin/python"
+    fi
 }

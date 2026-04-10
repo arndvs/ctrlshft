@@ -32,7 +32,7 @@ Run through this checklist after generating a new skill. Every item must pass be
 - [ ] All imports resolve (no missing dependencies)
 - [ ] No hardcoded secrets — all from env vars via `os.environ.get()`
 - [ ] No TODOs, placeholders, or `pass` in production code
-- [ ] No `# comment` lines (per global instructions)
+- [ ] No `# comment` lines (by convention)
 - [ ] All scripts run from project root: `python -m scripts.{module}`
 - [ ] Every function that can fail raises a descriptive error (never fails silently)
 - [ ] No sample data or fallback values (`||`, `??`, or `or ""`)

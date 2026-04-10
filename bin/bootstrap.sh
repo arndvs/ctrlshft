@@ -197,7 +197,9 @@ _wire_shell_rc() {
 BASHRC="$HOME/.bashrc"
 ZSHRC="$HOME/.zshrc"
 
-_wire_shell_rc "$BASHRC" "~/.bashrc"
+if [[ -f "$BASHRC" ]] || [[ "$(basename "$SHELL" 2>/dev/null)" == "bash" ]]; then
+    _wire_shell_rc "$BASHRC" "~/.bashrc"
+fi
 if [[ -f "$ZSHRC" ]] || [[ "$(basename "$SHELL" 2>/dev/null)" == "zsh" ]]; then
     _wire_shell_rc "$ZSHRC" "~/.zshrc"
 fi
@@ -258,8 +260,8 @@ UV_DATE=$(date -d "-7 days" +%Y-%m-%d 2>/dev/null || date -v-7d +%Y-%m-%d 2>/dev
 if [[ -z "$UV_DATE" ]]; then
     yellow "  Could not compute date — skipping uv exclude-newer"
 elif [[ -f "$UV_CONFIG" ]] && grep -qF "exclude-newer" "$UV_CONFIG"; then
-    # Update existing date to current run
-    sed -i.bak "s/exclude-newer = \".*\"/exclude-newer = \"$UV_DATE\"/" "$UV_CONFIG" && rm -f "$UV_CONFIG.bak"
+    # Update existing date to current run (atomic write — portable across GNU/BSD sed)
+    sed "s/exclude-newer = \".*\"/exclude-newer = \"$UV_DATE\"/" "$UV_CONFIG" > "$UV_CONFIG.tmp" && mv "$UV_CONFIG.tmp" "$UV_CONFIG"
     green "  Updated exclude-newer = \"$UV_DATE\" in ~/.config/uv/uv.toml"
 else
     mkdir -p "$UV_CONFIG_DIR"
@@ -271,80 +273,9 @@ fi
 echo
 green "[7/7] Validating setup"
 
-if [[ "$OS" == "windows" ]]; then
-    if [[ -f "$CLAUDE_DIR/CLAUDE.md" ]]; then
-        green "  ✓ ~/.claude/CLAUDE.md exists"
-    else
-        red "  ✗ ~/.claude/CLAUDE.md missing"; _fail=1
-    fi
-else
-    if [[ -L "$CLAUDE_DIR/CLAUDE.md" ]] && [[ -f "$CLAUDE_DIR/CLAUDE.md" ]]; then
-        green "  ✓ ~/.claude/CLAUDE.md is a symlink (target resolves)"
-    elif [[ -L "$CLAUDE_DIR/CLAUDE.md" ]]; then
-        red "  ✗ ~/.claude/CLAUDE.md is a dangling symlink — target missing"; _fail=1
-    else
-        red "  ✗ ~/.claude/CLAUDE.md is not a symlink — re-run bootstrap"; _fail=1
-    fi
-fi
-
-if [[ -L "$CLAUDE_DIR/skills" ]] && [[ -d "$CLAUDE_DIR/skills" ]]; then
-    green "  ✓ ~/.claude/skills is a symlink (target resolves)"
-elif [[ -L "$CLAUDE_DIR/skills" ]]; then
-    red "  ✗ ~/.claude/skills is a dangling symlink — target missing"; _fail=1
-else
-    red "  ✗ ~/.claude/skills missing or not a symlink"; _fail=1
-fi
-
-if [[ -f "$SECRETS_DIR/.env.agent" ]]; then
-    green "  ✓ secrets/.env.agent exists"
-else
-    red "  ✗ secrets/.env.agent missing"; _fail=1
-fi
-
-if [[ -f "$SECRETS_DIR/.env.secrets" ]]; then
-    green "  ✓ secrets/.env.secrets exists"
-else
-    red "  ✗ secrets/.env.secrets missing"; _fail=1
-fi
-
-if [[ -f "$BASHRC" ]] && grep -qF "load-secrets.sh" "$BASHRC"; then
-    green "  ✓ .bashrc has load-secrets integration"
-else
-    red "  ✗ .bashrc missing load-secrets integration"; _fail=1
-fi
-
-if [[ -f "$ZSHRC" ]]; then
-    if grep -qF "load-secrets.sh" "$ZSHRC"; then
-        green "  ✓ .zshrc has load-secrets integration"
-    else
-        red "  ✗ .zshrc exists but missing load-secrets integration"; _fail=1
-    fi
-fi
-
-if [[ -d "$VENV_DIR" ]]; then
-    green "  ✓ Python venv exists"
-else
-    yellow "  ~ Python venv not created (Python not found)"
-fi
-
-if grep -qF "min-release-age" "$HOME/.npmrc" 2>/dev/null; then
-    green "  ✓ ~/.npmrc has supply chain protection"
-else
-    red "  ✗ ~/.npmrc missing min-release-age"; _fail=1
-fi
-
-if grep -qF "exclude-newer" "$HOME/.config/uv/uv.toml" 2>/dev/null; then
-    green "  ✓ ~/.config/uv/uv.toml has supply chain protection"
-else
-    red "  ✗ ~/.config/uv/uv.toml missing exclude-newer"; _fail=1
-fi
-
-echo
-if [[ $_fail -eq 0 ]]; then
-    green "All checks passed!"
-else
-    red "Some checks failed — review the output above."
-fi
+# Delegate to validate-env.sh — single source of truth for all validation checks.
+# validate-env.sh sets _fail and _warn internally and prints results.
+source "$(dirname "${BASH_SOURCE[0]}")/validate-env.sh"
 
 echo ""
 echo "Next steps:"

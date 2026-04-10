@@ -106,11 +106,15 @@ fi
 echo
 echo "Shell Integration:"
 
-if [[ -f "$HOME/.bashrc" ]] && grep -qF "load-secrets.sh" "$HOME/.bashrc"; then
-    green "  ✓ .bashrc has load-secrets"
+if [[ -f "$HOME/.bashrc" ]]; then
+    if grep -qF "load-secrets.sh" "$HOME/.bashrc"; then
+        green "  ✓ .bashrc has load-secrets"
+    else
+        red "  ✗ .bashrc missing load-secrets — run: bash ~/dotfiles/bin/bootstrap.sh"
+        _fail=1
+    fi
 else
-    red "  ✗ .bashrc missing load-secrets — run: bash ~/dotfiles/bin/bootstrap.sh"
-    _fail=1
+    yellow "  ~ .bashrc not found (expected on zsh-only systems)"
 fi
 
 if [[ -f "$HOME/.zshrc" ]]; then
@@ -171,4 +175,9 @@ else
     red "Some checks FAILED — review errors above."
 fi
 
+# When sourced (e.g., from bootstrap.sh), return instead of exit so the
+# caller can handle the exit code and print its own next-steps.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+    return $_fail 2>/dev/null || true
+fi
 exit $_fail

@@ -2,7 +2,7 @@
      Referenced by CLAUDE.md via @~/dotfiles/global.instructions.md.
      Always loaded regardless of ACTIVE_CONTEXTS. -->
 
-Output "Read global instructions." to chat to acknowledge your read this file.
+Output "Read global instructions." to chat to acknowledge you read this file.
 
 <general>
 - ALWAYS follow all rules below carefully & to the letter
@@ -16,8 +16,8 @@ Output "Read global instructions." to chat to acknowledge your read this file.
 - Never change website copy unless told to
 - Do not add legacy or backward compatibility except for database migrations
 - Never fail silently. Always add strict validation. Always throw an error if something is missing or unexpected
-- Never use sample data, placeholders, || or ?? fallbacks
-- Never add a defensive fix using a fallback
+- Never use sample data, placeholders, || or ?? fallbacks. Exception: UI prototyping components use CMS-replaceable static data and graceful degradation by design — see ux-prototyping instructions
+- Never add a defensive fix using a fallback. Exception: UI components may use conditional rendering for undefined states per ux-prototyping instructions
 - If front-end or back-end get an unexpected response, print the raw response to help me debug
 - Before using any CSS variable, class, JS function, or utility, verify it actually exists in the codebase. Search for its definition first — never assume a name exists based on convention or naming patterns
 - When reorganizing or moving elements, check and fix spacing
@@ -68,13 +68,27 @@ Read the relevant SKILL.md in full, find the most suitable place to integrate th
 
 <handoff>
 When I say "wrap up", "hand off", "fresh context", or when you notice your own outputs degrading (repeating yourself, losing track of earlier decisions, tool calls returning stale results): stop current work, commit what's done, and output a handoff block containing:
-  - Current plan file path (plan.md) or PRD issue number
+  - Current plan file path or PRD issue number
   - Research file path (research.md) if one exists
   - List of files modified this session
   - What's done vs what remains
-  - Exact command or @-references to start the next conversation
-Standard forward-pass files: plan.md (current plan/PRD), research.md (cached exploration findings). Store both in project root.
-Aspirational: if context usage is over 40%, proactively suggest wrapping up — but this is a nudge, not an enforceable threshold.
+  - Exact @-reference command to start the next conversation (see pickup command below)
+
+**Plan persistence:** When a task spans multiple conversations, write the remaining plan to `working/` in the project root with a descriptive name: `working/<topic>-plan.md` (e.g. `working/production-docs-audit-plan.md`). Include full slice details, acceptance criteria, what's done, and what remains. This file is the handoff artifact — the next conversation starts by reading it.
+
+**Pickup command:** Always end a handoff block with a ready-to-paste command for the next conversation:
+
+```
+@working/<plan-name>.md — pick up on remaining slices. Start with Slice [N].
+```
+
+Include any other @-references needed for context (research.md, PRD issue, key files).
+
+**Lifecycle:** Delete plan files from `working/` after the work is complete. They're working documents, not permanent docs.
+
+Standard forward-pass files: research.md (project root — cached exploration), working/\*-plan.md (slice tracking). research.md stays in project root for broad reuse; plans go in working/ because they're task-specific and disposable.
+
+**Proactive nudge:** If context usage is high or you've been working for many turns, suggest wrapping up: "Context is getting high. I'd recommend wrapping up and starting a fresh conversation." Then offer to write the plan to working/ and provide the pickup command.
 </handoff>
 
 <code_formatting>

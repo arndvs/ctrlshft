@@ -2,7 +2,7 @@
 
 Complete code patterns extracted from the citation-builder-skill. Each pattern is production-tested and ready to copy into new skills with minimal customization.
 
-**Critical rule:** When generating code from these patterns, do NOT include the `CUSTOMIZE:` markers in the output. Those are instructions for the agent during generation — replace them with actual skill-specific code. Generated Python files must have zero comment lines (per global instructions).
+**Critical rule:** When generating code from these patterns, do NOT include the `CUSTOMIZE:` markers in the output. Those are instructions for the agent during generation — replace them with actual skill-specific code. Generated Python files must have zero comment lines (by convention).
 
 ---
 
@@ -27,7 +27,7 @@ from pathlib import Path
 NOTE_MAX_LEN = 500
 
 _ENV_FILES = [
-    Path.home() / "dotfiles" / "secrets" / ".env",
+    Path.home() / "dotfiles" / "secrets" / ".env.agent",
     # CUSTOMIZE: add skill-specific env file, e.g. Path.home() / "dotfiles" / "secrets" / ".env.{skill_name}"
 ]
 
