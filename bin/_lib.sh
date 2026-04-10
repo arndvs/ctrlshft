@@ -36,7 +36,7 @@ find_python() {
         PYTHON="$VENV_DIR/bin/python"
     else
         for cmd in python3 python; do
-            if "$cmd" --version &>/dev/null 2>&1; then
+            if "$cmd" --version &>/dev/null; then
                 PYTHON="$cmd"
                 break
             fi

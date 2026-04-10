@@ -9,22 +9,22 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CTRL_DIR="$(dirname "$SCRIPT_DIR")"
 MAX_ITERATIONS="${1:-5}"
-LOCKFILE="/tmp/shift-afk.lock"
+LOCKDIR="/tmp/shift-afk.lock"
 
-# Concurrency guard — flock auto-releases on exit/crash (no stale PID issue)
-exec 200>"$LOCKFILE"
-
-if ! flock -n 200; then
+# Concurrency guard — mkdir is atomic and portable (no flock on macOS)
+if ! mkdir "$LOCKDIR" 2>/dev/null; then
     echo "shift already running" >&2
     exit 1
 fi
+trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
 
 for i in $(seq 1 "$MAX_ITERATIONS"); do
     echo "=== shift iteration $i of $MAX_ITERATIONS ==="
 
     source "$SCRIPT_DIR/_build_prompt.sh"
+    trap 'rm -f "$PROMPT_FILE"; rmdir "$LOCKDIR" 2>/dev/null' EXIT
     raw_output=$(mktemp)
-    trap 'rm -f "$raw_output" "$PROMPT_FILE"' EXIT
+    trap 'rm -f "$raw_output" "$PROMPT_FILE"; rmdir "$LOCKDIR" 2>/dev/null' EXIT
 
     if ! cat "$PROMPT_FILE" | sbx run --name shift-afk claude . "$CTRL_DIR:ro" \
         -- --print \

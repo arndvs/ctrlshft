@@ -28,6 +28,9 @@ $PREVIOUS_COMMITS
 
 $(cat "$SCRIPT_DIR/prompt.md")"
 
+# Clean up internal variables — only PROMPT and PROMPT_FILE should leak to caller
+unset PREVIOUS_COMMITS issues
+
 # Write prompt to a temp file to avoid ARG_MAX limits on large backlogs
 PROMPT_FILE=$(mktemp /tmp/shift-prompt.XXXXXX)
 printf '%s' "$PROMPT" > "$PROMPT_FILE"

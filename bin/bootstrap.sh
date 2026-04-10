@@ -260,8 +260,8 @@ UV_DATE=$(date -d "-7 days" +%Y-%m-%d 2>/dev/null || date -v-7d +%Y-%m-%d 2>/dev
 if [[ -z "$UV_DATE" ]]; then
     yellow "  Could not compute date — skipping uv exclude-newer"
 elif [[ -f "$UV_CONFIG" ]] && grep -qF "exclude-newer" "$UV_CONFIG"; then
-    # Update existing date to current run
-    sed -i.bak "s/exclude-newer = \".*\"/exclude-newer = \"$UV_DATE\"/" "$UV_CONFIG" && rm -f "$UV_CONFIG.bak"
+    # Update existing date to current run (atomic write — portable across GNU/BSD sed)
+    sed "s/exclude-newer = \".*\"/exclude-newer = \"$UV_DATE\"/" "$UV_CONFIG" > "$UV_CONFIG.tmp" && mv "$UV_CONFIG.tmp" "$UV_CONFIG"
     green "  Updated exclude-newer = \"$UV_DATE\" in ~/.config/uv/uv.toml"
 else
     mkdir -p "$UV_CONFIG_DIR"

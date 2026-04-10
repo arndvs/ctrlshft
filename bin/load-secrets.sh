@@ -18,7 +18,12 @@ _source_env() {
     _tmp=$(mktemp) || { printf '\033[31m[dotfiles] mktemp failed — cannot load %s\033[0m\n' "$1" >&2; return 1; }
     tr -d '\r' < "$1" > "$_tmp"
     set -a
-    source "$_tmp" 2>/dev/null
+    if ! source "$_tmp"; then
+        printf '\033[31m[dotfiles] Syntax error in %s — fix the file and re-source\033[0m\n' "$1" >&2
+        eval "$_prev_allexport"
+        rm -f "$_tmp"
+        return 1
+    fi
     eval "$_prev_allexport"
     rm -f "$_tmp"
 }
