@@ -14,21 +14,9 @@ CLAUDE_DIR="$HOME/.claude"
 SECRETS_DIR="$DOTFILES/secrets"
 VENV_DIR="$SECRETS_DIR/.venv"
 
-# ── Colors ────────────────────────────────────────────────────────────────────
-green()  { printf '\033[32m%s\033[0m\n' "$*"; }
-yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
-red()    { printf '\033[31m%s\033[0m\n' "$*"; }
+source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
 # ── OS detection ──────────────────────────────────────────────────────────────
-detect_os() {
-    case "$(uname -s)" in
-        MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
-        Linux*)               echo "linux"   ;;
-        Darwin*)              echo "macos"   ;;
-        *)                    echo "unknown" ;;
-    esac
-}
-
 OS=$(detect_os)
 green "Detected OS: $OS"
 
@@ -219,28 +207,12 @@ echo
 green "[5/7] Python venv"
 
 # Find a python executable (venv first, then system)
-PYTHON=""
-if [[ -f "$VENV_DIR/Scripts/python.exe" ]]; then
-    PYTHON="$VENV_DIR/Scripts/python.exe"
-elif [[ -f "$VENV_DIR/bin/python" ]]; then
-    PYTHON="$VENV_DIR/bin/python"
-else
-    for cmd in python3 python; do
-        if "$cmd" --version &>/dev/null 2>&1; then
-            PYTHON="$cmd"
-            break
-        fi
-    done
-fi
-
-if [[ -z "$PYTHON" ]]; then
+if ! find_python; then
     yellow "  Python not found — skipping venv setup"
     yellow "  Install Python 3.10+ and re-run this script"
 elif [[ -d "$VENV_DIR" ]]; then
     # Verify venv is functional, not just present
-    _venv_python=""
-    [[ -f "$VENV_DIR/Scripts/python.exe" ]] && _venv_python="$VENV_DIR/Scripts/python.exe"
-    [[ -f "$VENV_DIR/bin/python" ]] && _venv_python="$VENV_DIR/bin/python"
+    find_venv_python
     if [[ -n "$_venv_python" ]] && "$_venv_python" --version &>/dev/null; then
         yellow "  Venv already exists at $VENV_DIR — skipping creation"
     else

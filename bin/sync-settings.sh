@@ -13,6 +13,8 @@
 
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
+
 DRY_RUN=false
 VARIANT="insiders"
 
@@ -32,22 +34,22 @@ if [[ -d "$HOME/.vscode-server" ]]; then
 fi
 
 # ── Locate settings file ─────────────────────────────────────────────────────
-case "$(uname -s)" in
-    MINGW*|MSYS*|CYGWIN*)
+case "$(detect_os)" in
+    windows)
         if [[ "$VARIANT" == "stable" ]]; then
             USER_SETTINGS="$APPDATA/Code/User/settings.json"
         else
             USER_SETTINGS="$APPDATA/Code - Insiders/User/settings.json"
         fi
         ;;
-    Darwin*)
+    macos)
         if [[ "$VARIANT" == "stable" ]]; then
             USER_SETTINGS="$HOME/Library/Application Support/Code/User/settings.json"
         else
             USER_SETTINGS="$HOME/Library/Application Support/Code - Insiders/User/settings.json"
         fi
         ;;
-    Linux*)
+    linux)
         if [[ "$VARIANT" == "stable" ]]; then
             USER_SETTINGS="$HOME/.config/Code/User/settings.json"
         else
@@ -73,22 +75,8 @@ if [[ ! -f "$USER_SETTINGS" ]]; then
 fi
 
 # ── Find Python ───────────────────────────────────────────────────────────────
-PYTHON=""
 VENV_DIR="$HOME/dotfiles/secrets/.venv"
-if [[ -f "$VENV_DIR/Scripts/python.exe" ]]; then
-    PYTHON="$VENV_DIR/Scripts/python.exe"
-elif [[ -f "$VENV_DIR/bin/python" ]]; then
-    PYTHON="$VENV_DIR/bin/python"
-else
-    for cmd in python3 python; do
-        if "$cmd" --version &>/dev/null 2>&1; then
-            PYTHON="$cmd"
-            break
-        fi
-    done
-fi
-
-if [[ -z "$PYTHON" ]]; then
+if ! find_python; then
     echo "Error: Python not found"
     exit 1
 fi

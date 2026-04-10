@@ -11,9 +11,7 @@
 
 set -euo pipefail
 
-green()  { printf '\033[32m%s\033[0m\n' "$*"; }
-yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
-red()    { printf '\033[31m%s\033[0m\n' "$*"; }
+source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
 _fail=0
 _warn=0
@@ -92,9 +90,7 @@ fi
 
 VENV_DIR="$HOME/dotfiles/secrets/.venv"
 if [[ -d "$VENV_DIR" ]]; then
-    _venv_python=""
-    [[ -f "$VENV_DIR/Scripts/python.exe" ]] && _venv_python="$VENV_DIR/Scripts/python.exe"
-    [[ -f "$VENV_DIR/bin/python" ]] && _venv_python="$VENV_DIR/bin/python"
+    find_venv_python
     if [[ -n "$_venv_python" ]] && "$_venv_python" --version &>/dev/null; then
         green "  ✓ Python venv functional"
     else

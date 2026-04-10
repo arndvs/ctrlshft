@@ -20,6 +20,8 @@ if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
 fi
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
+
 _AGENT_ENV="$HOME/dotfiles/secrets/.env.agent"
 
 if [[ ! -f "$_AGENT_ENV" ]]; then
@@ -41,8 +43,8 @@ PS1='\[\033[33m\][agent-shell]\[\033[0m\] \w\$ '
 RCEOF
 )
 
-case "$(uname -s)" in
-    MINGW*|MSYS*|CYGWIN*)
+case "$(detect_os)" in
+    windows)
         # env -i strips MSYS2 internals (MSYSTEM, TMP, path translation) — skip it on Windows
         printf '\033[33m[agent-shell] Git Bash detected — skipping env -i (not supported)\033[0m\n' >&2
         exec bash --rcfile <(printf '%s' "$_AGENT_RCFILE")
