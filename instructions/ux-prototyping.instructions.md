@@ -1,6 +1,6 @@
 Output "Read UX Prototyping instructions." to chat to acknowledge you read this file.
 
-# UX/UI Prototyping Guidelines for Marketers
+# UX/UI Prototyping Guidelines
 
 ## Objective
 
