@@ -197,7 +197,9 @@ _wire_shell_rc() {
 BASHRC="$HOME/.bashrc"
 ZSHRC="$HOME/.zshrc"
 
-_wire_shell_rc "$BASHRC" "~/.bashrc"
+if [[ -f "$BASHRC" ]] || [[ "$(basename "$SHELL" 2>/dev/null)" == "bash" ]]; then
+    _wire_shell_rc "$BASHRC" "~/.bashrc"
+fi
 if [[ -f "$ZSHRC" ]] || [[ "$(basename "$SHELL" 2>/dev/null)" == "zsh" ]]; then
     _wire_shell_rc "$ZSHRC" "~/.zshrc"
 fi
