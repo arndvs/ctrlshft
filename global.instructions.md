@@ -77,8 +77,6 @@ Standard forward-pass files: plan.md (current plan/PRD), research.md (cached exp
 Aspirational: if context usage is over 40%, proactively suggest wrapping up — but this is a nudge, not an enforceable threshold.
 </handoff>
 
-
-
 <code_formatting>
 
 - Use 4 spaces for indentation

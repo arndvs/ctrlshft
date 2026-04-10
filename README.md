@@ -217,19 +217,19 @@ docker sandbox run claude .
 
 `detect-context.sh` scans the current directory for these file signatures:
 
-| Signal       | File                                                        | Context        |
-| ------------ | ----------------------------------------------------------- | -------------- |
-| Next.js      | `next.config.*`                                             | `nextjs`       |
-| React Native | `"react-native"` in `package.json`                          | `react-native` |
-| React        | `"react"` in `package.json` (if not Next/Native)            | `react`        |
-| Node         | `package.json`                                              | `node`         |
-| TypeScript   | `tsconfig.json`                                             | `typescript`   |
-| PHP          | `composer.json`                                             | `php`          |
-| Sanity       | `sanity.config.*`, `sanity.cli.*`                           | `sanity`       |
-| Prisma       | `prisma/schema.prisma`                                      | `prisma`       |
+| Signal       | File                                                          | Context        |
+| ------------ | ------------------------------------------------------------- | -------------- |
+| Next.js      | `next.config.*`                                               | `nextjs`       |
+| React Native | `"react-native"` in `package.json`                            | `react-native` |
+| React        | `"react"` in `package.json` (if not Next/Native)              | `react`        |
+| Node         | `package.json`                                                | `node`         |
+| TypeScript   | `tsconfig.json`                                               | `typescript`   |
+| PHP          | `composer.json`                                               | `php`          |
+| Sanity       | `sanity.config.*`, `sanity.cli.*`                             | `sanity`       |
+| Prisma       | `prisma/schema.prisma`                                        | `prisma`       |
 | Docker       | `Dockerfile`, `docker-compose.yml/.yaml`, `compose.yml/.yaml` | `docker`       |
-| Python       | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile` | `python`       |
-| Laravel      | `artisan`                                                   | `laravel`      |
+| Python       | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile`   | `python`       |
+| Laravel      | `artisan`                                                     | `laravel`      |
 
 A `general` context is always set as the baseline — it ensures skills without a specific context trigger still load.
 
@@ -239,12 +239,12 @@ Not all contexts have dedicated instruction files yet — detection scopes skill
 
 ### Key VS Code settings
 
-| Setting                                               | Value                  | Why                                                  |
-| ----------------------------------------------------- | ---------------------- | ---------------------------------------------------- |
+| Setting                                               | Value                                                | Why                                                  |
+| ----------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
 | `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true, ".github/instructions": true}` | Enables the entire instruction/skill discovery chain |
-| `chat.agent.maxRequests`                              | `100000`               | Prevents agent from stopping mid-task                |
-| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                | Extended thinking for complex reasoning              |
-| `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6 (copilot)` | Model selection for explore subagent                 |
+| `chat.agent.maxRequests`                              | `100000`                                             | Prevents agent from stopping mid-task                |
+| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                                              | Extended thinking for complex reasoning              |
+| `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6 (copilot)`                          | Model selection for explore subagent                 |
 
 ---
 
