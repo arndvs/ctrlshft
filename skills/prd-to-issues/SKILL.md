@@ -49,4 +49,15 @@ Use this skill to create GitHub issues from a finalized PRD or plan. Use `techni
 
 ## Handoff
 
-After issues are created, offer: `/do-work` to start implementing the first slice.
+After issues are created, offer:
+
+1. `/do-work` — start implementing the first slice
+2. **Save plan to `working/`** — if context is high or multi-session work, persist the issue list and remaining work to `working/<feature>-plan.md` with all issue numbers and dependency order
+
+If persisting, output the pickup command:
+
+```
+@working/<plan-name>.md — pick up on remaining slices. Start with Slice [N].
+```
+
+Include @-references to the parent PRD issue and any other context the next conversation needs.

@@ -41,6 +41,16 @@ Once validation passes, commit the work using atomic commit format (one logical 
 
 ### 6. Context Check
 
-If this is one phase of a multi-phase plan, suggest wrapping up and starting a fresh conversation. Pass `@prd` and `@plan` to the fresh context.
+If this is one phase of a multi-phase plan, or if context usage is high:
 
-If context usage is over 40%, suggest wrapping up — you're leaving the smart zone where output quality is highest.
+1. Write the remaining slices to `working/<descriptive-name>-plan.md` in the project root — include full slice details, acceptance criteria, what's done, and what remains
+2. Commit all work
+3. Suggest wrapping up and provide the pickup command:
+
+```
+@working/<plan-name>.md — pick up on remaining slices. Start with Slice [N].
+```
+
+Include any other @-references the next conversation needs (research.md, PRD issue, key files modified this session).
+
+If context usage is over 40%, proactively suggest wrapping up — you're leaving the smart zone where output quality is highest.

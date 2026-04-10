@@ -28,6 +28,8 @@ graph TD
     C --> D["/prd-to-issues — vertical slices → GitHub Issues"]
     D --> E["/do-work — Understand → Plan → Implement → Validate → Commit"]
     E -->|loop| E
+    E -->|"context high → persist plan to working/"| H["Fresh conversation picks up @working/plan.md"]
+    H --> E
     E --> F["shift — AFK loop consuming GitHub issues backlog"]
     F -->|loop| F
     F --> G["Human QA + /improve-architecture"]
@@ -35,6 +37,56 @@ graph TD
 ```
 
 Use any skill individually or chain them. The planning pipeline (grill-me → write-a-prd → prd-to-issues → do-work) hands off between stages.
+
+---
+
+## Continuous workflow
+
+Large tasks outgrow a single conversation. Context degrades — compaction loses nuance, the agent repeats itself, quality drops. ctrl handles this by treating conversations as disposable and plans as persistent.
+
+### How it works
+
+When context gets high, the agent:
+
+1. Commits all current work
+2. Writes the remaining plan to `working/<descriptive-name>-plan.md` — slices, acceptance criteria, what's done, what remains
+3. Suggests wrapping up and provides a **pickup command** to paste into a fresh conversation
+
+```
+@working/production-docs-audit-plan.md — pick up on remaining slices. Start with Slice 2.
+```
+
+The new conversation reads the plan file and continues exactly where the old one left off. No re-exploration, no lost context.
+
+### The convention
+
+| Artifact | Location | Purpose | Lifecycle |
+|---|---|---|---|
+| `working/*-plan.md` | `working/` in project root | Slice tracking between conversations | Delete after work ships |
+| `research.md` | Project root | Cached exploration for broad reuse | Delete after feature ships |
+| GitHub issues | Remote | Permanent record, shift backlog | Close when done |
+
+`working/` is gitignored. Plans are working documents — they track progress between conversations, not permanent documentation.
+
+### Example flow
+
+```
+Conversation 1:
+  "Plan the docs audit" → technical-fellow produces 4 slices
+  Implement Slice 1 → commit
+  Context getting high → agent writes working/docs-audit-plan.md
+  Agent outputs: @working/docs-audit-plan.md — pick up on remaining slices. Start with Slice 2.
+
+Conversation 2:
+  Paste the pickup command → agent reads the plan → implements Slice 2
+  Implements Slice 3 → context high again → updates the plan file
+  Agent outputs: @working/docs-audit-plan.md — pick up on remaining slices. Start with Slice 4.
+
+Conversation 3:
+  Paste → Slice 4 → QA → done → delete working/docs-audit-plan.md
+```
+
+This is enforced by `global.instructions.md` (the `<handoff>` rules) and built into the `do-work`, `technical-fellow`, `prd-to-issues`, and `research` skills. The agent does this automatically — you don't need to ask.
 
 ---
 

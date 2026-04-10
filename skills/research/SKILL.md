@@ -82,6 +82,7 @@ After research is complete, offer the user three paths:
 
 - research.md lives in the project root
 - When passing to a new conversation, always include research.md
+- If a `working/*-plan.md` exists, the pickup command should include both: `@research.md @working/<plan>.md`
 - If research.md is >7 days old, re-validate before relying on it
 - If the codebase has changed significantly (major refactor, new dependencies), regenerate
 - Delete research.md after the feature ships — it's a working document, not permanent docs
