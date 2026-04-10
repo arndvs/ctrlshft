@@ -77,14 +77,16 @@ When I say "wrap up", "hand off", "fresh context", or when you notice your own o
 **Plan persistence:** When a task spans multiple conversations, write the remaining plan to `working/` in the project root with a descriptive name: `working/<topic>-plan.md` (e.g. `working/production-docs-audit-plan.md`). Include full slice details, acceptance criteria, what's done, and what remains. This file is the handoff artifact — the next conversation starts by reading it.
 
 **Pickup command:** Always end a handoff block with a ready-to-paste command for the next conversation:
+
 ```
 @working/<plan-name>.md — pick up on remaining slices. Start with Slice [N].
 ```
+
 Include any other @-references needed for context (research.md, PRD issue, key files).
 
 **Lifecycle:** Delete plan files from `working/` after the work is complete. They're working documents, not permanent docs.
 
-Standard forward-pass files: research.md (project root — cached exploration), working/*-plan.md (slice tracking). research.md stays in project root for broad reuse; plans go in working/ because they're task-specific and disposable.
+Standard forward-pass files: research.md (project root — cached exploration), working/\*-plan.md (slice tracking). research.md stays in project root for broad reuse; plans go in working/ because they're task-specific and disposable.
 
 **Proactive nudge:** If context usage is high or you've been working for many turns, suggest wrapping up: "Context is getting high. I'd recommend wrapping up and starting a fresh conversation." Then offer to write the plan to working/ and provide the pickup command.
 </handoff>

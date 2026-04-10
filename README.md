@@ -60,11 +60,11 @@ The new conversation reads the plan file and continues exactly where the old one
 
 ### The convention
 
-| Artifact | Location | Purpose | Lifecycle |
-|---|---|---|---|
-| `working/*-plan.md` | `working/` in project root | Slice tracking between conversations | Delete after work ships |
-| `research.md` | Project root | Cached exploration for broad reuse | Delete after feature ships |
-| GitHub issues | Remote | Permanent record, shift backlog | Close when done |
+| Artifact            | Location                   | Purpose                              | Lifecycle                  |
+| ------------------- | -------------------------- | ------------------------------------ | -------------------------- |
+| `working/*-plan.md` | `working/` in project root | Slice tracking between conversations | Delete after work ships    |
+| `research.md`       | Project root               | Cached exploration for broad reuse   | Delete after feature ships |
+| GitHub issues       | Remote                     | Permanent record, shift backlog      | Close when done            |
 
 `working/` is gitignored. Plans are working documents — they track progress between conversations, not permanent documentation.
 
