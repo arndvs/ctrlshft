@@ -141,19 +141,19 @@ AFK mode: Claude picks a task, implements it, commits, closes the issue, picks t
 
 ### Docker sandboxing
 
-`--dangerously-skip-permissions` needs a cage. Docker isolates Claude in a micro-VM. It can run commands, write files, use git — but it can't reach your host filesystem.
+`--dangerously-skip-permissions` needs a cage. [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx` CLI) isolate Claude in a lightweight microVM. It can run commands, write files, use git — but it can’t reach your host filesystem. Docker Desktop is not required.
 
 ```bash
-docker sandbox run claude .
+sbx run --name shift-afk claude . ~/dotfiles:ro
 ```
 
 ### Activation checklist
 
-- [ ] Claude Max subscription
-- [ ] Docker Desktop installed
+- [ ] Claude Max, Team, or Enterprise subscription
+- [ ] `sbx` CLI installed (see [Docker Sandboxes setup](#docker-sandboxes-setup) below)
 - [ ] `shift/once.sh`, `shift/afk.sh`, `shift/prompt.md` in place
-- [ ] `gh auth login` inside the Docker sandbox
-- [ ] Deny rules validated in sandbox
+- [ ] `gh auth login` configured
+- [ ] Sandbox secrets set (`sbx secret set -g github -t "$(gh auth token)"`)
 - [ ] 5–10 well-formed GitHub issues ready
 - [ ] Start HITL → graduate to AFK (1 iteration) → scale up
 

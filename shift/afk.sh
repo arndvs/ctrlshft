@@ -7,26 +7,38 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CTRL_DIR="$(dirname "$SCRIPT_DIR")"
 MAX_ITERATIONS="${1:-5}"
 LOCKFILE="/tmp/shift-afk.lock"
 
-# Concurrency guard — only one AFK shift at a time
-if [[ -f "$LOCKFILE" ]] && kill -0 "$(cat "$LOCKFILE")" 2>/dev/null; then
-    echo "shift already running (PID $(cat "$LOCKFILE"))" >&2
+# Concurrency guard — flock auto-releases on exit/crash (no stale PID issue)
+exec 200>"$LOCKFILE"
+
+if ! flock -n 200; then
+    echo "shift already running" >&2
     exit 1
 fi
-echo $$ > "$LOCKFILE"
-trap 'rm -f "$LOCKFILE"' EXIT
 
 for i in $(seq 1 "$MAX_ITERATIONS"); do
     echo "=== shift iteration $i of $MAX_ITERATIONS ==="
 
     source "$SCRIPT_DIR/_build_prompt.sh"
 
-    result=$(docker sandbox run claude . \
-        --print \
+    # Capture sbx output to temp file so we can check exit code separately
+    raw_output=$(mktemp)
+    trap 'rm -f "$raw_output" "$PROMPT_FILE"' EXIT
+
+    if ! sbx run --name shift-afk claude . "$CTRL_DIR:ro" \
+        -- --print \
         --output-format stream-json \
-        "$PROMPT" 2>/dev/null | tee /dev/stderr | jq -r 'select(.type == "text") | .content' 2>/dev/null || true)
+        "$(cat "$PROMPT_FILE")" 2>/dev/null | tee /dev/stderr > "$raw_output"; then
+        echo "ERROR: sbx failed on iteration $i" >&2
+        rm -f "$raw_output" "$PROMPT_FILE"
+        exit 1
+    fi
+
+    result=$(jq -r 'select(.type == "text") | .content' < "$raw_output" 2>/dev/null || true)
+    rm -f "$raw_output" "$PROMPT_FILE"
 
     if echo "$result" | grep -q '<promise>NO MORE TASKS</promise>'; then
         echo "shift complete after $i iterations"
