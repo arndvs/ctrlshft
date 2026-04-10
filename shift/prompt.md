@@ -15,6 +15,8 @@ Pick the next task based on this priority order:
 4. Polish and quick wins — small improvements and additions
 5. Refactors — code cleanup and improvements
 
+Before starting work on an issue, assign it to yourself using `gh issue edit <number> --add-assignee @me`. Skip issues already assigned to someone else.
+
 If there are no more tasks to complete, output <promise>NO MORE TASKS</promise>.
 
 ## Exploration
