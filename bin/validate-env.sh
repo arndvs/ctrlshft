@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# validate-env.sh — Validate all prerequisite environment variables are set.
+# validate-env.sh — Validate environment variables and hardening posture.
+#
+# Checks: required env vars, file system (symlinks, secrets files, venv),
+# shell integration, and hardening (secrets not leaked into shell, deny rules).
 #
 # Usage:
 #   bash ~/dotfiles/bin/validate-env.sh
 #
-# Exit code: 0 if all required vars pass, 1 if any are missing.
+# Exit code: 0 if all required checks pass, 1 if any fail.
 
 set -euo pipefail
 

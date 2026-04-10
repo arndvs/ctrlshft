@@ -164,7 +164,12 @@ docker sandbox run claude .
 ├── CLAUDE.base.md                   ← edit this — bootstrap generates CLAUDE.md from it
 ├── CLAUDE.md                        ← GENERATED (gitignored)
 ├── global.instructions.md           ← universal rules, always loaded
-├── settings.json                    ← ~220 VS Code settings
+├── settings.json                    ← managed VS Code settings
+├── .env.agent.example               ← template for non-sensitive config
+├── .env.secrets.example             ← template for API keys and tokens
+├── .env.citation.example            ← template for citation-builder skill
+├── .gitignore
+├── dotfiles.code-workspace
 ├── instructions/
 │   ├── nextjs.instructions.md
 │   ├── php.instructions.md
@@ -198,7 +203,9 @@ docker sandbox run claude .
 │   ├── load-secrets.sh              sources .env.agent into shell
 │   ├── run-with-secrets.sh          injects .env.secrets into child process
 │   ├── detect-context.sh            exports ACTIVE_CONTEXTS
-│   └── validate-env.sh              validates env and hardening posture
+│   └── validate-env.sh              validates env vars and hardening posture
+├── assets/                          ← images (logo, etc.)
+├── working/                         ← GITIGNORED — scratch/temp files for long ops
 └── secrets/                         ← GITIGNORED
     ├── .env.agent
     ├── .env.secrets
@@ -220,9 +227,11 @@ docker sandbox run claude .
 | PHP          | `composer.json`                                             | `php`          |
 | Sanity       | `sanity.config.*`, `sanity.cli.*`                           | `sanity`       |
 | Prisma       | `prisma/schema.prisma`                                      | `prisma`       |
-| Docker       | `Dockerfile`, `docker-compose.*`, `compose.*`               | `docker`       |
+| Docker       | `Dockerfile`, `docker-compose.yml/.yaml`, `compose.yml/.yaml` | `docker`       |
 | Python       | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile` | `python`       |
 | Laravel      | `artisan`                                                   | `laravel`      |
+
+A `general` context is always set as the baseline — it ensures skills without a specific context trigger still load.
 
 Not all contexts have dedicated instruction files yet — detection scopes skill loading and can trigger custom instructions you add.
 
@@ -232,10 +241,10 @@ Not all contexts have dedicated instruction files yet — detection scopes skill
 
 | Setting                                               | Value                  | Why                                                  |
 | ----------------------------------------------------- | ---------------------- | ---------------------------------------------------- |
-| `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true}` | Enables the entire instruction/skill discovery chain |
+| `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true, ".github/instructions": true}` | Enables the entire instruction/skill discovery chain |
 | `chat.agent.maxRequests`                              | `100000`               | Prevents agent from stopping mid-task                |
 | `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                | Extended thinking for complex reasoning              |
-| `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6`      | Model selection for explore subagent                 |
+| `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6 (copilot)` | Model selection for explore subagent                 |
 
 ---
 

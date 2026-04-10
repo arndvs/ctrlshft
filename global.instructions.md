@@ -1,3 +1,7 @@
+<!-- global.instructions.md — Universal agent rules loaded for every workspace.
+     Referenced by CLAUDE.md via @~/dotfiles/global.instructions.md.
+     Always loaded regardless of ACTIVE_CONTEXTS. -->
+
 Output "Read global instructions." to chat to acknowledge your read this file.
 
 <general>

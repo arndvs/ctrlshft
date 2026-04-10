@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # AFK shift — autonomous loop consuming GitHub issues backlog.
 # Usage: ./shift/afk.sh [max_iterations]

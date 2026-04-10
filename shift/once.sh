@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # HITL shift — runs Claude once while you watch.
 # Usage: ./shift/once.sh

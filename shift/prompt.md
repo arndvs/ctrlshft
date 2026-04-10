@@ -1,3 +1,6 @@
+<!-- prompt.md — Shared system prompt injected into shift/afk.sh and shift/once.sh.
+     Defines task selection priority and completion signals for autonomous agent loops. -->
+
 GitHub issues are provided at the start of context. These are your open tasks.
 
 You've also been passed a file containing the last few commits. Read these to understand the work that has been done.

@@ -88,7 +88,15 @@ mkdir -p "$DOTFILES/skills/_local"
 mkdir -p "$DOTFILES/instructions/_local"
 
 # Generate CLAUDE.md from base + local instruction references
-cp "$DOTFILES/CLAUDE.base.md" "$DOTFILES/CLAUDE.md"
+# Write the generated-file header, then append everything after the base header
+{
+    printf '<!-- GENERATED FILE — do not edit directly.\n'
+    printf '     Built by bootstrap.sh from CLAUDE.base.md + local instruction refs.\n'
+    printf '     Edit CLAUDE.base.md instead, then run: bash ~/dotfiles/bin/bootstrap.sh -->\n'
+    # Skip the original HTML comment block, keep everything after -->
+    awk 'BEGIN{skip=1} /-->/{skip=0; next} !skip{print}' "$DOTFILES/CLAUDE.base.md"
+} > "$DOTFILES/CLAUDE.md"
+
 _local_instructions=()
 if [[ -d "$DOTFILES/instructions/_local" ]]; then
     for f in "$DOTFILES/instructions/_local/"*.instructions.md; do
@@ -151,6 +159,22 @@ else
         _fail=1
     fi
 fi
+
+# Report discovered skills
+_shared_skills=0
+_local_skills=0
+for d in "$DOTFILES/skills/"*/; do
+    [[ -d "$d" ]] || continue
+    _name=$(basename "$d")
+    [[ "$_name" == "_local" ]] && continue
+    _shared_skills=$(( _shared_skills + 1 ))
+done
+if [[ -d "$DOTFILES/skills/_local" ]]; then
+    for d in "$DOTFILES/skills/_local/"*/; do
+        [[ -d "$d" ]] && [[ -f "$d/SKILL.md" ]] && _local_skills=$(( _local_skills + 1 ))
+    done
+fi
+green "  Skills found: $_shared_skills shared, $_local_skills local"
 
 # ── 4. Wire up shell ──────────────────────────────────────────────────────────
 echo
