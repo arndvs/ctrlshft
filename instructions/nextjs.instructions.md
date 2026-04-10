@@ -95,20 +95,17 @@ async function createPost(formData: FormData) {
 }
 ```
 
-- Use Edge Functions:
+- Use Edge Runtime for latency-sensitive routes:
 
 ```typescript
-import type { Context } from "@netlify/functions";
+// app/api/edge/route.ts
+export const runtime = "edge";
 
-export default async (request: Request, context: Context) => {
+export async function GET(request: Request) {
   return new Response("Hello from the edge!", {
     headers: { "content-type": "text/plain" },
   });
-};
-
-export const config = {
-  path: "/api/edge/*",
-};
+}
 ```
 
 </nextjs_features>
