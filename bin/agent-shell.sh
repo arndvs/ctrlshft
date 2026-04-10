@@ -12,6 +12,12 @@
 #   bash ~/dotfiles/bin/agent-shell.sh
 #   code-insiders .
 
+# Guard: when sourced, save and restore shell options so set -euo pipefail
+# doesn't bleed into the parent session.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+    _as_oldopts=$(set +o)
+    trap 'eval "$_as_oldopts"; unset _as_oldopts' RETURN
+fi
 set -euo pipefail
 
 _AGENT_ENV="$HOME/dotfiles/secrets/.env.agent"
