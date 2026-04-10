@@ -6,9 +6,9 @@
 
 > Your AI agents, everywhere, autonomous — from a single source of truth.
 
-Most AI coding setups are per-machine and per-session. You paste the same instructions into every chat. You rebuild context from scratch. You watch agents stall on tasks that should run unattended.
+Claude Code and Copilot give you AI in your editor. They don't give you a system.
 
-**ctrl** fixes that. Clone it to every machine. One `git pull` keeps your agents in sync. Agents load only what's relevant to the current workspace. The endgame: start a shift and wake up to closed issues.
+ctrl is the system — synced across every machine, scoped to every stack, with a full pipeline from idea to autonomous execution. One `git pull` updates instructions, skills, and shell config everywhere. Context loads only what's relevant to your current project. Secrets stay hardened. And when you walk away, shift keeps shipping.
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
@@ -43,6 +43,8 @@ Use any skill individually or chain them. The planning pipeline (grill-me → wr
 ### One repo, every machine
 
 Clone `ctrl` to `~/dotfiles` on your local machine, your VPS, anywhere. One `git pull` updates instructions, skills, and shell config everywhere. No drift. No re-setup.
+
+> **How `CLAUDE.md` works:** You edit `CLAUDE.base.md` (tracked in git). `bootstrap.sh` generates `CLAUDE.md` from it by appending `@`-references to any local instruction files in `instructions/_local/`. `CLAUDE.md` is gitignored because it contains machine-specific references — only the generated file is symlinked to `~/.claude/` and read by Claude Code at runtime.
 
 ### Progressive disclosure
 
@@ -116,7 +118,7 @@ Add your own to `skills/_local/your-skill/SKILL.md`. Auto-discovered immediately
 
 > `ctrl` is the system. `shift` is the worker. **ctrl+shift** — you define the rules, shift executes them.
 
-> **Status: infrastructure ready, activation pending.**
+> **Status: infrastructure ready, testing in HITL mode.**
 
 shift is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
 
@@ -167,7 +169,6 @@ docker sandbox run claude .
 ├── settings.json                    ← managed VS Code settings
 ├── .env.agent.example               ← template for non-sensitive config
 ├── .env.secrets.example             ← template for API keys and tokens
-├── .env.citation.example            ← template for citation-builder skill
 ├── .gitignore
 ├── dotfiles.code-workspace
 ├── instructions/
@@ -392,13 +393,12 @@ source ~/.bashrc
 
 ## Prerequisites
 
-- [VS Code Insiders](https://code.visualstudio.com/insiders/) + [GitHub Copilot](https://github.com/features/copilot)
+- [VS Code](https://code.visualstudio.com/) (stable or Insiders)
+- [GitHub Copilot](https://github.com/features/copilot) (optional — enhances agent mode but ctrl works with Claude Code alone)
 - Git Bash (Windows) or bash (Linux/macOS)
 - Python 3.10+
 - Docker Desktop (for shift)
 
 ---
 
-Originally forked from [kangarko/ai-files](https://github.com/kangarko/ai-files).
-
-> **Naming conventions:** The GitHub repo is `arndvs/ctrl` but the on-disk path is `~/dotfiles` — hardcoded across 40+ references. Clone it to `~/dotfiles` and leave it there. `ctrl` is the system, `shift` is the autonomous agent loop. The pairing is deliberate: **ctrl+shift** — you define the rules, shift executes them.
+> **Naming conventions:** The GitHub repo is `arndvs/ctrl` but the on-disk path is `~/dotfiles` — hardcoded across 40+ references. Clone it to `~/dotfiles` and leave it there.
