@@ -124,10 +124,10 @@ shift is a bash loop that runs Claude against your GitHub issues backlog — san
 
 ### Two modes
 
-| Mode | Script           | Use when                                                      |
-| ---- | ---------------- | ------------------------------------------------------------- |
-| HITL | `shift/once.sh`  | Learning — runs once while you watch                          |
-| AFK  | `shift/afk.sh`   | Shipping — loops in Docker Sandbox with a max iteration guard |
+| Mode | Script          | Use when                                                      |
+| ---- | --------------- | ------------------------------------------------------------- |
+| HITL | `shift/once.sh` | Learning — runs once while you watch                          |
+| AFK  | `shift/afk.sh`  | Shipping — loops in Docker Sandbox with a max iteration guard |
 
 **HITL:** Claude runs once with `--permission-mode accept-edits` — you see every change and can intervene. Start here.
 
@@ -160,10 +160,10 @@ The key design: `sbx run` accepts multiple workspace paths. ctrl mounts `~/dotfi
 sbx run claude . ~/dotfiles:ro
 ```
 
-| Mount               | Access     | Contains                                          |
-| ------------------- | ---------- | ------------------------------------------------- |
-| `.` (project)       | read-write | The codebase the agent works on                   |
-| `~/dotfiles` (ctrl) | read-only  | Instructions, skills, global rules, shift prompt   |
+| Mount               | Access     | Contains                                         |
+| ------------------- | ---------- | ------------------------------------------------ |
+| `.` (project)       | read-write | The codebase the agent works on                  |
+| `~/dotfiles` (ctrl) | read-only  | Instructions, skills, global rules, shift prompt |
 
 Inside the sandbox, `~/.claude/CLAUDE.md` and `~/.claude/skills/` resolve through the symlinks set up by `bootstrap.sh`, which point into `~/dotfiles`. The read-only mount means the agent benefits from every skill and instruction without being able to modify them.
 
@@ -173,13 +173,13 @@ shift uses [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx` CLI)
 
 #### shift prerequisites
 
-| Requirement                    | Install                                                                                                                    |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `sbx` CLI                     | macOS: `brew install docker/tap/sbx` · Windows: download from [sbx-releases](https://github.com/docker/sbx-releases/releases) |
-| Windows Hypervisor Platform    | `Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All` (elevated PowerShell, Windows only)            |
-| `gh` (GitHub CLI)              | macOS: `brew install gh` · Windows: `winget install GitHub.cli` · [cli.github.com](https://cli.github.com/)                |
-| `jq`                           | macOS: `brew install jq` · Windows: `winget install jqlang.jq` · [jqlang.github.io/jq](https://jqlang.github.io/jq/download/) |
-| Claude subscription            | Claude Max, Team, or Enterprise (for sandbox OAuth)                                                                        |
+| Requirement                 | Install                                                                                                                       |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `sbx` CLI                   | macOS: `brew install docker/tap/sbx` · Windows: download from [sbx-releases](https://github.com/docker/sbx-releases/releases) |
+| Windows Hypervisor Platform | `Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All` (elevated PowerShell, Windows only)              |
+| `gh` (GitHub CLI)           | macOS: `brew install gh` · Windows: `winget install GitHub.cli` · [cli.github.com](https://cli.github.com/)                   |
+| `jq`                        | macOS: `brew install jq` · Windows: `winget install jqlang.jq` · [jqlang.github.io/jq](https://jqlang.github.io/jq/download/) |
+| Claude subscription         | Claude Max, Team, or Enterprise (for sandbox OAuth)                                                                           |
 
 #### One-time setup
 
@@ -217,6 +217,7 @@ bash ~/dotfiles/shift/afk.sh 20
 ```
 
 The AFK loop exits when:
+
 - Claude outputs `<promise>NO MORE TASKS</promise>` (backlog empty)
 - Max iterations reached (default: 5, pass a number as the first argument)
 - A lockfile conflict is detected (another shift is already running)

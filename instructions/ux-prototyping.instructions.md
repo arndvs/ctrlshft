@@ -27,43 +27,43 @@ Be sure to review the Source Lib folder which contains hooks, styles, types, and
 
 1. **Always include dark mode variants:**
 
-    ```tsx
-    // ✅ CORRECT
-    <section className='bg-white dark:bg-surface-1'>
+   ```tsx
+   // ✅ CORRECT
+   <section className='bg-white dark:bg-surface-1'>
 
-    // ❌ WRONG - Missing dark mode
-    <section className='bg-white'>
-    ```
+   // ❌ WRONG - Missing dark mode
+   <section className='bg-white'>
+   ```
 
 2. **Use surface tokens, never hardcoded colors:**
 
-    ```tsx
-    // ✅ CORRECT
-    <div className='bg-white dark:bg-surface-1'>
-    <Card className='bg-card dark:bg-surface-2'>
+   ```tsx
+   // ✅ CORRECT
+   <div className='bg-white dark:bg-surface-1'>
+   <Card className='bg-card dark:bg-surface-2'>
 
-    // ❌ WRONG - Hardcoded colors
-    <div className='bg-white dark:bg-gray-900'>
-    <Card className='bg-card dark:bg-slate-800'>
-    ```
+   // ❌ WRONG - Hardcoded colors
+   <div className='bg-white dark:bg-gray-900'>
+   <Card className='bg-card dark:bg-slate-800'>
+   ```
 
 3. **Use semantic text tokens:**
 
-    ```tsx
-    // ✅ CORRECT
-    <p className='text-foreground'>Primary text</p>
-    <p className='text-muted-foreground'>Secondary text</p>
+   ```tsx
+   // ✅ CORRECT
+   <p className='text-foreground'>Primary text</p>
+   <p className='text-muted-foreground'>Secondary text</p>
 
-    // ❌ WRONG - Hardcoded colors
-    <p className='dark:text-white'>Primary text</p>
-    <p className='dark:text-gray-400'>Secondary text</p>
-    ```
+   // ❌ WRONG - Hardcoded colors
+   <p className='dark:text-white'>Primary text</p>
+   <p className='dark:text-gray-400'>Secondary text</p>
+   ```
 
 4. **Surface token decision matrix:**
-    - Standard sections: `bg-white` → `dark:bg-surface-1`
-    - Raised cards: `bg-card` → `dark:bg-surface-2`
-    - Page background: `bg-background` → `dark:bg-surface-0` (handled globally)
-    - Brand CTAs: `bg-primary/10` → `dark:bg-surface-accent`
+   - Standard sections: `bg-white` → `dark:bg-surface-1`
+   - Raised cards: `bg-card` → `dark:bg-surface-2`
+   - Page background: `bg-background` → `dark:bg-surface-0` (handled globally)
+   - Brand CTAs: `bg-primary/10` → `dark:bg-surface-accent`
 
 ### Reference Documentation
 
@@ -90,21 +90,21 @@ Be sure to review the Source Lib folder which contains hooks, styles, types, and
 
 - Place all content data in a JSON object at the top of the file (unless a JSON object is already being imported into the file):
 
-    ```tsx
-    const componentData = {
-        title: "Dashboard Overview",
-        description: "View all your key metrics in one place",
-        ctaText: "Explore Features",
-        metrics: [
-            { label: "Active Users", value: "5,234", icon: "users" },
-            { label: "Conversion Rate", value: "3.2%", icon: "chart" },
-        ],
-        images: {
-            hero: "/images/dashboard-hero.png",
-            background: "/images/pattern-bg.svg"
-        }
-    };
-    ```
+  ```tsx
+  const componentData = {
+    title: "Dashboard Overview",
+    description: "View all your key metrics in one place",
+    ctaText: "Explore Features",
+    metrics: [
+      { label: "Active Users", value: "5,234", icon: "users" },
+      { label: "Conversion Rate", value: "3.2%", icon: "chart" },
+    ],
+    images: {
+      hero: "/images/dashboard-hero.png",
+      background: "/images/pattern-bg.svg",
+    },
+  };
+  ```
 
 - Separate data structure from presentation
 - Include all text, labels, URLs, and image paths in this data object
@@ -124,14 +124,14 @@ Be sure to review the Source Lib folder which contains hooks, styles, types, and
 
 - Define explicit TypeScript interfaces for all props:
 
-    ```tsx
-    interface ButtonProps {
-        text: string;
-        onClick: () => void;
-        variant?: 'primary' | 'secondary' | 'tertiary';
-        isDisabled?: boolean;
-    }
-    ```
+  ```tsx
+  interface ButtonProps {
+    text: string;
+    onClick: () => void;
+    variant?: "primary" | "secondary" | "tertiary";
+    isDisabled?: boolean;
+  }
+  ```
 
 - Use discriminated unions for complex props
 - Provide sensible defaults for optional props
@@ -141,28 +141,28 @@ Be sure to review the Source Lib folder which contains hooks, styles, types, and
 
 - Use the defined color scheme from shadcn — CSS variables for colors instead of hardcoded Tailwind colors:
 
-    ```tsx
-    <div className="
-        bg-background text-foreground
-        border-border
-        ring-ring
-    ">
-    ```
+  ```tsx
+  <div className="
+      bg-background text-foreground
+      border-border
+      ring-ring
+  ">
+  ```
 
 - Group related Tailwind classes together:
 
-    ```tsx
-    <div className="
-        {/* Layout */}
-        flex flex-col gap-4 p-6
-        {/* Typography */}
-        text-foreground font-medium
-        {/* Visual */}
-        bg-background rounded-lg shadow-md
-        {/* States */}
-        hover:shadow-lg transition-shadow duration-200
-    ">
-    ```
+  ```tsx
+  <div className="
+      {/* Layout */}
+      flex flex-col gap-4 p-6
+      {/* Typography */}
+      text-foreground font-medium
+      {/* Visual */}
+      bg-background rounded-lg shadow-md
+      {/* States */}
+      hover:shadow-lg transition-shadow duration-200
+  ">
+  ```
 
 - Avoid arbitrary values (`[w-327px]`) when possible; use standard Tailwind spacing
 - Use consistent shadcn color variables from the Tailwind config
@@ -172,25 +172,30 @@ Be sure to review the Source Lib folder which contains hooks, styles, types, and
 
 - Import and use shadcn components for consistent UI:
 
-    ```tsx
-    import { Button } from "@/components/ui/button";
-    import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-    import { Input } from "@/components/ui/input";
-    ```
+  ```tsx
+  import { Button } from "@/components/ui/button";
+  import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+  } from "@/components/ui/card";
+  import { Input } from "@/components/ui/input";
+  ```
 
 - Use shadcn variants for consistent styling:
 
-    ```tsx
-    <Button variant="default">Primary Action</Button>
-    <Button variant="secondary">Secondary Action</Button>
-    <Button variant="destructive">Delete</Button>
-    ```
+  ```tsx
+  <Button variant="default">Primary Action</Button>
+  <Button variant="secondary">Secondary Action</Button>
+  <Button variant="destructive">Delete</Button>
+  ```
 
 - Maintain shadcn's component prop structure
 - Use shadcn's design tokens for spacing, typography, and colors
 - **REQUIRED:** All components MUST support dark mode using DMDS surface tokens
-    - Use `dark:bg-surface-1`, `dark:bg-surface-2`, `dark:bg-surface-accent` instead of hardcoded colors
-    - Use `text-foreground` and `text-muted-foreground` for all text colors
+  - Use `dark:bg-surface-1`, `dark:bg-surface-2`, `dark:bg-surface-accent` instead of hardcoded colors
+  - Use `text-foreground` and `text-muted-foreground` for all text colors
 
 ### 7. Server Components vs Client Components
 
@@ -218,31 +223,31 @@ Be sure to review the Source Lib folder which contains hooks, styles, types, and
 // ✅ CORRECT - Server component with minimal client component
 // Parent (Server Component)
 export default function FeatureSection({ data }: Props) {
-    return (
-        <section>
-            <h2>{data.title}</h2>
-            <p>{data.description}</p>
-            <InteractiveButton onClick={data.handleClick} />
-        </section>
-    );
+  return (
+    <section>
+      <h2>{data.title}</h2>
+      <p>{data.description}</p>
+      <InteractiveButton onClick={data.handleClick} />
+    </section>
+  );
 }
 
 // Child (Client Component - minimal scope)
-'use client';
+("use client");
 function InteractiveButton({ onClick }: { onClick: () => void }) {
-    return <button onClick={onClick}>Click Me</button>;
+  return <button onClick={onClick}>Click Me</button>;
 }
 
 // ❌ WRONG - Entire component marked as client when only button needs it
-'use client';
+("use client");
 export default function FeatureSection({ data }: Props) {
-    return (
-        <section>
-            <h2>{data.title}</h2>
-            <p>{data.description}</p>
-            <button onClick={data.handleClick}>Click Me</button>
-        </section>
-    );
+  return (
+    <section>
+      <h2>{data.title}</h2>
+      <p>{data.description}</p>
+      <button onClick={data.handleClick}>Click Me</button>
+    </section>
+  );
 }
 ```
 
@@ -255,14 +260,14 @@ export default function FeatureSection({ data }: Props) {
 ```tsx
 // ✅ CORRECT - Server component fetches, client component receives
 export default async function Page() {
-    const data = await fetchData();
-    return <InteractiveComponent data={data} />;
+  const data = await fetchData();
+  return <InteractiveComponent data={data} />;
 }
 
-'use client';
+("use client");
 function InteractiveComponent({ data }: { data: Data }) {
-    const [state, setState] = useState();
-    return <div>{/* Use data and state */}</div>;
+  const [state, setState] = useState();
+  return <div>{/* Use data and state */}</div>;
 }
 ```
 
@@ -289,151 +294,161 @@ Our animation system prioritizes **instant content visibility** with **subtle, p
 - Use the existing `@animations.ts` variations rather than creating new animations from scratch
 - Import and use Framer Motion as the primary animation library:
 
-    ```tsx
-    import { motion } from 'framer-motion';
-    ```
+  ```tsx
+  import { motion } from "framer-motion";
+  ```
 
 - **CRITICAL: Hero components MUST NOT use Framer Motion animations**
-    - Hero sections should load immediately without animation delays
-    - Hero components must be server components
-    - Use only CSS transitions for hover states and subtle interactions
+  - Hero sections should load immediately without animation delays
+  - Hero components must be server components
+  - Use only CSS transitions for hover states and subtle interactions
 
 - **CRITICAL: Use scroll-triggered animations for content sections (non-hero)**
 
-    ```tsx
-    import { useContainerVariants, useItemVariants } from '@/lib/hooks/use-animation-variants';
+  ```tsx
+  import {
+    useContainerVariants,
+    useItemVariants,
+  } from "@/lib/hooks/use-animation-variants";
 
-    const containerVars = useContainerVariants();
-    const itemVars = useItemVariants();
+  const containerVars = useContainerVariants();
+  const itemVars = useItemVariants();
 
-    <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={containerVars}
-    >
-        {content}
-    </motion.div>
-    ```
+  <motion.div
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true, margin: "-100px" }}
+    variants={containerVars}
+  >
+    {content}
+  </motion.div>;
+  ```
 
 - **CRITICAL: Above-fold content MUST use CLS-safe or instant variants**
 
-    ```tsx
-    import { useItemVariants } from '@/lib/hooks/use-animation-variants';
+  ```tsx
+  import { useItemVariants } from "@/lib/hooks/use-animation-variants";
 
-    const variants = useItemVariants({ clsSafe: true });
+  const variants = useItemVariants({ clsSafe: true });
 
-    <motion.section
-        initial='hidden'
-        whileInView='visible'
-        viewport={{ once: true, margin: '-100px' }}
-        variants={variants}
-    >
-        Above-fold content
-    </motion.section>
-    ```
+  <motion.section
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true, margin: "-100px" }}
+    variants={variants}
+  >
+    Above-fold content
+  </motion.section>;
+  ```
 
 - **Animation Patterns by Use Case:**
 
-    **Hero Components (NO Framer Motion, Server Components Only):**
+  **Hero Components (NO Framer Motion, Server Components Only):**
 
-    ```tsx
-    export default function HeroSection({ data }: Props) {
-        return (
-            <div className='hero-section'>
-                <h1>{data.title}</h1>
-                <div className='transition-all hover:shadow-lg'>
-                    {/* Only CSS transitions for hover states */}
-                </div>
-            </div>
-        );
-    }
-    ```
+  ```tsx
+  export default function HeroSection({ data }: Props) {
+    return (
+      <div className="hero-section">
+        <h1>{data.title}</h1>
+        <div className="transition-all hover:shadow-lg">
+          {/* Only CSS transitions for hover states */}
+        </div>
+      </div>
+    );
+  }
+  ```
 
-    **Content Sections (use `whileInView`):**
+  **Content Sections (use `whileInView`):**
 
-    ```tsx
-    import { useContainerVariants } from '@/lib/hooks/use-animation-variants';
+  ```tsx
+  import { useContainerVariants } from "@/lib/hooks/use-animation-variants";
 
-    const containerVars = useContainerVariants();
+  const containerVars = useContainerVariants();
 
-    <motion.div
-        initial='hidden'
-        whileInView='visible'
-        viewport={{ once: true, margin: '-100px' }}
-        variants={containerVars}
-    >
-        {/* Page sections, cards, lists */}
-    </motion.div>
-    ```
+  <motion.div
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true, margin: "-100px" }}
+    variants={containerVars}
+  >
+    {/* Page sections, cards, lists */}
+  </motion.div>;
+  ```
 
-    **Interactive Elements (instant render + interaction-only):**
+  **Interactive Elements (instant render + interaction-only):**
 
-    ```tsx
-    import { useInteractionVariants } from '@/lib/hooks/use-animation-variants';
+  ```tsx
+  import { useInteractionVariants } from "@/lib/hooks/use-animation-variants";
 
-    const buttonVars = useInteractionVariants('button');
-    const microVars = useInteractionVariants('micro');
+  const buttonVars = useInteractionVariants("button");
+  const microVars = useInteractionVariants("micro");
 
-    <motion.button
-        initial={{ opacity: 1 }}
-        variants={buttonVars}
-        whileHover='hover'
-        whileTap='tap'
-    >
-        Click me
-    </motion.button>
-    ```
+  <motion.button
+    initial={{ opacity: 1 }}
+    variants={buttonVars}
+    whileHover="hover"
+    whileTap="tap"
+  >
+    Click me
+  </motion.button>;
+  ```
 
-    **Staggered lists:**
+  **Staggered lists:**
 
-    ```tsx
-    import { useContainerVariants, useItemVariants } from '@/lib/hooks/use-animation-variants';
+  ```tsx
+  import {
+    useContainerVariants,
+    useItemVariants,
+  } from "@/lib/hooks/use-animation-variants";
 
-    const containerVars = useContainerVariants();
-    const itemVars = useItemVariants();
+  const containerVars = useContainerVariants();
+  const itemVars = useItemVariants();
 
-    <motion.div
-        initial='hidden'
-        whileInView='visible'
-        viewport={{ once: true, margin: '-50px' }}
-        variants={containerVars}
-    >
-        {items.map((item) => (
-            <motion.div key={item.id} variants={itemVars}>
-                {/* Item content */}
-            </motion.div>
-        ))}
-    </motion.div>
-    ```
+  <motion.div
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true, margin: "-50px" }}
+    variants={containerVars}
+  >
+    {items.map((item) => (
+      <motion.div key={item.id} variants={itemVars}>
+        {/* Item content */}
+      </motion.div>
+    ))}
+  </motion.div>;
+  ```
 
 - Use exit animations for elements being removed:
 
-    ```tsx
-    <AnimatePresence>
-        {isVisible && (
-            <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-            >
-                Content
-            </motion.div>
-        )}
-    </AnimatePresence>
-    ```
+  ```tsx
+  <AnimatePresence>
+    {isVisible && (
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: "auto" }}
+        exit={{ opacity: 0, height: 0 }}
+      >
+        Content
+      </motion.div>
+    )}
+  </AnimatePresence>
+  ```
 
 - **CRITICAL: Always respect user preferences for reduced motion:**
 
-    ```tsx
-    // ✅ REQUIRED - Use helper hooks (automatic accessibility)
-    import { useContainerVariants, useInteractionVariants, useItemVariants } from '@/lib/hooks/use-animation-variants';
+  ```tsx
+  // ✅ REQUIRED - Use helper hooks (automatic accessibility)
+  import {
+    useContainerVariants,
+    useInteractionVariants,
+    useItemVariants,
+  } from "@/lib/hooks/use-animation-variants";
 
-    // Helper hooks automatically respect prefers-reduced-motion
-    const containerVars = useContainerVariants();
-    const itemVars = useItemVariants();
-    const interactionVars = useInteractionVariants('button');
-    ```
+  // Helper hooks automatically respect prefers-reduced-motion
+  const containerVars = useContainerVariants();
+  const itemVars = useItemVariants();
+  const interactionVars = useInteractionVariants("button");
+  ```
 
 ### 9. State Management
 
@@ -463,16 +478,16 @@ Our animation system prioritizes **instant content visibility** with **subtle, p
 - Provide user-friendly error messages
 - Use shadcn's Alert component for error states:
 
-    ```tsx
-    import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+  ```tsx
+  import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-    <Alert variant="destructive">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
-            There was a problem loading your data. Please try again.
-        </AlertDescription>
-    </Alert>
-    ```
+  <Alert variant="destructive">
+    <AlertTitle>Error</AlertTitle>
+    <AlertDescription>
+      There was a problem loading your data. Please try again.
+    </AlertDescription>
+  </Alert>;
+  ```
 
 ### 12. Performance Optimization
 
@@ -482,30 +497,28 @@ Our animation system prioritizes **instant content visibility** with **subtle, p
 - Lazy-load offscreen or heavy components
 - Use Framer Motion's LazyMotion for code-splitting animations:
 
-    ```tsx
-    import { LazyMotion, domAnimation, m } from "framer-motion";
+  ```tsx
+  import { LazyMotion, domAnimation, m } from "framer-motion";
 
-    <LazyMotion features={domAnimation}>
-        <m.div animate={{ scale: 1.2 }}>
-            Lazy loaded animation
-        </m.div>
-    </LazyMotion>
-    ```
+  <LazyMotion features={domAnimation}>
+    <m.div animate={{ scale: 1.2 }}>Lazy loaded animation</m.div>
+  </LazyMotion>;
+  ```
 
 ### 13. Component Documentation
 
 - Add JSDoc comments describing the component's purpose:
 
-    ```tsx
-    /**
-     * Dashboard card component that displays key metrics with icons.
-     * Supports customization through the componentData object.
-     * Uses shadcn components and Framer Motion animations.
-     *
-     * @example
-     * <DashboardCard />
-     */
-    ```
+  ```tsx
+  /**
+   * Dashboard card component that displays key metrics with icons.
+   * Supports customization through the componentData object.
+   * Uses shadcn components and Framer Motion animations.
+   *
+   * @example
+   * <DashboardCard />
+   */
+  ```
 
 - Document any complex logic with inline comments
 - Include usage examples in comments
@@ -522,107 +535,113 @@ Our animation system prioritizes **instant content visibility** with **subtle, p
 
 ```tsx
 // user-dashboard-card.tsx
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useContainerVariants, useItemVariants } from '@/lib/hooks/use-animation-variants';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  useContainerVariants,
+  useItemVariants,
+} from "@/lib/hooks/use-animation-variants";
+import { AnimatePresence, motion } from "framer-motion";
 
 // ===== Component Data =====
 const componentData = {
-    title: 'User Dashboard',
-    subtitle: 'Welcome back to your dashboard',
-    metrics: [
-        { id: 'users', label: 'Active Users', value: '5,234', trend: '+12%' },
-        { id: 'revenue', label: 'Monthly Revenue', value: '$12,345', trend: '+8%' },
-        { id: 'conversion', label: 'Conversion Rate', value: '3.2%', trend: '-0.5%' }
-    ],
-    cta: {
-        text: 'View Detailed Analytics',
-        url: '/analytics'
+  title: "User Dashboard",
+  subtitle: "Welcome back to your dashboard",
+  metrics: [
+    { id: "users", label: "Active Users", value: "5,234", trend: "+12%" },
+    { id: "revenue", label: "Monthly Revenue", value: "$12,345", trend: "+8%" },
+    {
+      id: "conversion",
+      label: "Conversion Rate",
+      value: "3.2%",
+      trend: "-0.5%",
     },
-    images: {
-        background: '/images/dashboard-bg.svg',
-        avatar: '/images/user-avatar.png'
-    }
+  ],
+  cta: {
+    text: "View Detailed Analytics",
+    url: "/analytics",
+  },
+  images: {
+    background: "/images/dashboard-bg.svg",
+    avatar: "/images/user-avatar.png",
+  },
 };
 
 // ===== Helper Functions =====
 const formatTrend = (trend: string) => {
-    const isPositive = trend.startsWith('+');
+  const isPositive = trend.startsWith("+");
 
-    return {
-        value: trend,
-        className: isPositive ? 'text-green-500' : 'text-red-500',
-        icon: isPositive ? '↑' : '↓'
-    };
+  return {
+    value: trend,
+    className: isPositive ? "text-green-500" : "text-red-500",
+    icon: isPositive ? "↑" : "↓",
+  };
 };
 
 // ===== Component =====
 const UserDashboardCard: React.FC = () => {
-    const containerVars = useContainerVariants();
-    const itemVars = useItemVariants();
+  const containerVars = useContainerVariants();
+  const itemVars = useItemVariants();
 
-    return (
-        <motion.div
-            initial='hidden'
-            whileInView='visible'
-            viewport={{ once: true, margin: '-100px' }}
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-100px" }}
+      variants={containerVars}
+    >
+      <Card className="mx-auto max-w-2xl overflow-hidden">
+        <CardHeader className="bg-card text-card-foreground">
+          <CardTitle>{componentData.title}</CardTitle>
+          <p className="text-muted-foreground">{componentData.subtitle}</p>
+        </CardHeader>
+
+        <CardContent className="p-6">
+          <motion.div
+            className="grid grid-cols-1 gap-4 md:grid-cols-3"
             variants={containerVars}
-        >
-            <Card className='mx-auto max-w-2xl overflow-hidden'>
-                <CardHeader className='bg-card text-card-foreground'>
-                    <CardTitle>{componentData.title}</CardTitle>
-                    <p className='text-muted-foreground'>{componentData.subtitle}</p>
-                </CardHeader>
+          >
+            {componentData.metrics.map((metric) => (
+              <MetricCard key={metric.id} {...metric} />
+            ))}
+          </motion.div>
 
-                <CardContent className='p-6'>
-                    <motion.div
-                        className='grid grid-cols-1 gap-4 md:grid-cols-3'
-                        variants={containerVars}
-                    >
-                        {componentData.metrics.map((metric) => (
-                            <MetricCard key={metric.id} {...metric} />
-                        ))}
-                    </motion.div>
-
-                    <motion.div className='mt-8' variants={itemVars}>
-                        <Button variant='default' asChild>
-                            <a href={componentData.cta.url}>
-                                {componentData.cta.text}
-                            </a>
-                        </Button>
-                    </motion.div>
-                </CardContent>
-            </Card>
-        </motion.div>
-    );
+          <motion.div className="mt-8" variants={itemVars}>
+            <Button variant="default" asChild>
+              <a href={componentData.cta.url}>{componentData.cta.text}</a>
+            </Button>
+          </motion.div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
 };
 
 // ===== Subcomponents =====
 interface MetricProps {
-    id: string;
-    label: string;
-    value: string;
-    trend: string;
+  id: string;
+  label: string;
+  value: string;
+  trend: string;
 }
 
 const MetricCard: React.FC<MetricProps> = ({ label, value, trend }) => {
-    const trendData = formatTrend(trend);
-    const itemVars = useItemVariants();
+  const trendData = formatTrend(trend);
+  const itemVars = useItemVariants();
 
-    return (
-        <motion.div
-            variants={itemVars}
-            whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-            className='bg-secondary border-border flex flex-col rounded-lg border p-4'
-        >
-            <span className='text-muted-foreground text-sm'>{label}</span>
-            <span className='text-foreground mt-1 text-2xl font-bold'>{value}</span>
-            <span className={`mt-2 flex items-center text-sm ${trendData.className}`}>
-                {trendData.icon} {trendData.value}
-            </span>
-        </motion.div>
-    );
+  return (
+    <motion.div
+      variants={itemVars}
+      whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+      className="bg-secondary border-border flex flex-col rounded-lg border p-4"
+    >
+      <span className="text-muted-foreground text-sm">{label}</span>
+      <span className="text-foreground mt-1 text-2xl font-bold">{value}</span>
+      <span className={`mt-2 flex items-center text-sm ${trendData.className}`}>
+        {trendData.icon} {trendData.value}
+      </span>
+    </motion.div>
+  );
 };
 
 export default UserDashboardCard;
