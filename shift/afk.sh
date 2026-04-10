@@ -23,17 +23,14 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
     echo "=== shift iteration $i of $MAX_ITERATIONS ==="
 
     source "$SCRIPT_DIR/_build_prompt.sh"
-
-    # Capture sbx output to temp file so we can check exit code separately
     raw_output=$(mktemp)
     trap 'rm -f "$raw_output" "$PROMPT_FILE"' EXIT
 
-    if ! sbx run --name shift-afk claude . "$CTRL_DIR:ro" \
+    if ! cat "$PROMPT_FILE" | sbx run --name shift-afk claude . "$CTRL_DIR:ro" \
         -- --print \
         --output-format stream-json \
-        "$(cat "$PROMPT_FILE")" 2>/dev/null | tee /dev/stderr > "$raw_output"; then
+        2>/dev/null | tee /dev/stderr > "$raw_output"; then
         echo "ERROR: sbx failed on iteration $i" >&2
-        rm -f "$raw_output" "$PROMPT_FILE"
         exit 1
     fi
 
