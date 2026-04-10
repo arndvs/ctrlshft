@@ -327,6 +327,7 @@ sbx policy allow network <host> # allow a blocked host
 ├── global.instructions.md           ← universal rules, always loaded
 ├── settings.json                    ← managed VS Code settings
 ├── .env.agent.example               ← template for non-sensitive config
+├── .env.citation.example            ← template for citation skill config
 ├── .env.secrets.example             ← template for API keys and tokens
 ├── .gitignore
 ├── dotfiles.code-workspace
@@ -337,6 +338,7 @@ sbx policy allow network <host> # allow a blocked host
 │   ├── sentry.instructions.md
 │   ├── google-docs.instructions.md
 │   ├── css.instructions.md
+│   ├── ux-prototyping.instructions.md
 │   └── _local/                      ← GITIGNORED — your private instructions
 ├── skills/
 │   ├── do-work/
@@ -358,6 +360,7 @@ sbx policy allow network <host> # allow a blocked host
 │   ├── _build_prompt.sh             shared prompt builder (sourced by afk/once)
 │   └── prompt.md                    shared agent prompt
 ├── bin/
+│   ├── _lib.sh                      shared utility functions
 │   ├── bootstrap.sh                 one-command setup, idempotent
 │   ├── agent-shell.sh               launches secrets-free shell for agent sessions
 │   ├── sync-settings.sh             merge VS Code settings

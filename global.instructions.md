@@ -16,8 +16,8 @@ Output "Read global instructions." to chat to acknowledge your read this file.
 - Never change website copy unless told to
 - Do not add legacy or backward compatibility except for database migrations
 - Never fail silently. Always add strict validation. Always throw an error if something is missing or unexpected
-- Never use sample data, placeholders, || or ?? fallbacks
-- Never add a defensive fix using a fallback
+- Never use sample data, placeholders, || or ?? fallbacks. Exception: UI prototyping components use CMS-replaceable static data and graceful degradation by design — see ux-prototyping instructions
+- Never add a defensive fix using a fallback. Exception: UI components may use conditional rendering for undefined states per ux-prototyping instructions
 - If front-end or back-end get an unexpected response, print the raw response to help me debug
 - Before using any CSS variable, class, JS function, or utility, verify it actually exists in the codebase. Search for its definition first — never assume a name exists based on convention or naming patterns
 - When reorganizing or moving elements, check and fix spacing

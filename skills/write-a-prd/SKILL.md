@@ -69,3 +69,7 @@ Output "Read Write a PRD skill." to chat to acknowledge you read this file.
 
 [Anything else relevant — edge cases, open questions, future considerations]
 ```
+
+## Handoff
+
+If context is high before the PRD is complete, follow the standard handoff protocol — persist progress to `working/` and provide the pickup command.

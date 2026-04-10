@@ -118,12 +118,4 @@ After presenting the plan, offer the user:
 
 1. `/prd-to-issues` — create GitHub issues from this plan
 2. `/do-work` — start implementing the first slice immediately
-3. **Save plan to `working/`** — persist this plan for cross-conversation pickup
-
-If the user picks option 3, or if context is high, write the plan to `working/<descriptive-name>-plan.md` in the project root. Include all slice details, acceptance criteria, dependency graph, and what remains. Then output the pickup command:
-
-```
-@working/<plan-name>.md — pick up on remaining slices. Start with Slice [N].
-```
-
-Include any other @-references the next conversation needs (research.md, PRD issue, key files).
+3. **Save plan to `working/`** — follow the standard handoff protocol (global instructions `<handoff>`) to persist for cross-conversation pickup. Include @-references to research.md, PRD issue, and key files.

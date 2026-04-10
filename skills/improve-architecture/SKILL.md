@@ -41,3 +41,7 @@ Present all designs. Recommend which design is strongest and why. If elements fr
 ### 5. Create RFC
 
 Once the user accepts a design, create a GitHub issue as a refactor RFC describing the current state, proposed interface, migration path, and affected files.
+
+## Handoff
+
+If context is high at any step, follow the standard handoff protocol — persist analysis and current progress to `working/` and provide the pickup command.

@@ -1,13 +1,6 @@
 ---
 name: skill-scaffolder
-description: >
-  Meta-skill for creating new agent skills that involve multi-step automation,
-  browser navigation, state tracking, evidence capture, and both local (VS Code
-  Insiders) and VPS (Playwright) execution. Use when the user wants to "create a
-  skill", "build a new skill", "scaffold a skill", "make a skill for X", or
-  describes a multi-step agentic workflow they want to automate. This skill
-  produces a complete, production-ready skill directory following proven patterns
-  extracted from the citation-builder-skill.
+description: "Meta-skill for creating new agent skills that involve multi-step automation, browser navigation, state tracking, evidence capture, and both local (VS Code Insiders) and VPS (Playwright) execution. Use when the user wants to 'create a skill', 'build a new skill', 'scaffold a skill', 'make a skill for X', or describes a multi-step agentic workflow they want to automate."
 ---
 
 # Skill Scaffolder
@@ -27,7 +20,7 @@ Creates production-ready agent skills that follow the proven agentic pipeline ar
 
 ## Pre-Scaffolding Interview
 
-Before generating any files, ask the user these questions to determine which patterns the skill needs. Use the `vscode_askQuestions` tool:
+Before generating any files, ask the user these questions to determine which patterns the skill needs. Ask questions one at a time:
 
 1. **Skill name** — kebab-case name (e.g., `repo-portfolio`, `competitor-scraper`)
 2. **What it does** — one-sentence summary of the pipeline
@@ -96,7 +89,7 @@ Every generated skill follows this layout:
 Generate files in this exact order. Each file must be complete, production-ready, with no TODOs or placeholders in code (config templates may have `YOUR_*_HERE` placeholders).
 
 **Code generation rules (apply to ALL generated Python files):**
-- No `# comment` lines — per global instructions, do not comment generated code
+- No `# comment` lines — do not comment generated code (by convention)
 - No `pass` statements — every method must have a real implementation
 - No commented-out code — if a pattern has `CUSTOMIZE:` markers, replace them with actual code
 - All imports must resolve — no dangling references
@@ -234,7 +227,7 @@ This is the most important generated file. The orchestrator follows the **Patter
 - Import the ACTUAL state store class (not a comment) — `from scripts.sheets_client import SheetsClient` or `from scripts.state_store import JsonStateStore`
 - Import all domain-specific modules the phases need
 - Write real phase methods with populated result dicts (not placeholder comments)
-- No comment lines in generated code (per global instructions)
+- No comment lines in generated code (by convention)
 - Entry point uses `argparse` with `--config`, `--item`, `--dry-run` flags
 - If browser-based: add `self.browser = None` and runtime check in `run()`
 

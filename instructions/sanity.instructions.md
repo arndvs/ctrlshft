@@ -1,5 +1,3 @@
-# Sanity Instructions
-
 Output "Read Sanity instructions." to chat to acknowledge you read this file.
 
 ## MCP Server Setup
