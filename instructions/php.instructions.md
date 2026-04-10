@@ -1,4 +1,4 @@
-Output "Read PHP instructions." to chat to acknowledge your read this file.
+Output "Read PHP instructions." to chat to acknowledge you read this file.
 
 <php>
 - Support modern PHP 8.4+ syntax

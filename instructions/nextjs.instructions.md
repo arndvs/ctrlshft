@@ -1,4 +1,4 @@
-Output "Read NextJS instructions." to chat to acknowledge your read this file.
+Output "Read NextJS instructions." to chat to acknowledge you read this file.
 
 <javascript>
 - Only use console.error or console.log or console.warning as a final catch in the app to log an error. In all earlier places, throw the error using "throw"
