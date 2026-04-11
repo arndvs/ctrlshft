@@ -86,4 +86,8 @@ service = build('sheets', 'v4', credentials=creds)  # e.g. build('docs', 'v1', .
 
 The spreadsheet/document must be shared with the service account's `client_email` address for access to work. If you get a 403 or "not found" error, the most likely cause is the document isn't shared with the service account — the API error message is often misleading.
 
+Uploaded files vs native Google Docs:
+
+Google Docs URLs can point to either a **native Google Doc** or an **uploaded file** (e.g. a .docx opened in Google Docs). The Docs API (`docs` v1) only works with native Google Docs. If you get `"This operation is not supported for this document"`, the file is an uploaded format — use the **Drive API** (`drive` v3) with `files().export(fileId=ID, mimeType="text/plain")` to read it instead. This requires the `drive.readonly` scope and the Drive API enabled on the project.
+
 Service account credentials auto-refresh, so no manual token handling is needed.
