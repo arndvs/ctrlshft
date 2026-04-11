@@ -4,27 +4,37 @@
 
 # ctrl
 
-> Your AI agents, everywhere, autonomous — from a single source of truth.
+> Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across every machine.
 
-Claude Code and Copilot give you AI in your editor. They don't give you a system.
+Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
 
-ctrl is the system — synced across every machine, scoped to every stack, with a full pipeline from idea to autonomous execution. One `git pull` updates instructions, skills, and shell config everywhere. Context loads only what's relevant to your current project. Secrets stay hardened. And when you walk away, shift keeps shipping.
+ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions and skills into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into two tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`). When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
 ```
 
+Bootstrap is idempotent and cross-platform (228 lines). It symlinks `~/.claude/CLAUDE.md` and `~/.claude/skills/`, wires shell integration into `~/.bashrc`/`~/.zshrc`, creates `secrets/` from templates, and adds supply chain protection to `~/.npmrc` and `uv.toml`. Full details in the [Installation](#installation) section.
+
 ---
 
 ## The pipeline
 
-Scope a feature. Ship it. Never leave your terminal.
+```
+/grill-me       → Interrogate you about a feature until shared understanding
+/write-a-prd    → Explore codebase, interview, write PRD, submit as GitHub issue
+/prd-to-issues  → Break the PRD into vertical slices → GitHub issues (AFK vs HITL labeled)
+/do-work        → Understand → Plan → Implement → Validate → Commit (loops)
+shift           → Pick issues from the backlog, implement in a Docker sandbox, commit, repeat
+```
+
+Use any skill individually or chain them. The planning pipeline hands off between stages automatically.
 
 ```mermaid
 graph TD
     A[Human Intent] --> B["/grill-me — interrogation"]
-    B --> C["/write-a-prd — Product Requirements Document (PRD) → GitHub Issue"]
+    B --> C["/write-a-prd — PRD → GitHub Issue"]
     C --> D["/prd-to-issues — vertical slices → GitHub Issues"]
     D --> E["/do-work — Understand → Plan → Implement → Validate → Commit"]
     E -->|loop| E
@@ -36,57 +46,25 @@ graph TD
     G -->|new issues| D
 ```
 
-Use any skill individually or chain them. The planning pipeline (grill-me → write-a-prd → prd-to-issues → do-work) hands off between stages.
-
 ---
 
 ## Continuous workflow
 
-Large tasks outgrow a single conversation. Context degrades — compaction loses nuance, the agent repeats itself, quality drops. ctrl handles this by treating conversations as disposable and plans as persistent.
-
-### How it works
-
-When context gets high, the agent:
-
-1. Commits all current work
-2. Writes the remaining plan to `working/<descriptive-name>-plan.md` — slices, acceptance criteria, what's done, what remains
-3. Suggests wrapping up and provides a **pickup command** to paste into a fresh conversation
+Large tasks outgrow a single conversation. When context gets high, the agent commits current work, writes the remaining plan to `working/<name>-plan.md`, and outputs a pickup command:
 
 ```
-@working/production-docs-audit-plan.md — pick up on remaining slices. Start with Slice 2.
+@working/docs-audit-plan.md — pick up on remaining slices. Start with Slice 2.
 ```
 
-The new conversation reads the plan file and continues exactly where the old one left off. No re-exploration, no lost context.
-
-### The convention
-
-| Artifact            | Location                   | Purpose                              | Lifecycle                  |
-| ------------------- | -------------------------- | ------------------------------------ | -------------------------- |
-| `working/*-plan.md` | `working/` in project root | Slice tracking between conversations | Delete after work ships    |
-| `research.md`       | Project root               | Cached exploration for broad reuse   | Delete after feature ships |
-| GitHub issues       | Remote                     | Permanent record, shift backlog      | Close when done            |
-
-`working/` is gitignored. Plans are working documents — they track progress between conversations, not permanent documentation.
-
-### Example flow
+Paste that into a fresh conversation. It reads the plan and continues where the old one left off — no re-exploration, no lost context. This is enforced by `global.instructions.md` and built into the `do-work`, `technical-fellow`, `prd-to-issues`, and `research` skills. The agent does it automatically.
 
 ```
-Conversation 1:
-  "Plan the docs audit" → technical-fellow produces 4 slices
-  Implement Slice 1 → commit
-  Context getting high → agent writes working/docs-audit-plan.md
-  Agent outputs: @working/docs-audit-plan.md — pick up on remaining slices. Start with Slice 2.
-
-Conversation 2:
-  Paste the pickup command → agent reads the plan → implements Slice 2
-  Implements Slice 3 → context high again → updates the plan file
-  Agent outputs: @working/docs-audit-plan.md — pick up on remaining slices. Start with Slice 4.
-
-Conversation 3:
-  Paste → Slice 4 → QA → done → delete working/docs-audit-plan.md
+Conversation 1:  Plan → Slice 1 → commit → context high → write plan → hand off
+Conversation 2:  Read plan → Slice 2 → Slice 3 → context high → update plan → hand off
+Conversation 3:  Read plan → Slice 4 → QA → done → delete plan
 ```
 
-This is enforced by `global.instructions.md` (the `<handoff>` rules) and built into the `do-work`, `technical-fellow`, `prd-to-issues`, and `research` skills. The agent does this automatically — you don't need to ask.
+`working/` is gitignored. Plans are working documents, not permanent docs — delete them when the work ships.
 
 ---
 
@@ -94,13 +72,13 @@ This is enforced by `global.instructions.md` (the `<handoff>` rules) and built i
 
 ### One repo, every machine
 
-Clone `ctrl` to `~/dotfiles` on your local machine, your VPS, anywhere. One `git pull` updates instructions, skills, and shell config everywhere. No drift. No re-setup.
+Clone to `~/dotfiles` on your laptop, your VPS, anywhere. `git pull` updates both. That's it.
 
-> **How `CLAUDE.md` works:** You edit `CLAUDE.base.md` (tracked in git). `bootstrap.sh` generates `CLAUDE.md` from it by appending `@`-references to any local instruction files in `instructions/_local/`. `CLAUDE.md` is gitignored because it contains machine-specific references — only the generated file is symlinked to `~/.claude/` and read by Claude Code at runtime.
+You edit `CLAUDE.base.md` (tracked in git). `bootstrap.sh` generates `CLAUDE.md` from it by appending `@`-references to any local instruction files in `instructions/_local/`. The generated file is symlinked to `~/.claude/` and read by Claude Code at runtime.
 
-### Progressive disclosure
+### Progressive context loading
 
-`detect-context.sh` scans your working directory and exports `ACTIVE_CONTEXTS`. A Next.js project loads Next.js rules. A PHP project loads PHP rules. Nothing leaks between stacks. Agents stay focused.
+`detect-context.sh` scans your working directory and exports `ACTIVE_CONTEXTS`. A Next.js project loads Next.js rules. A PHP project loads PHP rules. Nothing leaks between stacks.
 
 ```
 VS Code opens a project
@@ -114,55 +92,55 @@ loads matching instructions/*.md
 skills/ auto-discovered — workflow + your personal _local/ skills
 ```
 
-The single setting that makes this work: `"chat.instructionsFilesLocations": {"~/dotfiles": true}` — included in the managed `settings.json` and applied by `sync-settings.sh`.
+One setting enables the chain: `"chat.instructionsFilesLocations": {"~/dotfiles": true}` — included in `settings.json`, applied by `sync-settings.sh`.
 
-### Your personal layer, gitignored
+### Private skills and instructions
 
-`skills/_local/` and `instructions/_local/` are gitignored directories inside the repo. Drop your private, domain-specific, or business-specific skills there. They're auto-discovered by VS Code and Claude Code alongside the public skills — but they never leave your machine unless you push them somewhere private.
+`skills/_local/` and `instructions/_local/` are gitignored. Drop private or business-specific files there — auto-discovered alongside the public ones, never leave your machine.
 
 ```
 skills/
-├── do-work/           ← public, tracked
-├── systematic-debugging/   ← public, tracked
-└── _local/            ← GITIGNORED — yours alone
+├── do-work/                 ← public, tracked
+├── systematic-debugging/    ← public, tracked
+└── _local/                  ← GITIGNORED — yours alone
     └── your-skill/SKILL.md
 ```
 
 ### Hardened secrets
 
-Secrets split into two tiers. Agents see config, never credentials.
+Two tiers. Agents see config, never credentials.
 
 | File                   | In shell? | Agent-visible? | Contains                    |
 | ---------------------- | --------- | -------------- | --------------------------- |
 | `secrets/.env.agent`   | Yes       | Yes            | Usernames, hosts, IDs       |
 | `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords |
 
-`run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. For defense in depth, configure Claude Code deny rules to block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level — `validate-env.sh` warns if these are missing from `~/.claude/settings.json`.
+```bash
+bash ~/dotfiles/bin/run-with-secrets.sh python deploy.py
+```
+
+Secrets exist only in the child process. They vanish when it exits. `validate-env.sh` checks that credentials haven't leaked into your shell environment and that Claude Code deny rules are configured.
 
 ---
 
 ## Skills
 
-### Workflow
+| Skill                  | What it does                                                                                             |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| `do-work`              | Detect your stack's feedback loops. Understand → Plan → Implement → Validate → Commit.                  |
+| `grill-me`             | Interrogate you about a plan until shared understanding. One question at a time, recommended answers.    |
+| `write-a-prd`          | Explore codebase, interview you, sketch module boundaries, write PRD, submit as GitHub issue.            |
+| `prd-to-issues`        | Break a PRD into vertical slices. Label each AFK or HITL. Create GitHub issues with dependencies.        |
+| `technical-fellow`     | Plan implementation — vertical slices, dependency graphs, acceptance criteria. (107 lines)               |
+| `skill-scaffolder`     | Scaffold new agent skills from production-tested patterns. Interview → architecture → directory. (430 lines + 4 reference files) |
+| `explore`              | Decompose a topic, spawn parallel sub-agents, synthesize a summary.                                      |
+| `research`             | Cache expensive exploration into `research.md`. Staleness checks, lifecycle management.                  |
+| `codebase-audit`       | Ruthless code audit — real problems only, grouped by severity. No manufactured issues.                   |
+| `improve-architecture` | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                           |
+| `tdd`                  | Red-green refactor. Failing test → implement → refactor. Backend only.                                    |
+| `systematic-debugging` | Root-cause-first — investigate → pattern analysis → hypothesis → fix. (195 lines + 5 reference files)   |
 
-| Skill                  | What it does                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `do-work`              | Core execution loop — auto-detects your stack's feedback loops (package.json, Makefile, composer.json, pyproject.toml). Understand → Plan → Implement → Validate → Commit. Not hardcoded to any stack. |
-| `grill-me`             | Interrogates you about a plan until reaching shared understanding. One question at a time with recommended answers. Explores the codebase instead of asking when it can.                               |
-| `write-a-prd`          | Explores codebase, grills you, sketches deep module interfaces, writes Product Requirements Document (PRD) from template, submits as GitHub issue.                                                     |
-| `prd-to-issues`        | Breaks a PRD into vertical slices — each independently shippable. Categorizes HITL vs AFK. Creates GitHub issues with blocking relationships + a QA issue.                                             |
-| `technical-fellow`     | Implementation planning — vertical slices, AFK/HITL classification, dependency graphs, acceptance criteria.                                                                                            |
-| `skill-scaffolder`     | Meta-skill — scaffolds new agent skills from proven patterns. Interview → architecture matrix → complete directory.                                                                                    |
-| `explore`              | Parallel subagent codebase exploration — decomposes a topic, spawns focused sub-agents, synthesizes a unified summary.                                                                                 |
-| `research`             | Caches expensive exploration into a persistent `research.md` — staleness checks, lifecycle management, handoff to downstream skills.                                                                   |
-| `codebase-audit`       | Ruthless code audit — real problems only, grouped by severity. No manufactured issues, no padding.                                                                                                     |
-| `improve-architecture` | Finds shallow-module clusters, spawns parallel design agents, recommends the strongest interface, files a GitHub RFC.                                                                                  |
-| `tdd`                  | Red-green refactor — failing test → implement → refactor. Backend only. One test per vertical slice.                                                                                                   |
-| `systematic-debugging` | Root-cause-first — investigate → pattern analysis → hypothesis → fix. Stops guess-and-check thrashing.                                                                                                 |
-
-### Your local skills
-
-Add your own to `skills/_local/your-skill/SKILL.md`. Auto-discovered immediately. Gitignored. Can be a private git repo inside the directory if you want version control.
+Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored.
 
 ---
 
@@ -170,64 +148,50 @@ Add your own to `skills/_local/your-skill/SKILL.md`. Auto-discovered immediately
 
 > `ctrl` is the system. `shift` is the worker. **ctrl+shift** — you define the rules, shift executes them.
 
-> **Status: infrastructure ready, testing in HITL mode.**
+121 lines of bash. Picks a GitHub issue, implements it, commits, closes it, repeats. Sandboxed in a [Docker microVM](https://docs.docker.com/ai/sandboxes/) for AFK mode, direct on host for HITL.
 
-shift is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for AFK mode, direct on host for HITL.
+| Mode | Script           | Use when                                             |
+| ---- | ---------------- | ---------------------------------------------------- |
+| HITL | `shift/once.sh`  | Learning — runs once, you watch and intervene        |
+| AFK  | `shift/afk.sh`   | Shipping — loops in Docker sandbox, iteration guard  |
 
-### Two modes
+Start with HITL. Graduate to AFK with one iteration. Scale up.
 
-| Mode | Script          | Use when                                                      |
-| ---- | --------------- | ------------------------------------------------------------- |
-| HITL | `shift/once.sh` | Learning — runs once while you watch                          |
-| AFK  | `shift/afk.sh`  | Shipping — loops in Docker sandbox with a max iteration guard |
+```bash
+cd ~/your-project
 
-**HITL:** Claude runs once with `--permission-mode accept-edits` — file edits are auto-accepted, but you can intervene on shell commands and other operations. Start here.
+bash ~/dotfiles/shift/once.sh          # HITL — run once
+bash ~/dotfiles/shift/afk.sh           # AFK — 5 iterations (default)
+bash ~/dotfiles/shift/afk.sh 20        # AFK — 20 iterations
+```
 
-**AFK:** Claude loops inside a [Docker Sandbox](https://docs.docker.com/ai/sandboxes/) (isolated microVM). Each iteration: pick a task → implement → commit → close issue → repeat. Exits when the backlog is empty or max iterations reached.
+Each iteration, `_build_prompt.sh` fetches open GitHub issues, grabs recent commits, sanitizes XML tags to prevent prompt injection, and pipes the assembled prompt to Claude. The AFK loop exits when the backlog is empty (`<promise>NO MORE TASKS</promise>`) or max iterations are reached. A lock directory prevents concurrent runs.
 
-### How the prompt is built
-
-`_build_prompt.sh` assembles a fresh prompt before each iteration:
-
-1. Fetches open GitHub issues via `gh issue list --state open --json number,title,body,comments`
-2. Grabs the last 5 git commits for context
-3. Wraps both in XML tags with basic injection sanitization
-4. Appends `prompt.md` — task selection priority, skill loading, feedback loops, commit rules
-
-The assembled prompt is written to a temp file and piped via stdin to avoid ARG_MAX limits. Both `afk.sh` and `once.sh` source `_build_prompt.sh` to build `$PROMPT_FILE`.
-
-### Task priority order
-
-1. Critical bugfixes — blockers first
-2. Dev infrastructure — tests, types, scripts before features
-3. Tracer bullets — small end-to-end slices that validate approach
-4. Polish and quick wins
-5. Refactors
+Task priority: critical bugfixes → dev infrastructure → tracer bullets → polish → refactors.
 
 ### How ctrl mounts into the sandbox
 
-The key design: `sbx run` accepts multiple workspace paths. ctrl mounts `~/dotfiles` read-only alongside the target project so the agent gets your full instruction set, skills, and global rules inside the sandbox — without copying anything:
+`sbx run` mounts `~/dotfiles` read-only alongside your project. The agent gets your full instruction set inside the sandbox without being able to modify it:
 
 ```bash
 sbx run claude . ~/dotfiles:ro
 ```
 
 | Mount               | Access     | Contains                                         |
-| ------------------- | ---------- | ------------------------------------------------ |
-| `.` (project)       | read-write | The codebase the agent works on                  |
-| `~/dotfiles` (ctrl) | read-only  | Instructions, skills, global rules, shift prompt |
+| -------------------- | ---------- | ------------------------------------------------ |
+| `.` (project)        | read-write | The codebase the agent works on                  |
+| `~/dotfiles` (ctrl)  | read-only  | Instructions, skills, global rules, shift prompt |
 
-Inside the sandbox, `~/.claude/CLAUDE.md` and `~/.claude/skills/` resolve through the symlinks set up by `bootstrap.sh`, which point into `~/dotfiles`. The read-only mount means the agent benefits from every skill and instruction without being able to modify them.
+<details>
+<summary>Docker Sandbox setup</summary>
 
-### Docker Sandboxes setup
+shift uses [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx` CLI) — lightweight microVMs with their own Docker daemon, filesystem, and network. Docker Desktop is not required.
 
-shift uses [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx` CLI) — lightweight microVMs with their own Docker daemon, filesystem, and network. **Docker Desktop is not required.**
-
-#### shift prerequisites
+#### Prerequisites
 
 | Requirement                 | Install                                                                                                                       |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `sbx` CLI                   | macOS: `brew install docker/tap/sbx` · Windows: download from [sbx-releases](https://github.com/docker/sbx-releases/releases) |
+| `sbx` CLI                   | macOS: `brew install docker/tap/sbx` · Windows: [sbx-releases](https://github.com/docker/sbx-releases/releases)               |
 | Windows Hypervisor Platform | `Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All` (elevated PowerShell, Windows only)              |
 | `gh` (GitHub CLI)           | macOS: `brew install gh` · Windows: `winget install GitHub.cli` · [cli.github.com](https://cli.github.com/)                   |
 | `jq`                        | macOS: `brew install jq` · Windows: `winget install jqlang.jq` · [jqlang.github.io/jq](https://jqlang.github.io/jq/download/) |
@@ -236,55 +200,22 @@ shift uses [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx` CLI)
 #### One-time setup
 
 ```bash
-# 1. Sign in to Docker
 sbx login
-
-# 2. Choose a network policy when prompted:
-#    Balanced (recommended) — permits common dev services, blocks everything else
-
-# 3. Store GitHub token for the sandbox
 sbx secret set -g github -t "$(gh auth token)"
-
-# 4. Verify secrets
 sbx secret ls
 ```
 
-Claude authentication happens inside the sandbox on first run — use the `/login` command when prompted. The session token persists on your host and is injected by a proxy, never stored inside the sandbox.
+Claude authentication happens inside the sandbox on first run — use `/login` when prompted. The session token persists on your host via proxy, never stored inside the sandbox.
 
-### Running shift
+#### Branch mode (optional)
 
-**Always `cd` into the target project first.** shift operates on the current working directory.
-
-```bash
-cd ~/your-project
-
-# HITL — run once while you watch
-bash ~/dotfiles/shift/once.sh
-
-# AFK — autonomous loop (default: 5 iterations)
-bash ~/dotfiles/shift/afk.sh
-
-# AFK — custom iteration count
-bash ~/dotfiles/shift/afk.sh 20
-```
-
-The AFK loop exits when:
-
-- Claude outputs `<promise>NO MORE TASKS</promise>` (backlog empty)
-- Max iterations reached (default: 5, pass a number as the first argument)
-
-A lock directory (`/tmp/shift-afk.lock`) prevents concurrent runs — a second invocation exits immediately with "shift already running".
-
-### Branch mode (optional)
-
-By default, shift commits directly to your working tree. For safer AFK runs, use `--branch` to give the agent its own git worktree:
+For safer AFK runs, use `--branch` to give the agent its own git worktree:
 
 ```bash
-# Edit afk.sh to add --branch auto:
 sbx run --name shift-afk --branch auto claude . ~/dotfiles:ro -- ...
 ```
 
-This creates a worktree under `.sbx/` in your project root. Review changes before merging:
+Review changes before merging:
 
 ```bash
 cd .sbx/<sandbox-name>-worktrees/<branch>
@@ -293,23 +224,25 @@ git push -u origin <branch>
 gh pr create
 ```
 
-Add `.sbx/` to your project's `.gitignore` or global gitignore when using branch mode.
+Add `.sbx/` to your project's `.gitignore` when using branch mode.
 
-### Managing sandboxes
+#### Managing sandboxes
 
 ```bash
-sbx ls                         # list running sandboxes
-sbx stop <name>                # pause (installed packages, config preserved)
-sbx rm <name>                  # delete (reclaims disk)
-sbx exec -it <name> bash       # shell into a running sandbox
+sbx ls                         # list running
+sbx stop <name>                # pause (packages preserved)
+sbx rm <name>                  # delete
+sbx exec -it <name> bash       # shell in
 sbx policy ls                  # check network rules
 sbx policy allow network <host> # allow a blocked host
 ```
 
+</details>
+
 ### Activation checklist
 
 - [ ] `sbx` CLI installed and `sbx login` completed
-- [ ] `sbx secret set -g github -t "$(gh auth token)"` — GitHub access for the sandbox
+- [ ] `sbx secret set -g github -t "$(gh auth token)"`
 - [ ] `gh` CLI installed and authenticated (`gh auth login`)
 - [ ] `jq` installed
 - [ ] Claude Max/Team/Enterprise subscription
@@ -328,10 +261,7 @@ sbx policy allow network <host> # allow a blocked host
 ├── global.instructions.md           ← universal rules, always loaded
 ├── settings.json                    ← managed VS Code settings
 ├── .env.agent.example               ← template for non-sensitive config
-├── .env.citation.example            ← template for citation skill config
 ├── .env.secrets.example             ← template for API keys and tokens
-├── .gitignore
-├── dotfiles.code-workspace
 ├── instructions/
 │   ├── nextjs.instructions.md
 │   ├── php.instructions.md
@@ -358,19 +288,19 @@ sbx policy allow network <host> # allow a blocked host
 ├── shift/
 │   ├── afk.sh                       AFK autonomous loop
 │   ├── once.sh                      HITL single-run
-│   ├── _build_prompt.sh             shared prompt builder (sourced by afk/once)
+│   ├── _build_prompt.sh             shared prompt builder
 │   └── prompt.md                    shared agent prompt
 ├── bin/
-│   ├── _lib.sh                      shared utility functions
+│   ├── _lib.sh                      shared utilities
 │   ├── bootstrap.sh                 one-command setup, idempotent
-│   ├── agent-shell.sh               launches secrets-free shell for agent sessions
-│   ├── sync-settings.sh             merge VS Code settings
+│   ├── agent-shell.sh               secrets-free shell for agent sessions
+│   ├── sync-settings.sh             deep-merge VS Code settings
 │   ├── load-secrets.sh              sources .env.agent into shell
-│   ├── run-with-secrets.sh          injects .env.secrets into child process
+│   ├── run-with-secrets.sh          process-scoped secret injection
 │   ├── detect-context.sh            exports ACTIVE_CONTEXTS
-│   └── validate-env.sh              validates env vars and hardening posture
-├── assets/                          ← images (logo, etc.)
-├── working/                         ← GITIGNORED — scratch/temp files for long ops
+│   └── validate-env.sh              env + hardening validation
+├── assets/
+├── working/                         ← GITIGNORED — cross-conversation plans
 └── secrets/                         ← GITIGNORED
     ├── .env.agent
     ├── .env.secrets
@@ -396,34 +326,23 @@ sbx policy allow network <host> # allow a blocked host
 | Python       | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile`   | `python`       |
 | Laravel      | `artisan`                                                     | `laravel`      |
 
-A `general` context is always set as the baseline — it ensures skills without a specific context trigger still load.
-
-Not all contexts have dedicated instruction files yet — detection scopes skill loading and can trigger custom instructions you add.
-
 </details>
 
-### Key VS Code settings
+<details>
+<summary>Key VS Code settings</summary>
 
 | Setting                                               | Value                                                | Why                                                  |
 | ----------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
-| `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true, ".github/instructions": true}` | Enables the entire instruction/skill discovery chain |
+| `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true, ".github/instructions": true}` | Enables instruction/skill discovery chain            |
 | `chat.agent.maxRequests`                              | `100000`                                             | Prevents agent from stopping mid-task                |
 | `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                                              | Extended thinking for complex reasoning              |
 | `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6 (copilot)`                          | Model selection for explore subagent                 |
 
+</details>
+
 ---
 
 ## Installation
-
-> **Before you install:** Bootstrap is mostly idempotent but touches several dotfiles:
->
-> - **`~/.claude/CLAUDE.md`** — replaced with a symlink (or overwritten on Windows). Back up if you have a custom one.
-> - **`~/.claude/skills/`** — symlinked if absent or a stale link. Existing real directories are left alone (manual merge message shown).
-> - **`~/.bashrc` / `~/.zshrc`** — appends shell integration (load-secrets + context detection). Idempotent on re-runs.
-> - **`~/.npmrc`** — appends `min-release-age=7` for supply chain protection.
-> - **`~/.config/uv/uv.toml`** — adds `exclude-newer` date for supply chain protection.
->
-> **Not run by bootstrap:** `sync-settings.sh` (VS Code settings merge) is a separate manual step. Run with `--dry-run` first to preview changes.
 
 <details>
 <summary>Quick setup (recommended)</summary>
@@ -432,17 +351,6 @@ Not all contexts have dedicated instruction files yet — detection scopes skill
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
 ```
-
-Bootstrap is idempotent — safe to re-run. It handles:
-
-- Generating `CLAUDE.md` from `CLAUDE.base.md` + your local instruction files
-- Creating `secrets/.env.agent` and `secrets/.env.secrets` from templates
-- Symlinking `~/.claude/CLAUDE.md` and `~/.claude/skills/`
-- Creating `skills/_local/` and `instructions/_local/`
-- Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc` / `~/.zshrc`
-- Appending `min-release-age=7` to `~/.npmrc` (supply chain protection)
-- Adding `exclude-newer` to `~/.config/uv/uv.toml` (supply chain protection)
-- Creating the Python venv
 
 After bootstrap:
 
@@ -460,7 +368,7 @@ source ~/.bashrc
 <details>
 <summary>VPS setup</summary>
 
-Same as local — but skip `sync-settings.sh`. VS Code Remote SSH forwards your local settings automatically.
+Same as local — skip `sync-settings.sh` (VS Code Remote SSH forwards your settings).
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
@@ -468,15 +376,6 @@ bash ~/dotfiles/bin/bootstrap.sh
 $EDITOR ~/dotfiles/secrets/.env.agent
 $EDITOR ~/dotfiles/secrets/.env.secrets
 source ~/.bashrc
-```
-
-Verify:
-
-```bash
-readlink ~/.claude/CLAUDE.md     # → ~/dotfiles/CLAUDE.md
-readlink ~/.claude/skills        # → ~/dotfiles/skills
-echo $GITHUB_USERNAME
-cd ~/some-project && echo $ACTIVE_CONTEXTS
 ```
 
 </details>
@@ -507,6 +406,26 @@ _load_context
 # 5. VS Code settings
 bash ~/dotfiles/bin/sync-settings.sh
 ```
+
+</details>
+
+<details>
+<summary>What bootstrap touches</summary>
+
+> Bootstrap is mostly idempotent. Here's everything it modifies:
+
+| File                                | Change                                                                           |
+| ----------------------------------- | -------------------------------------------------------------------------------- |
+| `~/.claude/CLAUDE.md`               | Symlinked → `~/dotfiles/CLAUDE.md` (or copied on Windows without admin)          |
+| `~/.claude/skills/`                 | Symlinked → `~/dotfiles/skills/` (existing real dirs left alone)                 |
+| `~/.bashrc` / `~/.zshrc`           | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent)         |
+| `~/.npmrc`                          | Appends `min-release-age=7` (supply chain protection)                            |
+| `~/.config/uv/uv.toml`             | Adds `exclude-newer` date (supply chain protection)                              |
+| `secrets/.env.agent`                | Created from `.env.agent.example` if missing                                     |
+| `secrets/.env.secrets`              | Created from `.env.secrets.example` if missing                                   |
+| `secrets/.venv/`                    | Python venv created for local skill packages                                     |
+
+**Not run by bootstrap:** `sync-settings.sh` (VS Code settings merge) is manual. Run with `--dry-run` first.
 
 </details>
 
@@ -565,32 +484,28 @@ source ~/.bashrc
 
 **shift: `sbx: command not found`**
 
-- Install the `sbx` CLI: macOS `brew install docker/tap/sbx`, Windows download from [sbx-releases](https://github.com/docker/sbx-releases/releases)
-- `sbx` is a standalone tool — Docker Desktop is not required
+- Install: macOS `brew install docker/tap/sbx`, Windows [sbx-releases](https://github.com/docker/sbx-releases/releases)
+- Docker Desktop is not required
 
 **shift: `gh: command not found` or empty issue list**
 
-- Install GitHub CLI: `brew install gh` or [cli.github.com](https://cli.github.com/)
+- Install: `brew install gh` or [cli.github.com](https://cli.github.com/)
 - Authenticate: `gh auth login`
-- Verify: `gh issue list` in the target project
 
 **shift: sandbox can't reach GitHub or APIs**
 
-- Check network policy: `sbx policy ls`
-- Allow a blocked host: `sbx policy allow network <hostname>`
-- Balanced policy (chosen during `sbx login`) permits common dev services by default
+- `sbx policy ls` → `sbx policy allow network <hostname>`
 
 **shift: Claude not authenticated inside sandbox**
 
-- On first run, use `/login` when Claude prompts for authentication
-- The session token persists across sandbox restarts
-- Alternatively: `sbx secret set -g anthropic` to use an API key
+- Use `/login` on first run. Token persists across restarts.
+- Alternative: `sbx secret set -g anthropic`
 
 **shift: skills/instructions not available in sandbox**
 
-- Verify `bootstrap.sh` was run (`readlink ~/.claude/CLAUDE.md` should point to `~/dotfiles/CLAUDE.md`)
-- The AFK script mounts `~/dotfiles:ro` — check the mount is correct in `afk.sh`
-- Shell into the sandbox to verify: `sbx exec -it <name> bash`, then `ls ~/dotfiles/`
+- Verify bootstrap ran: `readlink ~/.claude/CLAUDE.md` → `~/dotfiles/CLAUDE.md`
+- AFK script mounts `~/dotfiles:ro` — verify in `afk.sh`
+- Shell in to check: `sbx exec -it <name> bash`, then `ls ~/dotfiles/`
 
 </details>
 
@@ -599,13 +514,13 @@ source ~/.bashrc
 ## Prerequisites
 
 - [VS Code](https://code.visualstudio.com/) (stable or Insiders)
-- [GitHub Copilot](https://github.com/features/copilot) (optional — enhances agent mode but ctrl works with Claude Code alone)
+- [GitHub Copilot](https://github.com/features/copilot) (optional — ctrl works with Claude Code alone)
 - Git Bash (Windows) or bash (Linux/macOS)
 - Python 3.10+
-- [`sbx` CLI](https://docs.docker.com/ai/sandboxes/get-started/) (for shift AFK mode — Docker Desktop not required)
-- [GitHub CLI (`gh`)](https://cli.github.com/) (for shift — fetches issues for the prompt)
-- `jq` (for shift — parses Claude's stream-json output)
+- [`sbx` CLI](https://docs.docker.com/ai/sandboxes/get-started/) (shift AFK mode only)
+- [GitHub CLI (`gh`)](https://cli.github.com/) (shift only)
+- `jq` (shift only)
 
 ---
 
-> **Naming conventions:** The GitHub repo is `arndvs/ctrl` but the on-disk path is `~/dotfiles` — hardcoded across 40+ references. Clone it to `~/dotfiles` and leave it there.
+> **Naming:** The GitHub repo is `arndvs/ctrl` but the on-disk path is `~/dotfiles` — hardcoded across 40+ references. Clone it to `~/dotfiles` and leave it there.
