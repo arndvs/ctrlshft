@@ -91,6 +91,7 @@ skills/
 ### Hardened secrets
 
 Two tiers. Agents see config, never credentials.
+Two tiers. Agents see config, never credentials.
 
 | File                   | In shell? | Agent-visible? | Contains                    |
 | ---------------------- | --------- | -------------- | --------------------------- |
@@ -119,6 +120,77 @@ Two tiers. Agents see config, never credentials.
 | `systematic-debugging` | Root-cause-first — investigate → pattern analysis → hypothesis → fix. (195 lines + 5 reference files)                            |
 
 Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored.
+
+---
+
+## Coding principles
+
+Four behavioral principles baked into `global.instructions.md`, derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls. These address the most expensive failure modes: building the wrong thing, overengineering, drive-by refactoring, and vague success criteria.
+
+### 1. Think Before Coding
+
+> Don't assume. Don't hide confusion. Surface tradeoffs.
+
+LLMs silently pick an interpretation and run with it. These rules force explicit reasoning:
+
+- **Stop when confused** — Name what's unclear and ask. Never pick an interpretation silently
+- **Present multiple interpretations** — If ambiguity exists, list options and ask which one before implementing
+- **Push back when simpler exists** — If a simpler approach works, say so — even if the user asked for the complex version
+- **State assumptions explicitly** — If uncertain, ask follow-up questions. Think "What's wrong with this plan?"
+
+### 2. Simplicity First
+
+> Minimum code that solves the problem. Nothing speculative.
+
+Combat the tendency toward overengineering:
+
+- No features beyond what was asked
+- No abstractions for single-use code
+- No "flexibility" or "configurability" that wasn't requested
+- No error handling for impossible scenarios
+- If 200 lines could be 50, rewrite it
+
+**The test:** Would a senior engineer say this is overcomplicated? If yes, simplify.
+
+### 3. Surgical Changes
+
+> Touch only what you must. Clean up only your own mess.
+
+When editing existing code:
+
+- **Match existing style exactly** — even if you'd write it differently. No formatting, naming, or structural changes outside the task
+- **Don't refactor what isn't broken** — if you notice unrelated problems, mention them — don't fix them
+- **Mention unrelated dead code, don't delete it** — only remove imports/variables/functions that YOUR changes made unused
+- **Don't "improve" adjacent code**, comments, or formatting
+
+**The test:** Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+> Define success criteria. Loop until verified.
+
+Transform imperative tasks into verifiable goals:
+
+| Instead of...    | Transform to...                                       |
+| ---------------- | ----------------------------------------------------- |
+| "Add validation" | "Write tests for invalid inputs, then make them pass" |
+| "Fix the bug"    | "Write a test that reproduces it, then make it pass"  |
+| "Refactor X"     | "Ensure tests pass before and after"                  |
+
+For multi-step tasks, state a brief plan with verification at each step. Strong success criteria let the agent loop independently. Weak criteria ("make it work") require constant clarification.
+
+ctrl extends this with dedicated skills: `tdd` (red-green-refactor), `systematic-debugging` (root-cause-first investigation), and `do-work` (auto-detects feedback loops and validates before committing).
+
+### How to know it's working
+
+These principles are working if you see:
+
+- **Fewer unnecessary changes in diffs** — only requested changes appear
+- **Fewer rewrites due to overcomplication** — code is simple the first time
+- **Clarifying questions come before implementation** — not after mistakes
+- **Clean, minimal commits** — no drive-by refactoring or "improvements"
+
+> **Tradeoff:** These principles bias toward caution over speed. For trivial tasks (typo fixes, obvious one-liners), the agent uses judgment — not every change needs the full rigor.
 
 ---
 

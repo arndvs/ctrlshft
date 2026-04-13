@@ -23,8 +23,14 @@ Output "Read global instructions." to chat to acknowledge you read this file.
 - When reorganizing or moving elements, check and fix spacing
 - When adding objects such as routes, models, stylesheets, scripts, utils etc. always read a sample existing route to learn about our design patterns and follow them
 - Before changing any shared method, class, or convention, always scan for all existing usages first to understand the established pattern, then follow it consistently
+- Match existing code style exactly — even if you'd write it differently. Don't introduce formatting, naming, or structural changes outside the task
+- Don't refactor code that isn't broken and isn't part of the task. If you notice unrelated problems, mention them — don't fix them
+- If you notice unrelated dead code, mention it — don't delete it. Only remove imports/variables/functions that YOUR changes made unused
 - Never change my AI model, its context window, settings, URL or API keys unless explicitly told to do so
-- If I ask you for a refactor or lack specificity, ask follow up questions. Think "What’s wrong with this plan?", "What I am missing?"
+- If something is unclear, stop. Name what's confusing and ask — never pick an interpretation silently and run with it
+- If multiple valid interpretations exist, list them and ask which one before implementing
+- If a simpler approach exists, say so and push back — even if the user asked for the complex version
+- If I ask you for a refactor or lack specificity, ask follow up questions. Think "What's wrong with this plan?", "What am I missing?"
 - Use modern APIs and patterns over legacy approaches. Baseline browser support is February 2026
 - When I upload an image for you, describe it with pixel perfect accuracy and aim to replicate it perfectly as close to the image as possible
 - Don't hide functionality in methods appearing as getters or checks.
@@ -36,7 +42,7 @@ Output "Read global instructions." to chat to acknowledge you read this file.
 - When creating or editing scripts that need credentials (API keys, tokens, passwords), those secrets are in .env.secrets and only available at runtime via `~/dotfiles/bin/run-with-secrets.sh <command>`. Non-sensitive config (usernames, hosts, spreadsheet IDs) is in the shell environment from .env.agent. Never read secrets from files directly — use os.getenv() and rely on the run-with-secrets.sh wrapper to inject them.
 - If I tell you to "report" or ask "how feasible", enter discuss mode and DO NOT EDIT CODE UNTIL I EXPLICITLY TELL YOU TO DO SO. Simply report, discuss, get skeptical, double check and plan all changes in a lean, DRY way, the most proper, cleanest way
 - When an API call fails (expired token, auth error, missing permissions), STOP IMMEDIATELY. Do not continue the task, do not speculate, do not produce analysis based on data you don't have. Tell me the exact error, which token/key needs updating and in which file, then wait for me to fix it before continuing
-- After your are done, remove unused imports, scan for DRY violations, broken code, hidden bugs, overengineering, edge cases, your last code changes not being reflected everywhere else in the app
+- After you are done, remove unused imports YOUR changes created, scan for DRY violations, broken code, hidden bugs, overengineering, edge cases, your last code changes not being reflected everywhere else in the app. Do not remove pre-existing dead code unless asked
 - When starting long-running server processes (Java servers, dev servers, etc.) from a terminal, ALWAYS redirect output to a log file AND close stdin to prevent VS Code's terminal output monitor from detecting false input prompts: `command > /tmp/server.log 2>&1 < /dev/null &`, and ALWAYS use isBackground: true. Then read the log file with `tail` or `cat` to check output
 - Prefer clearing context and starting fresh over compacting. Repeated compaction leaves sediment — each round loses nuance and accumulates errors. When context is high, commit and start a new conversation
 
@@ -102,4 +108,5 @@ Standard forward-pass files: research.md (project root — cached exploration), 
 
 <thinking>
 - You must engage in exhaustive, deep-level reasoning. Think deeply about edge cases, data integrity, and architectural consequences before writing code and after refactorings.
+- Self-check before committing: "Would a senior engineer say this is overcomplicated?" If yes, simplify. "Does every changed line trace directly to the user's request?" If not, revert the extras.
 </thinking>
