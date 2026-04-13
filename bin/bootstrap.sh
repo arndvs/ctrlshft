@@ -32,7 +32,7 @@ fi
 
 # ── 1. Create secrets directory and split env files ───────────────────────────
 echo
-green "[1/7] Secrets directory"
+green "[1/9] Secrets directory"
 mkdir -p "$SECRETS_DIR"
 
 # Migration hint for legacy .env users (must check BEFORE creating new files)
@@ -70,7 +70,7 @@ fi
 
 # ── 2. Generate and link CLAUDE.md ─────────────────────────────────────────────
 echo
-green "[2/7] CLAUDE.md (generated from CLAUDE.base.md + local instructions)"
+green "[2/9] CLAUDE.md (generated from CLAUDE.base.md + local instructions)"
 mkdir -p "$CLAUDE_DIR"
 mkdir -p "$DOTFILES/skills/_local"
 mkdir -p "$DOTFILES/instructions/_local"
@@ -122,7 +122,7 @@ fi
 
 # ── 3. Symlink ~/.claude/skills/ ──────────────────────────────────────────────
 echo
-green "[3/7] Skills directory"
+green "[3/9] Skills directory"
 if [[ -L "$CLAUDE_DIR/skills" ]]; then
     _target=$(readlink "$CLAUDE_DIR/skills")
     if [[ "$_target" == "$DOTFILES/skills" ]]; then
@@ -164,9 +164,75 @@ if [[ -d "$DOTFILES/skills/_local" ]]; then
 fi
 green "  Skills found: $_shared_skills shared, $_local_skills local"
 
-# ── 4. Wire up shell ──────────────────────────────────────────────────────────
+# ── 4. Symlink ~/.claude/agents/ ─────────────────────────────────────────────
 echo
-green "[4/7] Shell integration"
+green "[4/9] Agents directory"
+mkdir -p "$DOTFILES/agents"
+if [[ -L "$CLAUDE_DIR/agents" ]]; then
+    _target=$(readlink "$CLAUDE_DIR/agents")
+    if [[ "$_target" == "$DOTFILES/agents" ]]; then
+        yellow "  ~/.claude/agents is already symlinked correctly — skipping"
+    else
+        ln -sf "$DOTFILES/agents" "$CLAUDE_DIR/agents"
+        green "  Fixed stale agents symlink (was $_target)"
+    fi
+elif [[ -d "$CLAUDE_DIR/agents" ]]; then
+    yellow "  ~/.claude/agents exists as a real directory — skipping (manual merge needed)"
+else
+    ln -sf "$DOTFILES/agents" "$CLAUDE_DIR/agents"
+    if [[ -L "$CLAUDE_DIR/agents" ]]; then
+        green "  Symlinked ~/.claude/agents -> ~/dotfiles/agents/"
+    elif [[ "$OS" == "windows" ]]; then
+        cp -r "$DOTFILES/agents" "$CLAUDE_DIR/agents"
+        yellow "  Copied agents/ to ~/.claude/ (Windows: directory symlinks require Developer Mode)"
+    else
+        red "  Symlink creation failed — check permissions"
+        _fail=1
+    fi
+fi
+
+_agents=0
+for f in "$DOTFILES/agents/"*.md; do
+    [[ -f "$f" ]] && _agents=$(( _agents + 1 ))
+done
+green "  Agents found: $_agents"
+
+# ── 5. Symlink ~/.claude/rules/ ──────────────────────────────────────────────
+echo
+green "[5/9] Rules directory"
+mkdir -p "$DOTFILES/rules"
+if [[ -L "$CLAUDE_DIR/rules" ]]; then
+    _target=$(readlink "$CLAUDE_DIR/rules")
+    if [[ "$_target" == "$DOTFILES/rules" ]]; then
+        yellow "  ~/.claude/rules is already symlinked correctly — skipping"
+    else
+        ln -sf "$DOTFILES/rules" "$CLAUDE_DIR/rules"
+        green "  Fixed stale rules symlink (was $_target)"
+    fi
+elif [[ -d "$CLAUDE_DIR/rules" ]]; then
+    yellow "  ~/.claude/rules exists as a real directory — skipping (manual merge needed)"
+else
+    ln -sf "$DOTFILES/rules" "$CLAUDE_DIR/rules"
+    if [[ -L "$CLAUDE_DIR/rules" ]]; then
+        green "  Symlinked ~/.claude/rules -> ~/dotfiles/rules/"
+    elif [[ "$OS" == "windows" ]]; then
+        cp -r "$DOTFILES/rules" "$CLAUDE_DIR/rules"
+        yellow "  Copied rules/ to ~/.claude/ (Windows: directory symlinks require Developer Mode)"
+    else
+        red "  Symlink creation failed — check permissions"
+        _fail=1
+    fi
+fi
+
+_rules=0
+for f in "$DOTFILES/rules/"*.md; do
+    [[ -f "$f" ]] && _rules=$(( _rules + 1 ))
+done
+green "  Rules found: $_rules"
+
+# ── 6. Wire up shell ──────────────────────────────────────────────────────────
+echo
+green "[6/9] Shell integration"
 
 _SHELL_SNIPPET=$(cat << 'SHELLEOF'
 
@@ -204,9 +270,9 @@ if [[ -f "$ZSHRC" ]] || [[ "$(basename "$SHELL" 2>/dev/null)" == "zsh" ]]; then
     _wire_shell_rc "$ZSHRC" "~/.zshrc"
 fi
 
-# ── 5. Python venv ───────────────────────────────────────────────────────────
+# ── 7. Python venv ───────────────────────────────────────────────────────────
 echo
-green "[5/7] Python venv"
+green "[7/9] Python venv"
 
 # Find a python executable (venv first, then system)
 if ! find_python; then
@@ -239,9 +305,9 @@ if [[ -d "$VENV_DIR" ]]; then
     fi
 fi
 
-# ── 6. Supply chain attack protection ─────────────────────────────────────────
+# ── 8. Supply chain attack protection ─────────────────────────────────────────
 echo
-green "[6/7] Package manager security (supply chain protection)"
+green "[8/9] Package manager security (supply chain protection)"
 
 # ~/.npmrc — refuse npm packages published < 7 days ago
 if [[ -f "$HOME/.npmrc" ]] && grep -qF "min-release-age" "$HOME/.npmrc"; then
@@ -269,9 +335,9 @@ else
     green "  Added exclude-newer = \"$UV_DATE\" to ~/.config/uv/uv.toml"
 fi
 
-# ── 7. Validation ─────────────────────────────────────────────────────────────
+# ── 9. Validation ─────────────────────────────────────────────────────────────
 echo
-green "[7/7] Validating setup"
+green "[9/9] Validating setup"
 
 # Delegate to validate-env.sh — single source of truth for all validation checks.
 # validate-env.sh sets _fail and _warn internally and prints results.

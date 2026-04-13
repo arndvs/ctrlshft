@@ -1,6 +1,7 @@
 ---
 name: prd-to-issues
 description: "Break a PRD into independently grabbable GitHub issues with dependency relationships. Use when asked to 'break this PRD into issues', 'create issues from PRD', 'plan the work', 'create a kanban', or after writing a PRD to prepare work for execution."
+disable-model-invocation: true
 ---
 
 # PRD to Issues

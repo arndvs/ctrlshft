@@ -1,6 +1,7 @@
 ---
 name: do-work
 description: "Core execution loop for implementing tasks. Use when asked to 'do work', 'implement', 'build this', 'fix this', 'plan execute clear', 'plan then execute', 'work loop', or when working through a plan or backlog item."
+disable-model-invocation: true
 ---
 
 # Do Work

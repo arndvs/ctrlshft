@@ -1,6 +1,7 @@
 ---
 name: write-a-prd
 description: "Write a Product Requirements Document from a rough idea. Use when asked to 'write a PRD', 'create a PRD', 'plan a feature', or when starting a new feature that needs scoping."
+disable-model-invocation: true
 ---
 
 # Write a PRD
