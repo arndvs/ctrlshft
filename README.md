@@ -91,6 +91,7 @@ skills/
 ### Hardened secrets
 
 Two tiers. Agents see config, never credentials.
+Two tiers. Agents see config, never credentials.
 
 | File                   | In shell? | Agent-visible? | Contains                    |
 | ---------------------- | --------- | -------------- | --------------------------- |
