@@ -170,11 +170,11 @@ When editing existing code:
 
 Transform imperative tasks into verifiable goals:
 
-| Instead of... | Transform to... |
-|---|---|
+| Instead of...    | Transform to...                                       |
+| ---------------- | ----------------------------------------------------- |
 | "Add validation" | "Write tests for invalid inputs, then make them pass" |
-| "Fix the bug" | "Write a test that reproduces it, then make it pass" |
-| "Refactor X" | "Ensure tests pass before and after" |
+| "Fix the bug"    | "Write a test that reproduces it, then make it pass"  |
+| "Refactor X"     | "Ensure tests pass before and after"                  |
 
 For multi-step tasks, state a brief plan with verification at each step. Strong success criteria let the agent loop independently. Weak criteria ("make it work") require constant clarification.
 
