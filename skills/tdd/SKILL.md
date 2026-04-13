@@ -1,6 +1,7 @@
 ---
 name: tdd
 description: "Red-green refactor workflow for test-driven development. Use when asked to 'write tests first', 'TDD', 'red-green refactor', 'test-driven', or 'failing test first'. Backend-only — do not use for frontend components."
+disable-model-invocation: true
 ---
 
 # TDD (Red-Green Refactor)

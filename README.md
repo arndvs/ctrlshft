@@ -8,14 +8,14 @@
 
 Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
 
-ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions and skills into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into two tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`). When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
+ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into two tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`). When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
 ```
 
-Bootstrap is idempotent and cross-platform (228 lines). It symlinks `~/.claude/CLAUDE.md` and `~/.claude/skills/`, wires shell integration into `~/.bashrc`/`~/.zshrc`, creates `secrets/` from templates, and adds supply chain protection to `~/.npmrc` and `uv.toml`. Full details in the [Installation](#installation) section.
+Bootstrap is idempotent and cross-platform. It symlinks `~/.claude/CLAUDE.md`, `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/rules/`, wires shell integration into `~/.bashrc`/`~/.zshrc`, creates `secrets/` from templates, and adds supply chain protection to `~/.npmrc` and `uv.toml`. Full details in the [Installation](#installation) section.
 
 ---
 
@@ -71,6 +71,10 @@ detect-context.sh → ACTIVE_CONTEXTS=general,nextjs,node,typescript,sanity,pris
   ↓
 loads matching instructions/*.md
   ↓
+rules/ scoped by paths: frontmatter — load only when matching files are touched
+  ↓
+agents/ available as subagent personas — isolated context, read-only tools
+  ↓
 skills/ auto-discovered — workflow + your personal _local/ skills
 ```
 
@@ -88,6 +92,30 @@ skills/
     └── your-skill/SKILL.md
 ```
 
+### Subagent personas
+
+`agents/` defines specialized subagents with their own system prompts, tool restrictions, and model preferences. Each runs in an isolated context window — exploration stays out of your main conversation.
+
+| Agent              | Focus                                           |
+| ------------------ | ----------------------------------------------- |
+| `code-reviewer`    | Bugs, security, logic errors — not style nits   |
+| `researcher`       | Deep codebase exploration, architecture mapping  |
+| `security-auditor` | OWASP Top 10, secrets exposure, config hardening |
+
+All three use `model: sonnet`, read-only tools (Read, Grep, Glob, Bash), and `memory: user` for persistent cross-project learnings. Add your own: `agents/your-agent.md` — auto-discovered.
+
+### Path-scoped rules
+
+`rules/` contains convention-enforcement files that load only when the agent touches matching files. Each rule uses `paths:` YAML frontmatter to scope itself.
+
+| Rule                 | Scoped to                                           |
+| -------------------- | --------------------------------------------------- |
+| `test-conventions`   | `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`     |
+| `migration-safety`   | `**/migrations/**`, `**/prisma/migrations/**`       |
+| `env-security`       | `**/.env*`, `**/secrets/**`, `**/credentials*`      |
+
+Rules without `paths:` load every session. Add your own: `rules/your-rule.md` — auto-discovered.
+
 ### Hardened secrets
 
 Two tiers. Agents see config, never credentials.
@@ -104,20 +132,22 @@ Two tiers. Agents see config, never credentials.
 
 ## Skills
 
-| Skill                  | What it does                                                                                                                     |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `do-work`              | Detect your stack's feedback loops. Understand → Plan → Implement → Validate → Commit.                                           |
-| `grill-me`             | Interrogate you about a plan until shared understanding. One question at a time, recommended answers.                            |
-| `write-a-prd`          | Explore codebase, interview you, sketch module boundaries, write PRD, submit as GitHub issue.                                    |
-| `prd-to-issues`        | Break a PRD into vertical slices. Label each AFK or HITL. Create GitHub issues with dependencies.                                |
-| `technical-fellow`     | Plan implementation — vertical slices, dependency graphs, acceptance criteria. (107 lines)                                       |
-| `skill-scaffolder`     | Scaffold new agent skills from production-tested patterns. Interview → architecture → directory. (430 lines + 4 reference files) |
-| `explore`              | Decompose a topic, spawn parallel sub-agents, synthesize a summary.                                                              |
-| `research`             | Cache expensive exploration into `research.md`. Staleness checks, lifecycle management.                                          |
-| `codebase-audit`       | Ruthless code audit — real problems only, grouped by severity. No manufactured issues.                                           |
-| `improve-architecture` | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                                                   |
-| `tdd`                  | Red-green refactor. Failing test → implement → refactor. Backend only.                                                           |
-| `systematic-debugging` | Root-cause-first — investigate → pattern analysis → hypothesis → fix. (195 lines + 5 reference files)                            |
+Skills marked ⚡ auto-invoke when the agent detects a matching task. Others require explicit `/slash-command` invocation.
+
+| Skill                    | What it does                                                                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `do-work`                | Detect your stack's feedback loops. Understand → Plan → Implement → Validate → Commit.                                           |
+| `grill-me`               | Interrogate you about a plan until shared understanding. One question at a time, recommended answers.                            |
+| `write-a-prd`            | Explore codebase, interview you, sketch module boundaries, write PRD, submit as GitHub issue.                                    |
+| `prd-to-issues`          | Break a PRD into vertical slices. Label each AFK or HITL. Create GitHub issues with dependencies.                                |
+| `technical-fellow` ⚡    | Plan implementation — vertical slices, dependency graphs, acceptance criteria.                                                    |
+| `skill-scaffolder`       | Scaffold new agent skills from production-tested patterns. Interview → architecture → directory.                                  |
+| `explore` ⚡             | Decompose a topic, spawn parallel sub-agents, synthesize a summary.                                                              |
+| `research` ⚡            | Cache expensive exploration into `research.md`. Staleness checks, lifecycle management.                                          |
+| `codebase-audit` ⚡      | Ruthless code audit — real problems only, grouped by severity. No manufactured issues.                                           |
+| `improve-architecture` ⚡ | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                                                  |
+| `tdd`                    | Red-green refactor. Failing test → implement → refactor. Backend only.                                                           |
+| `systematic-debugging` ⚡ | Root-cause-first — investigate → pattern analysis → hypothesis → fix.                                                           |
 
 Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored.
 
@@ -259,6 +289,14 @@ docker sandbox run claude .
 │   ├── css.instructions.md
 │   ├── ux-prototyping.instructions.md
 │   └── _local/                      ← GITIGNORED — your private instructions
+├── agents/
+│   ├── code-reviewer.md             subagent: bugs, correctness, security
+│   ├── researcher.md                subagent: deep codebase exploration
+│   └── security-auditor.md          subagent: OWASP, secrets, config
+├── rules/
+│   ├── test-conventions.md          scoped to **/*.test.*, **/*.spec.*
+│   ├── migration-safety.md          scoped to **/migrations/**
+│   └── env-security.md              scoped to **/.env*, **/secrets/**
 ├── skills/
 │   ├── do-work/
 │   ├── grill-me/
@@ -334,6 +372,8 @@ docker sandbox run claude .
 >
 > - **`~/.claude/CLAUDE.md`** — replaced with a symlink (or overwritten on Windows). Back up if you have a custom one.
 > - **`~/.claude/skills/`** — symlinked if absent or a stale link. Existing real directories are left alone (manual merge message shown).
+> - **`~/.claude/agents/`** — symlinked if absent or a stale link. Same behavior as skills/.
+> - **`~/.claude/rules/`** — symlinked if absent or a stale link. Same behavior as skills/.
 > - **`~/.bashrc` / `~/.zshrc`** — appends shell integration (load-secrets + context detection). Idempotent on re-runs.
 > - **`~/.npmrc`** — appends `min-release-age=7` for supply chain protection.
 > - **`~/.config/uv/uv.toml`** — adds `exclude-newer` date for supply chain protection.
@@ -352,7 +392,7 @@ Bootstrap is idempotent — safe to re-run. It handles:
 
 - Generating `CLAUDE.md` from `CLAUDE.base.md` + your local instruction files
 - Creating `secrets/.env.agent` and `secrets/.env.secrets` from templates
-- Symlinking `~/.claude/CLAUDE.md` and `~/.claude/skills/`
+- Symlinking `~/.claude/CLAUDE.md`, `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/rules/`
 - Creating `skills/_local/` and `instructions/_local/`
 - Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc`
 - Creating the Python venv
@@ -397,6 +437,8 @@ bash ~/dotfiles/bin/bootstrap.sh   # or manually:
 mkdir -p ~/.claude
 ln -sf ~/dotfiles/CLAUDE.md ~/.claude/CLAUDE.md
 ln -sf ~/dotfiles/skills ~/.claude/skills
+ln -sf ~/dotfiles/agents ~/.claude/agents
+ln -sf ~/dotfiles/rules ~/.claude/rules
 
 # 3. Secrets
 cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent
@@ -423,6 +465,8 @@ bash ~/dotfiles/bin/sync-settings.sh
 | ------------------------ | ------------------------------------------------------------------------ |
 | `~/.claude/CLAUDE.md`    | Symlinked → `~/dotfiles/CLAUDE.md` (or copied on Windows without admin)  |
 | `~/.claude/skills/`      | Symlinked → `~/dotfiles/skills/` (existing real dirs left alone)         |
+| `~/.claude/agents/`      | Symlinked → `~/dotfiles/agents/` (existing real dirs left alone)         |
+| `~/.claude/rules/`       | Symlinked → `~/dotfiles/rules/` (existing real dirs left alone)          |
 | `~/.bashrc` / `~/.zshrc` | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent) |
 | `~/.npmrc`               | Appends `min-release-age=7` (supply chain protection)                    |
 | `~/.config/uv/uv.toml`   | Adds `exclude-newer` date (supply chain protection)                      |
@@ -444,6 +488,8 @@ bash ~/dotfiles/bin/sync-settings.sh
 | Add a public skill        | Create `skills/your-skill/SKILL.md` — auto-discovered                                                                                       |
 | Add a private skill       | Create `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored                                                                    |
 | Add a private instruction | Create `instructions/_local/your-topic.instructions.md`, re-run `bootstrap.sh`                                                              |
+| Add an agent              | Create `agents/your-agent.md` with YAML frontmatter (`name`, `description`, `tools`, `model`) — auto-discovered                             |
+| Add a rule                | Create `rules/your-rule.md` with optional `paths:` frontmatter for file-glob scoping — auto-discovered                                      |
 | Add config                | Add key to `.env.agent.example`, value to `secrets/.env.agent`                                                                              |
 | Add a secret              | Add key to `.env.secrets.example`, value to `secrets/.env.secrets`                                                                          |
 
