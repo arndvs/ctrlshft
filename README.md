@@ -46,25 +46,7 @@ graph TD
     G -->|new issues| D
 ```
 
----
-
-## Continuous workflow
-
-Large tasks outgrow a single conversation. When context gets high, the agent commits current work, writes the remaining plan to `working/<name>-plan.md`, and outputs a pickup command:
-
-```
-@working/docs-audit-plan.md — pick up on remaining slices. Start with Slice 2.
-```
-
-Paste that into a fresh conversation. It reads the plan and continues where the old one left off — no re-exploration, no lost context. This is enforced by `global.instructions.md` and built into the `do-work`, `technical-fellow`, `prd-to-issues`, and `research` skills. The agent does it automatically.
-
-```
-Conversation 1:  Plan → Slice 1 → commit → context high → write plan → hand off
-Conversation 2:  Read plan → Slice 2 → Slice 3 → context high → update plan → hand off
-Conversation 3:  Read plan → Slice 4 → QA → done → delete plan
-```
-
-`working/` is gitignored. Plans are working documents, not permanent docs — delete them when the work ships.
+Use any skill individually or chain them. The planning pipeline (grill-me → write-a-prd → prd-to-issues → do-work) hands off between stages.
 
 ---
 
@@ -115,11 +97,7 @@ Two tiers. Agents see config, never credentials.
 | `secrets/.env.agent`   | Yes       | Yes            | Usernames, hosts, IDs       |
 | `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords |
 
-```bash
-bash ~/dotfiles/bin/run-with-secrets.sh python deploy.py
-```
-
-Secrets exist only in the child process. They vanish when it exits. `validate-env.sh` checks that credentials haven't leaked into your shell environment and that Claude Code deny rules are configured.
+`run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see.
 
 ---
 
@@ -148,105 +126,42 @@ Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignore
 
 > `ctrl` is the system. `shift` is the worker. **ctrl+shift** — you define the rules, shift executes them.
 
-121 lines of bash. Picks a GitHub issue, implements it, commits, closes it, repeats. Sandboxed in a [Docker microVM](https://docs.docker.com/ai/sandboxes/) for AFK mode, direct on host for HITL.
+> **Status: infrastructure ready, testing in HITL mode.**
 
-| Mode | Script          | Use when                                            |
-| ---- | --------------- | --------------------------------------------------- |
-| HITL | `shift/once.sh` | Learning — runs once, you watch and intervene       |
-| AFK  | `shift/afk.sh`  | Shipping — loops in Docker sandbox, iteration guard |
+shift is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
 
-Start with HITL. Graduate to AFK with one iteration. Scale up.
+### Two modes
 
-```bash
-cd ~/your-project
+| Mode | Script          | Use when                                                      |
+| ---- | --------------- | ------------------------------------------------------------- |
+| HITL | `shift/once.sh` | Learning — runs once while you watch                          |
+| AFK  | `shift/afk.sh`  | Shipping — loops in Docker sandbox with a max iteration guard |
 
-bash ~/dotfiles/shift/once.sh          # HITL — run once
-bash ~/dotfiles/shift/afk.sh           # AFK — 5 iterations (default)
-bash ~/dotfiles/shift/afk.sh 20        # AFK — 20 iterations
-```
+AFK mode: Claude picks a task, implements it, commits, closes the issue, picks the next one. Exits when the backlog is empty (`<promise>NO MORE TASKS</promise>`). You review PRs async.
 
-Each iteration, `_build_prompt.sh` fetches open GitHub issues, grabs recent commits, sanitizes XML tags to prevent prompt injection, and pipes the assembled prompt to Claude. The AFK loop exits when the backlog is empty (`<promise>NO MORE TASKS</promise>`) or max iterations are reached. A lock directory prevents concurrent runs.
+### Task priority order
 
-Task priority: critical bugfixes → dev infrastructure → tracer bullets → polish → refactors.
+1. Critical bugfixes — blockers first
+2. Dev infrastructure — tests, types, scripts before features
+3. Tracer bullets — small end-to-end slices that validate approach
+4. Polish and quick wins
+5. Refactors
 
-### How ctrl mounts into the sandbox
+### Docker sandboxing
 
-`sbx run` mounts `~/dotfiles` read-only alongside your project. The agent gets your full instruction set inside the sandbox without being able to modify it:
-
-```bash
-sbx run claude . ~/dotfiles:ro
-```
-
-| Mount               | Access     | Contains                                         |
-| ------------------- | ---------- | ------------------------------------------------ |
-| `.` (project)       | read-write | The codebase the agent works on                  |
-| `~/dotfiles` (ctrl) | read-only  | Instructions, skills, global rules, shift prompt |
-
-<details>
-<summary>Docker Sandbox setup</summary>
-
-shift uses [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) (`sbx` CLI) — lightweight microVMs with their own Docker daemon, filesystem, and network. Docker Desktop is not required.
-
-#### Prerequisites
-
-| Requirement                 | Install                                                                                                                       |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `sbx` CLI                   | macOS: `brew install docker/tap/sbx` · Windows: [sbx-releases](https://github.com/docker/sbx-releases/releases)               |
-| Windows Hypervisor Platform | `Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All` (elevated PowerShell, Windows only)              |
-| `gh` (GitHub CLI)           | macOS: `brew install gh` · Windows: `winget install GitHub.cli` · [cli.github.com](https://cli.github.com/)                   |
-| `jq`                        | macOS: `brew install jq` · Windows: `winget install jqlang.jq` · [jqlang.github.io/jq](https://jqlang.github.io/jq/download/) |
-| Claude subscription         | Claude Max, Team, or Enterprise (for sandbox OAuth)                                                                           |
-
-#### One-time setup
+`--dangerously-skip-permissions` needs a cage. Docker isolates Claude in a micro-VM. It can run commands, write files, use git — but it can't reach your host filesystem.
 
 ```bash
-sbx login
-sbx secret set -g github -t "$(gh auth token)"
-sbx secret ls
+docker sandbox run claude .
 ```
-
-Claude authentication happens inside the sandbox on first run — use `/login` when prompted. The session token persists on your host via proxy, never stored inside the sandbox.
-
-#### Branch mode (optional)
-
-For safer AFK runs, use `--branch` to give the agent its own git worktree:
-
-```bash
-sbx run --name shift-afk --branch auto claude . ~/dotfiles:ro -- ...
-```
-
-Review changes before merging:
-
-```bash
-cd .sbx/<sandbox-name>-worktrees/<branch>
-git log
-git push -u origin <branch>
-gh pr create
-```
-
-Add `.sbx/` to your project's `.gitignore` when using branch mode.
-
-#### Managing sandboxes
-
-```bash
-sbx ls                         # list running
-sbx stop <name>                # pause (packages preserved)
-sbx rm <name>                  # delete
-sbx exec -it <name> bash       # shell in
-sbx policy ls                  # check network rules
-sbx policy allow network <host> # allow a blocked host
-```
-
-</details>
 
 ### Activation checklist
 
-- [ ] `sbx` CLI installed and `sbx login` completed
-- [ ] `sbx secret set -g github -t "$(gh auth token)"`
-- [ ] `gh` CLI installed and authenticated (`gh auth login`)
-- [ ] `jq` installed
-- [ ] Claude Max/Team/Enterprise subscription
-- [ ] `bootstrap.sh` run (symlinks `~/.claude/CLAUDE.md` and `~/.claude/skills/`)
+- [ ] Claude Max subscription
+- [ ] Docker Desktop installed
+- [ ] `shift/once.sh`, `shift/afk.sh`, `shift/prompt.md` in place
+- [ ] `gh auth login` inside the Docker sandbox
+- [ ] Deny rules validated in sandbox
 - [ ] 5–10 well-formed GitHub issues ready
 - [ ] Start HITL → graduate to AFK (1 iteration) → scale up
 
@@ -261,6 +176,7 @@ sbx policy allow network <host> # allow a blocked host
 ├── global.instructions.md           ← universal rules, always loaded
 ├── settings.json                    ← managed VS Code settings
 ├── .env.agent.example               ← template for non-sensitive config
+├── .env.citation.example            ← template for citation skill config
 ├── .env.secrets.example             ← template for API keys and tokens
 ├── instructions/
 │   ├── nextjs.instructions.md
@@ -288,10 +204,8 @@ sbx policy allow network <host> # allow a blocked host
 ├── shift/
 │   ├── afk.sh                       AFK autonomous loop
 │   ├── once.sh                      HITL single-run
-│   ├── _build_prompt.sh             shared prompt builder
 │   └── prompt.md                    shared agent prompt
 ├── bin/
-│   ├── _lib.sh                      shared utilities
 │   ├── bootstrap.sh                 one-command setup, idempotent
 │   ├── agent-shell.sh               secrets-free shell for agent sessions
 │   ├── sync-settings.sh             deep-merge VS Code settings
@@ -320,7 +234,7 @@ sbx policy allow network <host> # allow a blocked host
 | Node         | `package.json`                                                | `node`         |
 | TypeScript   | `tsconfig.json`                                               | `typescript`   |
 | PHP          | `composer.json`                                               | `php`          |
-| Sanity       | `sanity.config.{ts,js,mjs,mts}`, `sanity.cli.{ts,js}`         | `sanity`       |
+| Sanity       | `sanity.config.*`, `sanity.cli.*`                             | `sanity`       |
 | Prisma       | `prisma/schema.prisma`                                        | `prisma`       |
 | Docker       | `Dockerfile`, `docker-compose.yml/.yaml`, `compose.yml/.yaml` | `docker`       |
 | Python       | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile`   | `python`       |
@@ -344,6 +258,16 @@ sbx policy allow network <host> # allow a blocked host
 
 ## Installation
 
+> **Before you install:** Bootstrap is mostly idempotent but touches several dotfiles:
+>
+> - **`~/.claude/CLAUDE.md`** — replaced with a symlink (or overwritten on Windows). Back up if you have a custom one.
+> - **`~/.claude/skills/`** — symlinked if absent or a stale link. Existing real directories are left alone (manual merge message shown).
+> - **`~/.bashrc` / `~/.zshrc`** — appends shell integration (load-secrets + context detection). Idempotent on re-runs.
+> - **`~/.npmrc`** — appends `min-release-age=7` for supply chain protection.
+> - **`~/.config/uv/uv.toml`** — adds `exclude-newer` date for supply chain protection.
+>
+> **Not run by bootstrap:** `sync-settings.sh` (VS Code settings merge) is a separate manual step. Run with `--dry-run` first to preview changes.
+
 <details>
 <summary>Quick setup (recommended)</summary>
 
@@ -351,6 +275,15 @@ sbx policy allow network <host> # allow a blocked host
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
 ```
+
+Bootstrap is idempotent — safe to re-run. It handles:
+
+- Generating `CLAUDE.md` from `CLAUDE.base.md` + your local instruction files
+- Creating `secrets/.env.agent` and `secrets/.env.secrets` from templates
+- Symlinking `~/.claude/CLAUDE.md` and `~/.claude/skills/`
+- Creating `skills/_local/` and `instructions/_local/`
+- Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc`
+- Creating the Python venv
 
 After bootstrap:
 
@@ -482,31 +415,6 @@ source ~/.bashrc
 
 - `rm -rf ~/dotfiles/secrets/.venv && bash ~/dotfiles/bin/bootstrap.sh`
 
-**shift: `sbx: command not found`**
-
-- Install: macOS `brew install docker/tap/sbx`, Windows [sbx-releases](https://github.com/docker/sbx-releases/releases)
-- Docker Desktop is not required
-
-**shift: `gh: command not found` or empty issue list**
-
-- Install: `brew install gh` or [cli.github.com](https://cli.github.com/)
-- Authenticate: `gh auth login`
-
-**shift: sandbox can't reach GitHub or APIs**
-
-- `sbx policy ls` → `sbx policy allow network <hostname>`
-
-**shift: Claude not authenticated inside sandbox**
-
-- Use `/login` on first run. Token persists across restarts.
-- Alternative: `sbx secret set -g anthropic`
-
-**shift: skills/instructions not available in sandbox**
-
-- Verify bootstrap ran: `readlink ~/.claude/CLAUDE.md` → `~/dotfiles/CLAUDE.md`
-- AFK script mounts `~/dotfiles:ro` — verify in `afk.sh`
-- Shell in to check: `sbx exec -it <name> bash`, then `ls ~/dotfiles/`
-
 </details>
 
 ---
@@ -517,9 +425,7 @@ source ~/.bashrc
 - [GitHub Copilot](https://github.com/features/copilot) (optional — ctrl works with Claude Code alone)
 - Git Bash (Windows) or bash (Linux/macOS)
 - Python 3.10+
-- [`sbx` CLI](https://docs.docker.com/ai/sandboxes/get-started/) (shift AFK mode only)
-- [GitHub CLI (`gh`)](https://cli.github.com/) (shift only)
-- `jq` (shift only)
+- Docker Desktop (for shift)
 
 ---
 
