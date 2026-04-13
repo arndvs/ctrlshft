@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/ctrl.jpg" alt="ctrl logo" width="200" />
+  <img src="assets/ctrl-inverted.png" alt="ctrl logo" width="200" />
 </p>
 
 # ctrl
@@ -125,20 +125,20 @@ Secrets exist only in the child process. They vanish when it exits. `validate-en
 
 ## Skills
 
-| Skill                  | What it does                                                                                             |
-| ---------------------- | -------------------------------------------------------------------------------------------------------- |
-| `do-work`              | Detect your stack's feedback loops. Understand → Plan → Implement → Validate → Commit.                  |
-| `grill-me`             | Interrogate you about a plan until shared understanding. One question at a time, recommended answers.    |
-| `write-a-prd`          | Explore codebase, interview you, sketch module boundaries, write PRD, submit as GitHub issue.            |
-| `prd-to-issues`        | Break a PRD into vertical slices. Label each AFK or HITL. Create GitHub issues with dependencies.        |
-| `technical-fellow`     | Plan implementation — vertical slices, dependency graphs, acceptance criteria. (107 lines)               |
+| Skill                  | What it does                                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `do-work`              | Detect your stack's feedback loops. Understand → Plan → Implement → Validate → Commit.                                           |
+| `grill-me`             | Interrogate you about a plan until shared understanding. One question at a time, recommended answers.                            |
+| `write-a-prd`          | Explore codebase, interview you, sketch module boundaries, write PRD, submit as GitHub issue.                                    |
+| `prd-to-issues`        | Break a PRD into vertical slices. Label each AFK or HITL. Create GitHub issues with dependencies.                                |
+| `technical-fellow`     | Plan implementation — vertical slices, dependency graphs, acceptance criteria. (107 lines)                                       |
 | `skill-scaffolder`     | Scaffold new agent skills from production-tested patterns. Interview → architecture → directory. (430 lines + 4 reference files) |
-| `explore`              | Decompose a topic, spawn parallel sub-agents, synthesize a summary.                                      |
-| `research`             | Cache expensive exploration into `research.md`. Staleness checks, lifecycle management.                  |
-| `codebase-audit`       | Ruthless code audit — real problems only, grouped by severity. No manufactured issues.                   |
-| `improve-architecture` | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                           |
-| `tdd`                  | Red-green refactor. Failing test → implement → refactor. Backend only.                                    |
-| `systematic-debugging` | Root-cause-first — investigate → pattern analysis → hypothesis → fix. (195 lines + 5 reference files)   |
+| `explore`              | Decompose a topic, spawn parallel sub-agents, synthesize a summary.                                                              |
+| `research`             | Cache expensive exploration into `research.md`. Staleness checks, lifecycle management.                                          |
+| `codebase-audit`       | Ruthless code audit — real problems only, grouped by severity. No manufactured issues.                                           |
+| `improve-architecture` | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                                                   |
+| `tdd`                  | Red-green refactor. Failing test → implement → refactor. Backend only.                                                           |
+| `systematic-debugging` | Root-cause-first — investigate → pattern analysis → hypothesis → fix. (195 lines + 5 reference files)                            |
 
 Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored.
 
@@ -150,10 +150,10 @@ Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignore
 
 121 lines of bash. Picks a GitHub issue, implements it, commits, closes it, repeats. Sandboxed in a [Docker microVM](https://docs.docker.com/ai/sandboxes/) for AFK mode, direct on host for HITL.
 
-| Mode | Script           | Use when                                             |
-| ---- | ---------------- | ---------------------------------------------------- |
-| HITL | `shift/once.sh`  | Learning — runs once, you watch and intervene        |
-| AFK  | `shift/afk.sh`   | Shipping — loops in Docker sandbox, iteration guard  |
+| Mode | Script          | Use when                                            |
+| ---- | --------------- | --------------------------------------------------- |
+| HITL | `shift/once.sh` | Learning — runs once, you watch and intervene       |
+| AFK  | `shift/afk.sh`  | Shipping — loops in Docker sandbox, iteration guard |
 
 Start with HITL. Graduate to AFK with one iteration. Scale up.
 
@@ -178,9 +178,9 @@ sbx run claude . ~/dotfiles:ro
 ```
 
 | Mount               | Access     | Contains                                         |
-| -------------------- | ---------- | ------------------------------------------------ |
-| `.` (project)        | read-write | The codebase the agent works on                  |
-| `~/dotfiles` (ctrl)  | read-only  | Instructions, skills, global rules, shift prompt |
+| ------------------- | ---------- | ------------------------------------------------ |
+| `.` (project)       | read-write | The codebase the agent works on                  |
+| `~/dotfiles` (ctrl) | read-only  | Instructions, skills, global rules, shift prompt |
 
 <details>
 <summary>Docker Sandbox setup</summary>
@@ -320,7 +320,7 @@ sbx policy allow network <host> # allow a blocked host
 | Node         | `package.json`                                                | `node`         |
 | TypeScript   | `tsconfig.json`                                               | `typescript`   |
 | PHP          | `composer.json`                                               | `php`          |
-| Sanity       | `sanity.config.{ts,js,mjs,mts}`, `sanity.cli.{ts,js}`        | `sanity`       |
+| Sanity       | `sanity.config.{ts,js,mjs,mts}`, `sanity.cli.{ts,js}`         | `sanity`       |
 | Prisma       | `prisma/schema.prisma`                                        | `prisma`       |
 | Docker       | `Dockerfile`, `docker-compose.yml/.yaml`, `compose.yml/.yaml` | `docker`       |
 | Python       | `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile`   | `python`       |
@@ -331,12 +331,12 @@ sbx policy allow network <host> # allow a blocked host
 <details>
 <summary>Key VS Code settings</summary>
 
-| Setting                                               | Value                                                | Why                                                  |
-| ----------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
-| `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true, ".github/instructions": true}` | Enables instruction/skill discovery chain            |
-| `chat.agent.maxRequests`                              | `100000`                                             | Prevents agent from stopping mid-task                |
-| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                                              | Extended thinking for complex reasoning              |
-| `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6 (copilot)`                          | Model selection for explore subagent                 |
+| Setting                                               | Value                                                | Why                                       |
+| ----------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------- |
+| `chat.instructionsFilesLocations`                     | `{"~/dotfiles": true, ".github/instructions": true}` | Enables instruction/skill discovery chain |
+| `chat.agent.maxRequests`                              | `100000`                                             | Prevents agent from stopping mid-task     |
+| `github.copilot.chat.anthropic.thinking.budgetTokens` | `32000`                                              | Extended thinking for complex reasoning   |
+| `chat.exploreAgent.defaultModel`                      | `Claude Opus 4.6 (copilot)`                          | Model selection for explore subagent      |
 
 </details>
 
@@ -414,16 +414,16 @@ bash ~/dotfiles/bin/sync-settings.sh
 
 > Bootstrap is mostly idempotent. Here's everything it modifies:
 
-| File                                | Change                                                                           |
-| ----------------------------------- | -------------------------------------------------------------------------------- |
-| `~/.claude/CLAUDE.md`               | Symlinked → `~/dotfiles/CLAUDE.md` (or copied on Windows without admin)          |
-| `~/.claude/skills/`                 | Symlinked → `~/dotfiles/skills/` (existing real dirs left alone)                 |
-| `~/.bashrc` / `~/.zshrc`           | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent)         |
-| `~/.npmrc`                          | Appends `min-release-age=7` (supply chain protection)                            |
-| `~/.config/uv/uv.toml`             | Adds `exclude-newer` date (supply chain protection)                              |
-| `secrets/.env.agent`                | Created from `.env.agent.example` if missing                                     |
-| `secrets/.env.secrets`              | Created from `.env.secrets.example` if missing                                   |
-| `secrets/.venv/`                    | Python venv created for local skill packages                                     |
+| File                     | Change                                                                   |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `~/.claude/CLAUDE.md`    | Symlinked → `~/dotfiles/CLAUDE.md` (or copied on Windows without admin)  |
+| `~/.claude/skills/`      | Symlinked → `~/dotfiles/skills/` (existing real dirs left alone)         |
+| `~/.bashrc` / `~/.zshrc` | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent) |
+| `~/.npmrc`               | Appends `min-release-age=7` (supply chain protection)                    |
+| `~/.config/uv/uv.toml`   | Adds `exclude-newer` date (supply chain protection)                      |
+| `secrets/.env.agent`     | Created from `.env.agent.example` if missing                             |
+| `secrets/.env.secrets`   | Created from `.env.secrets.example` if missing                           |
+| `secrets/.venv/`         | Python venv created for local skill packages                             |
 
 **Not run by bootstrap:** `sync-settings.sh` (VS Code settings merge) is manual. Run with `--dry-run` first.
 
