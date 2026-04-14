@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/ctrl-shift-logo.jpg" width="862" />
+  <img src="assets/ctrl-shift-logo.jpg" style="width: 100%; max-width: 862px; height: auto;" />
 </p>
 
-# CTRL
+# ctrl
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
