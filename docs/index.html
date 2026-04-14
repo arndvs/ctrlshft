@@ -39,13 +39,14 @@
 
         html {
             scroll-behavior: smooth;
+            font-size: 68.75%;
         }
 
         body {
             background: var(--bg);
             color: var(--text);
             font-family: var(--mono);
-            font-size: 13px;
+            font-size: 1.3rem;
             line-height: 1.6;
             overflow-x: hidden;
         }
@@ -61,12 +62,12 @@
 
         /* CONTAINER */
         .container {
-            max-width: 1280px;
+            max-width: 128rem;
             margin-left: auto;
             margin-right: auto;
             width: 100%;
-            padding-left: 40px;
-            padding-right: 40px;
+            padding-left: 4rem;
+            padding-right: 4rem;
         }
 
         /* NAV */
@@ -76,10 +77,10 @@
             left: 0;
             right: 0;
             z-index: 100;
-            height: 52px;
+            height: 5.2rem;
             border-bottom: 1px solid var(--border);
             background: rgba(8, 8, 8, 0.94);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(1.2rem);
         }
 
         nav .container {
@@ -91,23 +92,23 @@
 
         .nav-logo {
             font-family: var(--display);
-            font-size: 28px;
-            letter-spacing: 4px;
+            font-size: 2.8rem;
+            letter-spacing: 0.4rem;
             color: var(--accent);
             text-decoration: none;
         }
 
         .nav-links {
             display: flex;
-            gap: 32px;
+            gap: 3.2rem;
             list-style: none;
         }
 
         .nav-links a {
             color: var(--text-dim);
             text-decoration: none;
-            font-size: 11px;
-            letter-spacing: 2px;
+            font-size: 1.1rem;
+            letter-spacing: 0.2rem;
             text-transform: uppercase;
             transition: color 0.2s;
         }
@@ -119,7 +120,7 @@
         .nav-cta {
             background: var(--accent) !important;
             color: #000 !important;
-            padding: 6px 16px;
+            padding: 0.6rem 1.6rem;
             font-weight: 600;
         }
 
@@ -129,7 +130,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 120px 0 80px;
+            padding: 12rem 0 8rem;
             position: relative;
             overflow: hidden;
         }
@@ -138,15 +139,15 @@
             position: absolute;
             inset: 0;
             background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 60px 60px;
+            background-size: 6rem 6rem;
             mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
             opacity: 0.4;
         }
 
         .hero-glow {
             position: absolute;
-            width: 700px;
-            height: 700px;
+            width: 70rem;
+            height: 70rem;
             border-radius: 50%;
             background: radial-gradient(circle, rgba(232, 255, 71, 0.05) 0%, transparent 70%);
             top: 50%;
@@ -156,32 +157,32 @@
         }
 
         .hero-tag {
-            font-size: 11px;
-            letter-spacing: 3px;
+            font-size: 1.1rem;
+            letter-spacing: 0.3rem;
             text-transform: uppercase;
             color: var(--accent);
-            margin-bottom: 24px;
+            margin-bottom: 2.4rem;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 1rem;
             animation: fadeUp 0.6s ease both;
         }
 
         .hero-tag::before {
             content: '';
             display: block;
-            width: 24px;
+            width: 2.4rem;
             height: 1px;
             background: var(--accent);
         }
 
         .hero-headline {
             font-family: var(--display);
-            font-size: clamp(80px, 14vw, 200px);
+            font-size: clamp(8rem, 14vw, 20rem);
             line-height: 0.9;
-            letter-spacing: 8px;
+            letter-spacing: 0.8rem;
             color: var(--text);
-            margin-bottom: 8px;
+            margin-bottom: 0.8rem;
             animation: fadeUp 0.6s 0.1s ease both;
         }
 
@@ -191,19 +192,19 @@
 
         .hero-sub {
             font-family: var(--display);
-            font-size: clamp(18px, 3vw, 38px);
-            letter-spacing: 6px;
+            font-size: clamp(1.8rem, 3vw, 3.8rem);
+            letter-spacing: 0.6rem;
             color: var(--text-secondary);
-            margin-bottom: 48px;
+            margin-bottom: 4.8rem;
             animation: fadeUp 0.6s 0.2s ease both;
         }
 
         .hero-desc {
-            max-width: 540px;
+            max-width: 54rem;
             color: var(--text-secondary);
-            font-size: 13px;
+            font-size: 1.3rem;
             line-height: 1.8;
-            margin-bottom: 48px;
+            margin-bottom: 4.8rem;
             font-family: var(--sans);
             animation: fadeUp 0.6s 0.3s ease both;
         }
@@ -211,7 +212,7 @@
         .hero-actions {
             display: flex;
             align-items: center;
-            gap: 24px;
+            gap: 2.4rem;
             flex-wrap: wrap;
             animation: fadeUp 0.6s 0.4s ease both;
         }
@@ -219,14 +220,14 @@
         .btn-primary {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 1rem;
             background: var(--accent);
             color: #000;
-            padding: 12px 24px;
+            padding: 1.2rem 2.4rem;
             font-family: var(--mono);
-            font-size: 12px;
+            font-size: 1.2rem;
             font-weight: 600;
-            letter-spacing: 2px;
+            letter-spacing: 0.2rem;
             text-decoration: none;
             transition: transform 0.15s, box-shadow 0.15s;
         }
@@ -239,11 +240,11 @@
         .btn-ghost {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.8rem;
             color: var(--text-dim);
             font-family: var(--mono);
-            font-size: 12px;
-            letter-spacing: 1px;
+            font-size: 1.2rem;
+            letter-spacing: 0.1rem;
             text-decoration: none;
             border-bottom: 1px solid var(--border-bright);
             padding-bottom: 2px;
@@ -258,7 +259,7 @@
         .hero-content {
             display: flex;
             align-items: center;
-            gap: 48px;
+            gap: 4.8rem;
         }
 
         .hero-left {
@@ -275,22 +276,22 @@
         .terminal {
             background: var(--surface);
             border: 1px solid var(--border);
-            width: 420px;
-            max-width: calc(100vw - 80px);
+            width: 42rem;
+            max-width: calc(100vw - 8rem);
         }
 
         .terminal-bar {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 10px 14px;
+            gap: 0.6rem;
+            padding: 1rem 1.4rem;
             border-bottom: 1px solid var(--border);
             background: #111;
         }
 
         .dot {
-            width: 10px;
-            height: 10px;
+            width: 1rem;
+            height: 1rem;
             border-radius: 50%;
         }
 
@@ -307,8 +308,8 @@
         }
 
         .terminal-body {
-            padding: 16px 20px;
-            font-size: 12px;
+            padding: 1.6rem 2rem;
+            font-size: 1.2rem;
             line-height: 1.9;
         }
 
@@ -331,8 +332,8 @@
 
         .cursor {
             display: inline-block;
-            width: 7px;
-            height: 12px;
+            width: 0.7rem;
+            height: 1.2rem;
             background: var(--accent);
             vertical-align: middle;
             animation: blink 1.2s step-end infinite;
@@ -346,23 +347,23 @@
 
         /* SECTIONS */
         .section {
-            padding: 100px 0;
+            padding: 10rem 0;
             border-top: 1px solid var(--border);
         }
 
         .section-num {
-            font-size: 11px;
-            letter-spacing: 3px;
+            font-size: 1.1rem;
+            letter-spacing: 0.3rem;
             color: var(--text-dim);
-            margin-bottom: 8px;
+            margin-bottom: 0.8rem;
         }
 
         .section-title {
             font-family: var(--display);
-            font-size: clamp(40px, 6vw, 80px);
-            letter-spacing: 4px;
+            font-size: clamp(4rem, 6vw, 8rem);
+            letter-spacing: 0.4rem;
             line-height: 1;
-            margin-bottom: 60px;
+            margin-bottom: 6rem;
         }
 
         .section-title em {
@@ -373,7 +374,7 @@
         /* PROBLEMS */
         .problems {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
             gap: 1px;
             background: var(--border);
             border: 1px solid var(--border);
@@ -381,7 +382,7 @@
 
         .problem-card {
             background: var(--bg);
-            padding: 36px 32px;
+            padding: 3.6rem 3.2rem;
             position: relative;
             transition: background 0.2s;
         }
@@ -406,22 +407,22 @@
         }
 
         .problem-icon {
-            font-size: 22px;
-            margin-bottom: 20px;
+            font-size: 2.2rem;
+            margin-bottom: 2rem;
             display: block;
         }
 
         .problem-title {
             font-family: var(--display);
-            font-size: 24px;
-            letter-spacing: 2px;
-            margin-bottom: 12px;
+            font-size: 2.4rem;
+            letter-spacing: 0.2rem;
+            margin-bottom: 1.2rem;
         }
 
         .problem-body {
             color: var(--text-secondary);
             font-family: var(--sans);
-            font-size: 13px;
+            font-size: 1.3rem;
             line-height: 1.7;
         }
 
@@ -432,7 +433,7 @@
 
         .pipeline-step {
             display: grid;
-            grid-template-columns: 200px 1fr;
+            grid-template-columns: 20rem 1fr;
             border-bottom: 1px solid var(--border);
             transition: background 0.15s;
         }
@@ -446,7 +447,7 @@
         }
 
         .pipeline-cmd {
-            padding: 22px 28px;
+            padding: 2.2rem 2.8rem;
             border-right: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -454,14 +455,14 @@
 
         .pipeline-cmd code {
             color: var(--accent);
-            font-size: 13px;
+            font-size: 1.3rem;
         }
 
         .pipeline-desc {
-            padding: 22px 28px;
+            padding: 2.2rem 2.8rem;
             color: var(--text-secondary);
             font-family: var(--sans);
-            font-size: 13px;
+            font-size: 1.3rem;
             line-height: 1.6;
             display: flex;
             align-items: center;
@@ -470,13 +471,13 @@
         /* FEATURES */
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr));
+            gap: 2rem;
         }
 
         .feature {
             border: 1px solid var(--border);
-            padding: 32px;
+            padding: 3.2rem;
             transition: border-color 0.2s;
         }
 
@@ -485,44 +486,44 @@
         }
 
         .feature-label {
-            font-size: 10px;
-            letter-spacing: 3px;
+            font-size: 1rem;
+            letter-spacing: 0.3rem;
             text-transform: uppercase;
             color: var(--accent);
-            margin-bottom: 16px;
+            margin-bottom: 1.6rem;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.8rem;
         }
 
         .feature-label::before {
             content: '';
             display: block;
-            width: 16px;
+            width: 1.6rem;
             height: 1px;
             background: var(--accent);
         }
 
         .feature-title {
             font-family: var(--display);
-            font-size: 26px;
-            letter-spacing: 2px;
-            margin-bottom: 14px;
+            font-size: 2.6rem;
+            letter-spacing: 0.2rem;
+            margin-bottom: 1.4rem;
         }
 
         .feature-body {
             color: var(--text-secondary);
             font-family: var(--sans);
-            font-size: 13px;
+            font-size: 1.3rem;
             line-height: 1.7;
         }
 
         .feature-code {
-            margin-top: 18px;
+            margin-top: 1.8rem;
             background: var(--surface);
             border: 1px solid var(--border);
-            padding: 12px 16px;
-            font-size: 11px;
+            padding: 1.2rem 1.6rem;
+            font-size: 1.1rem;
             color: var(--text-dim);
             line-height: 1.9;
         }
@@ -542,7 +543,7 @@
         /* SKILLS */
         .skills-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
             gap: 1px;
             background: var(--border);
             border: 1px solid var(--border);
@@ -550,7 +551,7 @@
 
         .skill-item {
             background: var(--bg);
-            padding: 20px 24px;
+            padding: 2rem 2.4rem;
             transition: background 0.15s;
         }
 
@@ -559,8 +560,8 @@
         }
 
         .skill-name {
-            font-size: 12px;
-            margin-bottom: 4px;
+            font-size: 1.2rem;
+            margin-bottom: 0.4rem;
         }
 
         .skill-name code {
@@ -568,7 +569,7 @@
         }
 
         .skill-desc {
-            font-size: 11px;
+            font-size: 1.1rem;
             color: var(--text-secondary);
             font-family: var(--sans);
             line-height: 1.5;
@@ -576,25 +577,25 @@
 
         .skill-auto {
             display: inline-block;
-            font-size: 9px;
-            letter-spacing: 1.5px;
+            font-size: 0.9rem;
+            letter-spacing: 0.15rem;
             text-transform: uppercase;
             color: var(--accent);
             border: 1px solid var(--accent-dim);
-            padding: 2px 6px;
-            margin-top: 6px;
+            padding: 0.2rem 0.6rem;
+            margin-top: 0.6rem;
             width: fit-content;
         }
 
         /* PRINCIPLES */
         .principles {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
             border: 1px solid var(--border);
         }
 
         .principle {
-            padding: 40px 32px;
+            padding: 4rem 3.2rem;
             border-right: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
             position: relative;
@@ -610,34 +611,34 @@
 
         .principle-num {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 2rem;
+            right: 2rem;
             font-family: var(--display);
-            font-size: 64px;
+            font-size: 6.4rem;
             color: var(--text-dimmer);
             line-height: 1;
         }
 
         .principle-title {
             font-family: var(--display);
-            font-size: 22px;
-            letter-spacing: 2px;
-            margin-bottom: 12px;
+            font-size: 2.2rem;
+            letter-spacing: 0.2rem;
+            margin-bottom: 1.2rem;
         }
 
         .principle-body {
             font-family: var(--sans);
-            font-size: 13px;
+            font-size: 1.3rem;
             color: var(--text-secondary);
             line-height: 1.7;
         }
 
         .principle-rule {
-            margin-top: 16px;
-            padding: 12px 14px;
+            margin-top: 1.6rem;
+            padding: 1.2rem 1.4rem;
             background: var(--surface);
             border-left: 2px solid var(--accent);
-            font-size: 11px;
+            font-size: 1.1rem;
             color: var(--text-secondary);
             font-style: italic;
             font-family: var(--sans);
@@ -646,14 +647,14 @@
         /* AGENTS */
         .agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 16px;
-            margin-top: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+            gap: 1.6rem;
+            margin-top: 3.2rem;
         }
 
         .agent-card {
             border: 1px solid var(--border);
-            padding: 28px;
+            padding: 2.8rem;
             transition: border-color 0.2s;
         }
 
@@ -663,30 +664,30 @@
 
         .agent-name {
             font-family: var(--display);
-            font-size: 22px;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
+            font-size: 2.2rem;
+            letter-spacing: 0.2rem;
+            margin-bottom: 0.8rem;
             color: var(--blue);
         }
 
         .agent-focus {
             font-family: var(--sans);
-            font-size: 12px;
+            font-size: 1.2rem;
             color: var(--text-secondary);
             line-height: 1.6;
         }
 
         .agent-meta {
-            margin-top: 16px;
+            margin-top: 1.6rem;
             display: flex;
-            gap: 6px;
+            gap: 0.6rem;
             flex-wrap: wrap;
         }
 
         .badge {
-            font-size: 10px;
-            letter-spacing: 1px;
-            padding: 3px 8px;
+            font-size: 1rem;
+            letter-spacing: 0.1rem;
+            padding: 0.3rem 0.8rem;
             border: 1px solid var(--border-bright);
             color: var(--text-dim);
             text-transform: uppercase;
@@ -696,23 +697,23 @@
         .secrets-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 32px;
-            font-size: 12px;
+            margin-top: 3.2rem;
+            font-size: 1.2rem;
         }
 
         .secrets-table th {
             text-align: left;
-            padding: 12px 20px;
+            padding: 1.2rem 2rem;
             border-bottom: 1px solid var(--border);
             color: var(--text-dim);
             font-weight: 400;
-            letter-spacing: 2px;
-            font-size: 10px;
+            letter-spacing: 0.2rem;
+            font-size: 1rem;
             text-transform: uppercase;
         }
 
         .secrets-table td {
-            padding: 14px 20px;
+            padding: 1.4rem 2rem;
             border-bottom: 1px solid var(--border);
         }
 
@@ -739,12 +740,12 @@
             gap: 1px;
             background: var(--border);
             border: 1px solid var(--border);
-            margin-top: 32px;
+            margin-top: 3.2rem;
         }
 
         .shift-mode {
             background: var(--bg);
-            padding: 36px 32px;
+            padding: 3.6rem 3.2rem;
             transition: background 0.15s;
         }
 
@@ -753,18 +754,18 @@
         }
 
         .shift-mode-label {
-            font-size: 10px;
-            letter-spacing: 3px;
+            font-size: 1rem;
+            letter-spacing: 0.3rem;
             text-transform: uppercase;
             color: var(--text-dim);
-            margin-bottom: 12px;
+            margin-bottom: 1.2rem;
         }
 
         .shift-mode-name {
             font-family: var(--display);
-            font-size: 40px;
-            letter-spacing: 4px;
-            margin-bottom: 12px;
+            font-size: 4rem;
+            letter-spacing: 0.4rem;
+            margin-bottom: 1.2rem;
         }
 
         .shift-mode-name.afk {
@@ -773,7 +774,7 @@
 
         .shift-mode-desc {
             font-family: var(--sans);
-            font-size: 13px;
+            font-size: 1.3rem;
             color: var(--text-secondary);
             line-height: 1.6;
         }
@@ -782,12 +783,12 @@
         .install-block {
             background: var(--surface);
             border: 1px solid var(--border);
-            margin-top: 40px;
+            margin-top: 4rem;
         }
 
         .install-step {
             display: grid;
-            grid-template-columns: 60px 1fr;
+            grid-template-columns: 6rem 1fr;
             border-bottom: 1px solid var(--border);
         }
 
@@ -801,32 +802,32 @@
             align-items: center;
             justify-content: center;
             font-family: var(--display);
-            font-size: 28px;
+            font-size: 2.8rem;
             color: var(--text-dimmer);
-            padding: 20px;
+            padding: 2rem;
         }
 
         .step-content {
-            padding: 20px 28px;
+            padding: 2rem 2.8rem;
         }
 
         .step-title {
-            font-size: 10px;
-            letter-spacing: 2px;
+            font-size: 1rem;
+            letter-spacing: 0.2rem;
             text-transform: uppercase;
             color: var(--text-dim);
-            margin-bottom: 8px;
+            margin-bottom: 0.8rem;
         }
 
         .step-code {
-            font-size: 12px;
+            font-size: 1.2rem;
             color: var(--accent);
             line-height: 1.9;
         }
 
         .step-note {
-            margin-top: 6px;
-            font-size: 11px;
+            margin-top: 0.6rem;
+            font-size: 1.1rem;
             color: var(--text-dim);
             font-family: var(--sans);
         }
@@ -835,7 +836,7 @@
         .ticker {
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
-            padding: 12px 0;
+            padding: 1.2rem 0;
             overflow: hidden;
             white-space: nowrap;
         }
@@ -843,8 +844,8 @@
         .ticker-inner {
             display: inline-block;
             animation: scroll 30s linear infinite;
-            font-size: 11px;
-            letter-spacing: 4px;
+            font-size: 1.1rem;
+            letter-spacing: 0.4rem;
             color: var(--text-dimmer);
             text-transform: uppercase;
         }
@@ -862,34 +863,34 @@
         /* FOOTER */
         footer {
             border-top: 1px solid var(--border);
-            padding: 60px 0 40px;
+            padding: 6rem 0 4rem;
         }
 
         footer .container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 60px;
+            gap: 6rem;
             align-items: end;
         }
 
         .footer-logo {
             font-family: var(--display);
-            font-size: 52px;
-            letter-spacing: 8px;
+            font-size: 5.2rem;
+            letter-spacing: 0.8rem;
             color: var(--accent);
-            margin-bottom: 16px;
+            margin-bottom: 1.6rem;
         }
 
         .footer-tagline {
             color: var(--text-secondary);
             font-family: var(--sans);
-            font-size: 13px;
+            font-size: 1.3rem;
             line-height: 1.6;
-            max-width: 320px;
+            max-width: 32rem;
         }
 
         .footer-note {
-            font-size: 11px;
+            font-size: 1.1rem;
             color: var(--text-dim);
             line-height: 2;
             font-family: var(--sans);
@@ -909,7 +910,7 @@
         @keyframes fadeUp {
             from {
                 opacity: 0;
-                transform: translateY(16px);
+                transform: translateY(1.6rem);
             }
 
             to {
@@ -920,7 +921,7 @@
 
         .fade-in {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(2rem);
             transition: opacity 0.6s ease, transform 0.6s ease;
         }
 
@@ -962,8 +963,8 @@
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .container {
-                padding-left: 20px;
-                padding-right: 20px;
+                padding-left: 2rem;
+                padding-right: 2rem;
             }
 
             .nav-links {
@@ -971,7 +972,7 @@
             }
 
             .hero {
-                padding: 100px 0 60px;
+                padding: 10rem 0 6rem;
             }
 
             .hero-content {
@@ -983,7 +984,7 @@
             }
 
             .section {
-                padding: 60px 0;
+                padding: 6rem 0;
             }
 
             .pipeline-step {
@@ -1019,7 +1020,7 @@
     <nav>
         <div class="container">
             <a href="#" class="nav-logo">ctrl<span
-                    style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 2px;">+shft</span></a>
+                    style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 0.2rem;">+shft</span></a>
             <ul class="nav-links">
                 <li><a href="#how">how it works</a></li>
                 <li><a href="#skills">skills</a></li>
@@ -1293,7 +1294,7 @@
         </div>
 
         <div
-            style="margin-top: 20px; padding: 14px 20px; border: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 10px;">
+            style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); display: flex; align-items: center; gap: 1rem;">
             <span style="color: var(--accent);">+</span>
             Add private skills: <code style="color: var(--accent);">skills/_local/your-skill/SKILL.md</code> —
             auto-discovered, gitignored.
@@ -1307,7 +1308,7 @@
         <div class="section-num">05 — SUBAGENTS</div>
         <h2 class="section-title">Isolated<br><em>specialists</em></h2>
 
-        <p style="max-width: 560px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+        <p style="max-width: 56rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
             Each subagent runs in an isolated context window with its own system prompt and tool restrictions.
             Exploration stays out of your main conversation.
         </p>
@@ -1344,7 +1345,7 @@
         <h2 class="section-title">Baked-in<br><em>discipline</em></h2>
 
         <p
-            style="max-width: 540px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 40px;">
+            style="max-width: 54rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 4rem;">
             Four behavioral rules in <code>global.instructions.md</code>, addressing the most expensive AI failure
             modes: building wrong things, overengineering, drive-by refactoring, and vague success criteria.
         </p>
@@ -1389,7 +1390,7 @@
         <div class="section-num">07 — SECURITY</div>
         <h2 class="section-title">Agents see config,<br><em>never</em> credentials</h2>
 
-        <p style="max-width: 520px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+        <p style="max-width: 52rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
             Two tiers. <code>run-with-secrets.sh</code> injects credentials into a child process only — they exist for
             its lifetime and vanish when it exits. Deny rules block any attempt to read them.
         </p>
@@ -1420,7 +1421,7 @@
         </table>
 
         <div
-            style="margin-top: 16px; padding: 14px 20px; border: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.6;">
+            style="margin-top: 1.6rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.6;">
             Deny rules block <code>env</code>, <code>printenv</code>, <code>cat secrets/*</code>, and
             <code>echo $*KEY*</code> at the agent level. Agents can't accidentally inherit what they can't see.
         </div>
@@ -1433,7 +1434,7 @@
         <div class="section-num">08 — SHFT</div>
         <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
 
-        <p style="max-width: 540px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+        <p style="max-width: 54rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
             Not a framework. A bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for
             AFK mode, direct on host for HITL. Exits when the backlog is empty.
         </p>
@@ -1454,7 +1455,7 @@
         </div>
 
         <div
-            style="margin-top: 14px; padding: 12px 18px; border: 1px solid var(--border); font-size: 11px; color: var(--text-dimmer); font-family: var(--sans);">
+            style="margin-top: 1.4rem; padding: 1.2rem 1.8rem; border: 1px solid var(--border); font-size: 1.1rem; color: var(--text-dimmer); font-family: var(--sans);">
             Status: infrastructure ready, testing in HITL mode. Requires Claude Max, Docker Desktop, and 5–10
             well-formed GitHub issues.
         </div>
@@ -1514,9 +1515,9 @@
             </div>
         </div>
 
-        <div style="margin-top: 24px; display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+        <div style="margin-top: 2.4rem; display: flex; gap: 2.4rem; flex-wrap: wrap; align-items: center;">
             <a href="https://github.com/arndvs/ctrl" class="btn-primary">View on GitHub →</a>
-            <div style="font-size: 12px; color: var(--text-dimmer); display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 1.2rem; color: var(--text-dimmer); display: flex; align-items: center; gap: 0.8rem;">
                 <span style="color: var(--green);">●</span> MIT License &nbsp;·&nbsp; macOS / Linux / WSL
             </div>
         </div>
@@ -1535,12 +1536,12 @@
         <div class="container">
         <div>
             <div class="footer-logo">ctrl<span
-                    style="color: var(--text-dim); font-size: 0.55em; letter-spacing: 4px;">+shft</span></div>
+                    style="color: var(--text-dim); font-size: 0.55em; letter-spacing: 0.4rem;">+shft</span></div>
             <div class="footer-tagline">ctrl defines the rules. shft executes them. One repo syncs instructions, skills,
                 secrets, and autonomous loops across every machine.</div>
-            <div style="margin-top: 16px;">
+            <div style="margin-top: 1.6rem;">
                 <a href="https://github.com/arndvs/ctrl" class="btn-ghost"
-                    style="font-size: 11px;">github.com/arndvs/ctrl →</a>
+                    style="font-size: 1.1rem;">github.com/arndvs/ctrl →</a>
             </div>
         </div>
         <div class="footer-note">
