@@ -961,6 +961,25 @@
         }
 
         /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .hero {
+                min-height: auto;
+            }
+
+            .hero-content {
+                flex-direction: column;
+            }
+
+            .hero-terminal {
+                width: 100%;
+            }
+
+            .hero-terminal .terminal {
+                width: 100%;
+                max-width: none;
+            }
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding-left: 2rem;
@@ -973,14 +992,6 @@
 
             .hero {
                 padding: 10rem 0 6rem;
-            }
-
-            .hero-content {
-                flex-direction: column;
-            }
-
-            .hero-terminal {
-                display: none;
             }
 
             .section {
@@ -1350,19 +1361,28 @@
             modes: building wrong things, overengineering, drive-by refactoring, and vague success criteria.
         </p>
 
+        <p
+            style="max-width: 72rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 3.2rem;">
+            These principles intentionally bias toward correctness over speed. They force clarification before coding,
+            keep solutions minimal, constrain changes to the actual request, and require explicit verification.
+            The result is fewer speculative edits, fewer rewrites, and cleaner commits that are easier to review and trust.
+        </p>
+
         <div class="principles">
             <div class="principle">
                 <div class="principle-num">1</div>
                 <div class="principle-title">Think Before Coding</div>
                 <p class="principle-body">Surface confusion before acting. Present multiple interpretations. Name
-                    assumptions explicitly. Push back when simpler exists.</p>
+                    assumptions explicitly. Push back when simpler exists. Clarifying questions come before
+                    implementation, not after a wrong turn.</p>
                 <div class="principle-rule">"Stop when confused — ask, never pick an interpretation silently."</div>
             </div>
             <div class="principle">
                 <div class="principle-num">2</div>
                 <div class="principle-title">Simplicity First</div>
                 <p class="principle-body">Minimum code that solves the problem. No speculative features. No abstractions
-                    for single-use code. If 200 lines could be 50, rewrite it.</p>
+                    for single-use code. If 200 lines could be 50, rewrite it. Prefer straightforward solutions a senior
+                    engineer would call obvious and maintainable.</p>
                 <div class="principle-rule">"Would a senior engineer say this is overcomplicated? If yes, simplify."
                 </div>
             </div>
@@ -1370,16 +1390,25 @@
                 <div class="principle-num">3</div>
                 <div class="principle-title">Surgical Changes</div>
                 <p class="principle-body">Touch only what you must. Match existing style exactly. Don't refactor what
-                    isn't broken. Every changed line traces to the user's request.</p>
+                    isn't broken. Every changed line traces to the user's request. Mention adjacent issues, but don't
+                    fold unrelated cleanup into the same diff.</p>
                 <div class="principle-rule">"Mention unrelated dead code — don't delete it."</div>
             </div>
             <div class="principle">
                 <div class="principle-num">4</div>
                 <div class="principle-title">Goal-Driven Execution</div>
                 <p class="principle-body">Define success criteria. Loop until verified. Transform imperative tasks into
-                    verifiable goals with acceptance criteria at each step.</p>
+                    verifiable goals with acceptance criteria at each step. Convert vague asks into outcomes that can be
+                    tested and proven.</p>
                 <div class="principle-rule">"Write a test that reproduces it, then make it pass."</div>
             </div>
+        </div>
+
+        <div
+            style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+            <strong style="color: var(--text); font-family: var(--mono); letter-spacing: 0.08rem;">How you know it's working:</strong>
+            fewer unnecessary diff lines, fewer overengineered rewrites, cleaner scope boundaries, and verification
+            steps that are visible before a task is marked done.
         </div>
         </div>
     </section>
