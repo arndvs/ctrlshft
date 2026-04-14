@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/ctrl-inverted.png" alt="ctrl logo" width="200" />
+  <img src="assets/ctrl-shift-logo.jpg" alt="ctrl logo" width="200" />
 </p>
 
 # ctrl
@@ -98,9 +98,9 @@ skills/
 
 `agents/` defines specialized subagents with their own system prompts, tool restrictions, and model preferences. Each runs in an isolated context window — exploration stays out of your main conversation.
 
-| Agent              | Focus                                           |
-| ------------------ | ----------------------------------------------- |
-| `code-reviewer`    | Bugs, security, logic errors — not style nits   |
+| Agent              | Focus                                            |
+| ------------------ | ------------------------------------------------ |
+| `code-reviewer`    | Bugs, security, logic errors — not style nits    |
 | `researcher`       | Deep codebase exploration, architecture mapping  |
 | `security-auditor` | OWASP Top 10, secrets exposure, config hardening |
 
@@ -110,11 +110,11 @@ All three use `model: sonnet`, read-only tools (Read, Grep, Glob, Bash), and `me
 
 `rules/` contains convention-enforcement files that load only when the agent touches matching files. Each rule uses `paths:` YAML frontmatter to scope itself.
 
-| Rule                 | Scoped to                                           |
-| -------------------- | --------------------------------------------------- |
-| `test-conventions`   | `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`     |
-| `migration-safety`   | `**/migrations/**`, `**/prisma/migrations/**`       |
-| `env-security`       | `**/.env*`, `**/secrets/**`, `**/credentials*`      |
+| Rule               | Scoped to                                       |
+| ------------------ | ----------------------------------------------- |
+| `test-conventions` | `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**` |
+| `migration-safety` | `**/migrations/**`, `**/prisma/migrations/**`   |
+| `env-security`     | `**/.env*`, `**/secrets/**`, `**/credentials*`  |
 
 Rules without `paths:` load every session. Add your own: `rules/your-rule.md` — auto-discovered.
 
@@ -136,20 +136,20 @@ Two tiers. Agents see config, never credentials.
 
 Skills marked ⚡ auto-invoke when the agent detects a matching task. Others require explicit `/slash-command` invocation.
 
-| Skill                    | What it does                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `do-work`                | Detect your stack's feedback loops. Understand → Plan → Implement → Validate → Commit.                                           |
-| `grill-me`               | Interrogate you about a plan until shared understanding. One question at a time, recommended answers.                            |
-| `write-a-prd`            | Explore codebase, interview you, sketch module boundaries, write PRD, submit as GitHub issue.                                    |
-| `prd-to-issues`          | Break a PRD into vertical slices. Label each AFK or HITL. Create GitHub issues with dependencies.                                |
-| `technical-fellow` ⚡    | Plan implementation — vertical slices, dependency graphs, acceptance criteria.                                                    |
-| `skill-scaffolder`       | Scaffold new agent skills from production-tested patterns. Interview → architecture → directory.                                  |
-| `explore` ⚡             | Decompose a topic, spawn parallel sub-agents, synthesize a summary.                                                              |
-| `research` ⚡            | Cache expensive exploration into `research.md`. Staleness checks, lifecycle management.                                          |
-| `codebase-audit` ⚡      | Ruthless code audit — real problems only, grouped by severity. No manufactured issues.                                           |
-| `improve-architecture` ⚡ | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                                                  |
-| `tdd`                    | Red-green refactor. Failing test → implement → refactor. Backend only.                                                           |
-| `systematic-debugging` ⚡ | Root-cause-first — investigate → pattern analysis → hypothesis → fix.                                                           |
+| Skill                     | What it does                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `do-work`                 | Detect your stack's feedback loops. Understand → Plan → Implement → Validate → Commit.                |
+| `grill-me`                | Interrogate you about a plan until shared understanding. One question at a time, recommended answers. |
+| `write-a-prd`             | Explore codebase, interview you, sketch module boundaries, write PRD, submit as GitHub issue.         |
+| `prd-to-issues`           | Break a PRD into vertical slices. Label each AFK or HITL. Create GitHub issues with dependencies.     |
+| `technical-fellow` ⚡     | Plan implementation — vertical slices, dependency graphs, acceptance criteria.                        |
+| `skill-scaffolder`        | Scaffold new agent skills from production-tested patterns. Interview → architecture → directory.      |
+| `explore` ⚡              | Decompose a topic, spawn parallel sub-agents, synthesize a summary.                                   |
+| `research` ⚡             | Cache expensive exploration into `research.md`. Staleness checks, lifecycle management.               |
+| `codebase-audit` ⚡       | Ruthless code audit — real problems only, grouped by severity. No manufactured issues.                |
+| `improve-architecture` ⚡ | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                        |
+| `tdd`                     | Red-green refactor. Failing test → implement → refactor. Backend only.                                |
+| `systematic-debugging` ⚡ | Root-cause-first — investigate → pattern analysis → hypothesis → fix.                                 |
 
 Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored.
 
@@ -236,8 +236,8 @@ shft is not a framework. It's a bash loop that runs Claude against your GitHub i
 
 ### Two modes
 
-| Mode | Script          | Use when                                                      |
-| ---- | --------------- | ------------------------------------------------------------- |
+| Mode | Script         | Use when                                                      |
+| ---- | -------------- | ------------------------------------------------------------- |
 | HITL | `shft/once.sh` | Learning — runs once while you watch                          |
 | AFK  | `shft/afk.sh`  | Shipping — loops in Docker sandbox with a max iteration guard |
 
