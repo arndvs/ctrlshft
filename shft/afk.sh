@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# AFK shift — autonomous loop consuming GitHub issues backlog.
-# Usage: ./shift/afk.sh [max_iterations]
+# AFK shft — autonomous loop consuming GitHub issues backlog.
+# Usage: ./shft/afk.sh [max_iterations]
 # Default: 5 iterations
 
 set -euo pipefail
@@ -9,24 +9,24 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CTRL_DIR="$(dirname "$SCRIPT_DIR")"
 MAX_ITERATIONS="${1:-5}"
-LOCKDIR="/tmp/shift-afk.lock"
+LOCKDIR="/tmp/shft-afk.lock"
 
 # Concurrency guard — mkdir is atomic and portable (no flock on macOS)
 if ! mkdir "$LOCKDIR" 2>/dev/null; then
-    echo "shift already running" >&2
+    echo "shft already running" >&2
     exit 1
 fi
 trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
 
 for i in $(seq 1 "$MAX_ITERATIONS"); do
-    echo "=== shift iteration $i of $MAX_ITERATIONS ==="
+    echo "=== shft iteration $i of $MAX_ITERATIONS ==="
 
     source "$SCRIPT_DIR/_build_prompt.sh"
     trap 'rm -f "$PROMPT_FILE"; rmdir "$LOCKDIR" 2>/dev/null' EXIT
     raw_output=$(mktemp)
     trap 'rm -f "$raw_output" "$PROMPT_FILE"; rmdir "$LOCKDIR" 2>/dev/null' EXIT
 
-    if ! cat "$PROMPT_FILE" | sbx run --name shift-afk claude . "$CTRL_DIR:ro" \
+    if ! cat "$PROMPT_FILE" | sbx run --name shft-afk claude . "$CTRL_DIR:ro" \
         -- --print \
         --output-format stream-json \
         2>/dev/null | tee /dev/stderr > "$raw_output"; then
@@ -38,9 +38,9 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
     rm -f "$raw_output" "$PROMPT_FILE"
 
     if echo "$result" | grep -q '<promise>NO MORE TASKS</promise>'; then
-        echo "shift complete after $i iterations"
+        echo "shft complete after $i iterations"
         exit 0
     fi
 done
 
-echo "shift reached max iterations ($MAX_ITERATIONS)"
+echo "shft reached max iterations ($MAX_ITERATIONS)"

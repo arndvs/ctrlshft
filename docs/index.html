@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ctrl+shft — dotfiles for AI coding agents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #080808;
+            --surface: #0f0f0f;
+            --border: #1e1e1e;
+            --border-bright: #2e2e2e;
+            --text: #e8e8e8;
+            --text-dim: #666;
+            --text-dimmer: #333;
+            --accent: #e8ff47;
+            --accent-dim: rgba(232, 255, 71, 0.12);
+            --red: #ff4444;
+            --blue: #4488ff;
+            --green: #44ff88;
+            --mono: 'IBM Plex Mono', monospace;
+            --display: 'Bebas Neue', sans-serif;
+            --sans: 'IBM Plex Sans', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            height: 52px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(8, 8, 8, 0.94);
+            backdrop-filter: blur(12px);
+        }
+
+        .nav-logo {
+            font-family: var(--display);
+            font-size: 28px;
+            letter-spacing: 4px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .nav-cta {
+            background: var(--accent) !important;
+            color: #000 !important;
+            padding: 6px 16px;
+            font-weight: 600;
+        }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 120px 40px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+            opacity: 0.4;
+        }
+
+        .hero-glow {
+            position: absolute;
+            width: 700px;
+            height: 700px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(232, 255, 71, 0.05) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .hero-tag {
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        .hero-tag::before {
+            content: '';
+            display: block;
+            width: 24px;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        .hero-headline {
+            font-family: var(--display);
+            font-size: clamp(80px, 14vw, 200px);
+            line-height: 0.9;
+            letter-spacing: 8px;
+            color: var(--text);
+            margin-bottom: 8px;
+            animation: fadeUp 0.6s 0.1s ease both;
+        }
+
+        .hero-headline span {
+            color: var(--accent);
+        }
+
+        .hero-sub {
+            font-family: var(--display);
+            font-size: clamp(18px, 3vw, 38px);
+            letter-spacing: 6px;
+            color: var(--text-dim);
+            margin-bottom: 48px;
+            animation: fadeUp 0.6s 0.2s ease both;
+        }
+
+        .hero-desc {
+            max-width: 540px;
+            color: var(--text-dim);
+            font-size: 13px;
+            line-height: 1.8;
+            margin-bottom: 48px;
+            font-family: var(--sans);
+            animation: fadeUp 0.6s 0.3s ease both;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            animation: fadeUp 0.6s 0.4s ease both;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--accent);
+            color: #000;
+            padding: 12px 24px;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-decoration: none;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 32px rgba(232, 255, 71, 0.25);
+        }
+
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-dim);
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-decoration: none;
+            border-bottom: 1px solid var(--border-bright);
+            padding-bottom: 2px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text);
+            border-color: var(--text-dim);
+        }
+
+        .hero-terminal {
+            position: absolute;
+            right: 40px;
+            bottom: 80px;
+            animation: fadeUp 0.6s 0.5s ease both;
+        }
+
+        /* TERMINAL */
+        .terminal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            width: 420px;
+            max-width: calc(100vw - 80px);
+        }
+
+        .terminal-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            background: #111;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .dot-r {
+            background: #ff5f57;
+        }
+
+        .dot-y {
+            background: #febc2e;
+        }
+
+        .dot-g {
+            background: #28c840;
+        }
+
+        .terminal-body {
+            padding: 16px 20px;
+            font-size: 12px;
+            line-height: 1.9;
+        }
+
+        .t-dim {
+            color: var(--text-dimmer);
+        }
+
+        .t-accent {
+            color: var(--accent);
+        }
+
+        .t-green {
+            color: var(--green);
+        }
+
+        .t-prompt::before {
+            content: '$ ';
+            color: var(--accent);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 7px;
+            height: 12px;
+            background: var(--accent);
+            vertical-align: middle;
+            animation: blink 1.2s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* SECTIONS */
+        .section {
+            padding: 100px 40px;
+            border-top: 1px solid var(--border);
+        }
+
+        .section-num {
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: var(--text-dimmer);
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-family: var(--display);
+            font-size: clamp(40px, 6vw, 80px);
+            letter-spacing: 4px;
+            line-height: 1;
+            margin-bottom: 60px;
+        }
+
+        .section-title em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        /* PROBLEMS */
+        .problems {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+
+        .problem-card {
+            background: var(--bg);
+            padding: 36px 32px;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .problem-card:hover {
+            background: var(--surface);
+        }
+
+        .problem-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-bright);
+            transition: background 0.2s;
+        }
+
+        .problem-card:hover::before {
+            background: var(--red);
+        }
+
+        .problem-icon {
+            font-size: 22px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .problem-title {
+            font-family: var(--display);
+            font-size: 24px;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .problem-body {
+            color: var(--text-dim);
+            font-family: var(--sans);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        /* PIPELINE */
+        .pipeline {
+            border: 1px solid var(--border);
+        }
+
+        .pipeline-step {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+
+        .pipeline-step:last-child {
+            border-bottom: none;
+        }
+
+        .pipeline-step:hover {
+            background: var(--surface);
+        }
+
+        .pipeline-cmd {
+            padding: 22px 28px;
+            border-right: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+        }
+
+        .pipeline-cmd code {
+            color: var(--accent);
+            font-size: 13px;
+        }
+
+        .pipeline-desc {
+            padding: 22px 28px;
+            color: var(--text-dim);
+            font-family: var(--sans);
+            font-size: 13px;
+            line-height: 1.6;
+            display: flex;
+            align-items: center;
+        }
+
+        /* FEATURES */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .feature {
+            border: 1px solid var(--border);
+            padding: 32px;
+            transition: border-color 0.2s;
+        }
+
+        .feature:hover {
+            border-color: var(--border-bright);
+        }
+
+        .feature-label {
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-label::before {
+            content: '';
+            display: block;
+            width: 16px;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        .feature-title {
+            font-family: var(--display);
+            font-size: 26px;
+            letter-spacing: 2px;
+            margin-bottom: 14px;
+        }
+
+        .feature-body {
+            color: var(--text-dim);
+            font-family: var(--sans);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .feature-code {
+            margin-top: 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.9;
+        }
+
+        .feature-code .kw {
+            color: var(--accent);
+        }
+
+        .feature-code .str {
+            color: var(--green);
+        }
+
+        .feature-code .cm {
+            color: var(--text-dimmer);
+        }
+
+        /* SKILLS */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+
+        .skill-item {
+            background: var(--bg);
+            padding: 20px 24px;
+            transition: background 0.15s;
+        }
+
+        .skill-item:hover {
+            background: var(--surface);
+        }
+
+        .skill-name {
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .skill-name code {
+            color: var(--accent);
+        }
+
+        .skill-desc {
+            font-size: 11px;
+            color: var(--text-dim);
+            font-family: var(--sans);
+            line-height: 1.5;
+        }
+
+        .skill-auto {
+            display: inline-block;
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent);
+            border: 1px solid var(--accent-dim);
+            padding: 2px 6px;
+            margin-top: 6px;
+            width: fit-content;
+        }
+
+        /* PRINCIPLES */
+        .principles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            border: 1px solid var(--border);
+        }
+
+        .principle {
+            padding: 40px 32px;
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .principle:nth-child(2n) {
+            border-right: none;
+        }
+
+        .principle:nth-last-child(-n+2) {
+            border-bottom: none;
+        }
+
+        .principle-num {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-family: var(--display);
+            font-size: 64px;
+            color: var(--text-dimmer);
+            line-height: 1;
+        }
+
+        .principle-title {
+            font-family: var(--display);
+            font-size: 22px;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .principle-body {
+            font-family: var(--sans);
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.7;
+        }
+
+        .principle-rule {
+            margin-top: 16px;
+            padding: 12px 14px;
+            background: var(--surface);
+            border-left: 2px solid var(--accent);
+            font-size: 11px;
+            color: var(--text-dim);
+            font-style: italic;
+            font-family: var(--sans);
+        }
+
+        /* AGENTS */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .agent-card {
+            border: 1px solid var(--border);
+            padding: 28px;
+            transition: border-color 0.2s;
+        }
+
+        .agent-card:hover {
+            border-color: var(--blue);
+        }
+
+        .agent-name {
+            font-family: var(--display);
+            font-size: 22px;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            color: var(--blue);
+        }
+
+        .agent-focus {
+            font-family: var(--sans);
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        .agent-meta {
+            margin-top: 16px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            font-size: 10px;
+            letter-spacing: 1px;
+            padding: 3px 8px;
+            border: 1px solid var(--border-bright);
+            color: var(--text-dimmer);
+            text-transform: uppercase;
+        }
+
+        /* SECRETS TABLE */
+        .secrets-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 32px;
+            font-size: 12px;
+        }
+
+        .secrets-table th {
+            text-align: left;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-dimmer);
+            font-weight: 400;
+            letter-spacing: 2px;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .secrets-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .secrets-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .secrets-table tr:hover td {
+            background: var(--surface);
+        }
+
+        .tag-yes {
+            color: var(--green);
+        }
+
+        .tag-no {
+            color: var(--red);
+        }
+
+        /* SHIFT */
+        .shift-modes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            margin-top: 32px;
+        }
+
+        .shift-mode {
+            background: var(--bg);
+            padding: 36px 32px;
+            transition: background 0.15s;
+        }
+
+        .shift-mode:hover {
+            background: var(--surface);
+        }
+
+        .shift-mode-label {
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-dimmer);
+            margin-bottom: 12px;
+        }
+
+        .shift-mode-name {
+            font-family: var(--display);
+            font-size: 40px;
+            letter-spacing: 4px;
+            margin-bottom: 12px;
+        }
+
+        .shift-mode-name.afk {
+            color: var(--accent);
+        }
+
+        .shift-mode-desc {
+            font-family: var(--sans);
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        /* INSTALL */
+        .install-block {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        .install-step {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .install-step:last-child {
+            border-bottom: none;
+        }
+
+        .step-num {
+            border-right: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--display);
+            font-size: 28px;
+            color: var(--text-dimmer);
+            padding: 20px;
+        }
+
+        .step-content {
+            padding: 20px 28px;
+        }
+
+        .step-title {
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .step-code {
+            font-size: 12px;
+            color: var(--accent);
+            line-height: 1.9;
+        }
+
+        .step-note {
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-dimmer);
+            font-family: var(--sans);
+        }
+
+        /* TICKER */
+        .ticker {
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .ticker-inner {
+            display: inline-block;
+            animation: scroll 30s linear infinite;
+            font-size: 11px;
+            letter-spacing: 4px;
+            color: var(--text-dimmer);
+            text-transform: uppercase;
+        }
+
+        @keyframes scroll {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 60px 40px 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: end;
+        }
+
+        .footer-logo {
+            font-family: var(--display);
+            font-size: 52px;
+            letter-spacing: 8px;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .footer-tagline {
+            color: var(--text-dim);
+            font-family: var(--sans);
+            font-size: 13px;
+            line-height: 1.6;
+            max-width: 320px;
+        }
+
+        .footer-note {
+            font-size: 11px;
+            color: var(--text-dimmer);
+            line-height: 2;
+            font-family: var(--sans);
+            text-align: right;
+        }
+
+        .footer-link {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* REDUCED MOTION */
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .fade-in {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+
+            .ticker-inner {
+                animation: none;
+            }
+
+            .cursor {
+                animation: none;
+                opacity: 1;
+            }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            nav {
+                padding: 0 20px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                padding: 100px 20px 60px;
+            }
+
+            .hero-terminal {
+                display: none;
+            }
+
+            .section {
+                padding: 60px 20px;
+            }
+
+            .pipeline-step {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline-cmd {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .shift-modes {
+                grid-template-columns: 1fr;
+            }
+
+            footer {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-note {
+                text-align: left;
+            }
+
+            .principle:nth-child(2n) {
+                border-right: 1px solid var(--border);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <a href="#" class="nav-logo">ctrl<span
+                style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 2px;">+shft</span></a>
+        <ul class="nav-links">
+            <li><a href="#how">how it works</a></li>
+            <li><a href="#skills">skills</a></li>
+            <li><a href="#shft">shft</a></li>
+            <li><a href="#install">install</a></li>
+            <li><a href="https://github.com/arndvs/ctrl" class="nav-cta">GitHub</a></li>
+        </ul>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-grid"></div>
+        <div class="hero-glow"></div>
+
+        <div class="hero-tag">dotfiles for AI coding agents</div>
+
+        <h1 class="hero-headline"><span>ctrl</span><span style="color: var(--text-dim);">+shft</span></h1>
+        <p class="hero-sub">ctrl defines the rules. shft executes them.</p>
+
+        <p class="hero-desc">
+            Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across
+            every machine.
+            Context that doesn't degrade. Rules that load for your stack. Credentials that vanish when the process
+            exits.
+        </p>
+
+        <div class="hero-actions">
+            <a href="#install" class="btn-primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Quick Install
+            </a>
+            <a href="https://github.com/arndvs/ctrl" class="btn-ghost">View on GitHub →</a>
+        </div>
+
+        <div class="hero-terminal">
+            <div class="terminal">
+                <div class="terminal-bar">
+                    <div class="dot dot-r"></div>
+                    <div class="dot dot-y"></div>
+                    <div class="dot dot-g"></div>
+                </div>
+                <div class="terminal-body">
+                    <div class="t-dim"># bootstrap in two commands</div>
+                    <div class="t-prompt">git clone github.com/arndvs/ctrl.git ~/dotfiles</div>
+                    <div class="t-green">✓ cloned</div>
+                    <div>&nbsp;</div>
+                    <div class="t-prompt">bash ~/dotfiles/bin/bootstrap.sh</div>
+                    <div class="t-green">✓ CLAUDE.md symlinked</div>
+                    <div class="t-green">✓ skills/ → ~/.claude/skills/</div>
+                    <div class="t-green">✓ agents/ → ~/.claude/agents/</div>
+                    <div class="t-green">✓ secrets/ created from templates</div>
+                    <div class="t-green">✓ shell integration wired</div>
+                    <div class="t-green">✓ supply chain hardened</div>
+                    <div>&nbsp;</div>
+                    <div class="t-dim"># ready <span class="cursor"></span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="ticker">
+        <div class="ticker-inner">context integrity &nbsp;·&nbsp; cross-machine sync &nbsp;·&nbsp; secret isolation
+            &nbsp;·&nbsp; progressive context loading &nbsp;·&nbsp; autonomous loops &nbsp;·&nbsp; surgical changes
+            &nbsp;·&nbsp; context integrity &nbsp;·&nbsp; cross-machine sync &nbsp;·&nbsp; secret isolation
+            &nbsp;·&nbsp; progressive context loading &nbsp;·&nbsp; autonomous loops &nbsp;·&nbsp; surgical changes
+            &nbsp;·&nbsp; context integrity &nbsp;·&nbsp; cross-machine sync &nbsp;·&nbsp; secret isolation
+            &nbsp;·&nbsp; progressive context loading &nbsp;·&nbsp; autonomous loops &nbsp;·&nbsp; surgical changes
+            &nbsp;·&nbsp;</div>
+    </div>
+
+    <!-- PROBLEMS -->
+    <section class="section fade-in">
+        <div class="section-num">01 — THE PROBLEM</div>
+        <h2 class="section-title">Every developer<br>hits the same <em>walls</em></h2>
+
+        <div class="problems">
+            <div class="problem-card">
+                <span class="problem-icon">⟳</span>
+                <div class="problem-title">Context Decay</div>
+                <p class="problem-body">Context degrades mid-task. The agent repeats itself, compaction loses nuance,
+                    quality drops. A fresh conversation has no idea where things left off.</p>
+            </div>
+            <div class="problem-card">
+                <span class="problem-icon">⊘</span>
+                <div class="problem-title">Instruction Drift</div>
+                <p class="problem-body">Instructions drift between your laptop and VPS. Different machines run different
+                    rules. There's no single source of truth.</p>
+            </div>
+            <div class="problem-card">
+                <span class="problem-icon">⚠</span>
+                <div class="problem-title">Secret Exposure</div>
+                <p class="problem-body">Secrets leak into agent context. API keys, tokens, passwords visible inside the
+                    conversation — or worse, logged somewhere they shouldn't be.</p>
+            </div>
+            <div class="problem-card">
+                <span class="problem-icon">≡</span>
+                <div class="problem-title">Rule Pollution</div>
+                <p class="problem-body">Irrelevant rules load for every project regardless of stack. Next.js rules on a
+                    PHP project. PHP rules in a Python repo. Noise drowning signal.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section fade-in" id="how">
+        <div class="section-num">02 — HOW IT WORKS</div>
+        <h2 class="section-title">One repo,<br><em>every</em> machine</h2>
+
+        <div class="features">
+            <div class="feature fade-in">
+                <div class="feature-label">Context Integrity</div>
+                <div class="feature-title">Persistent Plans</div>
+                <p class="feature-body">When context gets high, the agent writes its plan to <code>working/</code>. A
+                    fresh conversation continues exactly where the old one left off — no repetition, no lost nuance.</p>
+                <div class="feature-code">
+                    <span class="kw">working/</span><br>
+                    <span class="cm"> └─ plan.md &nbsp;&nbsp;&nbsp;</span><span class="cm"># persisted state</span><br>
+                    <span class="cm"> └─ research.md </span><span class="cm"># cached explorations</span>
+                </div>
+            </div>
+            <div class="feature fade-in">
+                <div class="feature-label">Stack-Aware Rules</div>
+                <div class="feature-title">Progressive Loading</div>
+                <p class="feature-body"><code>detect-context.sh</code> scans your working directory. A Next.js project
+                    loads Next.js rules. Nothing from PHP. Nothing from Python. Only what matches.</p>
+                <div class="feature-code">
+                    <span class="cm"># auto-detected on cd</span><br>
+                    <span class="kw">ACTIVE_CONTEXTS</span>=<span class="str">general,nextjs,node,ts</span><br>
+                    <span class="cm"># loads matching instructions/*.md</span>
+                </div>
+            </div>
+            <div class="feature fade-in">
+                <div class="feature-label">Secret Isolation</div>
+                <div class="feature-title">Two-Tier Secrets</div>
+                <p class="feature-body">Agents see config, never credentials. <code>run-with-secrets.sh</code> injects
+                    API keys into a child process — they vanish on exit. Deny rules block <code>env</code>,
+                    <code>printenv</code>, and <code>cat secrets/*</code>.</p>
+                <div class="feature-code">
+                    <span class="str">.env.agent &nbsp;&nbsp;</span><span class="cm"># agent-visible config</span><br>
+                    <span class="str">.env.secrets </span><span class="cm"># process-scoped only</span><br>
+                    <span class="cm"># credentials vanish on exit</span>
+                </div>
+            </div>
+            <div class="feature fade-in">
+                <div class="feature-label">Git-Synced</div>
+                <div class="feature-title">Clone Once, Pull Forever</div>
+                <p class="feature-body">Clone to <code>~/dotfiles</code> on your laptop, your VPS, anywhere.
+                    <code>git pull</code> updates every machine simultaneously. Bootstrap is idempotent — safe to re-run
+                    anytime.</p>
+                <div class="feature-code">
+                    <span class="cm"># update everywhere at once</span><br>
+                    <span class="kw">cd</span> ~/dotfiles &amp;&amp; <span class="kw">git pull</span><br>
+                    <span class="kw">bash</span> bin/bootstrap.sh
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PIPELINE -->
+    <section class="section fade-in">
+        <div class="section-num">03 — THE PIPELINE</div>
+        <h2 class="section-title">Intent to<br><em>commit</em></h2>
+
+        <div class="pipeline fade-in">
+            <div class="pipeline-step">
+                <div class="pipeline-cmd"><code>/grill-me</code></div>
+                <div class="pipeline-desc">Interrogate you about a feature until shared understanding. One question at a
+                    time, recommended answers.</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-cmd"><code>/write-a-prd</code></div>
+                <div class="pipeline-desc">Explore codebase, interview you, sketch module boundaries, write PRD, submit
+                    as GitHub issue.</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-cmd"><code>/prd-to-issues</code></div>
+                <div class="pipeline-desc">Break the PRD into vertical slices. Label each AFK or HITL. Create GitHub
+                    issues with dependencies.</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-cmd"><code>/do-work</code></div>
+                <div class="pipeline-desc">Understand → Plan → Implement → Validate → Commit. Auto-detects your stack's
+                    feedback loops. Loops until done.</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-cmd"><code>shft</code></div>
+                <div class="pipeline-desc">Pick issues from the backlog, implement in a Docker sandbox, commit, repeat.
+                    Runs AFK until backlog is empty.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="section fade-in" id="skills">
+        <div class="section-num">04 — SKILLS</div>
+        <h2 class="section-title">What the<br>agent <em>knows</em></h2>
+
+        <div class="skills-grid">
+            <div class="skill-item">
+                <div class="skill-name"><code>/do-work</code></div>
+                <div class="skill-desc">Understand → Plan → Implement → Validate → Commit</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>/grill-me</code></div>
+                <div class="skill-desc">Interrogate until shared understanding, one question at a time</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>/write-a-prd</code></div>
+                <div class="skill-desc">Explore, interview, write PRD, submit as GitHub issue</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>/prd-to-issues</code></div>
+                <div class="skill-desc">Break PRDs into labeled vertical slices</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>technical-fellow</code></div>
+                <div class="skill-desc">Vertical slices, dependency graphs, acceptance criteria</div>
+                <div class="skill-auto">⚡ auto-invoke</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>skill-scaffolder</code></div>
+                <div class="skill-desc">Scaffold new skills from production-tested patterns</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>explore</code></div>
+                <div class="skill-desc">Decompose, spawn parallel sub-agents, synthesize summary</div>
+                <div class="skill-auto">⚡ auto-invoke</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>research</code></div>
+                <div class="skill-desc">Cache exploration into research.md with lifecycle management</div>
+                <div class="skill-auto">⚡ auto-invoke</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>codebase-audit</code></div>
+                <div class="skill-desc">Real problems only, grouped by severity. No manufactured issues.</div>
+                <div class="skill-auto">⚡ auto-invoke</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>improve-architecture</code></div>
+                <div class="skill-desc">Shallow-module clusters → parallel design agents → GitHub RFC</div>
+                <div class="skill-auto">⚡ auto-invoke</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>/tdd</code></div>
+                <div class="skill-desc">Red-green refactor. Failing test → implement → refactor.</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><code>systematic-debugging</code></div>
+                <div class="skill-desc">Root-cause-first — investigate → pattern → hypothesis → fix</div>
+                <div class="skill-auto">⚡ auto-invoke</div>
+            </div>
+        </div>
+
+        <div
+            style="margin-top: 20px; padding: 14px 20px; border: 1px solid var(--border); font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 10px;">
+            <span style="color: var(--accent);">+</span>
+            Add private skills: <code style="color: var(--accent);">skills/_local/your-skill/SKILL.md</code> —
+            auto-discovered, gitignored.
+        </div>
+    </section>
+
+    <!-- AGENTS -->
+    <section class="section fade-in">
+        <div class="section-num">05 — SUBAGENTS</div>
+        <h2 class="section-title">Isolated<br><em>specialists</em></h2>
+
+        <p style="max-width: 560px; color: var(--text-dim); font-family: var(--sans); line-height: 1.7;">
+            Each subagent runs in an isolated context window with its own system prompt and tool restrictions.
+            Exploration stays out of your main conversation.
+        </p>
+
+        <div class="agents-grid">
+            <div class="agent-card">
+                <div class="agent-name">code-reviewer</div>
+                <div class="agent-focus">Bugs, security, logic errors — not style nits. Finds what actually matters in a
+                    diff.</div>
+                <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">read-only</span><span
+                        class="badge">persistent memory</span></div>
+            </div>
+            <div class="agent-card">
+                <div class="agent-name">researcher</div>
+                <div class="agent-focus">Deep codebase exploration, architecture mapping. Builds a mental model without
+                    polluting yours.</div>
+                <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">grep / glob</span><span
+                        class="badge">persistent memory</span></div>
+            </div>
+            <div class="agent-card">
+                <div class="agent-name">security-auditor</div>
+                <div class="agent-focus">OWASP Top 10, secrets exposure, config hardening. Paranoid by design.</div>
+                <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">read-only</span><span
+                        class="badge">persistent memory</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRINCIPLES -->
+    <section class="section fade-in">
+        <div class="section-num">06 — PRINCIPLES</div>
+        <h2 class="section-title">Baked-in<br><em>discipline</em></h2>
+
+        <p
+            style="max-width: 540px; color: var(--text-dim); font-family: var(--sans); line-height: 1.7; margin-bottom: 40px;">
+            Four behavioral rules in <code>global.instructions.md</code>, addressing the most expensive AI failure
+            modes: building wrong things, overengineering, drive-by refactoring, and vague success criteria.
+        </p>
+
+        <div class="principles">
+            <div class="principle">
+                <div class="principle-num">1</div>
+                <div class="principle-title">Think Before Coding</div>
+                <p class="principle-body">Surface confusion before acting. Present multiple interpretations. Name
+                    assumptions explicitly. Push back when simpler exists.</p>
+                <div class="principle-rule">"Stop when confused — ask, never pick an interpretation silently."</div>
+            </div>
+            <div class="principle">
+                <div class="principle-num">2</div>
+                <div class="principle-title">Simplicity First</div>
+                <p class="principle-body">Minimum code that solves the problem. No speculative features. No abstractions
+                    for single-use code. If 200 lines could be 50, rewrite it.</p>
+                <div class="principle-rule">"Would a senior engineer say this is overcomplicated? If yes, simplify."
+                </div>
+            </div>
+            <div class="principle">
+                <div class="principle-num">3</div>
+                <div class="principle-title">Surgical Changes</div>
+                <p class="principle-body">Touch only what you must. Match existing style exactly. Don't refactor what
+                    isn't broken. Every changed line traces to the user's request.</p>
+                <div class="principle-rule">"Mention unrelated dead code — don't delete it."</div>
+            </div>
+            <div class="principle">
+                <div class="principle-num">4</div>
+                <div class="principle-title">Goal-Driven Execution</div>
+                <p class="principle-body">Define success criteria. Loop until verified. Transform imperative tasks into
+                    verifiable goals with acceptance criteria at each step.</p>
+                <div class="principle-rule">"Write a test that reproduces it, then make it pass."</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section class="section fade-in">
+        <div class="section-num">07 — SECURITY</div>
+        <h2 class="section-title">Agents see config,<br><em>never</em> credentials</h2>
+
+        <p style="max-width: 520px; color: var(--text-dim); font-family: var(--sans); line-height: 1.7;">
+            Two tiers. <code>run-with-secrets.sh</code> injects credentials into a child process only — they exist for
+            its lifetime and vanish when it exits. Deny rules block any attempt to read them.
+        </p>
+
+        <table class="secrets-table">
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>In Shell?</th>
+                    <th>Agent-Visible?</th>
+                    <th>Contains</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code style="color: var(--accent);">.env.agent</code></td>
+                    <td class="tag-yes">YES</td>
+                    <td class="tag-yes">YES</td>
+                    <td style="color: var(--text-dim); font-family: var(--sans);">Usernames, hosts, IDs</td>
+                </tr>
+                <tr>
+                    <td><code style="color: var(--accent);">.env.secrets</code></td>
+                    <td class="tag-no">NO</td>
+                    <td class="tag-no">NO</td>
+                    <td style="color: var(--text-dim); font-family: var(--sans);">API keys, tokens, passwords</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div
+            style="margin-top: 16px; padding: 14px 20px; border: 1px solid var(--border); font-size: 12px; color: var(--text-dim); font-family: var(--sans); line-height: 1.6;">
+            Deny rules block <code>env</code>, <code>printenv</code>, <code>cat secrets/*</code>, and
+            <code>echo $*KEY*</code> at the agent level. Agents can't accidentally inherit what they can't see.
+        </div>
+    </section>
+
+    <!-- SHFT -->
+    <section class="section fade-in" id="shft">
+        <div class="section-num">08 — SHFT</div>
+        <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
+
+        <p style="max-width: 540px; color: var(--text-dim); font-family: var(--sans); line-height: 1.7;">
+            Not a framework. A bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for
+            AFK mode, direct on host for HITL. Exits when the backlog is empty.
+        </p>
+
+        <div class="shift-modes">
+            <div class="shift-mode">
+                <div class="shift-mode-label">Human In The Loop</div>
+                <div class="shift-mode-name">HITL</div>
+                <div class="shift-mode-desc">Runs once while you watch. Use when learning, reviewing each step, or
+                    validating a new task type before going fully autonomous.</div>
+            </div>
+            <div class="shift-mode">
+                <div class="shift-mode-label">Away From Keyboard</div>
+                <div class="shift-mode-name afk">AFK</div>
+                <div class="shift-mode-desc">Loops in Docker sandbox. Claude picks a task, implements, commits, closes
+                    the issue, picks the next. You review PRs async.</div>
+            </div>
+        </div>
+
+        <div
+            style="margin-top: 14px; padding: 12px 18px; border: 1px solid var(--border); font-size: 11px; color: var(--text-dimmer); font-family: var(--sans);">
+            Status: infrastructure ready, testing in HITL mode. Requires Claude Max, Docker Desktop, and 5–10
+            well-formed GitHub issues.
+        </div>
+    </section>
+
+    <!-- INSTALL -->
+    <section class="section fade-in" id="install">
+        <div class="section-num">09 — INSTALLATION</div>
+        <h2 class="section-title">Up in<br><em>two</em> commands</h2>
+
+        <div class="install-block">
+            <div class="install-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <div class="step-title">Clone</div>
+                    <div class="step-code">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</div>
+                    <div class="step-note">Always clone to ~/dotfiles — hardcoded across 40+ references.</div>
+                </div>
+            </div>
+            <div class="install-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <div class="step-title">Bootstrap</div>
+                    <div class="step-code">bash ~/dotfiles/bin/bootstrap.sh</div>
+                    <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates secrets
+                        from templates. Wires shell integration.</div>
+                </div>
+            </div>
+            <div class="install-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <div class="step-title">Configure secrets</div>
+                    <div class="step-code">
+                        $EDITOR ~/dotfiles/secrets/.env.agent &nbsp;&nbsp;&nbsp;# non-sensitive config<br>
+                        $EDITOR ~/dotfiles/secrets/.env.secrets &nbsp;# API keys and tokens
+                    </div>
+                </div>
+            </div>
+            <div class="install-step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                    <div class="step-title">Sync VS Code settings</div>
+                    <div class="step-code">bash ~/dotfiles/bin/sync-settings.sh</div>
+                    <div class="step-note">Enables the instruction discovery chain. Run with --dry-run first to preview
+                        changes.</div>
+                </div>
+            </div>
+            <div class="install-step">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                    <div class="step-title">Reload shell</div>
+                    <div class="step-code">source ~/.bashrc</div>
+                    <div class="step-note">Activates context detection on cd and secret loading.</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 24px; display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+            <a href="https://github.com/arndvs/ctrl" class="btn-primary">View on GitHub →</a>
+            <div style="font-size: 12px; color: var(--text-dimmer); display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--green);">●</span> MIT License &nbsp;·&nbsp; macOS / Linux / WSL
+            </div>
+        </div>
+    </section>
+
+    <div class="ticker">
+        <div class="ticker-inner">ctrl+shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp; execute the work &nbsp;·&nbsp;
+            git pull to update everywhere &nbsp;·&nbsp; credentials vanish on exit &nbsp;·&nbsp; context persists
+            between conversations &nbsp;·&nbsp; ctrl+shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp; execute the work
+            &nbsp;·&nbsp; git pull to update everywhere &nbsp;·&nbsp; credentials vanish on exit &nbsp;·&nbsp; context
+            persists between conversations &nbsp;·&nbsp;</div>
+    </div>
+
+    <footer>
+        <div>
+            <div class="footer-logo">ctrl<span
+                    style="color: var(--text-dim); font-size: 0.55em; letter-spacing: 4px;">+shft</span></div>
+            <div class="footer-tagline">ctrl defines the rules. shft executes them. One repo syncs instructions, skills,
+                secrets, and autonomous loops across every machine.</div>
+            <div style="margin-top: 16px;">
+                <a href="https://github.com/arndvs/ctrl" class="btn-ghost"
+                    style="font-size: 11px;">github.com/arndvs/ctrl →</a>
+            </div>
+        </div>
+        <div class="footer-note">
+            MIT License<br>
+            Clone to <code style="color: var(--accent);">~/dotfiles</code><br>
+            macOS / Linux / WSL<br>
+            <br>
+            <a href="https://github.com/arndvs/ctrl" class="footer-link">GitHub</a> &nbsp;·&nbsp;
+            <a href="https://github.com/arndvs/ctrl/issues" class="footer-link">Issues</a> &nbsp;·&nbsp;
+            <a href="https://github.com/arndvs/ctrl/blob/main/README.md" class="footer-link">Docs</a>
+        </div>
+    </footer>
+
+    <script>
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.08 });
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    </script>
+</body>
+
+</html>

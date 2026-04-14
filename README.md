@@ -4,6 +4,8 @@
 
 # ctrl
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across every machine.
 
 Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
@@ -26,7 +28,7 @@ Bootstrap is idempotent and cross-platform. It symlinks `~/.claude/CLAUDE.md`, `
 /write-a-prd    → Explore codebase, interview, write PRD, submit as GitHub issue
 /prd-to-issues  → Break the PRD into vertical slices → GitHub issues (AFK vs HITL labeled)
 /do-work        → Understand → Plan → Implement → Validate → Commit (loops)
-shift           → Pick issues from the backlog, implement in a Docker sandbox, commit, repeat
+shft            → Pick issues from the backlog, implement in a Docker sandbox, commit, repeat
 ```
 
 Use any skill individually or chain them. The planning pipeline hands off between stages automatically.
@@ -40,7 +42,7 @@ graph TD
     E -->|loop| E
     E -->|"context high → persist plan to working/"| H["Fresh conversation picks up @working/plan.md"]
     H --> E
-    E --> F["shift — AFK loop consuming GitHub issues backlog"]
+    E --> F["shft — AFK loop consuming GitHub issues backlog"]
     F -->|loop| F
     F --> G["Human QA + /improve-architecture"]
     G -->|new issues| D
@@ -224,20 +226,20 @@ These principles are working if you see:
 
 ---
 
-## shift: autonomous agent loop
+## shft: autonomous agent loop
 
-> `ctrl` is the system. `shift` is the worker. **ctrl+shift** — you define the rules, shift executes them.
+> `ctrl` is the system. `shft` is the worker. **ctrl+shft** — you define the rules, shft executes them.
 
 > **Status: infrastructure ready, testing in HITL mode.**
 
-shift is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
+shft is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
 
 ### Two modes
 
 | Mode | Script          | Use when                                                      |
 | ---- | --------------- | ------------------------------------------------------------- |
-| HITL | `shift/once.sh` | Learning — runs once while you watch                          |
-| AFK  | `shift/afk.sh`  | Shipping — loops in Docker sandbox with a max iteration guard |
+| HITL | `shft/once.sh` | Learning — runs once while you watch                          |
+| AFK  | `shft/afk.sh`  | Shipping — loops in Docker sandbox with a max iteration guard |
 
 AFK mode: Claude picks a task, implements it, commits, closes the issue, picks the next one. Exits when the backlog is empty (`<promise>NO MORE TASKS</promise>`). You review PRs async.
 
@@ -261,7 +263,7 @@ docker sandbox run claude .
 
 - [ ] Claude Max subscription
 - [ ] Docker Desktop installed
-- [ ] `shift/once.sh`, `shift/afk.sh`, `shift/prompt.md` in place
+- [ ] `shft/once.sh`, `shft/afk.sh`, `shft/prompt.md` in place
 - [ ] `gh auth login` inside the Docker sandbox
 - [ ] Deny rules validated in sandbox
 - [ ] 5–10 well-formed GitHub issues ready
@@ -311,7 +313,7 @@ docker sandbox run claude .
 │   ├── tdd/
 │   ├── systematic-debugging/
 │   └── _local/                      ← GITIGNORED — your private skills
-├── shift/
+├── shft/
 │   ├── afk.sh                       AFK autonomous loop
 │   ├── once.sh                      HITL single-run
 │   └── prompt.md                    shared agent prompt
@@ -543,7 +545,7 @@ source ~/.bashrc
 - [GitHub Copilot](https://github.com/features/copilot) (optional — ctrl works with Claude Code alone)
 - Git Bash (Windows) or bash (Linux/macOS)
 - Python 3.10+
-- Docker Desktop (for shift)
+- Docker Desktop (for shft)
 
 ---
 

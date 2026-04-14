@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# _build_prompt.sh — Shared prompt builder for shift scripts.
+# _build_prompt.sh — Shared prompt builder for shft scripts.
 # Sources into afk.sh / once.sh. Exports $PROMPT and $PROMPT_FILE.
 #
 # Requires: SCRIPT_DIR set by the caller.
@@ -26,5 +26,5 @@ $(cat "$SCRIPT_DIR/prompt.md")"
 unset PREVIOUS_COMMITS issues
 
 # Write prompt to a temp file to avoid ARG_MAX limits on large backlogs
-PROMPT_FILE=$(mktemp /tmp/shift-prompt.XXXXXX)
+PROMPT_FILE=$(mktemp /tmp/shft-prompt.XXXXXX)
 printf '%s' "$PROMPT" > "$PROMPT_FILE"
