@@ -15,9 +15,10 @@
             --surface: #0f0f0f;
             --border: #1e1e1e;
             --border-bright: #2e2e2e;
-            --text: #e8e8e8;
-            --text-dim: #666;
-            --text-dimmer: #333;
+            --text: #ffffff;
+            --text-secondary: #d1d5dc;
+            --text-dim: #9f9fa9;
+            --text-dimmer: #555;
             --accent: #e8ff47;
             --accent-dim: rgba(232, 255, 71, 0.12);
             --red: #ff4444;
@@ -192,14 +193,14 @@
             font-family: var(--display);
             font-size: clamp(18px, 3vw, 38px);
             letter-spacing: 6px;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             margin-bottom: 48px;
             animation: fadeUp 0.6s 0.2s ease both;
         }
 
         .hero-desc {
             max-width: 540px;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-size: 13px;
             line-height: 1.8;
             margin-bottom: 48px;
@@ -254,10 +255,19 @@
             border-color: var(--text-dim);
         }
 
+        .hero-content {
+            display: flex;
+            align-items: center;
+            gap: 48px;
+        }
+
+        .hero-left {
+            flex: 1;
+            min-width: 0;
+        }
+
         .hero-terminal {
-            position: absolute;
-            right: max(40px, calc((100vw - 1280px) / 2 + 40px));
-            bottom: 80px;
+            flex-shrink: 0;
             animation: fadeUp 0.6s 0.5s ease both;
         }
 
@@ -343,7 +353,7 @@
         .section-num {
             font-size: 11px;
             letter-spacing: 3px;
-            color: var(--text-dimmer);
+            color: var(--text-dim);
             margin-bottom: 8px;
         }
 
@@ -409,7 +419,7 @@
         }
 
         .problem-body {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-family: var(--sans);
             font-size: 13px;
             line-height: 1.7;
@@ -449,7 +459,7 @@
 
         .pipeline-desc {
             padding: 22px 28px;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-family: var(--sans);
             font-size: 13px;
             line-height: 1.6;
@@ -501,7 +511,7 @@
         }
 
         .feature-body {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-family: var(--sans);
             font-size: 13px;
             line-height: 1.7;
@@ -559,7 +569,7 @@
 
         .skill-desc {
             font-size: 11px;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-family: var(--sans);
             line-height: 1.5;
         }
@@ -618,7 +628,7 @@
         .principle-body {
             font-family: var(--sans);
             font-size: 13px;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             line-height: 1.7;
         }
 
@@ -628,7 +638,7 @@
             background: var(--surface);
             border-left: 2px solid var(--accent);
             font-size: 11px;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-style: italic;
             font-family: var(--sans);
         }
@@ -662,7 +672,7 @@
         .agent-focus {
             font-family: var(--sans);
             font-size: 12px;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             line-height: 1.6;
         }
 
@@ -678,7 +688,7 @@
             letter-spacing: 1px;
             padding: 3px 8px;
             border: 1px solid var(--border-bright);
-            color: var(--text-dimmer);
+            color: var(--text-dim);
             text-transform: uppercase;
         }
 
@@ -694,7 +704,7 @@
             text-align: left;
             padding: 12px 20px;
             border-bottom: 1px solid var(--border);
-            color: var(--text-dimmer);
+            color: var(--text-dim);
             font-weight: 400;
             letter-spacing: 2px;
             font-size: 10px;
@@ -746,7 +756,7 @@
             font-size: 10px;
             letter-spacing: 3px;
             text-transform: uppercase;
-            color: var(--text-dimmer);
+            color: var(--text-dim);
             margin-bottom: 12px;
         }
 
@@ -764,7 +774,7 @@
         .shift-mode-desc {
             font-family: var(--sans);
             font-size: 13px;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             line-height: 1.6;
         }
 
@@ -817,7 +827,7 @@
         .step-note {
             margin-top: 6px;
             font-size: 11px;
-            color: var(--text-dimmer);
+            color: var(--text-dim);
             font-family: var(--sans);
         }
 
@@ -871,7 +881,7 @@
         }
 
         .footer-tagline {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-family: var(--sans);
             font-size: 13px;
             line-height: 1.6;
@@ -880,7 +890,7 @@
 
         .footer-note {
             font-size: 11px;
-            color: var(--text-dimmer);
+            color: var(--text-dim);
             line-height: 2;
             font-family: var(--sans);
             text-align: right;
@@ -964,6 +974,10 @@
                 padding: 100px 0 60px;
             }
 
+            .hero-content {
+                flex-direction: column;
+            }
+
             .hero-terminal {
                 display: none;
             }
@@ -1022,52 +1036,56 @@
         <div class="hero-glow"></div>
 
         <div class="container">
-            <div class="hero-tag">dotfiles for AI coding agents</div>
+            <div class="hero-content">
+                <div class="hero-left">
+                    <div class="hero-tag">dotfiles for AI coding agents</div>
 
-            <h1 class="hero-headline"><span>ctrl</span><span style="color: var(--text-dim);">+shft</span></h1>
-            <p class="hero-sub">ctrl defines the rules. shft executes them.</p>
+                    <h1 class="hero-headline"><span>ctrl</span><span style="color: var(--text-dim);">+shft</span></h1>
+                    <p class="hero-sub">ctrl defines the rules. shft executes them.</p>
 
-            <p class="hero-desc">
-                Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across
-                every machine.
-                Context that doesn't degrade. Rules that load for your stack. Credentials that vanish when the process
-                exits.
-            </p>
+                    <p class="hero-desc">
+                        Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across
+                        every machine.
+                        Context that doesn't degrade. Rules that load for your stack. Credentials that vanish when the process
+                        exits.
+                    </p>
 
-            <div class="hero-actions">
-                <a href="#install" class="btn-primary">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Quick Install
-                </a>
-                <a href="https://github.com/arndvs/ctrl" class="btn-ghost">View on GitHub →</a>
-            </div>
-        </div>
-
-        <div class="hero-terminal">
-            <div class="terminal">
-                <div class="terminal-bar">
-                    <div class="dot dot-r"></div>
-                    <div class="dot dot-y"></div>
-                    <div class="dot dot-g"></div>
+                    <div class="hero-actions">
+                        <a href="#install" class="btn-primary">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            Quick Install
+                        </a>
+                        <a href="https://github.com/arndvs/ctrl" class="btn-ghost">View on GitHub →</a>
+                    </div>
                 </div>
-                <div class="terminal-body">
-                    <div class="t-dim"># bootstrap in two commands</div>
-                    <div class="t-prompt">git clone github.com/arndvs/ctrl.git ~/dotfiles</div>
-                    <div class="t-green">✓ cloned</div>
-                    <div>&nbsp;</div>
-                    <div class="t-prompt">bash ~/dotfiles/bin/bootstrap.sh</div>
-                    <div class="t-green">✓ CLAUDE.md symlinked</div>
-                    <div class="t-green">✓ skills/ → ~/.claude/skills/</div>
-                    <div class="t-green">✓ agents/ → ~/.claude/agents/</div>
-                    <div class="t-green">✓ secrets/ created from templates</div>
-                    <div class="t-green">✓ shell integration wired</div>
-                    <div class="t-green">✓ supply chain hardened</div>
-                    <div>&nbsp;</div>
-                    <div class="t-dim"># ready <span class="cursor"></span></div>
+
+                <div class="hero-terminal">
+                    <div class="terminal">
+                        <div class="terminal-bar">
+                            <div class="dot dot-r"></div>
+                            <div class="dot dot-y"></div>
+                            <div class="dot dot-g"></div>
+                        </div>
+                        <div class="terminal-body">
+                            <div class="t-dim"># bootstrap in two commands</div>
+                            <div class="t-prompt">git clone github.com/arndvs/ctrl.git ~/dotfiles</div>
+                            <div class="t-green">✓ cloned</div>
+                            <div>&nbsp;</div>
+                            <div class="t-prompt">bash ~/dotfiles/bin/bootstrap.sh</div>
+                            <div class="t-green">✓ CLAUDE.md symlinked</div>
+                            <div class="t-green">✓ skills/ → ~/.claude/skills/</div>
+                            <div class="t-green">✓ agents/ → ~/.claude/agents/</div>
+                            <div class="t-green">✓ secrets/ created from templates</div>
+                            <div class="t-green">✓ shell integration wired</div>
+                            <div class="t-green">✓ supply chain hardened</div>
+                            <div>&nbsp;</div>
+                            <div class="t-dim"># ready <span class="cursor"></span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1275,7 +1293,7 @@
         </div>
 
         <div
-            style="margin-top: 20px; padding: 14px 20px; border: 1px solid var(--border); font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 10px;">
+            style="margin-top: 20px; padding: 14px 20px; border: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 10px;">
             <span style="color: var(--accent);">+</span>
             Add private skills: <code style="color: var(--accent);">skills/_local/your-skill/SKILL.md</code> —
             auto-discovered, gitignored.
@@ -1289,7 +1307,7 @@
         <div class="section-num">05 — SUBAGENTS</div>
         <h2 class="section-title">Isolated<br><em>specialists</em></h2>
 
-        <p style="max-width: 560px; color: var(--text-dim); font-family: var(--sans); line-height: 1.7;">
+        <p style="max-width: 560px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
             Each subagent runs in an isolated context window with its own system prompt and tool restrictions.
             Exploration stays out of your main conversation.
         </p>
@@ -1326,7 +1344,7 @@
         <h2 class="section-title">Baked-in<br><em>discipline</em></h2>
 
         <p
-            style="max-width: 540px; color: var(--text-dim); font-family: var(--sans); line-height: 1.7; margin-bottom: 40px;">
+            style="max-width: 540px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 40px;">
             Four behavioral rules in <code>global.instructions.md</code>, addressing the most expensive AI failure
             modes: building wrong things, overengineering, drive-by refactoring, and vague success criteria.
         </p>
@@ -1371,7 +1389,7 @@
         <div class="section-num">07 — SECURITY</div>
         <h2 class="section-title">Agents see config,<br><em>never</em> credentials</h2>
 
-        <p style="max-width: 520px; color: var(--text-dim); font-family: var(--sans); line-height: 1.7;">
+        <p style="max-width: 520px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
             Two tiers. <code>run-with-secrets.sh</code> injects credentials into a child process only — they exist for
             its lifetime and vanish when it exits. Deny rules block any attempt to read them.
         </p>
@@ -1390,19 +1408,19 @@
                     <td><code style="color: var(--accent);">.env.agent</code></td>
                     <td class="tag-yes">YES</td>
                     <td class="tag-yes">YES</td>
-                    <td style="color: var(--text-dim); font-family: var(--sans);">Usernames, hosts, IDs</td>
+                    <td style="color: var(--text-secondary); font-family: var(--sans);">Usernames, hosts, IDs</td>
                 </tr>
                 <tr>
                     <td><code style="color: var(--accent);">.env.secrets</code></td>
                     <td class="tag-no">NO</td>
                     <td class="tag-no">NO</td>
-                    <td style="color: var(--text-dim); font-family: var(--sans);">API keys, tokens, passwords</td>
+                    <td style="color: var(--text-secondary); font-family: var(--sans);">API keys, tokens, passwords</td>
                 </tr>
             </tbody>
         </table>
 
         <div
-            style="margin-top: 16px; padding: 14px 20px; border: 1px solid var(--border); font-size: 12px; color: var(--text-dim); font-family: var(--sans); line-height: 1.6;">
+            style="margin-top: 16px; padding: 14px 20px; border: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.6;">
             Deny rules block <code>env</code>, <code>printenv</code>, <code>cat secrets/*</code>, and
             <code>echo $*KEY*</code> at the agent level. Agents can't accidentally inherit what they can't see.
         </div>
@@ -1415,7 +1433,7 @@
         <div class="section-num">08 — SHFT</div>
         <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
 
-        <p style="max-width: 540px; color: var(--text-dim); font-family: var(--sans); line-height: 1.7;">
+        <p style="max-width: 540px; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
             Not a framework. A bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for
             AFK mode, direct on host for HITL. Exits when the backlog is empty.
         </p>
