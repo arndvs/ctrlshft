@@ -15,6 +15,14 @@ source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
 _fail=0
 _warn=0
+_afk_mode=0
+
+for arg in "$@"; do
+
+    if [[ "$arg" == "--afk" ]]; then
+        _afk_mode=1
+    fi
+done
 
 _require() {
     local var="$1"
@@ -50,6 +58,74 @@ echo "Core Variables (from secrets/.env.agent):"
 _require PYTHONUTF8 "Should be 1 — set in secrets/.env.agent"
 _require GITHUB_USERNAME "Set in secrets/.env.agent"
 _recommend GCP_CREDENTIALS_FILE "Needed for Google API scripts — set in secrets/.env.agent"
+
+if [[ $_afk_mode -eq 1 ]]; then
+
+    _py_bin=""
+    _venv_python_unix="$HOME/dotfiles/secrets/.venv/bin/python"
+    _venv_python_win="$HOME/dotfiles/secrets/.venv/Scripts/python.exe"
+
+    if [[ -x "$_venv_python_unix" ]] && "$_venv_python_unix" --version >/dev/null 2>&1; then
+        _py_bin="$_venv_python_unix"
+    elif [[ -f "$_venv_python_win" ]] && "$_venv_python_win" --version >/dev/null 2>&1; then
+        _py_bin="$_venv_python_win"
+    elif command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
+        _py_bin="python3"
+    elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+        _py_bin="python"
+    fi
+
+    echo
+    echo "AFK GitHub App Credentials (from secrets/.env.secrets):"
+    _require GITHUB_APP_ID "Required for AFK short-lived token minting"
+    _require GITHUB_APP_INSTALLATION_ID "Required for AFK short-lived token minting"
+    _require GITHUB_APP_PRIVATE_KEY_B64 "Required for AFK short-lived token minting"
+
+    if [[ -n "${GITHUB_APP_INSTALLATION_ID:-}" ]]; then
+
+        if [[ "$GITHUB_APP_INSTALLATION_ID" =~ ^[0-9]+$ ]]; then
+            green "  ✓ GITHUB_APP_INSTALLATION_ID is numeric"
+        else
+            red "  ✗ GITHUB_APP_INSTALLATION_ID must be numeric (found: $GITHUB_APP_INSTALLATION_ID)"
+            _fail=1
+        fi
+    fi
+
+    if [[ -n "${GITHUB_APP_PRIVATE_KEY_B64:-}" ]]; then
+
+        if [[ -z "$_py_bin" ]]; then
+            red "  ✗ Python is required to validate GITHUB_APP_PRIVATE_KEY_B64"
+            _fail=1
+        elif "$_py_bin" - <<'PY' >/dev/null 2>&1
+import base64
+import os
+import sys
+
+value = os.getenv("GITHUB_APP_PRIVATE_KEY_B64", "")
+
+try:
+    base64.b64decode(value, validate=True)
+except Exception:
+    sys.exit(1)
+
+sys.exit(0)
+PY
+        then
+            green "  ✓ GITHUB_APP_PRIVATE_KEY_B64 decodes successfully"
+        else
+            red "  ✗ GITHUB_APP_PRIVATE_KEY_B64 is not valid base64"
+            _fail=1
+        fi
+    fi
+
+    if [[ -n "${GITHUB_TOKEN:-}" ]] || [[ -n "${GITHUB_PACKAGE_REGISTRY_TOKEN:-}" ]]; then
+        red "  ✗ PAT detected in AFK mode. Remove GITHUB_TOKEN/GITHUB_PACKAGE_REGISTRY_TOKEN and configure GitHub App credentials"
+        red "  ✗ See README: 'Exact secure setup after clone (operator quick path)'"
+        _fail=1
+    else
+        green "  ✓ No PAT variables detected for AFK mode"
+    fi
+fi
 
 # ── Symlink / file checks ────────────────────────────────────────────────────
 echo
@@ -129,33 +205,37 @@ fi
 echo
 echo "Environment Hardening:"
 
-# Secrets should NOT be in shell environment — hard failure if leaked
-if [[ -n "${OPENAI_API_KEY:-}" ]]; then
-    red "  ✗ OPENAI_API_KEY is in shell env — should only be in .env.secrets (process-scoped)"
-    _fail=1
+if [[ $_afk_mode -eq 1 ]]; then
+    yellow "  ~ Skipping shell leak checks in --afk mode (validation runs via run-with-secrets)"
 else
-    green "  ✓ OPENAI_API_KEY not in shell env (good — process-scoped only)"
-fi
+    # Secrets should NOT be in shell environment — hard failure if leaked
+    if [[ -n "${OPENAI_API_KEY:-}" ]]; then
+        red "  ✗ OPENAI_API_KEY is in shell env — should only be in .env.secrets (process-scoped)"
+        _fail=1
+    else
+        green "  ✓ OPENAI_API_KEY not in shell env (good — process-scoped only)"
+    fi
 
-if [[ -n "${GITHUB_PACKAGE_REGISTRY_TOKEN:-}" ]]; then
-    red "  ✗ GITHUB_PACKAGE_REGISTRY_TOKEN is in shell env — should only be in .env.secrets"
-    _fail=1
-else
-    green "  ✓ GITHUB_PACKAGE_REGISTRY_TOKEN not in shell env (good)"
-fi
+    if [[ -n "${GITHUB_PACKAGE_REGISTRY_TOKEN:-}" ]]; then
+        red "  ✗ GITHUB_PACKAGE_REGISTRY_TOKEN is in shell env — should only be in .env.secrets"
+        _fail=1
+    else
+        green "  ✓ GITHUB_PACKAGE_REGISTRY_TOKEN not in shell env (good)"
+    fi
 
-if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    red "  ✗ GITHUB_TOKEN is in shell env — should only be in .env.secrets"
-    _fail=1
-else
-    green "  ✓ GITHUB_TOKEN not in shell env (good)"
-fi
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        red "  ✗ GITHUB_TOKEN is in shell env — should only be in .env.secrets"
+        _fail=1
+    else
+        green "  ✓ GITHUB_TOKEN not in shell env (good)"
+    fi
 
-if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
-    red "  ✗ ANTHROPIC_API_KEY is in shell env — should only be in .env.secrets"
-    _fail=1
-else
-    green "  ✓ ANTHROPIC_API_KEY not in shell env (good)"
+    if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+        red "  ✗ ANTHROPIC_API_KEY is in shell env — should only be in .env.secrets"
+        _fail=1
+    else
+        green "  ✓ ANTHROPIC_API_KEY not in shell env (good)"
+    fi
 fi
 
 if [[ -f "$HOME/.claude/settings.json" ]] && grep -q '"deny"' "$HOME/.claude/settings.json" 2>/dev/null; then

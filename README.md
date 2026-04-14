@@ -2,7 +2,7 @@
   <img src="assets/ctrl-shift-logo.jpg" alt="ctrl+shft logo" style="width: 100%; max-width: 862px; height: auto;" />
 </p>
 
-# CTRL
+# ctrl
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -10,14 +10,14 @@
 
 Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
 
-ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into two tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`). When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
+ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and short-lived GitHub App installation tokens minted per AFK iteration. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
 ```
 
-Bootstrap is idempotent and cross-platform. It symlinks `~/.claude/CLAUDE.md`, `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/rules/`, wires shell integration into `~/.bashrc`/`~/.zshrc`, creates `secrets/` from templates, and adds supply chain protection to `~/.npmrc` and `uv.toml`. Full details in the [Installation](#installation) section.
+Bootstrap is idempotent and cross-platform. It symlinks `~/.claude/CLAUDE.md`, `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/rules/`, wires shell integration into `~/.bashrc`/`~/.zshrc`, creates `secrets/` from templates, installs Python dependencies from `skills/_local/requirements.txt` into `secrets/.venv` (including `PyJWT` for AFK GitHub App token minting), and adds supply chain protection to `~/.npmrc` and `uv.toml`. Full details in the [Installation](#installation) section.
 
 ---
 
@@ -120,15 +120,91 @@ Rules without `paths:` load every session. Add your own: `rules/your-rule.md` �
 
 ### Hardened secrets
 
-Two tiers. Agents see config, never credentials.
-Two tiers. Agents see config, never credentials.
+Three tiers. Agents see config, never credentials — and AFK loops use ephemeral minted tokens instead of long-lived auth tokens.
 
 | File                   | In shell? | Agent-visible? | Contains                    |
 | ---------------------- | --------- | -------------- | --------------------------- |
 | `secrets/.env.agent`   | Yes       | Yes            | Usernames, hosts, IDs       |
 | `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords |
+| AFK iteration token    | No        | No             | Minted per loop, expires ~1h |
 
 `run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see.
+
+### AFK Docker credential rotation (strong defense)
+
+For AFK runs, credentials should rotate between Docker iterations:
+
+- Mint a short-lived GitHub App installation token for each AFK iteration
+- Inject the token only for that iteration's process
+- Expire naturally (and fail closed on mint failure)
+- Do not allow PAT fallback in AFK mode
+
+This closes the most common leakage path: one long-lived credential reused across many autonomous runs.
+
+### Exact secure setup after clone (operator quick path)
+
+After clone + bootstrap, this is the exact secure AFK setup path:
+
+1. Create a GitHub App at `https://github.com/settings/apps/new`.
+   - Name: e.g. `ctrl-shft-bot`
+   - Homepage URL: your repo URL
+   - Webhook: disable for now (not required for this flow)
+   - Repository permissions (minimum):
+     - Contents: Read & Write
+     - Issues: Read & Write
+     - Pull requests: Read & Write
+     - Workflows: Read & Write (only if AFK needs to edit `.github/workflows/*`)
+   - Installation target: only your account/org that owns the repo
+2. In the App settings page, click **Generate a private key** and download the `.pem` file.
+3. Install the App on the repo/fork AFK will work on:
+   - Open your app page (e.g. `https://github.com/settings/apps/ctrl-shft-bot`)
+   - Click **Install App**
+   - Choose account/org, then **Only select repositories**, then target repo, then **Install**
+4. Capture your installation ID from the redirect URL after install:
+   - URL format: `https://github.com/settings/installations/<id>`
+   - The numeric trailing segment is `GITHUB_APP_INSTALLATION_ID`
+5. Base64 encode the private key to one line:
+   - Linux / Git Bash: `base64 -w 0 ~/Downloads/your-app-key.pem`
+   - macOS: `base64 < ~/Downloads/your-app-key.pem | tr -d '\n'`
+   - PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME\\Downloads\\your-app-key.pem"))`
+6. Fill `~/dotfiles/secrets/.env.secrets` with:
+   - `GITHUB_APP_ID`
+   - `GITHUB_APP_INSTALLATION_ID`
+   - `GITHUB_APP_PRIVATE_KEY_B64`
+7. Run `bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk` and fix any hard-fail messages.
+8. Run token-safe mint smoke verification (prints status/expiry/length, not the raw token):
+
+   ```bash
+   bash ~/dotfiles/bin/verify-github-app-token.sh
+   ```
+
+   Expected shape:
+
+   ```text
+   ================================================================
+   GitHub App Token Smoke Test (safe output)
+   ================================================================
+     ✓ mint_success=yes
+       expires_at=2026-04-14T23:58:47Z
+       token_len=40
+   ================================================================
+   ```
+9. Start AFK with one iteration (`shft/afk.sh 1`), then scale iterations once stable.
+
+> **Windows operator note (important):** On some Windows setups, `python3` resolves to a Microsoft Store alias and fails. AFK scripts now prefer `secrets/.venv` Python automatically. If you hit Python launch/dependency errors, rerun `bash ~/dotfiles/bin/bootstrap.sh` to rebuild the venv and retry.
+
+If PAT variables are present in AFK mode, treat that as a hard configuration error and remediate before running.
+
+If `mint_github_app_token.py` reports missing `PyJWT` or `requests`, re-run `bash ~/dotfiles/bin/bootstrap.sh` to refresh `secrets/.venv` packages.
+
+If a raw token is ever printed to terminal/chat/logs, treat that as an exposure event and rotate immediately:
+
+1. Open `https://github.com/settings/apps/ctrl-shft-bot`
+2. Regenerate (or delete + generate) a new private key
+3. Download new `.pem`
+4. Re-encode: `base64 -w 0 ~/Downloads/your-new-key.pem`
+5. Update `GITHUB_APP_PRIVATE_KEY_B64` in `secrets/.env.secrets`
+6. Re-run the token-safe mint smoke verification command above
 
 ---
 
@@ -230,8 +306,6 @@ These principles are working if you see:
 
 > `ctrl` is the system. `shft` is the worker. **ctrl+shft** — you define the rules, shft executes them.
 
-> **Status: infrastructure ready, testing in HITL mode.**
-
 shft is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
 
 ### Two modes
@@ -264,7 +338,7 @@ docker sandbox run claude .
 - [ ] Claude Max subscription
 - [ ] Docker Desktop installed
 - [ ] `shft/once.sh`, `shft/afk.sh`, `shft/prompt.md` in place
-- [ ] `gh auth login` inside the Docker sandbox
+- [ ] GitHub App credentials configured in `secrets/.env.secrets` (`GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, `GITHUB_APP_PRIVATE_KEY_B64`)
 - [ ] Deny rules validated in sandbox
 - [ ] 5–10 well-formed GitHub issues ready
 - [ ] Start HITL → graduate to AFK (1 iteration) → scale up
@@ -398,6 +472,7 @@ Bootstrap is idempotent — safe to re-run. It handles:
 - Creating `skills/_local/` and `instructions/_local/`
 - Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc`
 - Creating the Python venv
+- Installing Python packages from `skills/_local/requirements.txt` into `secrets/.venv` (includes `PyJWT` for AFK token minting)
 
 After bootstrap:
 
@@ -535,6 +610,23 @@ source ~/.bashrc
 
 - `rm -rf ~/dotfiles/secrets/.venv && bash ~/dotfiles/bin/bootstrap.sh`
 
+**`mint_github_app_token.py` fails with installation error (wrong ID/path mismatch)**
+
+- Exact error string:
+  - `[mint-github-app-token] GitHub API error while requesting installation token (status=404). Check app id, installation id, key format, and clock skew.`
+- Most common causes:
+  - `GITHUB_APP_INSTALLATION_ID` is wrong
+  - App is not installed on the target repo/account
+  - App ID / key pair does not match the installed app
+- Fix flow:
+  - Reopen app settings → Install App → target repo
+  - Recopy installation ID from `https://github.com/settings/installations/<id>`
+  - Re-run token-safe verification:
+
+    ```bash
+    bash ~/dotfiles/bin/verify-github-app-token.sh
+    ```
+
 </details>
 
 ---
@@ -545,6 +637,8 @@ source ~/.bashrc
 - [GitHub Copilot](https://github.com/features/copilot) (optional — ctrl works with Claude Code alone)
 - Git Bash (Windows) or bash (Linux/macOS)
 - Python 3.10+
+- `jq` (required by `shft/afk.sh` token parsing)
+- `sbx` (Claude Code sandbox CLI used by `shft/afk.sh`)
 - Docker Desktop (for shft)
 
 ---
