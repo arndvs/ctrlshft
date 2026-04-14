@@ -10,7 +10,7 @@
 
 Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
 
-ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into two tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`). For AFK Docker runs, use per-iteration short-lived credentials (GitHub App installation tokens) so each loop gets a fresh token instead of reusing a long-lived key. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
+ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and short-lived GitHub App installation tokens minted per AFK iteration. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
@@ -120,12 +120,13 @@ Rules without `paths:` load every session. Add your own: `rules/your-rule.md` �
 
 ### Hardened secrets
 
-Two tiers. Agents see config, never credentials.
+Three tiers. Agents see config, never credentials — and AFK loops use ephemeral minted tokens instead of long-lived auth tokens.
 
 | File                   | In shell? | Agent-visible? | Contains                    |
 | ---------------------- | --------- | -------------- | --------------------------- |
 | `secrets/.env.agent`   | Yes       | Yes            | Usernames, hosts, IDs       |
 | `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords |
+| AFK iteration token    | No        | No             | Minted per loop, expires ~1h |
 
 `run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see.
 
@@ -139,8 +140,6 @@ For AFK runs, credentials should rotate between Docker iterations:
 - Do not allow PAT fallback in AFK mode
 
 This closes the most common leakage path: one long-lived credential reused across many autonomous runs.
-
-> **Rollout status:** AFK App-token minting is now the canonical secure path. If you are on an older branch, migrate by enabling the validator + mint-helper flow before running AFK.
 
 ### Exact secure setup after clone (operator quick path)
 
@@ -176,18 +175,19 @@ After clone + bootstrap, this is the exact secure AFK setup path:
 8. Run token-safe mint smoke verification (prints status/expiry/length, not the raw token):
 
    ```bash
-   bash ~/dotfiles/bin/run-with-secrets.sh \
-     /c/Users/aaron/dotfiles/secrets/.venv/Scripts/python.exe \
-     ~/dotfiles/bin/mint_github_app_token.py \
-     | python -c "import json,sys; d=json.load(sys.stdin); print('mint_success=yes'); print('expires_at='+d['expires_at']); print('token_len='+str(len(d['token'])))"
+   bash ~/dotfiles/bin/verify-github-app-token.sh
    ```
 
    Expected shape:
 
    ```text
-   mint_success=yes
-   expires_at=2026-04-14T23:58:47Z
-   token_len=40
+   ================================================================
+   GitHub App Token Smoke Test (safe output)
+   ================================================================
+     ✓ mint_success=yes
+       expires_at=2026-04-14T23:58:47Z
+       token_len=40
+   ================================================================
    ```
 9. Start AFK with one iteration (`shft/afk.sh 1`), then scale iterations once stable.
 
@@ -205,16 +205,6 @@ If a raw token is ever printed to terminal/chat/logs, treat that as an exposure 
 4. Re-encode: `base64 -w 0 ~/Downloads/your-new-key.pem`
 5. Update `GITHUB_APP_PRIVATE_KEY_B64` in `secrets/.env.secrets`
 6. Re-run the token-safe mint smoke verification command above
-
-### Migration note for existing operators
-
-If you're already running AFK with the current `gh auth` flow, migrate in this order to avoid downtime:
-
-1. Keep current flow for active work.
-2. Configure GitHub App variables in `secrets/.env.secrets`.
-3. Ensure your branch includes AFK validator + mint helper + AFK token integration.
-4. Run one HITL cycle (`shft/once.sh`) and one AFK iteration (`shft/afk.sh 1`).
-5. Remove legacy PAT/`gh auth` dependency from your AFK path after successful validation.
 
 ---
 
@@ -316,8 +306,6 @@ These principles are working if you see:
 
 > `ctrl` is the system. `shft` is the worker. **ctrl+shft** — you define the rules, shft executes them.
 
-> **Status: infrastructure ready, testing in HITL mode.**
-
 shft is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
 
 ### Two modes
@@ -351,7 +339,6 @@ docker sandbox run claude .
 - [ ] Docker Desktop installed
 - [ ] `shft/once.sh`, `shft/afk.sh`, `shft/prompt.md` in place
 - [ ] GitHub App credentials configured in `secrets/.env.secrets` (`GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, `GITHUB_APP_PRIVATE_KEY_B64`)
-- [ ] If still on legacy branch: keep `gh auth` flow until AFK validator + mint helper + AFK token path is available, then migrate
 - [ ] Deny rules validated in sandbox
 - [ ] 5–10 well-formed GitHub issues ready
 - [ ] Start HITL → graduate to AFK (1 iteration) → scale up
@@ -637,10 +624,7 @@ source ~/.bashrc
   - Re-run token-safe verification:
 
     ```bash
-    bash ~/dotfiles/bin/run-with-secrets.sh \
-      /c/Users/aaron/dotfiles/secrets/.venv/Scripts/python.exe \
-      ~/dotfiles/bin/mint_github_app_token.py \
-      | python -c "import json,sys; d=json.load(sys.stdin); print('mint_success=yes'); print('expires_at='+d['expires_at']); print('token_len='+str(len(d['token'])))"
+    bash ~/dotfiles/bin/verify-github-app-token.sh
     ```
 
 </details>

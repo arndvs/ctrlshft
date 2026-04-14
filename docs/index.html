@@ -1359,8 +1359,9 @@
                 </div>
                 <div class="feature fade-in">
                     <div class="feature-label">Secret Isolation</div>
-                    <div class="feature-title">Two-Tier Secrets</div>
-                    <p class="feature-body">Agents see config, never credentials. <code>run-with-secrets.sh</code>
+                    <div class="feature-title">Three-Tier Secrets</div>
+                    <p class="feature-body">Three tiers: config agents can see, credentials scoped to a child
+                        process, and ephemeral tokens minted per AFK iteration. <code>run-with-secrets.sh</code>
                         injects
                         API keys into a child process — they vanish on exit. Deny rules block <code>env</code>,
                         <code>printenv</code>, and <code>cat secrets/*</code>.
@@ -1617,10 +1618,9 @@
             <h2 class="section-title">Agents see config,<br><em>never</em> credentials</h2>
 
             <p style="max-width: 62rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
-                Two tiers. <code>run-with-secrets.sh</code> injects credentials into a child process only — they exist
-                for
-                its lifetime and vanish when it exits. For AFK Docker loops, rotate process-scoped credentials each
-                iteration using short-lived GitHub App installation tokens. Deny rules block any attempt to read
+                Three tiers. Config lives in shell, <code>run-with-secrets.sh</code> injects credentials into a child
+                process only, and AFK loops use short-lived GitHub App installation tokens minted per iteration.
+                Deny rules block any attempt to read
                 secrets.
             </p>
 
@@ -1647,6 +1647,14 @@
                         <td style="color: var(--text-secondary); font-family: var(--sans);">API keys, tokens, passwords
                         </td>
                     </tr>
+                    <tr>
+                        <td><code style="color: var(--accent);">AFK iteration token</code></td>
+                        <td class="tag-no">NO</td>
+                        <td class="tag-no">NO</td>
+                        <td style="color: var(--text-secondary); font-family: var(--sans);">Minted per loop, expires
+                            ~1h
+                        </td>
+                    </tr>
                 </tbody>
             </table>
 
@@ -1662,11 +1670,6 @@
                 fails.
             </div>
 
-            <div
-                style="margin-top: 1.2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.1rem; color: var(--text-dim); font-family: var(--sans); line-height: 1.6;">
-                Rollout note: this is the target AFK model. If your branch has not yet merged validator + token minting
-                slices, continue the current flow until migration is complete.
-            </div>
         </div>
     </section>
 
@@ -1700,8 +1703,8 @@
 
             <div
                 style="margin-top: 1.4rem; padding: 1.2rem 1.8rem; border: 1px solid var(--border); font-size: 1.1rem; color: var(--text-dimmer); font-family: var(--sans);">
-                Status: infrastructure ready, testing in HITL mode. Requires Claude Max, Docker Desktop, and 5–10
-                well-formed GitHub issues. AFK also requires <code>jq</code> and <code>sbx</code> on PATH.
+                Requires Claude Max, Docker Desktop, and 5–10 well-formed GitHub issues. AFK also requires
+                <code>jq</code> and <code>sbx</code> on PATH.
             </div>
         </div>
     </section>
@@ -1778,14 +1781,10 @@ GITHUB_APP_PRIVATE_KEY_B64=...</pre>
                         <div class="step-note">Base64 your private key to one line (example Git Bash: <code>base64 -w 0 ~/Downloads/your-app-key.pem</code>) and place all three values in <code>secrets/.env.secrets</code>.</div>
                         <div class="step-note">Validate with <code>bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk</code>.</div>
                         <div class="step-note">Run token-safe mint verification (no raw token in output):</div>
-                        <pre class="step-code">bash ~/dotfiles/bin/run-with-secrets.sh \
-  /c/Users/aaron/dotfiles/secrets/.venv/Scripts/python.exe \
-  ~/dotfiles/bin/mint_github_app_token.py \
-  | python -c "import json,sys; d=json.load(sys.stdin); print('mint_success=yes'); print('expires_at='+d['expires_at']); print('token_len='+str(len(d['token'])))"</pre>
-                        <div class="step-note">Expected output shape: <code>mint_success=yes</code>, <code>expires_at=...</code>, <code>token_len=40</code>.</div>
+                        <pre class="step-code">bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
+                        <div class="step-note">Expected output shape: <code>mint_success=yes</code> with <code>expires_at=...</code> and <code>token_len=40</code> in a formatted safe-output block.</div>
                         <div class="step-note"><strong>Windows note:</strong> if <code>python3</code> opens Microsoft Store or fails, AFK scripts still use <code>secrets/.venv</code> Python first. Re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code> if venv Python is missing/broken.</div>
                         <div class="step-note">Detailed setup guide: <a href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone-operator-quick-path" style="color: var(--accent); text-decoration: none;">README → Exact secure setup after clone</a>.</div>
-                        <div class="step-note">Existing operators: migrate from legacy PAT/gh-auth flow to App-token flow, then run one HITL cycle before AFK scaling.</div>
                         <div class="step-note">If token minting reports missing <code>PyJWT</code> or <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
                         <div class="step-note">If minting fails with:<br><code>[mint-github-app-token] GitHub API error while requesting installation token (status=404). Check app id, installation id, key format, and clock skew.</code><br>recheck installation ID, app installation target, and key/app pairing.</div>
                         <div class="step-note">If a raw token is ever printed in terminal/chat/logs, rotate App private key immediately in GitHub App settings, update <code>GITHUB_APP_PRIVATE_KEY_B64</code>, then rerun token-safe mint verification.</div>
