@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ctrl — dotfiles for AI coding agents</title>
+    <title>ctrl+shft — dotfiles for AI coding agents</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
         href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500&display=swap"
@@ -709,8 +709,8 @@
             color: var(--red);
         }
 
-        /* SHFT */
-        .shft-modes {
+        /* SHIFT */
+        .shift-modes {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1px;
@@ -719,17 +719,17 @@
             margin-top: 32px;
         }
 
-        .shft-mode {
+        .shift-mode {
             background: var(--bg);
             padding: 36px 32px;
             transition: background 0.15s;
         }
 
-        .shft-mode:hover {
+        .shift-mode:hover {
             background: var(--surface);
         }
 
-        .shft-mode-label {
+        .shift-mode-label {
             font-size: 10px;
             letter-spacing: 3px;
             text-transform: uppercase;
@@ -737,18 +737,18 @@
             margin-bottom: 12px;
         }
 
-        .shft-mode-name {
+        .shift-mode-name {
             font-family: var(--display);
             font-size: 40px;
             letter-spacing: 4px;
             margin-bottom: 12px;
         }
 
-        .shft-mode-name.afk {
+        .shift-mode-name.afk {
             color: var(--accent);
         }
 
-        .shft-mode-desc {
+        .shift-mode-desc {
             font-family: var(--sans);
             font-size: 13px;
             color: var(--text-dim);
@@ -903,6 +903,36 @@
             transform: translateY(0);
         }
 
+        /* REDUCED MOTION */
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .fade-in {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+
+            .ticker-inner {
+                animation: none;
+            }
+
+            .cursor {
+                animation: none;
+                opacity: 1;
+            }
+        }
+
         /* RESPONSIVE */
         @media (max-width: 768px) {
             nav {
@@ -934,7 +964,7 @@
                 border-bottom: 1px solid var(--border);
             }
 
-            .shft-modes {
+            .shift-modes {
                 grid-template-columns: 1fr;
             }
 
@@ -956,7 +986,8 @@
 <body>
 
     <nav>
-        <a href="#" class="nav-logo">ctrl</a>
+        <a href="#" class="nav-logo">ctrl<span
+                style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 2px;">+shft</span></a>
         <ul class="nav-links">
             <li><a href="#how">how it works</a></li>
             <li><a href="#skills">skills</a></li>
@@ -971,13 +1002,14 @@
         <div class="hero-grid"></div>
         <div class="hero-glow"></div>
 
-        <div class="hero-tag">open source — MIT license</div>
+        <div class="hero-tag">dotfiles for AI coding agents</div>
 
-        <h1 class="hero-headline"><span>ctrl</span></h1>
-        <p class="hero-sub">Dotfiles for AI coding agents</p>
+        <h1 class="hero-headline"><span>ctrl</span><span style="color: var(--text-dim);">+shft</span></h1>
+        <p class="hero-sub">ctrl defines the rules. shft executes them.</p>
 
         <p class="hero-desc">
-            One repo syncs instructions, skills, secrets, and autonomous loops across every machine.
+            Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across
+            every machine.
             Context that doesn't degrade. Rules that load for your stack. Credentials that vanish when the process
             exits.
         </p>
@@ -1003,7 +1035,7 @@
                 </div>
                 <div class="terminal-body">
                     <div class="t-dim"># bootstrap in two commands</div>
-                    <div class="t-prompt">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</div>
+                    <div class="t-prompt">git clone github.com/arndvs/ctrl.git ~/dotfiles</div>
                     <div class="t-green">✓ cloned</div>
                     <div>&nbsp;</div>
                     <div class="t-prompt">bash ~/dotfiles/bin/bootstrap.sh</div>
@@ -1096,8 +1128,7 @@
                 <div class="feature-title">Two-Tier Secrets</div>
                 <p class="feature-body">Agents see config, never credentials. <code>run-with-secrets.sh</code> injects
                     API keys into a child process — they vanish on exit. Deny rules block <code>env</code>,
-                    <code>printenv</code>, and <code>cat secrets/*</code>.
-                </p>
+                    <code>printenv</code>, and <code>cat secrets/*</code>.</p>
                 <div class="feature-code">
                     <span class="str">.env.agent &nbsp;&nbsp;</span><span class="cm"># agent-visible config</span><br>
                     <span class="str">.env.secrets </span><span class="cm"># process-scoped only</span><br>
@@ -1109,8 +1140,7 @@
                 <div class="feature-title">Clone Once, Pull Forever</div>
                 <p class="feature-body">Clone to <code>~/dotfiles</code> on your laptop, your VPS, anywhere.
                     <code>git pull</code> updates every machine simultaneously. Bootstrap is idempotent — safe to re-run
-                    anytime.
-                </p>
+                    anytime.</p>
                 <div class="feature-code">
                     <span class="cm"># update everywhere at once</span><br>
                     <span class="kw">cd</span> ~/dotfiles &amp;&amp; <span class="kw">git pull</span><br>
@@ -1354,17 +1384,17 @@
             AFK mode, direct on host for HITL. Exits when the backlog is empty.
         </p>
 
-        <div class="shft-modes">
-            <div class="shft-mode">
-                <div class="shft-mode-label">Human In The Loop</div>
-                <div class="shft-mode-name">HITL</div>
-                <div class="shft-mode-desc">Runs once while you watch. Use when learning, reviewing each step, or
+        <div class="shift-modes">
+            <div class="shift-mode">
+                <div class="shift-mode-label">Human In The Loop</div>
+                <div class="shift-mode-name">HITL</div>
+                <div class="shift-mode-desc">Runs once while you watch. Use when learning, reviewing each step, or
                     validating a new task type before going fully autonomous.</div>
             </div>
-            <div class="shft-mode">
-                <div class="shft-mode-label">Away From Keyboard</div>
-                <div class="shft-mode-name afk">AFK</div>
-                <div class="shft-mode-desc">Loops in Docker sandbox. Claude picks a task, implements, commits, closes
+            <div class="shift-mode">
+                <div class="shift-mode-label">Away From Keyboard</div>
+                <div class="shift-mode-name afk">AFK</div>
+                <div class="shift-mode-desc">Loops in Docker sandbox. Claude picks a task, implements, commits, closes
                     the issue, picks the next. You review PRs async.</div>
             </div>
         </div>
@@ -1437,18 +1467,19 @@
     </section>
 
     <div class="ticker">
-        <div class="ticker-inner">ctrl + shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp; execute the work
+        <div class="ticker-inner">ctrl+shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp; execute the work &nbsp;·&nbsp;
+            git pull to update everywhere &nbsp;·&nbsp; credentials vanish on exit &nbsp;·&nbsp; context persists
+            between conversations &nbsp;·&nbsp; ctrl+shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp; execute the work
             &nbsp;·&nbsp; git pull to update everywhere &nbsp;·&nbsp; credentials vanish on exit &nbsp;·&nbsp; context
-            persists between conversations &nbsp;·&nbsp; ctrl + shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp;
-            execute the work &nbsp;·&nbsp; git pull to update everywhere &nbsp;·&nbsp; credentials vanish on exit
-            &nbsp;·&nbsp; context persists between conversations &nbsp;·&nbsp;</div>
+            persists between conversations &nbsp;·&nbsp;</div>
     </div>
 
     <footer>
         <div>
-            <div class="footer-logo">ctrl</div>
-            <div class="footer-tagline">Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and
-                autonomous loops across every machine.</div>
+            <div class="footer-logo">ctrl<span
+                    style="color: var(--text-dim); font-size: 0.55em; letter-spacing: 4px;">+shft</span></div>
+            <div class="footer-tagline">ctrl defines the rules. shft executes them. One repo syncs instructions, skills,
+                secrets, and autonomous loops across every machine.</div>
             <div style="margin-top: 16px;">
                 <a href="https://github.com/arndvs/ctrl" class="btn-ghost"
                     style="font-size: 11px;">github.com/arndvs/ctrl →</a>
