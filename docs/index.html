@@ -970,6 +970,62 @@
             font-family: var(--sans);
         }
 
+        .step-intro {
+            margin-top: 0.6rem;
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            line-height: 1.6;
+        }
+
+        .step-group {
+            margin-top: 1.4rem;
+            padding: 1.2rem 1.4rem;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .step-group-title {
+            font-size: 0.95rem;
+            letter-spacing: 0.16rem;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 0.8rem;
+        }
+
+        .step-list {
+            margin: 0;
+            padding-left: 1.6rem;
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            font-size: 1.08rem;
+            line-height: 1.65;
+        }
+
+        .step-list li+li {
+            margin-top: 0.45rem;
+        }
+
+        .step-troubleshoot {
+            margin-top: 1.2rem;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            padding: 0.8rem 1rem;
+        }
+
+        .step-troubleshoot summary {
+            cursor: pointer;
+            color: var(--text-dim);
+            font-family: var(--mono);
+            font-size: 1rem;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+        }
+
+        .step-troubleshoot[open] {
+            border-color: var(--border-bright);
+        }
+
         /* TICKER */
         .ticker {
             border-top: 1px solid var(--border);
@@ -1762,7 +1818,22 @@
                 <div class="install-step">
                     <div class="step-num">3</div>
                     <div class="step-content">
-                        <div class="step-title">Configure secrets (GitHub App for AFK)</div>
+                        <div class="step-title">Configure GitHub App credentials (AFK)</div>
+                        <div class="step-intro">Do this once, in order: create and install the app, set secrets, then validate.</div>
+
+                        <div class="step-group">
+                            <div class="step-group-title">A — Create + install the app</div>
+                            <ol class="step-list">
+                                <li>Create the App at <code>https://github.com/settings/apps/new</code>.</li>
+                                <li>Set Homepage URL to your own GitHub dotfiles repository URL (for example <code>https://github.com/&lt;you&gt;/dotfiles</code>).</li>
+                                <li>Use minimum permissions: Contents (R/W), Issues (R/W), Pull requests (R/W), and Workflows (R/W only if AFK edits workflow files). Disable webhook for this flow.</li>
+                                <li>Install the app on your target repo (<em>Install App → Only select repositories → pick repo</em>).</li>
+                                <li>Copy installation ID from <code>https://github.com/settings/installations/&lt;id&gt;</code>.</li>
+                            </ol>
+                        </div>
+
+                        <div class="step-group">
+                            <div class="step-group-title">B — Set secrets files</div>
                         <div class="step-code-wrap">
                             <pre class="step-code">$EDITOR ~/dotfiles/secrets/.env.agent   # non-sensitive config
 $EDITOR ~/dotfiles/secrets/.env.secrets # process-scoped credentials
@@ -1781,18 +1852,35 @@ GITHUB_APP_PRIVATE_KEY_B64=...</pre>
                                 <span>Copy</span>
                             </button>
                         </div>
-                        <div class="step-note">Create the App at <code>https://github.com/settings/apps/new</code>. Set Homepage URL to your own GitHub dotfiles repository URL (for example <code>https://github.com/&lt;you&gt;/dotfiles</code>). Use minimum permissions: Contents (R/W), Issues (R/W), Pull requests (R/W), and Workflows (R/W only if AFK edits workflow files). Disable webhook for this flow.</div>
-                        <div class="step-note">Install the app on your target repo (Install App → Only select repositories → pick repo). After install, copy the numeric ID from <code>https://github.com/settings/installations/&lt;id&gt;</code>.</div>
                         <div class="step-note">Base64 your private key to one line (example Git Bash: <code>base64 -w 0 ~/Downloads/your-app-key.pem</code>) and place all three values in <code>secrets/.env.secrets</code>.</div>
-                        <div class="step-note">Validate with <code>bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk</code>.</div>
-                        <div class="step-note">Run token-safe mint verification (no raw token in output):</div>
-                        <pre class="step-code">bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
-                        <div class="step-note">Expected output shape: <code>mint_success=yes</code> with <code>expires_at=...</code> and <code>token_len=40</code> in a formatted safe-output block.</div>
-                        <div class="step-note"><strong>Windows note:</strong> if <code>python3</code> opens Microsoft Store or fails, AFK scripts still use <code>secrets/.venv</code> Python first. Re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code> if venv Python is missing/broken.</div>
-                        <div class="step-note">Detailed setup guide: <a href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone" style="color: var(--accent); text-decoration: none;">README → Exact secure setup after clone</a>.</div>
-                        <div class="step-note">If token minting reports missing <code>PyJWT</code> or <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
-                        <div class="step-note">If minting fails with:<br><code>[mint-github-app-token] GitHub API error while requesting installation token (status=404). Check app id, installation id, key format, and clock skew.</code><br>recheck installation ID, app installation target, and key/app pairing.</div>
-                        <div class="step-note">If a raw token is ever printed in terminal/chat/logs, rotate App private key immediately in GitHub App settings, update <code>GITHUB_APP_PRIVATE_KEY_B64</code>, then rerun token-safe mint verification.</div>
+                        </div>
+
+                        <div class="step-group">
+                            <div class="step-group-title">C — Validate + smoke test</div>
+                            <div class="step-code-wrap">
+                                <pre class="step-code">bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk
+bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
+                                <button class="copy-btn"
+                                    data-copy="bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk&#10;bash ~/dotfiles/bin/verify-github-app-token.sh"
+                                    aria-label="Copy command">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <div class="step-note">Expected output includes <code>mint_success=yes</code>, <code>expires_at=...</code>, and <code>token_len=40</code>.</div>
+                        </div>
+
+                        <details class="step-troubleshoot">
+                            <summary>Troubleshooting</summary>
+                            <div class="step-note"><strong>Windows note:</strong> if <code>python3</code> opens Microsoft Store or fails, AFK scripts use <code>secrets/.venv</code> Python first. Re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code> if venv Python is missing/broken.</div>
+                            <div class="step-note">If token minting reports missing <code>PyJWT</code> or <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
+                            <div class="step-note">If minting fails with <code>[mint-github-app-token] GitHub API error while requesting installation token (status=404)...</code>, recheck installation ID, app install target, and key/app pairing.</div>
+                            <div class="step-note">If a raw token is ever printed, rotate App private key immediately, update <code>GITHUB_APP_PRIVATE_KEY_B64</code>, then rerun token-safe mint verification.</div>
+                            <div class="step-note">Detailed setup guide: <a href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone" style="color: var(--accent); text-decoration: none;">README → Exact secure setup after clone</a>.</div>
+                        </details>
                     </div>
                 </div>
                 <div class="install-step">
