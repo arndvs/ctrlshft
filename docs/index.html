@@ -1361,7 +1361,8 @@
                     <div class="feature-label">Secret Isolation</div>
                     <div class="feature-title">Three-Tier Secrets</div>
                     <p class="feature-body">Three tiers: config agents can see, credentials scoped to a child
-                        process, and ephemeral tokens minted per AFK iteration. <code>run-with-secrets.sh</code>
+                        process, and AFK iteration tokens (short-lived GitHub App installation tokens) minted per
+                        loop. <code>run-with-secrets.sh</code>
                         injects
                         API keys into a child process — they vanish on exit. Deny rules block <code>env</code>,
                         <code>printenv</code>, and <code>cat secrets/*</code>.
@@ -1619,7 +1620,8 @@
 
             <p style="max-width: 62rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
                 Three tiers. Config lives in shell, <code>run-with-secrets.sh</code> injects credentials into a child
-                process only, and AFK loops use short-lived GitHub App installation tokens minted per iteration.
+                process only, and AFK loops use AFK iteration tokens (short-lived GitHub App installation tokens)
+                minted per loop.
                 Deny rules block any attempt to read
                 secrets.
             </p>
@@ -1784,7 +1786,7 @@ GITHUB_APP_PRIVATE_KEY_B64=...</pre>
                         <pre class="step-code">bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                         <div class="step-note">Expected output shape: <code>mint_success=yes</code> with <code>expires_at=...</code> and <code>token_len=40</code> in a formatted safe-output block.</div>
                         <div class="step-note"><strong>Windows note:</strong> if <code>python3</code> opens Microsoft Store or fails, AFK scripts still use <code>secrets/.venv</code> Python first. Re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code> if venv Python is missing/broken.</div>
-                        <div class="step-note">Detailed setup guide: <a href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone-operator-quick-path" style="color: var(--accent); text-decoration: none;">README → Exact secure setup after clone</a>.</div>
+                        <div class="step-note">Detailed setup guide: <a href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone" style="color: var(--accent); text-decoration: none;">README → Exact secure setup after clone</a>.</div>
                         <div class="step-note">If token minting reports missing <code>PyJWT</code> or <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
                         <div class="step-note">If minting fails with:<br><code>[mint-github-app-token] GitHub API error while requesting installation token (status=404). Check app id, installation id, key format, and clock skew.</code><br>recheck installation ID, app installation target, and key/app pairing.</div>
                         <div class="step-note">If a raw token is ever printed in terminal/chat/logs, rotate App private key immediately in GitHub App settings, update <code>GITHUB_APP_PRIVATE_KEY_B64</code>, then rerun token-safe mint verification.</div>

@@ -10,7 +10,7 @@
 
 Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
 
-ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and short-lived GitHub App installation tokens minted per AFK iteration. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
+ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and AFK iteration tokens (short-lived GitHub App installation tokens) minted per loop. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
@@ -120,7 +120,7 @@ Rules without `paths:` load every session. Add your own: `rules/your-rule.md` �
 
 ### Hardened secrets
 
-Three tiers. Agents see config, never credentials — and AFK loops use ephemeral minted tokens instead of long-lived auth tokens.
+Three tiers. Agents see config, never credentials — and AFK loops use AFK iteration tokens instead of long-lived auth tokens.
 
 | File                   | In shell? | Agent-visible? | Contains                    |
 | ---------------------- | --------- | -------------- | --------------------------- |
@@ -134,14 +134,14 @@ Three tiers. Agents see config, never credentials — and AFK loops use ephemera
 
 For AFK runs, credentials should rotate between Docker iterations:
 
-- Mint a short-lived GitHub App installation token for each AFK iteration
+- Mint an AFK iteration token (short-lived GitHub App installation token) for each loop
 - Inject the token only for that iteration's process
 - Expire naturally (and fail closed on mint failure)
 - Do not allow PAT fallback in AFK mode
 
 This closes the most common leakage path: one long-lived credential reused across many autonomous runs.
 
-### Exact secure setup after clone (operator quick path)
+### Exact secure setup after clone
 
 After clone + bootstrap, this is the exact secure AFK setup path:
 
@@ -172,7 +172,7 @@ After clone + bootstrap, this is the exact secure AFK setup path:
    - `GITHUB_APP_INSTALLATION_ID`
    - `GITHUB_APP_PRIVATE_KEY_B64`
 7. Run `bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk` and fix any hard-fail messages.
-8. Run token-safe mint smoke verification (prints status/expiry/length, not the raw token):
+8. Run token-safe mint verification (prints status/expiry/length, not the raw token):
 
    ```bash
    bash ~/dotfiles/bin/verify-github-app-token.sh
@@ -191,7 +191,7 @@ After clone + bootstrap, this is the exact secure AFK setup path:
    ```
 9. Start AFK with one iteration (`shft/afk.sh 1`), then scale iterations once stable.
 
-> **Windows operator note (important):** On some Windows setups, `python3` resolves to a Microsoft Store alias and fails. AFK scripts now prefer `secrets/.venv` Python automatically. If you hit Python launch/dependency errors, rerun `bash ~/dotfiles/bin/bootstrap.sh` to rebuild the venv and retry.
+> **Windows note (important):** On some Windows setups, `python3` resolves to a Microsoft Store alias and fails. AFK scripts now prefer `secrets/.venv` Python automatically. If you hit Python launch/dependency errors, rerun `bash ~/dotfiles/bin/bootstrap.sh` to rebuild the venv and retry.
 
 If PAT variables are present in AFK mode, treat that as a hard configuration error and remediate before running.
 
@@ -204,7 +204,7 @@ If a raw token is ever printed to terminal/chat/logs, treat that as an exposure 
 3. Download new `.pem`
 4. Re-encode: `base64 -w 0 ~/Downloads/your-new-key.pem`
 5. Update `GITHUB_APP_PRIVATE_KEY_B64` in `secrets/.env.secrets`
-6. Re-run the token-safe mint smoke verification command above
+6. Re-run the token-safe mint verification command above
 
 ---
 
