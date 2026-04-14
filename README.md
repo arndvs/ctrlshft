@@ -147,7 +147,7 @@ After clone + bootstrap, this is the exact secure AFK setup path:
 
 1. Create a GitHub App at `https://github.com/settings/apps/new`.
    - Name: e.g. `ctrl-shft-bot`
-   - Homepage URL: your repo URL
+    - Homepage URL: your own GitHub dotfiles repository URL (e.g. `https://github.com/<you>/dotfiles`)
    - Webhook: disable for now (not required for this flow)
    - Repository permissions (minimum):
      - Contents: Read & Write
