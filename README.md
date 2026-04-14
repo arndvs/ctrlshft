@@ -4,6 +4,8 @@
 
 # ctrl
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across every machine.
 
 Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
