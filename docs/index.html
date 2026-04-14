@@ -1118,16 +1118,20 @@
                 <div class="hero-left">
                     <div class="hero-tag">dotfiles for AI coding agents</div>
 
-                    <h1 class="hero-headline"><span>ctrl</span><span style="color: var(--text-dim); font-size: 0.7em;">+shft</span></h1>
+                    <h1 class="hero-headline"><span>ctrl</span><span
+                            style="color: var(--text-dim); font-size: 0.7em;">+shft</span></h1>
                     <p class="hero-sub">ctrl defines the rules.<br>shft executes them.</p>
 
                     <p class="hero-desc">
-                        Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task. Instructions drift between machines. Secrets leak into the conversation. Irrelevant rules load for every project. One repo fixes all four.
+                        Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task.
+                        Instructions drift between machines. Secrets leak into the conversation. Irrelevant rules load
+                        for every project. One repo fixes all four.
                     </p>
 
                     <div class="hero-actions">
                         <a href="#install" class="btn-primary">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
                                 <polyline points="7 10 12 15 17 10" />
                                 <line x1="12" y1="15" x2="12" y2="3" />
@@ -1179,463 +1183,518 @@
     <!-- PROBLEMS -->
     <section class="section fade-in">
         <div class="container">
-        <div class="section-num">01 — THE PROBLEM</div>
-        <h2 class="section-title">Every developer<br>hits the same <em>walls</em></h2>
+            <div class="section-num">01 — THE PROBLEM</div>
+            <h2 class="section-title">Every developer<br>hits the same <em>walls</em></h2>
 
-        <div class="problems">
-            <div class="problem-card">
-                <span class="problem-icon">⟳</span>
-                <div class="problem-title">Context Decay</div>
-                <p class="problem-body">Context degrades mid-task. The agent repeats itself, compaction loses nuance,
-                    quality drops. A fresh conversation has no idea where things left off.</p>
+            <div class="problems">
+                <div class="problem-card">
+                    <span class="problem-icon">⟳</span>
+                    <div class="problem-title">Context Decay</div>
+                    <p class="problem-body">Context degrades mid-task. The agent repeats itself, compaction loses
+                        nuance,
+                        quality drops. A fresh conversation has no idea where things left off.</p>
+                </div>
+                <div class="problem-card">
+                    <span class="problem-icon">⊘</span>
+                    <div class="problem-title">Instruction Drift</div>
+                    <p class="problem-body">Instructions drift between your laptop and VPS. Different machines run
+                        different
+                        rules. There's no single source of truth.</p>
+                </div>
+                <div class="problem-card">
+                    <span class="problem-icon">⚠</span>
+                    <div class="problem-title">Secret Exposure</div>
+                    <p class="problem-body">Secrets leak into agent context. API keys, tokens, passwords visible inside
+                        the
+                        conversation — or worse, logged somewhere they shouldn't be.</p>
+                </div>
+                <div class="problem-card">
+                    <span class="problem-icon">≡</span>
+                    <div class="problem-title">Rule Pollution</div>
+                    <p class="problem-body">Irrelevant rules load for every project regardless of stack. Next.js rules
+                        on a
+                        PHP project. PHP rules in a Python repo. Noise drowning signal.</p>
+                </div>
             </div>
-            <div class="problem-card">
-                <span class="problem-icon">⊘</span>
-                <div class="problem-title">Instruction Drift</div>
-                <p class="problem-body">Instructions drift between your laptop and VPS. Different machines run different
-                    rules. There's no single source of truth.</p>
-            </div>
-            <div class="problem-card">
-                <span class="problem-icon">⚠</span>
-                <div class="problem-title">Secret Exposure</div>
-                <p class="problem-body">Secrets leak into agent context. API keys, tokens, passwords visible inside the
-                    conversation — or worse, logged somewhere they shouldn't be.</p>
-            </div>
-            <div class="problem-card">
-                <span class="problem-icon">≡</span>
-                <div class="problem-title">Rule Pollution</div>
-                <p class="problem-body">Irrelevant rules load for every project regardless of stack. Next.js rules on a
-                    PHP project. PHP rules in a Python repo. Noise drowning signal.</p>
-            </div>
-        </div>
         </div>
     </section>
 
     <!-- HOW IT WORKS -->
     <section class="section fade-in" id="how">
         <div class="container">
-        <div class="section-num">02 — HOW IT WORKS</div>
-        <h2 class="section-title">One repo,<br><em>every</em> machine</h2>
+            <div class="section-num">02 — HOW IT WORKS</div>
+            <h2 class="section-title">One repo,<br><em>every</em> machine</h2>
 
-        <div class="features">
-            <div class="feature fade-in">
-                <div class="feature-label">Context Integrity</div>
-                <div class="feature-title">Persistent Plans</div>
-                <p class="feature-body">When context gets high, the agent writes its plan to <code>working/</code>. A
-                    fresh conversation continues exactly where the old one left off — no repetition, no lost nuance.</p>
-                <div class="feature-code">
-                    <span class="kw">working/</span><br>
-                    <span class="cm"> └─ plan.md &nbsp;&nbsp;&nbsp;</span><span class="cm"># persisted state</span><br>
-                    <span class="cm"> └─ research.md </span><span class="cm"># cached explorations</span>
+            <div class="features">
+                <div class="feature fade-in">
+                    <div class="feature-label">Context Integrity</div>
+                    <div class="feature-title">Persistent Plans</div>
+                    <p class="feature-body">When context gets high, the agent writes its plan to <code>working/</code>.
+                        A
+                        fresh conversation continues exactly where the old one left off — no repetition, no lost nuance.
+                    </p>
+                    <div class="feature-code">
+                        <span class="kw">working/</span><br>
+                        <span class="cm"> └─ plan.md &nbsp;&nbsp;&nbsp;</span><span class="cm"># persisted
+                            state</span><br>
+                        <span class="cm"> └─ research.md </span><span class="cm"># cached explorations</span>
+                    </div>
+                </div>
+                <div class="feature fade-in">
+                    <div class="feature-label">Stack-Aware Rules</div>
+                    <div class="feature-title">Progressive Loading</div>
+                    <p class="feature-body"><code>detect-context.sh</code> scans your working directory. A Next.js
+                        project
+                        loads Next.js rules. Nothing from PHP. Nothing from Python. Only what matches.</p>
+                    <div class="feature-code">
+                        <span class="cm"># auto-detected on cd</span><br>
+                        <span class="kw">ACTIVE_CONTEXTS</span>=<span class="str">general,nextjs,node,ts</span><br>
+                        <span class="cm"># loads matching instructions/*.md</span>
+                    </div>
+                </div>
+                <div class="feature fade-in">
+                    <div class="feature-label">Secret Isolation</div>
+                    <div class="feature-title">Two-Tier Secrets</div>
+                    <p class="feature-body">Agents see config, never credentials. <code>run-with-secrets.sh</code>
+                        injects
+                        API keys into a child process — they vanish on exit. Deny rules block <code>env</code>,
+                        <code>printenv</code>, and <code>cat secrets/*</code>.
+                    </p>
+                    <div class="feature-code">
+                        <span class="str">.env.agent &nbsp;&nbsp;</span><span class="cm"># agent-visible
+                            config</span><br>
+                        <span class="str">.env.secrets </span><span class="cm"># process-scoped only</span><br>
+                        <span class="cm"># credentials vanish on exit</span>
+                    </div>
+                </div>
+                <div class="feature fade-in">
+                    <div class="feature-label">Git-Synced</div>
+                    <div class="feature-title">Clone Once, Pull Forever</div>
+                    <p class="feature-body">Clone to <code>~/dotfiles</code> on your laptop, your VPS, anywhere.
+                        <code>git pull</code> updates every machine simultaneously. Bootstrap is idempotent — safe to
+                        re-run
+                        anytime.
+                    </p>
+                    <div class="feature-code">
+                        <span class="cm"># update everywhere at once</span><br>
+                        <span class="kw">cd</span> ~/dotfiles &amp;&amp; <span class="kw">git pull</span><br>
+                        <span class="kw">bash</span> bin/bootstrap.sh
+                    </div>
                 </div>
             </div>
-            <div class="feature fade-in">
-                <div class="feature-label">Stack-Aware Rules</div>
-                <div class="feature-title">Progressive Loading</div>
-                <p class="feature-body"><code>detect-context.sh</code> scans your working directory. A Next.js project
-                    loads Next.js rules. Nothing from PHP. Nothing from Python. Only what matches.</p>
-                <div class="feature-code">
-                    <span class="cm"># auto-detected on cd</span><br>
-                    <span class="kw">ACTIVE_CONTEXTS</span>=<span class="str">general,nextjs,node,ts</span><br>
-                    <span class="cm"># loads matching instructions/*.md</span>
-                </div>
-            </div>
-            <div class="feature fade-in">
-                <div class="feature-label">Secret Isolation</div>
-                <div class="feature-title">Two-Tier Secrets</div>
-                <p class="feature-body">Agents see config, never credentials. <code>run-with-secrets.sh</code> injects
-                    API keys into a child process — they vanish on exit. Deny rules block <code>env</code>,
-                    <code>printenv</code>, and <code>cat secrets/*</code>.</p>
-                <div class="feature-code">
-                    <span class="str">.env.agent &nbsp;&nbsp;</span><span class="cm"># agent-visible config</span><br>
-                    <span class="str">.env.secrets </span><span class="cm"># process-scoped only</span><br>
-                    <span class="cm"># credentials vanish on exit</span>
-                </div>
-            </div>
-            <div class="feature fade-in">
-                <div class="feature-label">Git-Synced</div>
-                <div class="feature-title">Clone Once, Pull Forever</div>
-                <p class="feature-body">Clone to <code>~/dotfiles</code> on your laptop, your VPS, anywhere.
-                    <code>git pull</code> updates every machine simultaneously. Bootstrap is idempotent — safe to re-run
-                    anytime.</p>
-                <div class="feature-code">
-                    <span class="cm"># update everywhere at once</span><br>
-                    <span class="kw">cd</span> ~/dotfiles &amp;&amp; <span class="kw">git pull</span><br>
-                    <span class="kw">bash</span> bin/bootstrap.sh
-                </div>
-            </div>
-        </div>
         </div>
     </section>
 
     <!-- PIPELINE -->
     <section class="section fade-in">
         <div class="container">
-        <div class="section-num">03 — THE PIPELINE</div>
-        <h2 class="section-title">Intent to<br><em>commit</em></h2>
+            <div class="section-num">03 — THE PIPELINE</div>
+            <h2 class="section-title">Intent to<br><em>commit</em></h2>
 
-        <div class="pipeline fade-in">
-            <div class="pipeline-step">
-                <div class="pipeline-cmd"><code>/grill-me</code></div>
-                <div class="pipeline-desc">Interrogate you about a feature until shared understanding. One question at a
-                    time, recommended answers.</div>
+            <div class="pipeline fade-in">
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>/grill-me</code></div>
+                    <div class="pipeline-desc">Interrogate you about a feature until shared understanding. One question
+                        at a
+                        time, recommended answers.</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>/write-a-prd</code></div>
+                    <div class="pipeline-desc">Explore codebase, interview you, sketch module boundaries, write PRD,
+                        submit
+                        as GitHub issue.</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>/prd-to-issues</code></div>
+                    <div class="pipeline-desc">Break the PRD into vertical slices. Label each AFK or HITL. Create GitHub
+                        issues with dependencies.</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>/do-work</code></div>
+                    <div class="pipeline-desc">Understand → Plan → Implement → Validate → Commit. Auto-detects your
+                        stack's
+                        feedback loops. Loops until done.</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>shft</code></div>
+                    <div class="pipeline-desc">Pick issues from the backlog, implement in a Docker sandbox, commit,
+                        repeat.
+                        Runs AFK until backlog is empty.</div>
+                </div>
             </div>
-            <div class="pipeline-step">
-                <div class="pipeline-cmd"><code>/write-a-prd</code></div>
-                <div class="pipeline-desc">Explore codebase, interview you, sketch module boundaries, write PRD, submit
-                    as GitHub issue.</div>
-            </div>
-            <div class="pipeline-step">
-                <div class="pipeline-cmd"><code>/prd-to-issues</code></div>
-                <div class="pipeline-desc">Break the PRD into vertical slices. Label each AFK or HITL. Create GitHub
-                    issues with dependencies.</div>
-            </div>
-            <div class="pipeline-step">
-                <div class="pipeline-cmd"><code>/do-work</code></div>
-                <div class="pipeline-desc">Understand → Plan → Implement → Validate → Commit. Auto-detects your stack's
-                    feedback loops. Loops until done.</div>
-            </div>
-            <div class="pipeline-step">
-                <div class="pipeline-cmd"><code>shft</code></div>
-                <div class="pipeline-desc">Pick issues from the backlog, implement in a Docker sandbox, commit, repeat.
-                    Runs AFK until backlog is empty.</div>
-            </div>
-        </div>
         </div>
     </section>
 
     <!-- SKILLS -->
     <section class="section fade-in" id="skills">
         <div class="container">
-        <div class="section-num">04 — SKILLS</div>
-        <h2 class="section-title">What the<br>agent <em>knows</em></h2>
+            <div class="section-num">04 — SKILLS</div>
+            <h2 class="section-title">What the<br>agent <em>knows</em></h2>
 
-        <div class="skills-grid">
-            <div class="skill-item">
-                <div class="skill-name"><code>/do-work</code></div>
-                <div class="skill-desc">Understand → Plan → Implement → Validate → Commit</div>
+            <div class="skills-grid">
+                <div class="skill-item">
+                    <div class="skill-name"><code>/do-work</code></div>
+                    <div class="skill-desc">Understand → Plan → Implement → Validate → Commit</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>/grill-me</code></div>
+                    <div class="skill-desc">Interrogate until shared understanding, one question at a time</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>/write-a-prd</code></div>
+                    <div class="skill-desc">Explore, interview, write PRD, submit as GitHub issue</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>/prd-to-issues</code></div>
+                    <div class="skill-desc">Break PRDs into labeled vertical slices</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>technical-fellow</code></div>
+                    <div class="skill-desc">Vertical slices, dependency graphs, acceptance criteria</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>skill-scaffolder</code></div>
+                    <div class="skill-desc">Scaffold new skills from production-tested patterns</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>explore</code></div>
+                    <div class="skill-desc">Decompose, spawn parallel sub-agents, synthesize summary</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>research</code></div>
+                    <div class="skill-desc">Cache exploration into research.md with lifecycle management</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>codebase-audit</code></div>
+                    <div class="skill-desc">Real problems only, grouped by severity. No manufactured issues.</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>improve-architecture</code></div>
+                    <div class="skill-desc">Shallow-module clusters → parallel design agents → GitHub RFC</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>/tdd</code></div>
+                    <div class="skill-desc">Red-green refactor. Failing test → implement → refactor.</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>systematic-debugging</code></div>
+                    <div class="skill-desc">Root-cause-first — investigate → pattern → hypothesis → fix</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
             </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>/grill-me</code></div>
-                <div class="skill-desc">Interrogate until shared understanding, one question at a time</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>/write-a-prd</code></div>
-                <div class="skill-desc">Explore, interview, write PRD, submit as GitHub issue</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>/prd-to-issues</code></div>
-                <div class="skill-desc">Break PRDs into labeled vertical slices</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>technical-fellow</code></div>
-                <div class="skill-desc">Vertical slices, dependency graphs, acceptance criteria</div>
-                <div class="skill-auto">⚡ auto-invoke</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>skill-scaffolder</code></div>
-                <div class="skill-desc">Scaffold new skills from production-tested patterns</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>explore</code></div>
-                <div class="skill-desc">Decompose, spawn parallel sub-agents, synthesize summary</div>
-                <div class="skill-auto">⚡ auto-invoke</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>research</code></div>
-                <div class="skill-desc">Cache exploration into research.md with lifecycle management</div>
-                <div class="skill-auto">⚡ auto-invoke</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>codebase-audit</code></div>
-                <div class="skill-desc">Real problems only, grouped by severity. No manufactured issues.</div>
-                <div class="skill-auto">⚡ auto-invoke</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>improve-architecture</code></div>
-                <div class="skill-desc">Shallow-module clusters → parallel design agents → GitHub RFC</div>
-                <div class="skill-auto">⚡ auto-invoke</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>/tdd</code></div>
-                <div class="skill-desc">Red-green refactor. Failing test → implement → refactor.</div>
-            </div>
-            <div class="skill-item">
-                <div class="skill-name"><code>systematic-debugging</code></div>
-                <div class="skill-desc">Root-cause-first — investigate → pattern → hypothesis → fix</div>
-                <div class="skill-auto">⚡ auto-invoke</div>
-            </div>
-        </div>
 
-        <div
-            style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); display: flex; align-items: center; gap: 1rem;">
-            <span style="color: var(--accent);">+</span>
-            Add private skills: <code style="color: var(--accent);">skills/_local/your-skill/SKILL.md</code> —
-            auto-discovered, gitignored.
-        </div>
+            <div
+                style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); display: flex; align-items: center; gap: 1rem;">
+                <span style="color: var(--accent);">+</span>
+                Add private skills: <code style="color: var(--accent);">skills/_local/your-skill/SKILL.md</code> —
+                auto-discovered, gitignored.
+            </div>
         </div>
     </section>
 
     <!-- AGENTS -->
     <section class="section fade-in">
         <div class="container">
-        <div class="section-num">05 — SUBAGENTS</div>
-        <h2 class="section-title">Isolated<br><em>specialists</em></h2>
+            <div class="section-num">05 — SUBAGENTS</div>
+            <h2 class="section-title">Isolated<br><em>specialists</em></h2>
 
-        <p style="max-width: 56rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
-            Each subagent runs in an isolated context window with its own system prompt and tool restrictions.
-            Exploration stays out of your main conversation.
-        </p>
+            <p style="max-width: 56rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                Each subagent runs in an isolated context window with its own system prompt and tool restrictions.
+                Exploration stays out of your main conversation.
+            </p>
 
-        <div class="agents-grid">
-            <div class="agent-card">
-                <div class="agent-name">code-reviewer</div>
-                <div class="agent-focus">Bugs, security, logic errors — not style nits. Finds what actually matters in a
-                    diff.</div>
-                <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">read-only</span><span
-                        class="badge">persistent memory</span></div>
+            <div class="agents-grid">
+                <div class="agent-card">
+                    <div class="agent-name">code-reviewer</div>
+                    <div class="agent-focus">Bugs, security, logic errors — not style nits. Finds what actually matters
+                        in a
+                        diff.</div>
+                    <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">read-only</span><span
+                            class="badge">persistent memory</span></div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">researcher</div>
+                    <div class="agent-focus">Deep codebase exploration, architecture mapping. Builds a mental model
+                        without
+                        polluting yours.</div>
+                    <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">grep / glob</span><span
+                            class="badge">persistent memory</span></div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">security-auditor</div>
+                    <div class="agent-focus">OWASP Top 10, secrets exposure, config hardening. Paranoid by design.</div>
+                    <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">read-only</span><span
+                            class="badge">persistent memory</span></div>
+                </div>
             </div>
-            <div class="agent-card">
-                <div class="agent-name">researcher</div>
-                <div class="agent-focus">Deep codebase exploration, architecture mapping. Builds a mental model without
-                    polluting yours.</div>
-                <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">grep / glob</span><span
-                        class="badge">persistent memory</span></div>
-            </div>
-            <div class="agent-card">
-                <div class="agent-name">security-auditor</div>
-                <div class="agent-focus">OWASP Top 10, secrets exposure, config hardening. Paranoid by design.</div>
-                <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">read-only</span><span
-                        class="badge">persistent memory</span></div>
-            </div>
-        </div>
         </div>
     </section>
 
     <!-- PRINCIPLES -->
     <section class="section fade-in">
         <div class="container">
-        <div class="section-num">06 — PRINCIPLES</div>
-        <h2 class="section-title">Baked-in<br><em>discipline</em></h2>
+            <div class="section-num">06 — PRINCIPLES</div>
+            <h2 class="section-title">Baked-in<br><em>discipline</em></h2>
 
-        <p
-            style="max-width: 72rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 4rem;">
-            Four behavioral rules in <code>global.instructions.md</code>, addressing the most expensive AI failure modes: building wrong things,
-            overengineering, drive-by refactoring, and vague success criteria — derived from
-            <a href="https://x.com/karpathy/status/2015883857489522876" style="color: var(--accent); text-decoration: none;">Andrej Karpathy's observations on LLM coding pitfalls</a>
-            and adapted here for this workflow to bias toward correctness over speed.
-        </p>
+            <p
+                style="max-width: 72rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 4rem;">
+                Four behavioral rules in <code>global.instructions.md</code>, addressing the most expensive AI failure
+                modes: building wrong things,
+                overengineering, drive-by refactoring, and vague success criteria — derived from
+                <a href="https://x.com/karpathy/status/2015883857489522876"
+                    style="color: var(--accent); text-decoration: none;">Andrej Karpathy's observations on LLM coding
+                    pitfalls</a>
+                and adapted here for this workflow to bias toward correctness over speed.
+            </p>
 
-        <div class="principles">
-            <div class="principle">
-                <div class="principle-num">1</div>
-                <div class="principle-title">Think Before Coding</div>
-                <p class="principle-body">Surface confusion before acting. Present multiple interpretations. Name
-                    assumptions explicitly. Push back when simpler exists. Clarifying questions come before
-                    implementation, not after a wrong turn.</p>
-                <div class="principle-rule">"Stop when confused — ask, never pick an interpretation silently."</div>
-            </div>
-            <div class="principle">
-                <div class="principle-num">2</div>
-                <div class="principle-title">Simplicity First</div>
-                <p class="principle-body">Minimum code that solves the problem. No speculative features. No abstractions
-                    for single-use code. If 200 lines could be 50, rewrite it. Prefer straightforward solutions a senior
-                    engineer would call obvious and maintainable.</p>
-                <div class="principle-rule">"Would a senior engineer say this is overcomplicated? If yes, simplify."
+            <div class="principles">
+                <div class="principle">
+                    <div class="principle-num">1</div>
+                    <div class="principle-title">Think Before Coding</div>
+                    <p class="principle-body">Surface confusion before acting. Present multiple interpretations. Name
+                        assumptions explicitly. Push back when simpler exists. Clarifying questions come before
+                        implementation, not after a wrong turn.</p>
+                    <div class="principle-rule">"Stop when confused — ask, never pick an interpretation silently."</div>
+                </div>
+                <div class="principle">
+                    <div class="principle-num">2</div>
+                    <div class="principle-title">Simplicity First</div>
+                    <p class="principle-body">Minimum code that solves the problem. No speculative features. No
+                        abstractions
+                        for single-use code. If 200 lines could be 50, rewrite it. Prefer straightforward solutions a
+                        senior
+                        engineer would call obvious and maintainable.</p>
+                    <div class="principle-rule">"Would a senior engineer say this is overcomplicated? If yes, simplify."
+                    </div>
+                </div>
+                <div class="principle">
+                    <div class="principle-num">3</div>
+                    <div class="principle-title">Surgical Changes</div>
+                    <p class="principle-body">Touch only what you must. Match existing style exactly. Don't refactor
+                        what
+                        isn't broken. Every changed line traces to the user's request. Mention adjacent issues, but
+                        don't
+                        fold unrelated cleanup into the same diff.</p>
+                    <div class="principle-rule">"Mention unrelated dead code — don't delete it."</div>
+                </div>
+                <div class="principle">
+                    <div class="principle-num">4</div>
+                    <div class="principle-title">Goal-Driven Execution</div>
+                    <p class="principle-body">Define success criteria. Loop until verified. Transform imperative tasks
+                        into
+                        verifiable goals with acceptance criteria at each step. Convert vague asks into outcomes that
+                        can be
+                        tested and proven.</p>
+                    <div class="principle-rule">"Write a test that reproduces it, then make it pass."</div>
                 </div>
             </div>
-            <div class="principle">
-                <div class="principle-num">3</div>
-                <div class="principle-title">Surgical Changes</div>
-                <p class="principle-body">Touch only what you must. Match existing style exactly. Don't refactor what
-                    isn't broken. Every changed line traces to the user's request. Mention adjacent issues, but don't
-                    fold unrelated cleanup into the same diff.</p>
-                <div class="principle-rule">"Mention unrelated dead code — don't delete it."</div>
-            </div>
-            <div class="principle">
-                <div class="principle-num">4</div>
-                <div class="principle-title">Goal-Driven Execution</div>
-                <p class="principle-body">Define success criteria. Loop until verified. Transform imperative tasks into
-                    verifiable goals with acceptance criteria at each step. Convert vague asks into outcomes that can be
-                    tested and proven.</p>
-                <div class="principle-rule">"Write a test that reproduces it, then make it pass."</div>
-            </div>
-        </div>
 
-        <div
-            style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
-            <strong style="color: var(--text); font-family: var(--mono); letter-spacing: 0.08rem;">How you know it's working:</strong>
-            fewer unnecessary diff lines, fewer overengineered rewrites, cleaner scope boundaries, and verification
-            steps that are visible before a task is marked done.
-        </div>
+            <div
+                style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                <strong style="color: var(--text); font-family: var(--mono); letter-spacing: 0.08rem;">How you know it's
+                    working:</strong>
+                fewer unnecessary diff lines, fewer overengineered rewrites, cleaner scope boundaries, and verification
+                steps that are visible before a task is marked done.
+            </div>
         </div>
     </section>
 
     <!-- SECURITY -->
     <section class="section fade-in">
         <div class="container">
-        <div class="section-num">07 — SECURITY</div>
-        <h2 class="section-title">Agents see config,<br><em>never</em> credentials</h2>
+            <div class="section-num">07 — SECURITY</div>
+            <h2 class="section-title">Agents see config,<br><em>never</em> credentials</h2>
 
-        <p style="max-width: 52rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
-            Two tiers. <code>run-with-secrets.sh</code> injects credentials into a child process only — they exist for
-            its lifetime and vanish when it exits. Deny rules block any attempt to read them.
-        </p>
+            <p style="max-width: 52rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                Two tiers. <code>run-with-secrets.sh</code> injects credentials into a child process only — they exist
+                for
+                its lifetime and vanish when it exits. Deny rules block any attempt to read them.
+            </p>
 
-        <table class="secrets-table">
-            <thead>
-                <tr>
-                    <th>File</th>
-                    <th>In Shell?</th>
-                    <th>Agent-Visible?</th>
-                    <th>Contains</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><code style="color: var(--accent);">.env.agent</code></td>
-                    <td class="tag-yes">YES</td>
-                    <td class="tag-yes">YES</td>
-                    <td style="color: var(--text-secondary); font-family: var(--sans);">Usernames, hosts, IDs</td>
-                </tr>
-                <tr>
-                    <td><code style="color: var(--accent);">.env.secrets</code></td>
-                    <td class="tag-no">NO</td>
-                    <td class="tag-no">NO</td>
-                    <td style="color: var(--text-secondary); font-family: var(--sans);">API keys, tokens, passwords</td>
-                </tr>
-            </tbody>
-        </table>
+            <table class="secrets-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>In Shell?</th>
+                        <th>Agent-Visible?</th>
+                        <th>Contains</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code style="color: var(--accent);">.env.agent</code></td>
+                        <td class="tag-yes">YES</td>
+                        <td class="tag-yes">YES</td>
+                        <td style="color: var(--text-secondary); font-family: var(--sans);">Usernames, hosts, IDs</td>
+                    </tr>
+                    <tr>
+                        <td><code style="color: var(--accent);">.env.secrets</code></td>
+                        <td class="tag-no">NO</td>
+                        <td class="tag-no">NO</td>
+                        <td style="color: var(--text-secondary); font-family: var(--sans);">API keys, tokens, passwords
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
-        <div
-            style="margin-top: 1.6rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.6;">
-            Deny rules block <code>env</code>, <code>printenv</code>, <code>cat secrets/*</code>, and
-            <code>echo $*KEY*</code> at the agent level. Agents can't accidentally inherit what they can't see.
-        </div>
+            <div
+                style="margin-top: 1.6rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.6;">
+                Deny rules block <code>env</code>, <code>printenv</code>, <code>cat secrets/*</code>, and
+                <code>echo $*KEY*</code> at the agent level. Agents can't accidentally inherit what they can't see.
+            </div>
         </div>
     </section>
 
     <!-- SHFT -->
     <section class="section fade-in" id="shft">
         <div class="container">
-        <div class="section-num">08 — SHFT</div>
-        <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
+            <div class="section-num">08 — SHFT</div>
+            <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
 
-        <p style="max-width: 54rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
-            Not a framework. A bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for
-            AFK mode, direct on host for HITL. Exits when the backlog is empty.
-        </p>
+            <p style="max-width: 54rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                Not a framework. A bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker
+                for
+                AFK mode, direct on host for HITL. Exits when the backlog is empty.
+            </p>
 
-        <div class="shift-modes">
-            <div class="shift-mode">
-                <div class="shift-mode-label">Human In The Loop</div>
-                <div class="shift-mode-name">HITL</div>
-                <div class="shift-mode-desc">Runs once while you watch. Use when learning, reviewing each step, or
-                    validating a new task type before going fully autonomous.</div>
+            <div class="shift-modes">
+                <div class="shift-mode">
+                    <div class="shift-mode-label">Human In The Loop</div>
+                    <div class="shift-mode-name">HITL</div>
+                    <div class="shift-mode-desc">Runs once while you watch. Use when learning, reviewing each step, or
+                        validating a new task type before going fully autonomous.</div>
+                </div>
+                <div class="shift-mode">
+                    <div class="shift-mode-label">Away From Keyboard</div>
+                    <div class="shift-mode-name afk">AFK</div>
+                    <div class="shift-mode-desc">Loops in Docker sandbox. Claude picks a task, implements, commits,
+                        closes
+                        the issue, picks the next. You review PRs async.</div>
+                </div>
             </div>
-            <div class="shift-mode">
-                <div class="shift-mode-label">Away From Keyboard</div>
-                <div class="shift-mode-name afk">AFK</div>
-                <div class="shift-mode-desc">Loops in Docker sandbox. Claude picks a task, implements, commits, closes
-                    the issue, picks the next. You review PRs async.</div>
-            </div>
-        </div>
 
-        <div
-            style="margin-top: 1.4rem; padding: 1.2rem 1.8rem; border: 1px solid var(--border); font-size: 1.1rem; color: var(--text-dimmer); font-family: var(--sans);">
-            Status: infrastructure ready, testing in HITL mode. Requires Claude Max, Docker Desktop, and 5–10
-            well-formed GitHub issues.
-        </div>
+            <div
+                style="margin-top: 1.4rem; padding: 1.2rem 1.8rem; border: 1px solid var(--border); font-size: 1.1rem; color: var(--text-dimmer); font-family: var(--sans);">
+                Status: infrastructure ready, testing in HITL mode. Requires Claude Max, Docker Desktop, and 5–10
+                well-formed GitHub issues.
+            </div>
         </div>
     </section>
 
     <!-- INSTALL -->
     <section class="section fade-in" id="install">
         <div class="container">
-        <div class="section-num">09 — INSTALLATION</div>
-        <h2 class="section-title">Running in<br><em>minutes</em></h2>
+            <div class="section-num">09 — INSTALLATION</div>
+            <h2 class="section-title">Running in<br><em>minutes</em></h2>
 
-        <div class="install-block">
-            <div class="install-step">
-                <div class="step-num">1</div>
-                <div class="step-content">
-                    <div class="step-title">Clone</div>
-                    <div class="step-code-wrap">
-                        <pre class="step-code">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</pre>
-                        <button class="copy-btn" data-copy="git clone https://github.com/arndvs/ctrl.git ~/dotfiles" aria-label="Copy command">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
-                            <span>Copy</span>
-                        </button>
+            <div class="install-block">
+                <div class="install-step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Clone</div>
+                        <div class="step-code-wrap">
+                            <pre class="step-code">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</pre>
+                            <button class="copy-btn" data-copy="git clone https://github.com/arndvs/ctrl.git ~/dotfiles"
+                                aria-label="Copy command">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                        <div class="step-note">Always clone to ~/dotfiles — hardcoded across 40+ references.</div>
                     </div>
-                    <div class="step-note">Always clone to ~/dotfiles — hardcoded across 40+ references.</div>
                 </div>
-            </div>
-            <div class="install-step">
-                <div class="step-num">2</div>
-                <div class="step-content">
-                    <div class="step-title">Bootstrap</div>
-                    <div class="step-code-wrap">
-                        <pre class="step-code">bash ~/dotfiles/bin/bootstrap.sh</pre>
-                        <button class="copy-btn" data-copy="bash ~/dotfiles/bin/bootstrap.sh" aria-label="Copy command">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
-                            <span>Copy</span>
-                        </button>
+                <div class="install-step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Bootstrap</div>
+                        <div class="step-code-wrap">
+                            <pre class="step-code">bash ~/dotfiles/bin/bootstrap.sh</pre>
+                            <button class="copy-btn" data-copy="bash ~/dotfiles/bin/bootstrap.sh"
+                                aria-label="Copy command">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                        <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates secrets
+                            from templates. Wires shell integration.</div>
                     </div>
-                    <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates secrets
-                        from templates. Wires shell integration.</div>
                 </div>
-            </div>
-            <div class="install-step">
-                <div class="step-num">3</div>
-                <div class="step-content">
-                    <div class="step-title">Configure secrets</div>
-                    <div class="step-code-wrap">
-                        <pre class="step-code">$EDITOR ~/dotfiles/secrets/.env.agent   # non-sensitive config
+                <div class="install-step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Configure secrets</div>
+                        <div class="step-code-wrap">
+                            <pre class="step-code">$EDITOR ~/dotfiles/secrets/.env.agent   # non-sensitive config
 $EDITOR ~/dotfiles/secrets/.env.secrets # API keys and tokens</pre>
-                        <button class="copy-btn" data-copy="$EDITOR ~/dotfiles/secrets/.env.agent&#10;$EDITOR ~/dotfiles/secrets/.env.secrets" aria-label="Copy command">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
-                            <span>Copy</span>
-                        </button>
+                            <button class="copy-btn"
+                                data-copy="$EDITOR ~/dotfiles/secrets/.env.agent&#10;$EDITOR ~/dotfiles/secrets/.env.secrets"
+                                aria-label="Copy command">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="install-step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Sync VS Code settings</div>
+                        <div class="step-code-wrap">
+                            <pre class="step-code">bash ~/dotfiles/bin/sync-settings.sh</pre>
+                            <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh"
+                                aria-label="Copy command">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                        <div class="step-note">Enables the instruction discovery chain. Run with --dry-run first to
+                            preview
+                            changes.</div>
+                    </div>
+                </div>
+                <div class="install-step">
+                    <div class="step-num">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Reload shell</div>
+                        <div class="step-code-wrap">
+                            <pre class="step-code">source ~/.bashrc</pre>
+                            <button class="copy-btn" data-copy="source ~/.bashrc" aria-label="Copy command">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                        <div class="step-note">Activates context detection on cd and secret loading.</div>
                     </div>
                 </div>
             </div>
-            <div class="install-step">
-                <div class="step-num">4</div>
-                <div class="step-content">
-                    <div class="step-title">Sync VS Code settings</div>
-                    <div class="step-code-wrap">
-                        <pre class="step-code">bash ~/dotfiles/bin/sync-settings.sh</pre>
-                        <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh" aria-label="Copy command">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
-                            <span>Copy</span>
-                        </button>
-                    </div>
-                    <div class="step-note">Enables the instruction discovery chain. Run with --dry-run first to preview
-                        changes.</div>
-                </div>
-            </div>
-            <div class="install-step">
-                <div class="step-num">5</div>
-                <div class="step-content">
-                    <div class="step-title">Reload shell</div>
-                    <div class="step-code-wrap">
-                        <pre class="step-code">source ~/.bashrc</pre>
-                        <button class="copy-btn" data-copy="source ~/.bashrc" aria-label="Copy command">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
-                            <span>Copy</span>
-                        </button>
-                    </div>
-                    <div class="step-note">Activates context detection on cd and secret loading.</div>
-                </div>
-            </div>
-        </div>
 
-        <div style="margin-top: 2.4rem; display: flex; gap: 2.4rem; flex-wrap: wrap; align-items: center;">
-            <a href="https://github.com/arndvs/ctrl" class="btn-primary">View on GitHub →</a>
-            <div style="font-size: 1.2rem; color: var(--text-dimmer); display: flex; align-items: center; gap: 0.8rem;">
-                <span style="color: var(--green);">●</span> MIT License &nbsp;·&nbsp; macOS / Linux / WSL
+            <div style="margin-top: 2.4rem; display: flex; gap: 2.4rem; flex-wrap: wrap; align-items: center;">
+                <a href="https://github.com/arndvs/ctrl" class="btn-primary">View on GitHub →</a>
+                <div
+                    style="font-size: 1.2rem; color: var(--text-dimmer); display: flex; align-items: center; gap: 0.8rem;">
+                    <span style="color: var(--green);">●</span> MIT License &nbsp;·&nbsp; macOS / Linux / WSL
+                </div>
             </div>
-        </div>
         </div>
     </section>
 
@@ -1649,25 +1708,26 @@ $EDITOR ~/dotfiles/secrets/.env.secrets # API keys and tokens</pre>
 
     <footer>
         <div class="container">
-        <div>
-            <div class="footer-logo">ctrl<span
-                    style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 0.4rem;">+shft</span></div>
-            <div class="footer-tagline">ctrl defines the rules. shft executes them. One repo syncs instructions, skills,
-                secrets, and autonomous loops across every machine.</div>
-            <div style="margin-top: 1.6rem;">
-                <a href="https://github.com/arndvs/ctrl" class="btn-ghost"
-                    style="font-size: 1.1rem;">github.com/arndvs/ctrl →</a>
+            <div>
+                <div class="footer-logo">ctrl<span
+                        style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 0.4rem;">+shft</span></div>
+                <div class="footer-tagline">ctrl defines the rules. shft executes them. One repo syncs instructions,
+                    skills,
+                    secrets, and autonomous loops across every machine.</div>
+                <div style="margin-top: 1.6rem;">
+                    <a href="https://github.com/arndvs/ctrl" class="btn-ghost"
+                        style="font-size: 1.1rem;">github.com/arndvs/ctrl →</a>
+                </div>
             </div>
-        </div>
-        <div class="footer-note">
-            MIT License<br>
-            Clone to <code style="color: var(--accent);">~/dotfiles</code><br>
-            macOS / Linux / WSL<br>
-            <br>
-            <a href="https://github.com/arndvs/ctrl" class="footer-link">GitHub</a> &nbsp;·&nbsp;
-            <a href="https://github.com/arndvs/ctrl/issues" class="footer-link">Issues</a> &nbsp;·&nbsp;
-            <a href="https://github.com/arndvs/ctrl/blob/main/README.md" class="footer-link">Docs</a>
-        </div>
+            <div class="footer-note">
+                MIT License<br>
+                Clone to <code style="color: var(--accent);">~/dotfiles</code><br>
+                macOS / Linux / WSL<br>
+                <br>
+                <a href="https://github.com/arndvs/ctrl" class="footer-link">GitHub</a> &nbsp;·&nbsp;
+                <a href="https://github.com/arndvs/ctrl/issues" class="footer-link">Issues</a> &nbsp;·&nbsp;
+                <a href="https://github.com/arndvs/ctrl/blob/main/README.md" class="footer-link">Docs</a>
+            </div>
         </div>
     </footer>
 
