@@ -709,8 +709,8 @@
             color: var(--red);
         }
 
-        /* SHIFT */
-        .shift-modes {
+        /* SHFT */
+        .shft-modes {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1px;
@@ -719,17 +719,17 @@
             margin-top: 32px;
         }
 
-        .shift-mode {
+        .shft-mode {
             background: var(--bg);
             padding: 36px 32px;
             transition: background 0.15s;
         }
 
-        .shift-mode:hover {
+        .shft-mode:hover {
             background: var(--surface);
         }
 
-        .shift-mode-label {
+        .shft-mode-label {
             font-size: 10px;
             letter-spacing: 3px;
             text-transform: uppercase;
@@ -737,18 +737,18 @@
             margin-bottom: 12px;
         }
 
-        .shift-mode-name {
+        .shft-mode-name {
             font-family: var(--display);
             font-size: 40px;
             letter-spacing: 4px;
             margin-bottom: 12px;
         }
 
-        .shift-mode-name.afk {
+        .shft-mode-name.afk {
             color: var(--accent);
         }
 
-        .shift-mode-desc {
+        .shft-mode-desc {
             font-family: var(--sans);
             font-size: 13px;
             color: var(--text-dim);
@@ -934,7 +934,7 @@
                 border-bottom: 1px solid var(--border);
             }
 
-            .shift-modes {
+            .shft-modes {
                 grid-template-columns: 1fr;
             }
 
@@ -960,7 +960,7 @@
         <ul class="nav-links">
             <li><a href="#how">how it works</a></li>
             <li><a href="#skills">skills</a></li>
-            <li><a href="#shift">shift</a></li>
+            <li><a href="#shft">shft</a></li>
             <li><a href="#install">install</a></li>
             <li><a href="https://github.com/arndvs/ctrl" class="nav-cta">GitHub</a></li>
         </ul>
@@ -1003,7 +1003,7 @@
                 </div>
                 <div class="terminal-body">
                     <div class="t-dim"># bootstrap in two commands</div>
-                    <div class="t-prompt">git clone github.com/arndvs/ctrl.git ~/dotfiles</div>
+                    <div class="t-prompt">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</div>
                     <div class="t-green">✓ cloned</div>
                     <div>&nbsp;</div>
                     <div class="t-prompt">bash ~/dotfiles/bin/bootstrap.sh</div>
@@ -1096,7 +1096,8 @@
                 <div class="feature-title">Two-Tier Secrets</div>
                 <p class="feature-body">Agents see config, never credentials. <code>run-with-secrets.sh</code> injects
                     API keys into a child process — they vanish on exit. Deny rules block <code>env</code>,
-                    <code>printenv</code>, and <code>cat secrets/*</code>.</p>
+                    <code>printenv</code>, and <code>cat secrets/*</code>.
+                </p>
                 <div class="feature-code">
                     <span class="str">.env.agent &nbsp;&nbsp;</span><span class="cm"># agent-visible config</span><br>
                     <span class="str">.env.secrets </span><span class="cm"># process-scoped only</span><br>
@@ -1108,7 +1109,8 @@
                 <div class="feature-title">Clone Once, Pull Forever</div>
                 <p class="feature-body">Clone to <code>~/dotfiles</code> on your laptop, your VPS, anywhere.
                     <code>git pull</code> updates every machine simultaneously. Bootstrap is idempotent — safe to re-run
-                    anytime.</p>
+                    anytime.
+                </p>
                 <div class="feature-code">
                     <span class="cm"># update everywhere at once</span><br>
                     <span class="kw">cd</span> ~/dotfiles &amp;&amp; <span class="kw">git pull</span><br>
@@ -1145,7 +1147,7 @@
                     feedback loops. Loops until done.</div>
             </div>
             <div class="pipeline-step">
-                <div class="pipeline-cmd"><code>shift</code></div>
+                <div class="pipeline-cmd"><code>shft</code></div>
                 <div class="pipeline-desc">Pick issues from the backlog, implement in a Docker sandbox, commit, repeat.
                     Runs AFK until backlog is empty.</div>
             </div>
@@ -1342,27 +1344,27 @@
         </div>
     </section>
 
-    <!-- SHIFT -->
-    <section class="section fade-in" id="shift">
-        <div class="section-num">08 — SHIFT</div>
-        <h2 class="section-title">ctrl defines the rules.<br><em>shift</em> executes them.</h2>
+    <!-- SHFT -->
+    <section class="section fade-in" id="shft">
+        <div class="section-num">08 — SHFT</div>
+        <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
 
         <p style="max-width: 540px; color: var(--text-dim); font-family: var(--sans); line-height: 1.7;">
             Not a framework. A bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for
             AFK mode, direct on host for HITL. Exits when the backlog is empty.
         </p>
 
-        <div class="shift-modes">
-            <div class="shift-mode">
-                <div class="shift-mode-label">Human In The Loop</div>
-                <div class="shift-mode-name">HITL</div>
-                <div class="shift-mode-desc">Runs once while you watch. Use when learning, reviewing each step, or
+        <div class="shft-modes">
+            <div class="shft-mode">
+                <div class="shft-mode-label">Human In The Loop</div>
+                <div class="shft-mode-name">HITL</div>
+                <div class="shft-mode-desc">Runs once while you watch. Use when learning, reviewing each step, or
                     validating a new task type before going fully autonomous.</div>
             </div>
-            <div class="shift-mode">
-                <div class="shift-mode-label">Away From Keyboard</div>
-                <div class="shift-mode-name afk">AFK</div>
-                <div class="shift-mode-desc">Loops in Docker sandbox. Claude picks a task, implements, commits, closes
+            <div class="shft-mode">
+                <div class="shft-mode-label">Away From Keyboard</div>
+                <div class="shft-mode-name afk">AFK</div>
+                <div class="shft-mode-desc">Loops in Docker sandbox. Claude picks a task, implements, commits, closes
                     the issue, picks the next. You review PRs async.</div>
             </div>
         </div>
@@ -1435,9 +1437,9 @@
     </section>
 
     <div class="ticker">
-        <div class="ticker-inner">ctrl + shift &nbsp;·&nbsp; define the rules &nbsp;·&nbsp; execute the work
+        <div class="ticker-inner">ctrl + shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp; execute the work
             &nbsp;·&nbsp; git pull to update everywhere &nbsp;·&nbsp; credentials vanish on exit &nbsp;·&nbsp; context
-            persists between conversations &nbsp;·&nbsp; ctrl + shift &nbsp;·&nbsp; define the rules &nbsp;·&nbsp;
+            persists between conversations &nbsp;·&nbsp; ctrl + shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp;
             execute the work &nbsp;·&nbsp; git pull to update everywhere &nbsp;·&nbsp; credentials vanish on exit
             &nbsp;·&nbsp; context persists between conversations &nbsp;·&nbsp;</div>
     </div>

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# HITL shift — runs Claude once while you watch.
-# Usage: ./shift/once.sh
+# HITL shft — runs Claude once while you watch.
+# Usage: ./shft/once.sh
 
 set -euo pipefail
 
