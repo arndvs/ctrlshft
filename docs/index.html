@@ -58,6 +58,16 @@
             z-index: 999;
         }
 
+        /* CONTAINER */
+        .container {
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+            padding-left: 40px;
+            padding-right: 40px;
+        }
+
         /* NAV */
         nav {
             position: fixed;
@@ -65,14 +75,17 @@
             left: 0;
             right: 0;
             z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 40px;
             height: 52px;
             border-bottom: 1px solid var(--border);
             background: rgba(8, 8, 8, 0.94);
             backdrop-filter: blur(12px);
+        }
+
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
         }
 
         .nav-logo {
@@ -115,7 +128,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 120px 40px 80px;
+            padding: 120px 0 80px;
             position: relative;
             overflow: hidden;
         }
@@ -243,7 +256,7 @@
 
         .hero-terminal {
             position: absolute;
-            right: 40px;
+            right: max(40px, calc((100vw - 1280px) / 2 + 40px));
             bottom: 80px;
             animation: fadeUp 0.6s 0.5s ease both;
         }
@@ -323,7 +336,7 @@
 
         /* SECTIONS */
         .section {
-            padding: 100px 40px;
+            padding: 100px 0;
             border-top: 1px solid var(--border);
         }
 
@@ -839,7 +852,10 @@
         /* FOOTER */
         footer {
             border-top: 1px solid var(--border);
-            padding: 60px 40px 40px;
+            padding: 60px 0 40px;
+        }
+
+        footer .container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 60px;
@@ -935,8 +951,9 @@
 
         /* RESPONSIVE */
         @media (max-width: 768px) {
-            nav {
-                padding: 0 20px;
+            .container {
+                padding-left: 20px;
+                padding-right: 20px;
             }
 
             .nav-links {
@@ -944,7 +961,7 @@
             }
 
             .hero {
-                padding: 100px 20px 60px;
+                padding: 100px 0 60px;
             }
 
             .hero-terminal {
@@ -952,7 +969,7 @@
             }
 
             .section {
-                padding: 60px 20px;
+                padding: 60px 0;
             }
 
             .pipeline-step {
@@ -968,7 +985,7 @@
                 grid-template-columns: 1fr;
             }
 
-            footer {
+            footer .container {
                 grid-template-columns: 1fr;
             }
 
@@ -986,15 +1003,17 @@
 <body>
 
     <nav>
-        <a href="#" class="nav-logo">ctrl<span
-                style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 2px;">+shft</span></a>
-        <ul class="nav-links">
-            <li><a href="#how">how it works</a></li>
-            <li><a href="#skills">skills</a></li>
-            <li><a href="#shft">shft</a></li>
-            <li><a href="#install">install</a></li>
-            <li><a href="https://github.com/arndvs/ctrl" class="nav-cta">GitHub</a></li>
-        </ul>
+        <div class="container">
+            <a href="#" class="nav-logo">ctrl<span
+                    style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 2px;">+shft</span></a>
+            <ul class="nav-links">
+                <li><a href="#how">how it works</a></li>
+                <li><a href="#skills">skills</a></li>
+                <li><a href="#shft">shft</a></li>
+                <li><a href="#install">install</a></li>
+                <li><a href="https://github.com/arndvs/ctrl" class="nav-cta">GitHub</a></li>
+            </ul>
+        </div>
     </nav>
 
     <!-- HERO -->
@@ -1002,28 +1021,30 @@
         <div class="hero-grid"></div>
         <div class="hero-glow"></div>
 
-        <div class="hero-tag">dotfiles for AI coding agents</div>
+        <div class="container">
+            <div class="hero-tag">dotfiles for AI coding agents</div>
 
-        <h1 class="hero-headline"><span>ctrl</span><span style="color: var(--text-dim);">+shft</span></h1>
-        <p class="hero-sub">ctrl defines the rules. shft executes them.</p>
+            <h1 class="hero-headline"><span>ctrl</span><span style="color: var(--text-dim);">+shft</span></h1>
+            <p class="hero-sub">ctrl defines the rules. shft executes them.</p>
 
-        <p class="hero-desc">
-            Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across
-            every machine.
-            Context that doesn't degrade. Rules that load for your stack. Credentials that vanish when the process
-            exits.
-        </p>
+            <p class="hero-desc">
+                Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across
+                every machine.
+                Context that doesn't degrade. Rules that load for your stack. Credentials that vanish when the process
+                exits.
+            </p>
 
-        <div class="hero-actions">
-            <a href="#install" class="btn-primary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Quick Install
-            </a>
-            <a href="https://github.com/arndvs/ctrl" class="btn-ghost">View on GitHub →</a>
+            <div class="hero-actions">
+                <a href="#install" class="btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Quick Install
+                </a>
+                <a href="https://github.com/arndvs/ctrl" class="btn-ghost">View on GitHub →</a>
+            </div>
         </div>
 
         <div class="hero-terminal">
@@ -1064,6 +1085,7 @@
 
     <!-- PROBLEMS -->
     <section class="section fade-in">
+        <div class="container">
         <div class="section-num">01 — THE PROBLEM</div>
         <h2 class="section-title">Every developer<br>hits the same <em>walls</em></h2>
 
@@ -1093,10 +1115,12 @@
                     PHP project. PHP rules in a Python repo. Noise drowning signal.</p>
             </div>
         </div>
+        </div>
     </section>
 
     <!-- HOW IT WORKS -->
     <section class="section fade-in" id="how">
+        <div class="container">
         <div class="section-num">02 — HOW IT WORKS</div>
         <h2 class="section-title">One repo,<br><em>every</em> machine</h2>
 
@@ -1148,10 +1172,12 @@
                 </div>
             </div>
         </div>
+        </div>
     </section>
 
     <!-- PIPELINE -->
     <section class="section fade-in">
+        <div class="container">
         <div class="section-num">03 — THE PIPELINE</div>
         <h2 class="section-title">Intent to<br><em>commit</em></h2>
 
@@ -1182,10 +1208,12 @@
                     Runs AFK until backlog is empty.</div>
             </div>
         </div>
+        </div>
     </section>
 
     <!-- SKILLS -->
     <section class="section fade-in" id="skills">
+        <div class="container">
         <div class="section-num">04 — SKILLS</div>
         <h2 class="section-title">What the<br>agent <em>knows</em></h2>
 
@@ -1252,10 +1280,12 @@
             Add private skills: <code style="color: var(--accent);">skills/_local/your-skill/SKILL.md</code> —
             auto-discovered, gitignored.
         </div>
+        </div>
     </section>
 
     <!-- AGENTS -->
     <section class="section fade-in">
+        <div class="container">
         <div class="section-num">05 — SUBAGENTS</div>
         <h2 class="section-title">Isolated<br><em>specialists</em></h2>
 
@@ -1286,10 +1316,12 @@
                         class="badge">persistent memory</span></div>
             </div>
         </div>
+        </div>
     </section>
 
     <!-- PRINCIPLES -->
     <section class="section fade-in">
+        <div class="container">
         <div class="section-num">06 — PRINCIPLES</div>
         <h2 class="section-title">Baked-in<br><em>discipline</em></h2>
 
@@ -1330,10 +1362,12 @@
                 <div class="principle-rule">"Write a test that reproduces it, then make it pass."</div>
             </div>
         </div>
+        </div>
     </section>
 
     <!-- SECURITY -->
     <section class="section fade-in">
+        <div class="container">
         <div class="section-num">07 — SECURITY</div>
         <h2 class="section-title">Agents see config,<br><em>never</em> credentials</h2>
 
@@ -1372,10 +1406,12 @@
             Deny rules block <code>env</code>, <code>printenv</code>, <code>cat secrets/*</code>, and
             <code>echo $*KEY*</code> at the agent level. Agents can't accidentally inherit what they can't see.
         </div>
+        </div>
     </section>
 
     <!-- SHFT -->
     <section class="section fade-in" id="shft">
+        <div class="container">
         <div class="section-num">08 — SHFT</div>
         <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
 
@@ -1404,10 +1440,12 @@
             Status: infrastructure ready, testing in HITL mode. Requires Claude Max, Docker Desktop, and 5–10
             well-formed GitHub issues.
         </div>
+        </div>
     </section>
 
     <!-- INSTALL -->
     <section class="section fade-in" id="install">
+        <div class="container">
         <div class="section-num">09 — INSTALLATION</div>
         <h2 class="section-title">Up in<br><em>two</em> commands</h2>
 
@@ -1464,6 +1502,7 @@
                 <span style="color: var(--green);">●</span> MIT License &nbsp;·&nbsp; macOS / Linux / WSL
             </div>
         </div>
+        </div>
     </section>
 
     <div class="ticker">
@@ -1475,6 +1514,7 @@
     </div>
 
     <footer>
+        <div class="container">
         <div>
             <div class="footer-logo">ctrl<span
                     style="color: var(--text-dim); font-size: 0.55em; letter-spacing: 4px;">+shft</span></div>
@@ -1493,6 +1533,7 @@
             <a href="https://github.com/arndvs/ctrl" class="footer-link">GitHub</a> &nbsp;·&nbsp;
             <a href="https://github.com/arndvs/ctrl/issues" class="footer-link">Issues</a> &nbsp;·&nbsp;
             <a href="https://github.com/arndvs/ctrl/blob/main/README.md" class="footer-link">Docs</a>
+        </div>
         </div>
     </footer>
 
