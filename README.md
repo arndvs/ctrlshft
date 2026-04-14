@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/ctrl-inverted.png" alt="ctrl logo" width="200" />
+  <img src="assets/ctrl-shift-logo.jpg" alt="ctrl+shft logo" style="width: 100%; max-width: 862px; height: auto;" />
 </p>
 
 # CTRL
