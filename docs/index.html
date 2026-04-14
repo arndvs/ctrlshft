@@ -479,6 +479,7 @@
             border: 1px solid var(--border);
             padding: 3.2rem;
             transition: border-color 0.2s;
+            min-width: 0;
         }
 
         .feature:hover {
@@ -526,6 +527,8 @@
             font-size: 1.1rem;
             color: var(--text-dim);
             line-height: 1.9;
+            overflow-wrap: break-word;
+            word-break: break-all;
         }
 
         .feature-code .kw {
@@ -599,6 +602,20 @@
             border-right: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
             position: relative;
+            transition: background 0.2s;
+        }
+
+        .principle:hover {
+            background: var(--surface);
+        }
+
+        .principle:hover .principle-num {
+            color: var(--border-bright);
+        }
+
+        .principle:hover .principle-rule {
+            border-left-color: var(--accent);
+            background: var(--accent-dim);
         }
 
         .principle:nth-child(2n) {
@@ -617,6 +634,7 @@
             font-size: 6.4rem;
             color: var(--text-dimmer);
             line-height: 1;
+            transition: color 0.2s;
         }
 
         .principle-title {
@@ -642,6 +660,7 @@
             color: var(--text-secondary);
             font-style: italic;
             font-family: var(--sans);
+            transition: background 0.2s, border-left-color 0.2s;
         }
 
         /* AGENTS */
@@ -819,10 +838,57 @@
             margin-bottom: 0.8rem;
         }
 
+        .step-code-wrap {
+            position: relative;
+            margin-top: 0.6rem;
+        }
+
         .step-code {
+            display: block;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 1rem 4.8rem 1rem 1.4rem;
             font-size: 1.2rem;
+            font-family: var(--mono);
             color: var(--accent);
             line-height: 1.9;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 50%;
+            right: 0.6rem;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dimmer);
+            font-family: var(--mono);
+            font-size: 1rem;
+            letter-spacing: 0.1rem;
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .copy-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .copy-btn.copied {
+            color: var(--green);
+            border-color: var(--green);
+        }
+
+        .copy-btn svg {
+            width: 1.2rem;
+            height: 1.2rem;
+            flex-shrink: 0;
         }
 
         .step-note {
@@ -1052,14 +1118,11 @@
                 <div class="hero-left">
                     <div class="hero-tag">dotfiles for AI coding agents</div>
 
-                    <h1 class="hero-headline"><span>ctrl</span><span style="color: var(--text-dim);">+shft</span></h1>
-                    <p class="hero-sub">ctrl defines the rules. shft executes them.</p>
+                    <h1 class="hero-headline"><span>ctrl</span><span style="color: var(--text-dim); font-size: 0.7em;">+shft</span></h1>
+                    <p class="hero-sub">ctrl defines the rules.<br>shft executes them.</p>
 
                     <p class="hero-desc">
-                        Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across
-                        every machine.
-                        Context that doesn't degrade. Rules that load for your stack. Credentials that vanish when the process
-                        exits.
+                        Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task. Instructions drift between machines. Secrets leak into the conversation. Irrelevant rules load for every project. One repo fixes all four.
                     </p>
 
                     <div class="hero-actions">
@@ -1356,16 +1419,11 @@
         <h2 class="section-title">Baked-in<br><em>discipline</em></h2>
 
         <p
-            style="max-width: 54rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 4rem;">
-            Four behavioral rules in <code>global.instructions.md</code>, addressing the most expensive AI failure
-            modes: building wrong things, overengineering, drive-by refactoring, and vague success criteria.
-        </p>
-
-        <p
-            style="max-width: 72rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 3.2rem;">
-            These principles intentionally bias toward correctness over speed. They force clarification before coding,
-            keep solutions minimal, constrain changes to the actual request, and require explicit verification.
-            The result is fewer speculative edits, fewer rewrites, and cleaner commits that are easier to review and trust.
+            style="max-width: 72rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 4rem;">
+            Four behavioral rules in <code>global.instructions.md</code>, addressing the most expensive AI failure modes: building wrong things,
+            overengineering, drive-by refactoring, and vague success criteria — derived from
+            <a href="https://x.com/karpathy/status/2015883857489522876" style="color: var(--accent); text-decoration: none;">Andrej Karpathy's observations on LLM coding pitfalls</a>
+            and adapted here for this workflow to bias toward correctness over speed.
         </p>
 
         <div class="principles">
@@ -1495,14 +1553,20 @@
     <section class="section fade-in" id="install">
         <div class="container">
         <div class="section-num">09 — INSTALLATION</div>
-        <h2 class="section-title">Up in<br><em>two</em> commands</h2>
+        <h2 class="section-title">Running in<br><em>minutes</em></h2>
 
         <div class="install-block">
             <div class="install-step">
                 <div class="step-num">1</div>
                 <div class="step-content">
                     <div class="step-title">Clone</div>
-                    <div class="step-code">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</div>
+                    <div class="step-code-wrap">
+                        <pre class="step-code">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</pre>
+                        <button class="copy-btn" data-copy="git clone https://github.com/arndvs/ctrl.git ~/dotfiles" aria-label="Copy command">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                            <span>Copy</span>
+                        </button>
+                    </div>
                     <div class="step-note">Always clone to ~/dotfiles — hardcoded across 40+ references.</div>
                 </div>
             </div>
@@ -1510,7 +1574,13 @@
                 <div class="step-num">2</div>
                 <div class="step-content">
                     <div class="step-title">Bootstrap</div>
-                    <div class="step-code">bash ~/dotfiles/bin/bootstrap.sh</div>
+                    <div class="step-code-wrap">
+                        <pre class="step-code">bash ~/dotfiles/bin/bootstrap.sh</pre>
+                        <button class="copy-btn" data-copy="bash ~/dotfiles/bin/bootstrap.sh" aria-label="Copy command">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                            <span>Copy</span>
+                        </button>
+                    </div>
                     <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates secrets
                         from templates. Wires shell integration.</div>
                 </div>
@@ -1519,9 +1589,13 @@
                 <div class="step-num">3</div>
                 <div class="step-content">
                     <div class="step-title">Configure secrets</div>
-                    <div class="step-code">
-                        $EDITOR ~/dotfiles/secrets/.env.agent &nbsp;&nbsp;&nbsp;# non-sensitive config<br>
-                        $EDITOR ~/dotfiles/secrets/.env.secrets &nbsp;# API keys and tokens
+                    <div class="step-code-wrap">
+                        <pre class="step-code">$EDITOR ~/dotfiles/secrets/.env.agent   # non-sensitive config
+$EDITOR ~/dotfiles/secrets/.env.secrets # API keys and tokens</pre>
+                        <button class="copy-btn" data-copy="$EDITOR ~/dotfiles/secrets/.env.agent&#10;$EDITOR ~/dotfiles/secrets/.env.secrets" aria-label="Copy command">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                            <span>Copy</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1529,7 +1603,13 @@
                 <div class="step-num">4</div>
                 <div class="step-content">
                     <div class="step-title">Sync VS Code settings</div>
-                    <div class="step-code">bash ~/dotfiles/bin/sync-settings.sh</div>
+                    <div class="step-code-wrap">
+                        <pre class="step-code">bash ~/dotfiles/bin/sync-settings.sh</pre>
+                        <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh" aria-label="Copy command">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                            <span>Copy</span>
+                        </button>
+                    </div>
                     <div class="step-note">Enables the instruction discovery chain. Run with --dry-run first to preview
                         changes.</div>
                 </div>
@@ -1538,7 +1618,13 @@
                 <div class="step-num">5</div>
                 <div class="step-content">
                     <div class="step-title">Reload shell</div>
-                    <div class="step-code">source ~/.bashrc</div>
+                    <div class="step-code-wrap">
+                        <pre class="step-code">source ~/.bashrc</pre>
+                        <button class="copy-btn" data-copy="source ~/.bashrc" aria-label="Copy command">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                            <span>Copy</span>
+                        </button>
+                    </div>
                     <div class="step-note">Activates context detection on cd and secret loading.</div>
                 </div>
             </div>
@@ -1565,7 +1651,7 @@
         <div class="container">
         <div>
             <div class="footer-logo">ctrl<span
-                    style="color: var(--text-dim); font-size: 0.55em; letter-spacing: 0.4rem;">+shft</span></div>
+                    style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 0.4rem;">+shft</span></div>
             <div class="footer-tagline">ctrl defines the rules. shft executes them. One repo syncs instructions, skills,
                 secrets, and autonomous loops across every machine.</div>
             <div style="margin-top: 1.6rem;">
@@ -1593,6 +1679,21 @@
         }, { threshold: 0.08 });
 
         document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const text = btn.dataset.copy.replace(/&#10;/g, '\n');
+                navigator.clipboard.writeText(text).then(() => {
+                    const span = btn.querySelector('span');
+                    btn.classList.add('copied');
+                    span.textContent = 'Copied!';
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        span.textContent = 'Copy';
+                    }, 2000);
+                });
+            });
+        });
     </script>
 </body>
 
