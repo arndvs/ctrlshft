@@ -1938,18 +1938,26 @@
                     <button class="step-header" type="button" aria-expanded="true">
                         <span class="step-num">1</span>
                         <span class="step-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                            </svg>
                         </span>
                         <span class="step-label">Clone the repository</span>
                         <span class="step-chevron">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
                         </span>
                     </button>
                     <div class="step-body">
                         <div class="step-body-inner">
                             <div class="step-code-wrap">
                                 <pre class="step-code">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</pre>
-                                <button class="copy-btn" data-copy="git clone https://github.com/arndvs/ctrl.git ~/dotfiles" aria-label="Copy command">
+                                <button class="copy-btn"
+                                    data-copy="git clone https://github.com/arndvs/ctrl.git ~/dotfiles"
+                                    aria-label="Copy command">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                                         <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
@@ -1967,18 +1975,26 @@
                     <button class="step-header" type="button" aria-expanded="false">
                         <span class="step-num">2</span>
                         <span class="step-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="4 17 10 11 4 5" />
+                                <line x1="12" x2="20" y1="19" y2="19" />
+                            </svg>
                         </span>
                         <span class="step-label">Run bootstrap script</span>
                         <span class="step-chevron">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
                         </span>
                     </button>
                     <div class="step-body">
                         <div class="step-body-inner">
                             <div class="step-code-wrap">
                                 <pre class="step-code">bash ~/dotfiles/bin/bootstrap.sh</pre>
-                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/bootstrap.sh" aria-label="Copy command">
+                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/bootstrap.sh"
+                                    aria-label="Copy command">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                                         <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
@@ -1986,7 +2002,10 @@
                                     <span>Copy</span>
                                 </button>
                             </div>
-                            <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates secrets from templates. Wires shell integration. Installs Python deps into <code>secrets/.venv</code> (including <code>PyJWT</code> for AFK GitHub App token minting).</div>
+                            <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates
+                                secrets from templates. Wires shell integration. Installs Python deps into
+                                <code>secrets/.venv</code> (including <code>PyJWT</code> for AFK GitHub App token
+                                minting).</div>
                         </div>
                     </div>
                 </div>
@@ -1996,29 +2015,49 @@
                     <button class="step-header" type="button" aria-expanded="false">
                         <span class="step-num">3</span>
                         <span class="step-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
                         </span>
                         <span class="step-label">Configure GitHub App (AFK)</span>
                         <span class="step-chevron">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
                         </span>
                     </button>
                     <div class="step-body">
                         <div class="step-body-inner">
-                            <div class="step-intro">Do this once, in order: create and install the app, set secrets, then validate.</div>
+                            <div class="step-intro">Do this once, in order: create and install the app, set secrets,
+                                then validate.</div>
                             <div class="install-tab-list" role="tablist">
-                                <button class="install-tab-btn active" data-tab="create" role="tab" aria-selected="true">A — Create App</button>
-                                <button class="install-tab-btn" data-tab="secrets" role="tab" aria-selected="false">B — Set Secrets</button>
-                                <button class="install-tab-btn" data-tab="validate" role="tab" aria-selected="false">C — Validate</button>
+                                <button class="install-tab-btn active" data-tab="create" role="tab"
+                                    aria-selected="true">A — Create App</button>
+                                <button class="install-tab-btn" data-tab="secrets" role="tab" aria-selected="false">B —
+                                    Set Secrets</button>
+                                <button class="install-tab-btn" data-tab="validate" role="tab" aria-selected="false">C —
+                                    Validate</button>
                             </div>
 
                             <div class="install-tab-content active" data-tab-panel="create">
                                 <ol class="step-checklist">
-                                    <li><span class="check-num">1</span><span>Create the App at <code>github.com/settings/apps/new</code>.</span></li>
-                                    <li><span class="check-num">2</span><span>Set Homepage URL to your own GitHub dotfiles repository URL (e.g. <code>https://github.com/&lt;you&gt;/dotfiles</code>).</span></li>
-                                    <li><span class="check-num">3</span><span>Use minimum permissions: Contents (R/W), Issues (R/W), Pull requests (R/W), Workflows (R/W only if AFK edits workflow files). Disable webhook.</span></li>
-                                    <li><span class="check-num">4</span><span>Install the app on your target repo (<em>Install App → Only select repositories → pick repo</em>). That should be the same dotfiles repo you created.</span></li>
-                                    <li><span class="check-num">5</span><span>Copy installation ID from <code>github.com/settings/installations/&lt;id&gt;</code>.</span></li>
+                                    <li><span class="check-num">1</span><span>Create the App at
+                                            <code>github.com/settings/apps/new</code>.</span></li>
+                                    <li><span class="check-num">2</span><span>Set Homepage URL to your own GitHub
+                                            dotfiles repository URL (e.g.
+                                            <code>https://github.com/&lt;you&gt;/dotfiles</code>).</span></li>
+                                    <li><span class="check-num">3</span><span>Use minimum permissions: Contents (R/W),
+                                            Issues (R/W), Pull requests (R/W), Workflows (R/W only if AFK edits workflow
+                                            files). Disable webhook.</span></li>
+                                    <li><span class="check-num">4</span><span>Install the app on your target repo
+                                            (<em>Install App → Only select repositories → pick repo</em>). That should
+                                            be the same dotfiles repo you created.</span></li>
+                                    <li><span class="check-num">5</span><span>Copy installation ID from
+                                            <code>github.com/settings/installations/&lt;id&gt;</code>.</span></li>
                                 </ol>
                             </div>
 
@@ -2031,7 +2070,9 @@ $EDITOR ~/dotfiles/secrets/.env.secrets # process-scoped credentials
 GITHUB_APP_ID=...
 GITHUB_APP_INSTALLATION_ID=...
 GITHUB_APP_PRIVATE_KEY_B64=...</pre>
-                                    <button class="copy-btn" data-copy="$EDITOR ~/dotfiles/secrets/.env.agent&#10;$EDITOR ~/dotfiles/secrets/.env.secrets&#10;&#10;GITHUB_APP_ID=...&#10;GITHUB_APP_INSTALLATION_ID=...&#10;GITHUB_APP_PRIVATE_KEY_B64=..." aria-label="Copy command">
+                                    <button class="copy-btn"
+                                        data-copy="$EDITOR ~/dotfiles/secrets/.env.agent&#10;$EDITOR ~/dotfiles/secrets/.env.secrets&#10;&#10;GITHUB_APP_ID=...&#10;GITHUB_APP_INSTALLATION_ID=...&#10;GITHUB_APP_PRIVATE_KEY_B64=..."
+                                        aria-label="Copy command">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                                             <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
@@ -2039,14 +2080,18 @@ GITHUB_APP_PRIVATE_KEY_B64=...</pre>
                                         <span>Copy</span>
                                     </button>
                                 </div>
-                                <div class="step-note">Base64 your private key to one line (Git Bash: <code>base64 -w 0 ~/Downloads/your-app-key.pem</code>) and place all three values in <code>secrets/.env.secrets</code>.</div>
+                                <div class="step-note">Base64 your private key to one line (Git Bash:
+                                    <code>base64 -w 0 ~/Downloads/your-app-key.pem</code>) and place all three values in
+                                    <code>secrets/.env.secrets</code>.</div>
                             </div>
 
                             <div class="install-tab-content" data-tab-panel="validate">
                                 <div class="step-code-wrap">
                                     <pre class="step-code">bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk
 bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
-                                    <button class="copy-btn" data-copy="bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk&#10;bash ~/dotfiles/bin/verify-github-app-token.sh" aria-label="Copy command">
+                                    <button class="copy-btn"
+                                        data-copy="bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk&#10;bash ~/dotfiles/bin/verify-github-app-token.sh"
+                                        aria-label="Copy command">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                                             <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
@@ -2054,26 +2099,41 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                                         <span>Copy</span>
                                     </button>
                                 </div>
-                                <div class="step-note">Expected output: <code>mint_success=yes</code>, <code>expires_at=...</code>, <code>token_len=40</code>.</div>
+                                <div class="step-note">Expected output: <code>mint_success=yes</code>,
+                                    <code>expires_at=...</code>, <code>token_len=40</code>.</div>
                             </div>
 
                             <button class="step-troubleshoot-toggle" type="button">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem;height:1.2rem;flex-shrink:0;display:block">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <line x1="12" x2="12" y1="8" y2="12"/>
-                                    <line x1="12" x2="12.01" y1="16" y2="16"/>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round"
+                                    style="width:1.2rem;height:1.2rem;flex-shrink:0;display:block">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" x2="12" y1="8" y2="12" />
+                                    <line x1="12" x2="12.01" y1="16" y2="16" />
                                 </svg>
                                 <span>Troubleshooting</span>
                                 <span class="t-chevron">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
                                 </span>
                             </button>
                             <div class="step-troubleshoot-body">
-                                <div class="step-note"><strong>Windows:</strong> if <code>python3</code> opens Microsoft Store, AFK scripts use <code>secrets/.venv</code> Python first. Re-run bootstrap.sh if venv is missing.</div>
-                                <div class="step-note">If token minting reports missing <code>PyJWT</code> or <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
-                                <div class="step-note">If minting fails with status=404, recheck installation ID, app install target, and key/app pairing.</div>
-                                <div class="step-note">If a raw token is ever printed, rotate App private key immediately, update <code>GITHUB_APP_PRIVATE_KEY_B64</code>, then rerun mint verification.</div>
-                                <div class="step-note">Full guide: <a href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone" style="color: var(--accent); text-decoration: none;">README → Exact secure setup after clone</a>.</div>
+                                <div class="step-note"><strong>Windows:</strong> if <code>python3</code> opens Microsoft
+                                    Store, AFK scripts use <code>secrets/.venv</code> Python first. Re-run bootstrap.sh
+                                    if venv is missing.</div>
+                                <div class="step-note">If token minting reports missing <code>PyJWT</code> or
+                                    <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
+                                <div class="step-note">If minting fails with status=404, recheck installation ID, app
+                                    install target, and key/app pairing.</div>
+                                <div class="step-note">If a raw token is ever printed, rotate App private key
+                                    immediately, update <code>GITHUB_APP_PRIVATE_KEY_B64</code>, then rerun mint
+                                    verification.</div>
+                                <div class="step-note">Full guide: <a
+                                        href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone"
+                                        style="color: var(--accent); text-decoration: none;">README → Exact secure setup
+                                        after clone</a>.</div>
                             </div>
                         </div>
                     </div>
@@ -2084,18 +2144,26 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                     <button class="step-header" type="button" aria-expanded="false">
                         <span class="step-num">4</span>
                         <span class="step-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                                <path d="M21 3v5h-5" />
+                            </svg>
                         </span>
                         <span class="step-label">Sync VS Code settings</span>
                         <span class="step-chevron">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
                         </span>
                     </button>
                     <div class="step-body">
                         <div class="step-body-inner">
                             <div class="step-code-wrap">
                                 <pre class="step-code">bash ~/dotfiles/bin/sync-settings.sh</pre>
-                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh" aria-label="Copy command">
+                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh"
+                                    aria-label="Copy command">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                                         <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
@@ -2103,7 +2171,8 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                                     <span>Copy</span>
                                 </button>
                             </div>
-                            <div class="step-note">Enables the instruction discovery chain. Run with --dry-run first to preview changes.</div>
+                            <div class="step-note">Enables the instruction discovery chain. Run with --dry-run first to
+                                preview changes.</div>
                         </div>
                     </div>
                 </div>
@@ -2113,11 +2182,18 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                     <button class="step-header" type="button" aria-expanded="false">
                         <span class="step-num">5</span>
                         <span class="step-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="4 17 10 11 4 5" />
+                                <line x1="12" x2="20" y1="19" y2="19" />
+                            </svg>
                         </span>
                         <span class="step-label">Reload shell</span>
                         <span class="step-chevron">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
                         </span>
                     </button>
                     <div class="step-body">
@@ -2125,7 +2201,8 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                             <div class="step-code-wrap">
                                 <pre class="step-code">source ~/.bashrc   # bash
 source ~/.zshrc    # zsh</pre>
-                                <button class="copy-btn" data-copy="source ~/.bashrc&#10;source ~/.zshrc" aria-label="Copy command">
+                                <button class="copy-btn" data-copy="source ~/.bashrc&#10;source ~/.zshrc"
+                                    aria-label="Copy command">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                                         <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
