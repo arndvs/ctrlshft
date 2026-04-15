@@ -1,5 +1,32 @@
 Output "Read Sanity instructions." to chat to acknowledge you read this file.
 
+## Sanity v5 Version Awareness
+
+- Sanity v5 requires React 19.2+.
+- Node.js 20+ is required (introduced as a requirement in the v4 generation and still applies).
+- Studio APIs are stable across v3 → v4 → v5 for most common integrations, so migration is usually dependency and tooling focused rather than API-breakage focused.
+
+## Commands
+
+```bash
+# MCP Setup
+npx sanity@latest mcp configure  # Configure MCP for your AI editor
+
+# Schema & Types
+npx sanity schema deploy     # Deploy schema to Content Lake (REQUIRED before MCP!)
+npx sanity schema extract    # Extract schema for TypeGen
+npx sanity typegen generate  # Generate TypeScript types
+
+# Development
+npx sanity dev               # Start Studio dev server
+npx sanity build             # Build Studio for production
+npx sanity deploy            # Deploy Studio to Sanity hosting
+
+# Help
+npx sanity docs search "query"  # Search Sanity documentation
+npx sanity --help               # List all CLI commands
+```
+
 ## MCP Server Setup
 
 The Sanity MCP server is remote-hosted — no local npm install required.
@@ -18,9 +45,27 @@ Then re-select your editor. To configure for the first time on an existing proje
 sanity mcp configure
 ```
 
-## Authentication Check
+## Knowledge Router
 
-Always call `get_initial_context` first — it must be called before any other tools to initialize context and receive usage instructions. It also returns the active `projectId`, `dataset`, and `apiVersion`.
+If the Sanity MCP server is available, use `list_sanity_rules` and `get_sanity_rules` to load always up-to-date rules on demand. Otherwise, use the sanity-best-practices skill reference files.
+
+**Before modifying any Sanity code:**
+1. Identify which topics apply to your task
+2. Read the corresponding reference file(s) from `skills/sanity-best-practices/references/`
+3. Follow the patterns and constraints defined in those references
+
+See `skills/sanity-best-practices/SKILL.md` for the full reference index.
+
+## Agent Behavior
+
+- Specialize in **Structured Content**, **GROQ**, and **Sanity Studio** configuration.
+- Write best-practice, type-safe code using **Sanity TypeGen**.
+- Build scalable content platforms, not just websites.
+- **Detect the user's framework** from `package.json` and consult the appropriate reference file.
+
+## First Call Guidance
+
+Start by calling `get_schema` before queries or mutations so field names, types, and references are verified from the source of truth.
 
 ## Key Concepts
 
@@ -42,81 +87,129 @@ Always call `get_initial_context` first — it must be called before any other t
 
 ## Available Tools
 
-### Setup & Context
+### Rules & Documentation
 
-| Tool                  | Purpose                                                    |
-| --------------------- | ---------------------------------------------------------- |
-| `get_initial_context` | **Always call first.** Initializes context, returns config |
-| `get_schema`          | Fetch full schema or a specific type's schema              |
-| `list_workspaces`     | List available workspace schema names                      |
-| `get_sanity_config`   | Returns projectId, dataset, apiVersion                     |
+| Tool | Purpose |
+| --- | --- |
+| `list_sanity_rules` | List available Sanity best-practice rule sets |
+| `get_sanity_rules` | Load one or more rule sets for your current task |
+| `search_docs` | Search official Sanity documentation |
+| `read_docs` | Read a specific Sanity doc page |
+| `migration_guide` | Get guides for migrating from other CMSs |
 
 ### Querying
 
-| Tool                      | Purpose                                  |
-| ------------------------- | ---------------------------------------- |
-| `query_documents`         | Execute a GROQ query against the dataset |
-| `get_document`            | Retrieve a document directly by ID       |
-| `search_documents`        | Semantic search via embeddings index     |
-| `list_embeddings_indices` | List available semantic search indices   |
+| Tool | Purpose |
+| --- | --- |
+| `get_schema` | Fetch full schema or a specific schema type before querying |
+| `query_documents` | Execute GROQ queries against a dataset |
+| `get_document` | Retrieve a document by exact ID |
+| `semantic_search` | Semantic search against an embeddings index |
+| `list_embeddings_indices` | List available semantic search indices |
 
 ### Document Operations
 
-| Tool                             | Purpose                                                     |
-| -------------------------------- | ----------------------------------------------------------- |
-| `create_documents_from_json`     | Create documents from JSON (creates drafts by default)      |
-| `create_documents_from_markdown` | Create documents from Markdown                              |
-| `patch_document`                 | Direct field-level patch — preferred over AI mutation tools |
-| `discard_drafts`                 | Discard draft without deleting the published document       |
+| Tool | Purpose |
+| --- | --- |
+| `create_documents_from_json` | Create draft documents from JSON |
+| `create_documents_from_markdown` | Create draft documents from Markdown |
+| `patch_document_from_json` | Apply precise modifications to document fields |
+| `patch_document_from_markdown` | Patch a field using markdown content |
+| `publish_documents` | Publish one or more drafts |
+| `unpublish_documents` | Unpublish documents (move back to drafts) |
+| `discard_drafts` | Discard drafts while keeping published documents |
 
 ### Schema & Deployment
 
-| Tool                        | Purpose                                                 |
-| --------------------------- | ------------------------------------------------------- |
-| `deploy_schema`             | Deploy a schema programmatically                        |
-| `list_sanity_rules`         | List available best-practice agent rules                |
-| `get_sanity_rules`          | Load specific rules (Next.js, GROQ, schemas, SEO, etc.) |
-| `search_docs` / `read_docs` | Search and read official Sanity documentation           |
+| Tool | Purpose |
+| --- | --- |
+| `get_schema` | Get full schema of the current workspace |
+| `list_workspace_schemas` | List all available workspace schema names |
+| `deploy_schema` | Deploy schema types to the cloud |
+
+### Media & AI
+
+| Tool | Purpose |
+| --- | --- |
+| `generate_image` | AI image generation for a document field |
+| `transform_image` | AI transformation of an existing image |
 
 ### Releases & Versions
 
-| Tool             | Purpose                               |
-| ---------------- | ------------------------------------- |
-| `list_releases`  | List content releases for the project |
-| `create_version` | Stage a document into a release       |
-| `discard_drafts` | Discard a draft                       |
+| Tool | Purpose |
+| --- | --- |
+| `list_releases` | List dataset releases |
+| `create_release` | Create a new release |
+| `create_version` | Create a version document for a release |
+| `version_replace_document` | Replace version contents from another document |
+| `version_discard` | Discard document versions from a release |
+| `version_unpublish_document` | Mark document to be unpublished when release runs |
 
 ### Project & Dataset Management
 
-| Tool             | Purpose                                 |
-| ---------------- | --------------------------------------- |
-| `list_projects`  | List all Sanity projects on the account |
-| `find_projects`  | Search projects                         |
-| `list_datasets`  | List datasets in the current project    |
-| `create_dataset` | Create a new dataset                    |
-| `create_project` | Create a new Sanity project             |
+| Tool | Purpose |
+| --- | --- |
+| `list_projects` / `list_organizations` | List projects and organizations |
+| `create_project` | Create a new Sanity project |
+| `list_datasets` / `create_dataset` / `update_dataset` | Manage datasets |
+| `add_cors_origin` | Add CORS origins for client-side requests |
 
-### Other
+**Critical:** After schema changes, deploy with `deploy_schema` before using content tools.
 
-| Tool              | Purpose                                          |
-| ----------------- | ------------------------------------------------ |
-| `generate_image`  | AI-generated image, placed into a document field |
-| `add_cors_origin` | Add a CORS origin to a project                   |
+## TypeGen (v5 CLI Config)
+
+Use `sanity.cli.ts` (not `sanity-typegen.json`) for TypeGen configuration.
+
+Minimum recommended baseline:
+
+- `typegen.enabled: true` so generation runs automatically during `sanity dev` / `sanity build`
+- `typegen.overloadClientMethods: true` for typed `client.fetch()` overloads
+- `schemaExtraction.enabled: true` with a stable extraction path
+- `schemaExtraction.enforceRequiredFields: true` (equivalent to `sanity schema extract --enforce-required-fields`)
+
+Recommended CLI config shape:
+
+```ts
+import { defineCliConfig } from 'sanity/cli'
+
+export default defineCliConfig({
+	reactStrictMode: true,
+	typegen: {
+		enabled: true,
+		path: './src/**/*.{ts,tsx,js,jsx}',
+		schema: './src/sanity/extract.json',
+		generates: './src/sanity/types.ts',
+		overloadClientMethods: true,
+	},
+	schemaExtraction: {
+		enabled: true,
+		path: './src/sanity/extract.json',
+		enforceRequiredFields: true,
+	},
+})
+```
+
+## Next.js Integration Caveats
+
+- Use `defineLive` from `next-sanity/live` (not from `next-sanity`).
+- When adding Live Content API support, centralize fetches through `sanityFetch` and mount `<SanityLive />` in root layout.
+
+## Rule/Docs Conflict Caveat
+
+When MCP rules conflict with actual package exports, verify against the package `exports` map in `package.json` and follow the package exports as source of truth.
 
 ## Common Workflows
 
 **Explore content:**
 
-1. `get_initial_context` → confirm project/dataset
-2. `get_schema` → understand the content model before querying
-3. `query_documents` with GROQ → retrieve content
+1. `get_schema` → understand the content model before querying
+2. `query_documents` with GROQ → retrieve content
 
 **Create or edit a document:**
 
-1. `get_initial_context`
-2. `get_schema` for the relevant type
-3. `create_documents_from_json` or `patch_document` for targeted field edits
-4. Documents are created as **drafts** by default — publish manually in Studio or via a release
+1. `get_schema` for the relevant type
+2. `create_documents_from_json` or `patch_document_from_json` for targeted field edits
+3. Documents are created as **drafts** by default — publish with `publish_documents` or via a release
 
 **Batch publish with a release:**
 
@@ -157,8 +250,23 @@ Always call `get_initial_context` first — it must be called before any other t
 ## Important Caveats
 
 - **Check schema first.** Always call `get_schema` for the relevant type before writing queries or mutations — don't guess field names.
-- **Portable Text (Block content).** Some models struggle to write valid Portable Text. If you're having issues with rich text fields, avoid `create_documents_from_markdown` and use `patch_document` with explicit block structures instead. You can also instruct the agent to skip Portable Text fields and fill them manually in Studio.
+- **Portable Text (Block content).** Some models struggle to write valid Portable Text. If you're having issues with rich text fields, avoid `create_documents_from_markdown` and use `patch_document_from_json` with explicit block structures instead. You can also instruct the agent to skip Portable Text fields and fill them manually in Studio.
 - **Drafts vs. published.** Creating a document via MCP produces a draft (`drafts.` prefix). It is not live until published.
 - **AI credits.** Tool calls that create or modify documents count as Agent Action requests and consume AI credits. Monitor usage in project settings.
 - **Token budgeting.** Large queries are paginated automatically. Responses include a count like "12 of 847 documents" — paginate if you need more.
 - **Permissions.** If you get a 403, check that your OAuth account or API token has the correct role (Editor or Developer) for the project and dataset.
+
+## Boundaries
+
+- **Always:**
+  - Use `defineQuery` for all GROQ queries.
+  - Prefer MCP tools for content operations (query, create, update, patch). For bulk migrations or when MCP is unavailable, NDJSON scripts are a valid alternative. Never use NDJSON scripts when MCP tools can accomplish the same task more simply.
+  - Run `deploy_schema` after schema changes — required before using content tools. If a local Studio exists, update schema files first to keep them in sync with the deployed schema.
+  - Follow the "Deprecation Pattern" when removing fields (ReadOnly → Hidden → Deprecated).
+  - Run `npm run typegen` after schema or query changes (or enable automatic generation with `typegen.enabled: true` in `sanity.cli.ts`).
+- **Ask First:**
+  - Before modifying `sanity.config.ts`.
+  - Before deleting any schema definition file.
+- **Never:**
+  - Hardcode API tokens (use `process.env`).
+  - Use loose types (`any`) for Sanity content.
