@@ -50,6 +50,7 @@ sanity mcp configure
 If the Sanity MCP server is available, use `list_sanity_rules` and `get_sanity_rules` to load always up-to-date rules on demand. Otherwise, use the sanity-best-practices skill reference files.
 
 **Before modifying any Sanity code:**
+
 1. Identify which topics apply to your task
 2. Read the corresponding reference file(s) from `skills/sanity-best-practices/references/`
 3. Follow the patterns and constraints defined in those references
@@ -89,70 +90,70 @@ Start by calling `get_schema` before queries or mutations so field names, types,
 
 ### Rules & Documentation
 
-| Tool | Purpose |
-| --- | --- |
-| `list_sanity_rules` | List available Sanity best-practice rule sets |
-| `get_sanity_rules` | Load one or more rule sets for your current task |
-| `search_docs` | Search official Sanity documentation |
-| `read_docs` | Read a specific Sanity doc page |
-| `migration_guide` | Get guides for migrating from other CMSs |
+| Tool                | Purpose                                          |
+| ------------------- | ------------------------------------------------ |
+| `list_sanity_rules` | List available Sanity best-practice rule sets    |
+| `get_sanity_rules`  | Load one or more rule sets for your current task |
+| `search_docs`       | Search official Sanity documentation             |
+| `read_docs`         | Read a specific Sanity doc page                  |
+| `migration_guide`   | Get guides for migrating from other CMSs         |
 
 ### Querying
 
-| Tool | Purpose |
-| --- | --- |
-| `get_schema` | Fetch full schema or a specific schema type before querying |
-| `query_documents` | Execute GROQ queries against a dataset |
-| `get_document` | Retrieve a document by exact ID |
-| `semantic_search` | Semantic search against an embeddings index |
-| `list_embeddings_indices` | List available semantic search indices |
+| Tool                      | Purpose                                                     |
+| ------------------------- | ----------------------------------------------------------- |
+| `get_schema`              | Fetch full schema or a specific schema type before querying |
+| `query_documents`         | Execute GROQ queries against a dataset                      |
+| `get_document`            | Retrieve a document by exact ID                             |
+| `semantic_search`         | Semantic search against an embeddings index                 |
+| `list_embeddings_indices` | List available semantic search indices                      |
 
 ### Document Operations
 
-| Tool | Purpose |
-| --- | --- |
-| `create_documents_from_json` | Create draft documents from JSON |
-| `create_documents_from_markdown` | Create draft documents from Markdown |
-| `patch_document_from_json` | Apply precise modifications to document fields |
-| `patch_document_from_markdown` | Patch a field using markdown content |
-| `publish_documents` | Publish one or more drafts |
-| `unpublish_documents` | Unpublish documents (move back to drafts) |
-| `discard_drafts` | Discard drafts while keeping published documents |
+| Tool                             | Purpose                                          |
+| -------------------------------- | ------------------------------------------------ |
+| `create_documents_from_json`     | Create draft documents from JSON                 |
+| `create_documents_from_markdown` | Create draft documents from Markdown             |
+| `patch_document_from_json`       | Apply precise modifications to document fields   |
+| `patch_document_from_markdown`   | Patch a field using markdown content             |
+| `publish_documents`              | Publish one or more drafts                       |
+| `unpublish_documents`            | Unpublish documents (move back to drafts)        |
+| `discard_drafts`                 | Discard drafts while keeping published documents |
 
 ### Schema & Deployment
 
-| Tool | Purpose |
-| --- | --- |
-| `get_schema` | Get full schema of the current workspace |
+| Tool                     | Purpose                                   |
+| ------------------------ | ----------------------------------------- |
+| `get_schema`             | Get full schema of the current workspace  |
 | `list_workspace_schemas` | List all available workspace schema names |
-| `deploy_schema` | Deploy schema types to the cloud |
+| `deploy_schema`          | Deploy schema types to the cloud          |
 
 ### Media & AI
 
-| Tool | Purpose |
-| --- | --- |
-| `generate_image` | AI image generation for a document field |
-| `transform_image` | AI transformation of an existing image |
+| Tool              | Purpose                                  |
+| ----------------- | ---------------------------------------- |
+| `generate_image`  | AI image generation for a document field |
+| `transform_image` | AI transformation of an existing image   |
 
 ### Releases & Versions
 
-| Tool | Purpose |
-| --- | --- |
-| `list_releases` | List dataset releases |
-| `create_release` | Create a new release |
-| `create_version` | Create a version document for a release |
-| `version_replace_document` | Replace version contents from another document |
-| `version_discard` | Discard document versions from a release |
+| Tool                         | Purpose                                           |
+| ---------------------------- | ------------------------------------------------- |
+| `list_releases`              | List dataset releases                             |
+| `create_release`             | Create a new release                              |
+| `create_version`             | Create a version document for a release           |
+| `version_replace_document`   | Replace version contents from another document    |
+| `version_discard`            | Discard document versions from a release          |
 | `version_unpublish_document` | Mark document to be unpublished when release runs |
 
 ### Project & Dataset Management
 
-| Tool | Purpose |
-| --- | --- |
-| `list_projects` / `list_organizations` | List projects and organizations |
-| `create_project` | Create a new Sanity project |
-| `list_datasets` / `create_dataset` / `update_dataset` | Manage datasets |
-| `add_cors_origin` | Add CORS origins for client-side requests |
+| Tool                                                  | Purpose                                   |
+| ----------------------------------------------------- | ----------------------------------------- |
+| `list_projects` / `list_organizations`                | List projects and organizations           |
+| `create_project`                                      | Create a new Sanity project               |
+| `list_datasets` / `create_dataset` / `update_dataset` | Manage datasets                           |
+| `add_cors_origin`                                     | Add CORS origins for client-side requests |
 
 **Critical:** After schema changes, deploy with `deploy_schema` before using content tools.
 
@@ -170,23 +171,23 @@ Minimum recommended baseline:
 Recommended CLI config shape:
 
 ```ts
-import { defineCliConfig } from 'sanity/cli'
+import { defineCliConfig } from "sanity/cli";
 
 export default defineCliConfig({
-	reactStrictMode: true,
-	typegen: {
-		enabled: true,
-		path: './src/**/*.{ts,tsx,js,jsx}',
-		schema: './src/sanity/extract.json',
-		generates: './src/sanity/types.ts',
-		overloadClientMethods: true,
-	},
-	schemaExtraction: {
-		enabled: true,
-		path: './src/sanity/extract.json',
-		enforceRequiredFields: true,
-	},
-})
+  reactStrictMode: true,
+  typegen: {
+    enabled: true,
+    path: "./src/**/*.{ts,tsx,js,jsx}",
+    schema: "./src/sanity/extract.json",
+    generates: "./src/sanity/types.ts",
+    overloadClientMethods: true,
+  },
+  schemaExtraction: {
+    enabled: true,
+    path: "./src/sanity/extract.json",
+    enforceRequiredFields: true,
+  },
+});
 ```
 
 ## Next.js Integration Caveats
