@@ -873,42 +873,97 @@
 
         /* INSTALL */
         .install-block {
-            background: var(--surface);
-            border: 1px solid var(--border);
             margin-top: 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
         }
 
         .install-step {
-            display: grid;
-            grid-template-columns: 6rem 1fr;
-            border-bottom: 1px solid var(--border);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            overflow: hidden;
+            transition: border-color 0.2s;
         }
 
-        .install-step:last-child {
-            border-bottom: none;
+        .install-step.open {
+            border-color: var(--border-bright);
+        }
+
+        .step-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 1.4rem;
+            padding: 1.4rem 2rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+
+        .step-header:hover {
+            background: rgba(255, 255, 255, 0.02);
         }
 
         .step-num {
-            border-right: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-family: var(--display);
-            font-size: 2.8rem;
+            font-size: 2.4rem;
             color: var(--text-dimmer);
-            padding: 2rem;
+            width: 3rem;
+            flex-shrink: 0;
+            line-height: 1;
         }
 
-        .step-content {
-            padding: 2rem 2.8rem;
+        .step-icon {
+            color: var(--text-dimmer);
+            flex-shrink: 0;
         }
 
-        .step-title {
-            font-size: 1rem;
-            letter-spacing: 0.2rem;
+        .step-icon svg {
+            width: 1.6rem;
+            height: 1.6rem;
+            display: block;
+        }
+
+        .step-label {
+            flex: 1;
+            font-family: var(--mono);
+            font-size: 1.15rem;
+            letter-spacing: 0.15rem;
             text-transform: uppercase;
-            color: var(--text-dim);
-            margin-bottom: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .step-chevron {
+            color: var(--text-dimmer);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .step-chevron svg {
+            width: 1.4rem;
+            height: 1.4rem;
+            display: block;
+        }
+
+        .install-step.open .step-chevron {
+            transform: rotate(180deg);
+        }
+
+        .step-body {
+            display: none;
+            padding: 0 2rem 2rem 2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .install-step.open .step-body {
+            display: block;
+        }
+
+        .step-body-inner {
+            padding-top: 1.6rem;
         }
 
         .step-code-wrap {
@@ -972,59 +1027,125 @@
         }
 
         .step-intro {
-            margin-top: 0.6rem;
             font-size: 1.15rem;
             color: var(--text-secondary);
             font-family: var(--sans);
             line-height: 1.6;
+            margin-bottom: 1.4rem;
         }
 
-        .step-group {
-            margin-top: 1.4rem;
-            padding: 1.2rem 1.4rem;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.01);
-        }
-
-        .step-group-title {
-            font-size: 0.95rem;
-            letter-spacing: 0.16rem;
-            text-transform: uppercase;
-            color: var(--text-dim);
-            margin-bottom: 0.8rem;
-        }
-
-        .step-list {
-            margin: 0;
-            padding-left: 1.6rem;
-            color: var(--text-secondary);
-            font-family: var(--sans);
-            font-size: 1.08rem;
-            line-height: 1.65;
-        }
-
-        .step-list li+li {
-            margin-top: 0.45rem;
-        }
-
-        .step-troubleshoot {
-            margin-top: 1.2rem;
-            border: 1px solid var(--border);
+        .install-tab-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.4rem;
             background: var(--bg);
-            padding: 0.8rem 1rem;
+            padding: 0.4rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.6rem;
         }
 
-        .step-troubleshoot summary {
-            cursor: pointer;
-            color: var(--text-dim);
+        .install-tab-btn {
+            padding: 0.7rem 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-dimmer);
             font-family: var(--mono);
             font-size: 1rem;
-            letter-spacing: 0.08rem;
+            letter-spacing: 0.1rem;
             text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.15s;
         }
 
-        .step-troubleshoot[open] {
-            border-color: var(--border-bright);
+        .install-tab-btn:hover {
+            color: var(--text-dim);
+        }
+
+        .install-tab-btn.active {
+            background: var(--surface);
+            color: var(--accent);
+            border: 1px solid var(--border-bright);
+        }
+
+        .install-tab-content {
+            display: none;
+        }
+
+        .install-tab-content.active {
+            display: block;
+        }
+
+        .step-checklist {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .step-checklist li {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            font-size: 1.12rem;
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            line-height: 1.55;
+        }
+
+        .check-num {
+            font-family: var(--display);
+            font-size: 1.6rem;
+            color: var(--text-dimmer);
+            width: 2rem;
+            flex-shrink: 0;
+            line-height: 1;
+            padding-top: 0.1rem;
+        }
+
+        .step-troubleshoot-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            background: none;
+            border: none;
+            color: var(--text-dimmer);
+            font-family: var(--mono);
+            font-size: 1.05rem;
+            letter-spacing: 0.1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            padding: 0;
+            margin-top: 1.6rem;
+            transition: color 0.2s;
+        }
+
+        .step-troubleshoot-toggle:hover {
+            color: var(--text-dim);
+        }
+
+        .step-troubleshoot-toggle .t-chevron {
+            transition: transform 0.2s;
+        }
+
+        .step-troubleshoot-toggle .t-chevron svg {
+            width: 1.2rem;
+            height: 1.2rem;
+            display: block;
+        }
+
+        .step-troubleshoot-toggle.open .t-chevron {
+            transform: rotate(180deg);
+        }
+
+        .step-troubleshoot-body {
+            display: none;
+            margin-top: 1rem;
+            padding-left: 1.4rem;
+            border-left: 1px solid var(--border-bright);
+        }
+
+        .step-troubleshoot-body.open {
+            display: block;
         }
 
         /* TICKER */
@@ -1250,42 +1371,18 @@
                 border-right: 1px solid var(--border);
             }
 
-            .install-step {
-                grid-template-columns: 1fr;
+            .step-header {
+                padding: 1.2rem 1.4rem;
+                gap: 1rem;
             }
 
             .step-num {
-                border-right: none;
-                border-bottom: 1px solid var(--border);
-                justify-content: flex-start;
-                padding: 1.2rem 1.8rem;
-                font-size: 2.2rem;
+                font-size: 2rem;
+                width: 2.4rem;
             }
 
-            .step-content {
-                padding: 1.6rem 1.8rem;
-            }
-
-            .step-intro {
-                font-size: 1.08rem;
-                line-height: 1.55;
-            }
-
-            .step-group {
-                margin-top: 1rem;
-                padding: 1rem;
-            }
-
-            .step-group-title {
-                letter-spacing: 0.1rem;
-                font-size: 0.92rem;
-                margin-bottom: 0.6rem;
-            }
-
-            .step-list {
-                font-size: 1.03rem;
-                line-height: 1.6;
-                padding-left: 1.4rem;
+            .step-body {
+                padding: 0 1.4rem 1.6rem;
             }
 
             .step-code {
@@ -1301,13 +1398,10 @@
                 margin-left: auto;
             }
 
-            .step-troubleshoot {
-                margin-top: 1rem;
-                padding: 0.8rem;
-            }
-
-            .step-troubleshoot summary {
+            .install-tab-btn {
+                font-size: 0.875rem;
                 letter-spacing: 0.05rem;
+                padding: 0.6rem 0.5rem;
             }
         }
     </style>
@@ -1838,101 +1932,170 @@
             <h2 class="section-title">Running in<br><em>minutes</em></h2>
 
             <div class="install-block">
-                <div class="install-step">
-                    <div class="step-num">1</div>
-                    <div class="step-content">
-                        <div class="step-title">Clone</div>
-                        <div class="step-code-wrap">
-                            <pre class="step-code">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</pre>
-                            <button class="copy-btn" data-copy="git clone https://github.com/arndvs/ctrl.git ~/dotfiles"
-                                aria-label="Copy command">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-                                </svg>
-                                <span>Copy</span>
-                            </button>
-                        </div>
-                        <div class="step-note">Always clone to ~/dotfiles — hardcoded across 40+ references.</div>
-                    </div>
-                </div>
-                <div class="install-step">
-                    <div class="step-num">2</div>
-                    <div class="step-content">
-                        <div class="step-title">Bootstrap</div>
-                        <div class="step-code-wrap">
-                            <pre class="step-code">bash ~/dotfiles/bin/bootstrap.sh</pre>
-                            <button class="copy-btn" data-copy="bash ~/dotfiles/bin/bootstrap.sh"
-                                aria-label="Copy command">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-                                </svg>
-                                <span>Copy</span>
-                            </button>
-                        </div>
-                        <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates secrets
-                            from templates. Wires shell integration. Installs Python deps into
-                            <code>secrets/.venv</code>
-                            (including <code>PyJWT</code> for AFK GitHub App token minting).</div>
-                    </div>
-                </div>
-                <div class="install-step">
-                    <div class="step-num">3</div>
-                    <div class="step-content">
-                        <div class="step-title">Configure GitHub App credentials (AFK)</div>
-                        <div class="step-intro">Do this once, in order: create and install the app, set secrets, then
-                            validate.</div>
 
-                        <div class="step-group">
-                            <div class="step-group-title">A — Create + install the app</div>
-                            <ol class="step-list">
-                                <li>Create the App at <code>https://github.com/settings/apps/new</code>.</li>
-                                <li>Set Homepage URL to your own GitHub dotfiles repository URL (for example
-                                    <code>https://github.com/&lt;you&gt;/dotfiles</code>).</li>
-                                <li>Use minimum permissions: Contents (R/W), Issues (R/W), Pull requests (R/W), and
-                                    Workflows (R/W only if AFK edits workflow files). Disable webhook for this flow.
-                                </li>
-                                <li>Install the app on your target repo (<em>Install App → Only select repositories →
-                                        pick repo</em>).</li>
-                                <li>Copy installation ID from
-                                    <code>https://github.com/settings/installations/&lt;id&gt;</code>.</li>
-                            </ol>
-                        </div>
-
-                        <div class="step-group">
-                            <div class="step-group-title">B — Set secrets files</div>
+                <!-- Step 1: Clone -->
+                <div class="install-step open" data-step="1">
+                    <button class="step-header" type="button" aria-expanded="true">
+                        <span class="step-num">1</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </span>
+                        <span class="step-label">Clone the repository</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
                             <div class="step-code-wrap">
-                                <pre class="step-code">$EDITOR ~/dotfiles/secrets/.env.agent   # non-sensitive config
+                                <pre class="step-code">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</pre>
+                                <button class="copy-btn" data-copy="git clone https://github.com/arndvs/ctrl.git ~/dotfiles" aria-label="Copy command">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <div class="step-note">Always clone to ~/dotfiles — hardcoded across 40+ references.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Bootstrap -->
+                <div class="install-step" data-step="2">
+                    <button class="step-header" type="button" aria-expanded="false">
+                        <span class="step-num">2</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+                        </span>
+                        <span class="step-label">Run bootstrap script</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
+                            <div class="step-code-wrap">
+                                <pre class="step-code">bash ~/dotfiles/bin/bootstrap.sh</pre>
+                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/bootstrap.sh" aria-label="Copy command">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates secrets from templates. Wires shell integration. Installs Python deps into <code>secrets/.venv</code> (including <code>PyJWT</code> for AFK GitHub App token minting).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: GitHub App (AFK) -->
+                <div class="install-step" data-step="3">
+                    <button class="step-header" type="button" aria-expanded="false">
+                        <span class="step-num">3</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </span>
+                        <span class="step-label">Configure GitHub App (AFK)</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
+                            <div class="step-intro">Do this once, in order: create and install the app, set secrets, then validate.</div>
+                            <div class="install-tab-list" role="tablist">
+                                <button class="install-tab-btn active" data-tab="create" role="tab" aria-selected="true">A — Create App</button>
+                                <button class="install-tab-btn" data-tab="secrets" role="tab" aria-selected="false">B — Set Secrets</button>
+                                <button class="install-tab-btn" data-tab="validate" role="tab" aria-selected="false">C — Validate</button>
+                            </div>
+
+                            <div class="install-tab-content active" data-tab-panel="create">
+                                <ol class="step-checklist">
+                                    <li><span class="check-num">1</span><span>Create the App at <code>github.com/settings/apps/new</code>.</span></li>
+                                    <li><span class="check-num">2</span><span>Set Homepage URL to your own GitHub dotfiles repository URL (e.g. <code>https://github.com/&lt;you&gt;/dotfiles</code>).</span></li>
+                                    <li><span class="check-num">3</span><span>Use minimum permissions: Contents (R/W), Issues (R/W), Pull requests (R/W), Workflows (R/W only if AFK edits workflow files). Disable webhook.</span></li>
+                                    <li><span class="check-num">4</span><span>Install the app on your target repo (<em>Install App → Only select repositories → pick repo</em>). That should be the same dotfiles repo you created.</span></li>
+                                    <li><span class="check-num">5</span><span>Copy installation ID from <code>github.com/settings/installations/&lt;id&gt;</code>.</span></li>
+                                </ol>
+                            </div>
+
+                            <div class="install-tab-content" data-tab-panel="secrets">
+                                <div class="step-code-wrap">
+                                    <pre class="step-code">$EDITOR ~/dotfiles/secrets/.env.agent   # non-sensitive config
 $EDITOR ~/dotfiles/secrets/.env.secrets # process-scoped credentials
 
 # Required for AFK credential rotation:
 GITHUB_APP_ID=...
 GITHUB_APP_INSTALLATION_ID=...
 GITHUB_APP_PRIVATE_KEY_B64=...</pre>
-                                <button class="copy-btn"
-                                    data-copy="$EDITOR ~/dotfiles/secrets/.env.agent&#10;$EDITOR ~/dotfiles/secrets/.env.secrets&#10;&#10;GITHUB_APP_ID=...&#10;GITHUB_APP_INSTALLATION_ID=...&#10;GITHUB_APP_PRIVATE_KEY_B64=..."
-                                    aria-label="Copy command">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-                                    </svg>
-                                    <span>Copy</span>
-                                </button>
+                                    <button class="copy-btn" data-copy="$EDITOR ~/dotfiles/secrets/.env.agent&#10;$EDITOR ~/dotfiles/secrets/.env.secrets&#10;&#10;GITHUB_APP_ID=...&#10;GITHUB_APP_INSTALLATION_ID=...&#10;GITHUB_APP_PRIVATE_KEY_B64=..." aria-label="Copy command">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                        </svg>
+                                        <span>Copy</span>
+                                    </button>
+                                </div>
+                                <div class="step-note">Base64 your private key to one line (Git Bash: <code>base64 -w 0 ~/Downloads/your-app-key.pem</code>) and place all three values in <code>secrets/.env.secrets</code>.</div>
                             </div>
-                            <div class="step-note">Base64 your private key to one line (example Git Bash:
-                                <code>base64 -w 0 ~/Downloads/your-app-key.pem</code>) and place all three values in
-                                <code>secrets/.env.secrets</code>.</div>
-                        </div>
 
-                        <div class="step-group">
-                            <div class="step-group-title">C — Validate + smoke test</div>
-                            <div class="step-code-wrap">
-                                <pre class="step-code">bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk
+                            <div class="install-tab-content" data-tab-panel="validate">
+                                <div class="step-code-wrap">
+                                    <pre class="step-code">bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk
 bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
-                                <button class="copy-btn"
-                                    data-copy="bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk&#10;bash ~/dotfiles/bin/verify-github-app-token.sh"
-                                    aria-label="Copy command">
+                                    <button class="copy-btn" data-copy="bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk&#10;bash ~/dotfiles/bin/verify-github-app-token.sh" aria-label="Copy command">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                        </svg>
+                                        <span>Copy</span>
+                                    </button>
+                                </div>
+                                <div class="step-note">Expected output: <code>mint_success=yes</code>, <code>expires_at=...</code>, <code>token_len=40</code>.</div>
+                            </div>
+
+                            <button class="step-troubleshoot-toggle" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem;height:1.2rem;flex-shrink:0;display:block">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" x2="12" y1="8" y2="12"/>
+                                    <line x1="12" x2="12.01" y1="16" y2="16"/>
+                                </svg>
+                                <span>Troubleshooting</span>
+                                <span class="t-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                </span>
+                            </button>
+                            <div class="step-troubleshoot-body">
+                                <div class="step-note"><strong>Windows:</strong> if <code>python3</code> opens Microsoft Store, AFK scripts use <code>secrets/.venv</code> Python first. Re-run bootstrap.sh if venv is missing.</div>
+                                <div class="step-note">If token minting reports missing <code>PyJWT</code> or <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
+                                <div class="step-note">If minting fails with status=404, recheck installation ID, app install target, and key/app pairing.</div>
+                                <div class="step-note">If a raw token is ever printed, rotate App private key immediately, update <code>GITHUB_APP_PRIVATE_KEY_B64</code>, then rerun mint verification.</div>
+                                <div class="step-note">Full guide: <a href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone" style="color: var(--accent); text-decoration: none;">README → Exact secure setup after clone</a>.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Sync settings -->
+                <div class="install-step" data-step="4">
+                    <button class="step-header" type="button" aria-expanded="false">
+                        <span class="step-num">4</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                        </span>
+                        <span class="step-label">Sync VS Code settings</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
+                            <div class="step-code-wrap">
+                                <pre class="step-code">bash ~/dotfiles/bin/sync-settings.sh</pre>
+                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh" aria-label="Copy command">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                                         <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
@@ -1940,70 +2103,41 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                                     <span>Copy</span>
                                 </button>
                             </div>
-                            <div class="step-note">Expected output includes <code>mint_success=yes</code>,
-                                <code>expires_at=...</code>, and <code>token_len=40</code>.</div>
+                            <div class="step-note">Enables the instruction discovery chain. Run with --dry-run first to preview changes.</div>
                         </div>
+                    </div>
+                </div>
 
-                        <details class="step-troubleshoot">
-                            <summary>Troubleshooting</summary>
-                            <div class="step-note"><strong>Windows note:</strong> if <code>python3</code> opens
-                                Microsoft Store or fails, AFK scripts use <code>secrets/.venv</code> Python first.
-                                Re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code> if venv Python is missing/broken.
-                            </div>
-                            <div class="step-note">If token minting reports missing <code>PyJWT</code> or
-                                <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
-                            <div class="step-note">If minting fails with
-                                <code>[mint-github-app-token] GitHub API error while requesting installation token (status=404)...</code>,
-                                recheck installation ID, app install target, and key/app pairing.</div>
-                            <div class="step-note">If a raw token is ever printed, rotate App private key immediately,
-                                update <code>GITHUB_APP_PRIVATE_KEY_B64</code>, then rerun token-safe mint verification.
-                            </div>
-                            <div class="step-note">Detailed setup guide: <a
-                                    href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone"
-                                    style="color: var(--accent); text-decoration: none;">README → Exact secure setup
-                                    after clone</a>.</div>
-                        </details>
-                    </div>
-                </div>
-                <div class="install-step">
-                    <div class="step-num">4</div>
-                    <div class="step-content">
-                        <div class="step-title">Sync VS Code settings</div>
-                        <div class="step-code-wrap">
-                            <pre class="step-code">bash ~/dotfiles/bin/sync-settings.sh</pre>
-                            <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh"
-                                aria-label="Copy command">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-                                </svg>
-                                <span>Copy</span>
-                            </button>
-                        </div>
-                        <div class="step-note">Enables the instruction discovery chain. Run with --dry-run first to
-                            preview
-                            changes.</div>
-                    </div>
-                </div>
-                <div class="install-step">
-                    <div class="step-num">5</div>
-                    <div class="step-content">
-                        <div class="step-title">Reload shell</div>
-                        <div class="step-code-wrap">
-                            <pre class="step-code">source ~/.bashrc   # bash
+                <!-- Step 5: Reload shell -->
+                <div class="install-step" data-step="5">
+                    <button class="step-header" type="button" aria-expanded="false">
+                        <span class="step-num">5</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+                        </span>
+                        <span class="step-label">Reload shell</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
+                            <div class="step-code-wrap">
+                                <pre class="step-code">source ~/.bashrc   # bash
 source ~/.zshrc    # zsh</pre>
-                            <button class="copy-btn" data-copy="source ~/.bashrc&#10;source ~/.zshrc"
-                                aria-label="Copy command">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-                                </svg>
-                                <span>Copy</span>
-                            </button>
+                                <button class="copy-btn" data-copy="source ~/.bashrc&#10;source ~/.zshrc" aria-label="Copy command">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <div class="step-note">Activates context detection on cd and secret loading.</div>
                         </div>
-                        <div class="step-note">Activates context detection on cd and secret loading.</div>
                     </div>
                 </div>
+
             </div>
 
             <div style="margin-top: 2.4rem; display: flex; gap: 2.4rem; flex-wrap: wrap; align-items: center;">
@@ -2070,6 +2204,40 @@ source ~/.zshrc    # zsh</pre>
                         span.textContent = 'Copy';
                     }, 2000);
                 });
+            });
+        });
+
+        // Install accordion
+        document.querySelectorAll('.install-step .step-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const step = header.closest('.install-step');
+                const isOpen = step.classList.contains('open');
+                step.classList.toggle('open');
+                header.setAttribute('aria-expanded', String(!isOpen));
+            });
+        });
+
+        // Install tabs
+        document.querySelectorAll('.install-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const inner = btn.closest('.step-body-inner');
+                const tab = btn.dataset.tab;
+                inner.querySelectorAll('.install-tab-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                inner.querySelectorAll('.install-tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+                inner.querySelector(`[data-tab-panel="${tab}"]`).classList.add('active');
+            });
+        });
+
+        // Troubleshoot toggle
+        document.querySelectorAll('.step-troubleshoot-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                toggle.classList.toggle('open');
+                toggle.nextElementSibling.classList.toggle('open');
             });
         });
     </script>
