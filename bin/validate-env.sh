@@ -77,6 +77,21 @@ if [[ $_afk_mode -eq 1 ]]; then
 
     echo
     echo "AFK GitHub App Credentials (from secrets/.env.secrets):"
+
+    if command -v jq >/dev/null 2>&1; then
+        green "  ✓ jq"
+    else
+        red "  ✗ jq not found — required by shft/afk.sh token parsing"
+        _fail=1
+    fi
+
+    if command -v sbx >/dev/null 2>&1; then
+        green "  ✓ sbx"
+    else
+        red "  ✗ sbx not found — required by shft/afk.sh sandbox execution"
+        _fail=1
+    fi
+
     _require GITHUB_APP_ID "Required for AFK short-lived token minting"
     _require GITHUB_APP_INSTALLATION_ID "Required for AFK short-lived token minting"
     _require GITHUB_APP_PRIVATE_KEY_B64 "Required for AFK short-lived token minting"
