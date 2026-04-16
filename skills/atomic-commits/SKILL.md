@@ -1,6 +1,6 @@
 ---
 name: atomic-commits
-description: "Use this skill whenever working on a coding task that involves multiple changes, file edits, or feature implementation. Enforces atomic commits — one logical change per commit with a conventional commit message — so work is broken into discrete, independently revertable steps. Trigger this skill any time the user asks to 'commit', 'save progress', 'checkpoint my work', or is doing iterative development, refactoring, bug fixes, or feature additions across multiple files."
+description: "Use this skill whenever work has been completed and needs to be committed. Enforces atomic commits — one logical change per commit with a conventional commit message — so changes are broken into discrete, independently revertable steps. Trigger any time the user asks to 'commit', 'save progress', 'checkpoint my work', or has just finished implementing a feature, fix, or refactor."
 disable-model-invocation: true
 ---
 
@@ -19,65 +19,42 @@ Output "Read Atomic Commits skill." to chat to acknowledge you read this file.
 
 ## Workflow
 
-### 1. Understand
+### 1. Survey the diff
 
-Before touching any files, clarify the full scope of work:
+Start by reviewing everything that changed:
 
-- What is the end goal?
-- What files will change?
-- Are there dependencies between changes?
+```bash
+git diff          # unstaged changes
+git diff --staged # already staged changes
+git status        # full picture of modified/untracked files
+```
 
 Identify natural "seams" — boundaries between distinct logical changes. These become your commit boundaries.
 
-### 2. Plan
+### 2. Group into logical units
 
-Decompose the work into an ordered list of atomic steps. Each step should:
-
-- Have a single clear purpose (fix a bug, add a function, update a config, add a test)
-- Not depend on uncommitted changes from a later step
-- Be completable and verifiable on its own
-
-Write out the plan explicitly before starting. Example:
+Decompose the diff into an ordered commit plan. Each unit should have a single clear purpose:
 
 ```
-
-1. feat: add input validation to login form
-2. test: add unit tests for login validation
-3. refactor: extract validation logic to shared util
-4. chore: update README with validation rules
-
+1. feat(auth): add JWT refresh token rotation
+2. test(auth): cover token rotation edge cases
+3. chore(config): add REFRESH_SECRET env variable
 ```
 
-### 3. Implement
+If a change touches unrelated concerns, split the file-level staging accordingly using `git add -p` for partial file staging.
 
-Work through each step one at a time:
+### 3. Stage and commit each unit
 
-- Make only the changes for the current step
-- Do not mix unrelated changes (e.g., don't fix a typo while adding a feature — that's a separate commit)
-- If you notice something unrelated that needs fixing, note it but do not fix it yet
-
-### 4. Validate
-
-Before staging each commit:
-
-- Confirm the change is isolated — `git diff` should show only what belongs to this commit
-- Confirm the codebase still works (run tests, linter, or build as appropriate)
-- Confirm no unintended files are staged
+Work through each logical unit one at a time:
 
 ```bash
-git diff          # review unstaged changes
-git diff --staged # review staged changes
-git status        # confirm no surprise files
+git add <specific-files>        # stage only what belongs to this commit
+git add -p <file>               # stage partial file changes if needed
+git diff --staged               # confirm exactly what's going in
+git commit -m "<type>(<scope>): <summary>"
 ```
 
-### 5. Commit
-
-Stage only the relevant files for this logical change, then commit with a conventional commit message.
-
-```bash
-git add <specific-files>   # never use `git add .` blindly
-git commit -m "<type>(<scope>): <short summary>"
-```
+Never use `git add .` blindly — always confirm what's staged before committing.
 
 ---
 
@@ -130,9 +107,6 @@ fix(api): return 404 instead of 500 for missing user
 
 ```
 refactor(utils): extract date formatting into shared helper
-
-Three components were duplicating the same locale-aware
-date formatting logic. Centralizing reduces drift risk.
 ```
 
 ---
@@ -151,62 +125,4 @@ date formatting logic. Centralizing reduces drift risk.
 - `WIP`
 - `feat: add search, fix bug, update styles, refactor utils`
 
-If your diff touches unrelated files or your message needs "and" to describe what changed — split it.
-
----
-
-## Handling Work-in-Progress
-
-If you need to context-switch before a logical unit is complete:
-
-```bash
-git stash push -m "wip: <description>"   # stash cleanly
-# or
-git commit -m "wip: <description>"        # commit as WIP, squash later
-```
-
-To squash WIP commits before pushing:
-
-```bash
-git rebase -i HEAD~<n>   # interactive rebase to squash/fixup WIP commits
-```
-
----
-
-## Common Patterns
-
-### Bug fix + test (two commits)
-
-```bash
-git add src/utils/validate.js
-git commit -m "fix(validate): reject empty string as valid email"
-
-git add tests/validate.test.js
-git commit -m "test(validate): add case for empty string email input"
-```
-
-### Refactor before feature (two commits)
-
-```bash
-# First: make the code easy to change
-git add src/auth/
-git commit -m "refactor(auth): extract token parsing to standalone function"
-
-# Then: add the feature
-git add src/auth/ src/middleware/
-git commit -m "feat(auth): support Bearer token in Authorization header"
-```
-
-### Config + code change (two commits)
-
-```bash
-git add .env.example config/defaults.js
-git commit -m "chore(config): add RATE_LIMIT_MAX env variable"
-
-git add src/middleware/rateLimit.js
-git commit -m "feat(rateLimit): apply configurable request rate limiting"
-```
-
-```
-
-```
+If your message needs "and" to describe what changed — split it into two commits.
