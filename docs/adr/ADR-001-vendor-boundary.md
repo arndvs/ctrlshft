@@ -49,7 +49,7 @@ Skills that belong here satisfy **all** of the following:
 - Maintained by repo maintainer(s) — not third-party authored content
 - Adds no framework dependency or credential requirement
 
-**Examples that belong:** `do-work`, `tdd`, `atomic-commits`, `grill-me`, `write-a-prd`, `prd-to-issues`, `skill-scaffolder`, `explore`, `research`, `systematic-debugging`, `codebase-audit`, `improve-architecture`, `technical-fellow`
+**Examples that belong:** `do-work`, `tdd`, `atomic-commits`, `grill-me`, `write-a-prd`, `prd-to-issues`, `skill-scaffolder`, `explore`, `research`, `systematic-debugging`, `codebase-audit`, `improve-architecture`, `architect`
 
 **Examples that do not belong:** Prisma ORM expert, Vercel React optimization, Sanity schema design, any SEO tooling, any client-specific workflow
 
