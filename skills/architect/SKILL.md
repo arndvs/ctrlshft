@@ -99,9 +99,9 @@ PLAN (explore + interrogate) → [carry or clear?] → EXECUTE → TEST → [bug
 
 ### 1. Plan
 
-Run in plan mode (read-only). The model will spawn parallel explore agents to survey the codebase — each has its own context and reports summaries back to the orchestrator. Expect context usage to reach 30–35% before execution even begins.
+Run in plan mode (read-only). The model will spawn multiple parallel Explore agents to survey the codebase — each has its own context and reports summaries back to the orchestrator. Expect context usage to reach 30–35% before execution even begins.
 
-**Do not accept the first plan.** If the model produces a plan without interrogating you, explicitly prompt it to grill you on every design decision. The discussion that happens before the plan is more valuable than the plan itself — it forces shared understanding of requirements that would otherwise be lost.
+**Do not accept the first plan.** If the model produces a plan without without interrogating you, invoke `/grill-me` on every design decision. The discussion that happens before the plan is more valuable than the plan itself. Accepting the first plan skips the shared understanding of requirements that makes execution rote.
 
 ### 2. Carry or Clear?
 
