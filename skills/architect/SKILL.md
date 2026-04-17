@@ -40,7 +40,23 @@ Do not assume missing files exist. If something is absent, flag it as a dependen
 
 ## Output Format
 
-### Vertical Slices
+The plan document must follow this order exactly.
+
+### 1. Context
+
+One paragraph describing the problem being solved and why it matters.
+
+### 2. Design Decisions
+
+A table summarizing every product choice resolved during interrogation. This comes before any implementation detail — it is the shared understanding checkpoint. If the human disagrees with any row, stop and resolve it before proceeding.
+
+| Decision         | Choice                                                 |
+| ---------------- | ------------------------------------------------------ |
+| [e.g. Structure] | [e.g. Flat — simple chronological list, no threading]  |
+| [e.g. Editing]   | [e.g. No editing — comments are immutable once posted] |
+| ...              | ...                                                    |
+
+### 3. Vertical Slices
 
 Each slice must follow this structure:
 
@@ -56,7 +72,7 @@ Feedback loops: [What to run — tests, typecheck, lint, etc.]
 
 ```
 
-### Key Insights
+### 4. Key Insights
 
 Where a critical architectural decision or principle applies:
 
@@ -69,11 +85,11 @@ Risk if ignored: [Consequence]
 
 ```
 
-### Dependency Graph
+### 5. Dependency Graph
 
 Show the execution order and blocking relationships between slices. Use a simple text graph or list — make parallel-safe work obvious.
 
-### QA Plan
+### 6. QA Plan
 
 A final slice (always HITL) that describes how the human verifies everything works together after all other slices are complete.
 
@@ -101,7 +117,7 @@ PLAN (explore + interrogate) → [carry or clear?] → EXECUTE → TEST → [bug
 
 Run in plan mode (read-only). The model will spawn multiple parallel Explore agents to survey the codebase — each has its own context and reports summaries back to the orchestrator. Expect context usage to reach 30–35% before execution even begins.
 
-**Do not accept the first plan.** If the model produces a plan without without interrogating you, invoke `/grill-me` on every design decision. The discussion that happens before the plan is more valuable than the plan itself. Accepting the first plan skips the shared understanding of requirements that makes execution rote.
+**Do not accept the first plan.** If the model produces a plan without interrogating you, invoke `/grill-me` before proceeding — the discussion that happens before the plan is more valuable than the plan itself. Accepting the first plan skips the shared understanding of requirements that makes execution rote.
 
 ### 2. Carry or Clear?
 
