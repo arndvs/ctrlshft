@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/ctrl-shift-logo.jpg" alt="ctrl+shft logo" style="width: 100%; max-width: 862px; height: auto;" />
+  <img src="site/assets/ctrl-shift-logo.jpg" alt="ctrl+shft logo" style="width: 100%; max-width: 862px; height: auto;" />
 </p>
 
 # ctrl
@@ -399,6 +399,12 @@ docker sandbox run claude .
 │   ├── run-with-secrets.sh          process-scoped secret injection
 │   ├── detect-context.sh            exports ACTIVE_CONTEXTS
 │   └── validate-env.sh              env + hardening validation
+├── site/                            ← landing page (ctrlshft.dev)
+│   ├── index.html
+│   ├── CNAME
+│   └── assets/
+├── docs/                            ← architecture decision records
+│   └── adr/
 ├── working/                         ← GITIGNORED — cross-conversation plans
 └── secrets/                         ← GITIGNORED
     ├── .env.agent
