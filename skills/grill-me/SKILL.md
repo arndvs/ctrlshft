@@ -1,7 +1,6 @@
 ---
 name: grill-me
 description: "Interview the user relentlessly about a plan or design until reaching shared understanding. Use when asked to 'grill me', 'interview me', 'ask me questions about this', or before writing a PRD to flesh out vague ideas."
-disable-model-invocation: true
 ---
 
 # Grill Me

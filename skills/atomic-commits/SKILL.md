@@ -1,7 +1,6 @@
 ---
 name: atomic-commits
 description: "Use this skill whenever work has been completed and needs to be committed. Enforces atomic commits — one logical change per commit with a conventional commit message — so changes are broken into discrete, independently revertable steps. Trigger any time the user asks to 'commit', 'save progress', 'checkpoint my work', or has just finished implementing a feature, fix, or refactor."
-disable-model-invocation: true
 ---
 
 # Atomic Commits

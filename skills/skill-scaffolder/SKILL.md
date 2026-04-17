@@ -1,7 +1,6 @@
 ---
 name: skill-scaffolder
 description: "Meta-skill for creating new agent skills that involve multi-step automation, browser navigation, state tracking, evidence capture, and both local (VS Code Insiders) and VPS (Playwright) execution. Use when the user wants to 'create a skill', 'build a new skill', 'scaffold a skill', 'make a skill for X', or describes a multi-step agentic workflow they want to automate."
-disable-model-invocation: true
 ---
 
 # Skill Scaffolder
