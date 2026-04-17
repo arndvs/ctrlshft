@@ -87,16 +87,30 @@ if [[ $_afk_mode -eq 1 ]]; then
     echo
     echo "AFK GitHub App Credentials (from secrets/.env.secrets):"
 
-    # Secrets are only available when run via run-with-secrets.sh.
-    # If not loaded, skip with a hint instead of showing false failures.
-    if [[ -z "${GITHUB_APP_ID:-}" && -z "${GITHUB_APP_INSTALLATION_ID:-}" && -z "${GITHUB_APP_PRIVATE_KEY_B64:-}" ]]; then
-        yellow "  ~ Secrets not loaded — skipping credential checks"
-        yellow "    To validate: bash bin/run-with-secrets.sh bash bin/validate-env.sh --afk"
-    else
-        _require GITHUB_APP_ID "Required for AFK short-lived token minting"
-        _require GITHUB_APP_INSTALLATION_ID "Required for AFK short-lived token minting"
-        _require GITHUB_APP_PRIVATE_KEY_B64 "Required for AFK short-lived token minting"
-    fi
+    # Check env vars first (loaded via run-with-secrets.sh).
+    # If not in env, fall back to checking the .env.secrets file directly.
+    _secrets_file="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/secrets/.env.secrets"
+
+    _require_secret() {
+        local var="$1" hint="$2"
+        local val="${!var:-}"
+        if [[ -n "$val" ]]; then
+            green "  ✓ $var"
+            return 0
+        fi
+        # Not in env — check .env.secrets file
+        if [[ -f "$_secrets_file" ]] && grep -q "^${var}=.\+" "$_secrets_file" 2>/dev/null; then
+            green "  ✓ $var (configured in .env.secrets)"
+            return 0
+        fi
+        red "  ✗ $var is not set — $hint"
+        _fail=1
+        return 1
+    }
+
+    _require_secret GITHUB_APP_ID "Required for AFK short-lived token minting"
+    _require_secret GITHUB_APP_INSTALLATION_ID "Required for AFK short-lived token minting"
+    _require_secret GITHUB_APP_PRIVATE_KEY_B64 "Required for AFK short-lived token minting"
 
     if [[ -n "${GITHUB_APP_INSTALLATION_ID:-}" ]]; then
 
