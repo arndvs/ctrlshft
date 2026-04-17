@@ -1,0 +1,2323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ctrl+shft — dotfiles for AI coding agents</title>
+    <meta name="description"
+        content="ctrl+shft is a dotfiles setup for AI coding agents with persistent context, stack-aware instructions, and secure secret isolation.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="ctrl+shft — dotfiles for AI coding agents">
+    <meta property="og:description"
+        content="ctrl defines the rules. shft executes them. One repo to sync instructions, skills, and secure workflows across every machine.">
+    <meta property="og:url" content="https://ctrlshft.dev/">
+    <meta property="og:image" content="https://ctrlshft.dev/assets/og-repo-card.png">
+    <meta property="og:image:width" content="1280">
+    <meta property="og:image:height" content="640">
+    <meta property="og:image:alt" content="ctrl+shft branding card with terminal-style setup highlights">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ctrl+shft — dotfiles for AI coding agents">
+    <meta name="twitter:description"
+        content="Persistent context. Secret isolation. Stack-aware instructions. ctrl defines the rules, shft executes them.">
+    <meta name="twitter:image" content="https://ctrlshft.dev/assets/og-repo-card.png">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #080808;
+            --surface: #0f0f0f;
+            --border: #1e1e1e;
+            --border-bright: #2e2e2e;
+            --text: #ffffff;
+            --text-secondary: #d1d5dc;
+            --text-dim: #9f9fa9;
+            --text-dimmer: #555;
+            --accent: #e8ff47;
+            --accent-dim: rgba(232, 255, 71, 0.12);
+            --red: #ff4444;
+            --blue: #4488ff;
+            --green: #44ff88;
+            --mono: 'IBM Plex Mono', monospace;
+            --display: 'Bebas Neue', sans-serif;
+            --sans: 'IBM Plex Sans', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 68.75%;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 1.3rem;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 128rem;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+            padding-left: 4rem;
+            padding-right: 4rem;
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            height: 5.2rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(8, 8, 8, 0.94);
+            backdrop-filter: blur(1.2rem);
+        }
+
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .nav-logo {
+            font-family: var(--display);
+            font-size: 2.8rem;
+            letter-spacing: 0.4rem;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 3.2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 1.1rem;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .nav-cta {
+            background: var(--accent) !important;
+            color: #000 !important;
+            padding: 0.6rem 1.6rem;
+            font-weight: 600;
+        }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 12rem 0 8rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 6rem 6rem;
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+            opacity: 0.4;
+        }
+
+        .hero-glow {
+            position: absolute;
+            width: 70rem;
+            height: 70rem;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(232, 255, 71, 0.05) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .hero-tag {
+            font-size: 1.1rem;
+            letter-spacing: 0.3rem;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 2.4rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        .hero-tag::before {
+            content: '';
+            display: block;
+            width: 2.4rem;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        .hero-headline {
+            font-family: var(--display);
+            font-size: clamp(8rem, 14vw, 20rem);
+            line-height: 0.9;
+            letter-spacing: 0.8rem;
+            color: var(--text);
+            margin-bottom: 0.8rem;
+            animation: fadeUp 0.6s 0.1s ease both;
+        }
+
+        .hero-headline span {
+            color: var(--accent);
+        }
+
+        .hero-sub {
+            font-family: var(--display);
+            font-size: clamp(1.8rem, 3vw, 3.8rem);
+            letter-spacing: 0.6rem;
+            color: var(--text-secondary);
+            margin-bottom: 4.8rem;
+            animation: fadeUp 0.6s 0.2s ease both;
+        }
+
+        .hero-desc {
+            max-width: 54rem;
+            color: var(--text-secondary);
+            font-size: 1.3rem;
+            line-height: 1.8;
+            margin-bottom: 4.8rem;
+            font-family: var(--sans);
+            animation: fadeUp 0.6s 0.3s ease both;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            gap: 2.4rem;
+            flex-wrap: wrap;
+            animation: fadeUp 0.6s 0.4s ease both;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--accent);
+            color: #000;
+            padding: 1.2rem 2.4rem;
+            font-family: var(--mono);
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.2rem;
+            text-decoration: none;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 32px rgba(232, 255, 71, 0.25);
+        }
+
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: var(--text-dim);
+            font-family: var(--mono);
+            font-size: 1.2rem;
+            letter-spacing: 0.1rem;
+            text-decoration: none;
+            border-bottom: 1px solid var(--border-bright);
+            padding-bottom: 2px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text);
+            border-color: var(--text-dim);
+        }
+
+        .hero-content {
+            display: flex;
+            align-items: center;
+            gap: 4.8rem;
+        }
+
+        .hero-left {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .hero-terminal {
+            flex-shrink: 0;
+            animation: fadeUp 0.6s 0.5s ease both;
+        }
+
+        /* TERMINAL */
+        .terminal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            width: 42rem;
+            max-width: calc(100vw - 8rem);
+        }
+
+        .terminal-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 1rem 1.4rem;
+            border-bottom: 1px solid var(--border);
+            background: #111;
+        }
+
+        .dot {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+        }
+
+        .dot-r {
+            background: #ff5f57;
+        }
+
+        .dot-y {
+            background: #febc2e;
+        }
+
+        .dot-g {
+            background: #28c840;
+        }
+
+        .terminal-body {
+            padding: 1.6rem 2rem;
+            font-size: 1.2rem;
+            line-height: 1.9;
+        }
+
+        .t-dim {
+            color: var(--text-dimmer);
+        }
+
+        .t-accent {
+            color: var(--accent);
+        }
+
+        .t-green {
+            color: var(--green);
+        }
+
+        .t-prompt::before {
+            content: '$ ';
+            color: var(--accent);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 0.7rem;
+            height: 1.2rem;
+            background: var(--accent);
+            vertical-align: middle;
+            animation: blink 1.2s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* SECTIONS */
+        .section {
+            padding: 10rem 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .section-num {
+            font-size: 1.1rem;
+            letter-spacing: 0.3rem;
+            color: var(--text-dim);
+            margin-bottom: 0.8rem;
+        }
+
+        .section-title {
+            font-family: var(--display);
+            font-size: clamp(4rem, 6vw, 8rem);
+            letter-spacing: 0.4rem;
+            line-height: 1;
+            margin-bottom: 6rem;
+        }
+
+        .section-title em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        @keyframes sheenSweep {
+            0% {
+                transform: translateX(-160%);
+            }
+
+            100% {
+                transform: translateX(160%);
+            }
+        }
+
+        @keyframes sheenTextShift {
+            0% {
+                background-position: 180% 50%;
+            }
+
+            100% {
+                background-position: -180% 50%;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .sheen-cta {
+                position: relative;
+                display: inline-flex;
+                overflow: hidden;
+                isolation: isolate;
+            }
+
+            .sheen-cta::after {
+                content: '';
+                position: absolute;
+                top: -35%;
+                bottom: -35%;
+                left: -120%;
+                width: 36%;
+                transform: translateX(-160%);
+                background: linear-gradient(108deg, transparent 0%, rgba(232, 255, 71, 0.06) 44%, rgba(241, 255, 141, 0.24) 50%, rgba(216, 234, 74, 0.12) 56%, transparent 100%);
+                pointer-events: none;
+                animation: sheenSweep 6.2s linear infinite;
+                z-index: 1;
+            }
+
+            .sheen-text,
+            .section-title em {
+                color: var(--accent);
+                background-image: linear-gradient(108deg, #d9ec4a 0%, var(--accent) 42%, #f1ff8d 50%, var(--accent) 58%, #d9ec4a 100%);
+                background-size: 230% 100%;
+                background-position: 180% 50%;
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+                animation: sheenTextShift 7.2s linear infinite;
+            }
+        }
+
+        /* PROBLEMS */
+        .problems {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+
+        .problem-card {
+            background: var(--bg);
+            padding: 3.6rem 3.2rem;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .problem-card:hover {
+            background: var(--surface);
+        }
+
+        .problem-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-bright);
+            transition: background 0.2s;
+        }
+
+        .problem-card:hover::before {
+            background: var(--red);
+        }
+
+        .problem-icon {
+            font-size: 2.2rem;
+            margin-bottom: 2rem;
+            display: block;
+        }
+
+        .problem-title {
+            font-family: var(--display);
+            font-size: 2.4rem;
+            letter-spacing: 0.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .problem-body {
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            font-size: 1.3rem;
+            line-height: 1.7;
+        }
+
+        /* PIPELINE */
+        .pipeline {
+            border: 1px solid var(--border);
+        }
+
+        .pipeline-step {
+            display: grid;
+            grid-template-columns: 20rem 1fr;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+
+        .pipeline-step:last-child {
+            border-bottom: none;
+        }
+
+        .pipeline-step:hover {
+            background: var(--surface);
+        }
+
+        .pipeline-cmd {
+            padding: 2.2rem 2.8rem;
+            border-right: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+        }
+
+        .pipeline-cmd code {
+            color: var(--accent);
+            font-size: 1.3rem;
+        }
+
+        .pipeline-desc {
+            padding: 2.2rem 2.8rem;
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            font-size: 1.3rem;
+            line-height: 1.6;
+            display: flex;
+            align-items: center;
+        }
+
+        /* FEATURES */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr));
+            gap: 2rem;
+        }
+
+        .feature {
+            border: 1px solid var(--border);
+            padding: 3.2rem;
+            transition: border-color 0.2s;
+            min-width: 0;
+        }
+
+        .feature:hover {
+            border-color: var(--border-bright);
+            box-shadow: 0 0 0 1px rgba(68, 255, 136, 0.12), 0 4px 20px rgba(68, 255, 136, 0.06);
+        }
+
+        .feature-label {
+            font-size: 1rem;
+            letter-spacing: 0.3rem;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 1.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .feature-label::before {
+            content: '';
+            display: block;
+            width: 1.6rem;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        .feature-title {
+            font-family: var(--display);
+            font-size: 2.6rem;
+            letter-spacing: 0.2rem;
+            margin-bottom: 1.4rem;
+        }
+
+        .feature-body {
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            font-size: 1.3rem;
+            line-height: 1.7;
+        }
+
+        .feature-code {
+            margin-top: 1.8rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1.2rem 1.6rem;
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            line-height: 1.9;
+            overflow-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .feature-code .kw {
+            color: var(--accent);
+        }
+
+        .feature-code .str {
+            color: var(--green);
+        }
+
+        .feature-code .cm {
+            color: var(--text-dimmer);
+        }
+
+        /* SKILLS */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+
+        .skill-item {
+            background: var(--bg);
+            padding: 2rem 2.4rem;
+            transition: background 0.15s;
+        }
+
+        .skill-item:hover {
+            background: var(--surface);
+        }
+
+        .skill-name {
+            font-size: 1.2rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .skill-name code {
+            color: var(--accent);
+        }
+
+        .skill-desc {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            line-height: 1.5;
+        }
+
+        .skill-auto {
+            display: inline-block;
+            font-size: 0.9rem;
+            letter-spacing: 0.15rem;
+            text-transform: uppercase;
+            color: var(--accent);
+            border: 1px solid var(--accent-dim);
+            padding: 0.2rem 0.6rem;
+            margin-top: 0.6rem;
+            width: fit-content;
+        }
+
+        /* PRINCIPLES */
+        .principles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
+            border: 1px solid var(--border);
+        }
+
+        .principle {
+            padding: 4rem 3.2rem;
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .principle:hover {
+            background: var(--surface);
+        }
+
+        .principle:hover .principle-num {
+            color: var(--border-bright);
+        }
+
+        .principle:hover .principle-rule {
+            border-left-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .principle:nth-child(2n) {
+            border-right: none;
+        }
+
+        .principle:nth-last-child(-n+2) {
+            border-bottom: none;
+        }
+
+        .principle-num {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            font-family: var(--display);
+            font-size: 6.4rem;
+            color: var(--text-dimmer);
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .principle-title {
+            font-family: var(--display);
+            font-size: 2.2rem;
+            letter-spacing: 0.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .principle-body {
+            font-family: var(--sans);
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .principle-rule {
+            margin-top: 1.6rem;
+            padding: 1.2rem 1.4rem;
+            background: var(--surface);
+            border-left: 2px solid var(--accent);
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            font-family: var(--sans);
+            transition: background 0.2s, border-left-color 0.2s;
+        }
+
+        /* AGENTS */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+            gap: 1.6rem;
+            margin-top: 3.2rem;
+        }
+
+        .agent-card {
+            border: 1px solid var(--border);
+            padding: 2.8rem;
+            transition: border-color 0.2s;
+        }
+
+        .agent-card:hover {
+            border-color: var(--blue);
+        }
+
+        .agent-name {
+            font-family: var(--display);
+            font-size: 2.2rem;
+            letter-spacing: 0.2rem;
+            margin-bottom: 0.8rem;
+            color: var(--blue);
+        }
+
+        .agent-focus {
+            font-family: var(--sans);
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .agent-meta {
+            margin-top: 1.6rem;
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            font-size: 1rem;
+            letter-spacing: 0.1rem;
+            padding: 0.3rem 0.8rem;
+            border: 1px solid var(--border-bright);
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        /* SECRETS TABLE */
+        .secrets-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 3.2rem;
+            font-size: 1.2rem;
+        }
+
+        .secrets-table th {
+            text-align: left;
+            padding: 1.2rem 2rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-dim);
+            font-weight: 400;
+            letter-spacing: 0.2rem;
+            font-size: 1rem;
+            text-transform: uppercase;
+        }
+
+        .secrets-table td {
+            padding: 1.4rem 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .secrets-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .secrets-table tr:hover td {
+            background: var(--surface);
+        }
+
+        .tag-yes {
+            color: var(--green);
+        }
+
+        .tag-no {
+            color: var(--red);
+        }
+
+        /* SHIFT */
+        .shift-modes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            margin-top: 3.2rem;
+        }
+
+        .shift-mode {
+            background: var(--bg);
+            padding: 3.6rem 3.2rem;
+            transition: background 0.15s;
+        }
+
+        .shift-mode:hover {
+            background: var(--surface);
+        }
+
+        .shift-mode-label {
+            font-size: 1rem;
+            letter-spacing: 0.3rem;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 1.2rem;
+        }
+
+        .shift-mode-name {
+            font-family: var(--display);
+            font-size: 4rem;
+            letter-spacing: 0.4rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .shift-mode-name.afk {
+            color: var(--accent);
+        }
+
+        .shift-mode-desc {
+            font-family: var(--sans);
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* INSTALL */
+        .install-block {
+            margin-top: 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .install-step {
+            border: 1px solid var(--border);
+            background: var(--surface);
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .install-step.open {
+            border-color: var(--border-bright);
+        }
+
+        .step-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 1.4rem;
+            padding: 1.4rem 2rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+
+        .step-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .step-num {
+            font-family: var(--display);
+            font-size: 2.4rem;
+            color: var(--text-dimmer);
+            width: 3rem;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .step-icon {
+            color: var(--text-dimmer);
+            flex-shrink: 0;
+        }
+
+        .step-icon svg {
+            width: 1.6rem;
+            height: 1.6rem;
+            display: block;
+        }
+
+        .step-label {
+            flex: 1;
+            font-family: var(--mono);
+            font-size: 1.15rem;
+            letter-spacing: 0.15rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .step-chevron {
+            color: var(--text-dimmer);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .step-chevron svg {
+            width: 1.4rem;
+            height: 1.4rem;
+            display: block;
+        }
+
+        .install-step.open .step-chevron {
+            transform: rotate(180deg);
+        }
+
+        .step-body {
+            display: none;
+            padding: 0 2rem 2rem 2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .install-step.open .step-body {
+            display: block;
+        }
+
+        .step-body-inner {
+            padding-top: 1.6rem;
+        }
+
+        .step-code-wrap {
+            position: relative;
+            margin-top: 0.6rem;
+        }
+
+        .step-code {
+            display: block;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 1rem 4.8rem 1rem 1.4rem;
+            font-size: 1.2rem;
+            font-family: var(--mono);
+            color: var(--accent);
+            line-height: 1.9;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 50%;
+            right: 0.6rem;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dimmer);
+            font-family: var(--mono);
+            font-size: 1rem;
+            letter-spacing: 0.1rem;
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .copy-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .copy-btn.copied {
+            color: var(--green);
+            border-color: var(--green);
+        }
+
+        .copy-btn svg {
+            width: 1.2rem;
+            height: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .step-note {
+            margin-top: 0.6rem;
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            font-family: var(--sans);
+        }
+
+        .step-intro {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            line-height: 1.6;
+            margin-bottom: 1.4rem;
+        }
+
+        .install-tab-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.4rem;
+            background: var(--bg);
+            padding: 0.4rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.6rem;
+        }
+
+        .install-tab-btn {
+            padding: 0.7rem 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-dimmer);
+            font-family: var(--mono);
+            font-size: 1rem;
+            letter-spacing: 0.1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .install-tab-btn:hover {
+            color: var(--text-dim);
+        }
+
+        .install-tab-btn.active {
+            background: var(--surface);
+            color: var(--accent);
+            border: 1px solid var(--border-bright);
+        }
+
+        .install-tab-content {
+            display: none;
+        }
+
+        .install-tab-content.active {
+            display: block;
+        }
+
+        .step-checklist {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .step-checklist li {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            font-size: 1.12rem;
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            line-height: 1.55;
+        }
+
+        .check-num {
+            font-family: var(--display);
+            font-size: 1.6rem;
+            color: var(--text-dimmer);
+            width: 2rem;
+            flex-shrink: 0;
+            line-height: 1;
+            padding-top: 0.1rem;
+        }
+
+        .step-troubleshoot-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            background: none;
+            border: none;
+            color: var(--text-dimmer);
+            font-family: var(--mono);
+            font-size: 1.05rem;
+            letter-spacing: 0.1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            padding: 0;
+            margin-top: 1.6rem;
+            transition: color 0.2s;
+        }
+
+        .step-troubleshoot-toggle:hover {
+            color: var(--text-dim);
+        }
+
+        .step-troubleshoot-toggle .t-chevron {
+            transition: transform 0.2s;
+        }
+
+        .step-troubleshoot-toggle .t-chevron svg {
+            width: 1.2rem;
+            height: 1.2rem;
+            display: block;
+        }
+
+        .step-troubleshoot-toggle.open .t-chevron {
+            transform: rotate(180deg);
+        }
+
+        .step-troubleshoot-body {
+            display: none;
+            margin-top: 1rem;
+            padding-left: 1.4rem;
+            border-left: 1px solid var(--border-bright);
+        }
+
+        .step-troubleshoot-body.open {
+            display: block;
+        }
+
+        /* TICKER */
+        .ticker {
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 1.2rem 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .ticker-inner {
+            display: inline-block;
+            animation: scroll 30s linear infinite;
+            font-size: 1.1rem;
+            letter-spacing: 0.4rem;
+            color: var(--text-dimmer);
+            text-transform: uppercase;
+        }
+
+        @keyframes scroll {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 6rem 0 4rem;
+        }
+
+        footer .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6rem;
+            align-items: end;
+        }
+
+        .footer-logo {
+            font-family: var(--display);
+            font-size: 5.2rem;
+            letter-spacing: 0.8rem;
+            color: var(--accent);
+            margin-bottom: 1.6rem;
+        }
+
+        .footer-tagline {
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            font-size: 1.3rem;
+            line-height: 1.6;
+            max-width: 32rem;
+        }
+
+        .footer-note {
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            line-height: 2;
+            font-family: var(--sans);
+            text-align: right;
+        }
+
+        .footer-link {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(1.6rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(2rem);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* REDUCED MOTION */
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .fade-in {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+
+            .ticker-inner {
+                animation: none;
+            }
+
+            .cursor {
+                animation: none;
+                opacity: 1;
+            }
+
+            .sheen-cta::after,
+            .sheen-text {
+                animation: none !important;
+            }
+
+            .sheen-text,
+            .section-title em {
+                background: none !important;
+                -webkit-text-fill-color: currentColor !important;
+                color: var(--accent) !important;
+            }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .hero {
+                min-height: auto;
+            }
+
+            .hero-content {
+                flex-direction: column;
+            }
+
+            .hero-terminal {
+                width: 100%;
+            }
+
+            .hero-terminal .terminal {
+                width: 100%;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding-left: 2rem;
+                padding-right: 2rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                padding: 10rem 0 6rem;
+            }
+
+            .section {
+                padding: 6rem 0;
+            }
+
+            .pipeline-step {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline-cmd {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .shift-modes {
+                grid-template-columns: 1fr;
+            }
+
+            footer .container {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-note {
+                text-align: left;
+            }
+
+            .secrets-table {
+                table-layout: fixed;
+                font-size: 1.1rem;
+            }
+
+            .secrets-table th {
+                padding: 1rem;
+                letter-spacing: 0.08rem;
+                font-size: 0.95rem;
+            }
+
+            .secrets-table td {
+                padding: 1.1rem 1rem;
+                word-break: break-word;
+            }
+
+            .secrets-table td code {
+                word-break: break-all;
+            }
+
+            .principle:nth-child(2n) {
+                border-right: 1px solid var(--border);
+            }
+
+            .step-header {
+                padding: 1.2rem 1.4rem;
+                gap: 1rem;
+            }
+
+            .step-num {
+                font-size: 2rem;
+                width: 2.4rem;
+            }
+
+            .step-body {
+                padding: 0 1.4rem 1.6rem;
+            }
+
+            .step-code {
+                padding: 1rem 1.2rem;
+                line-height: 1.75;
+                word-break: break-word;
+            }
+
+            .step-code-wrap .copy-btn {
+                position: static;
+                transform: none;
+                margin-top: 0.8rem;
+                margin-left: auto;
+            }
+
+            .install-tab-btn {
+                font-size: 0.875rem;
+                letter-spacing: 0.05rem;
+                padding: 0.6rem 0.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <div class="container">
+            <a href="#" class="nav-logo"><span class="sheen-text">ctrl</span><span
+                    style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 0.2rem;">+shft</span></a>
+            <ul class="nav-links">
+                <li><a href="#how">how it works</a></li>
+                <li><a href="#skills">skills</a></li>
+                <li><a href="#shft">shft</a></li>
+                <li><a href="#install">install</a></li>
+                <li><a href="https://github.com/arndvs/ctrl" class="nav-cta sheen-cta">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-grid"></div>
+        <div class="hero-glow"></div>
+
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-left">
+                    <div class="hero-tag">dotfiles for AI coding agents</div>
+
+                    <h1 class="hero-headline"><span class="sheen-text">ctrl</span><span
+                            style="color: var(--text-dim); font-size: 0.7em;">+shft</span></h1>
+                    <p class="hero-sub">ctrl defines the rules.<br>shft executes them.</p>
+
+                    <p class="hero-desc">
+                        Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task.
+                        Instructions drift between machines. Secrets leak into the conversation. Irrelevant rules load
+                        for every project. One repo fixes all four — and hardens AFK Docker runs with per-iteration,
+                        short-lived credentials instead of long-lived token reuse.
+                    </p>
+
+                    <div class="hero-actions">
+                        <a href="#install" class="btn-primary">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            Quick Install
+                        </a>
+                        <a href="https://github.com/arndvs/ctrl" class="btn-ghost sheen-cta">View on GitHub →</a>
+                    </div>
+                </div>
+
+                <div class="hero-terminal">
+                    <div class="terminal">
+                        <div class="terminal-bar">
+                            <div class="dot dot-r"></div>
+                            <div class="dot dot-y"></div>
+                            <div class="dot dot-g"></div>
+                        </div>
+                        <div class="terminal-body">
+                            <div class="t-dim"># bootstrap in two commands</div>
+                            <div class="t-prompt">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</div>
+                            <div class="t-green">✓ cloned</div>
+                            <div>&nbsp;</div>
+                            <div class="t-prompt">bash ~/dotfiles/bin/bootstrap.sh</div>
+                            <div class="t-green">✓ CLAUDE.md symlinked</div>
+                            <div class="t-green">✓ instructions loaded via CLAUDE.md</div>
+                            <div class="t-green">✓ skills/ → ~/.claude/skills/</div>
+                            <div class="t-green">✓ agents/ → ~/.claude/agents/</div>
+                            <div class="t-green">✓ rules/ → ~/.claude/rules/</div>
+                            <div class="t-green">✓ secrets/ created from templates</div>
+                            <div class="t-green">✓ shell integration wired</div>
+                            <div class="t-green">✓ Python .venv deps installed (incl. PyJWT)</div>
+                            <div class="t-green">✓ supply chain hardened</div>
+                            <div>&nbsp;</div>
+                            <div class="t-dim"># ready <span class="cursor"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="ticker">
+        <div class="ticker-inner">context integrity &nbsp;·&nbsp; cross-machine sync &nbsp;·&nbsp; secret isolation
+            &nbsp;·&nbsp; progressive context loading &nbsp;·&nbsp; autonomous loops &nbsp;·&nbsp; surgical changes
+            &nbsp;·&nbsp; context integrity &nbsp;·&nbsp; cross-machine sync &nbsp;·&nbsp; secret isolation
+            &nbsp;·&nbsp; progressive context loading &nbsp;·&nbsp; autonomous loops &nbsp;·&nbsp; surgical changes
+            &nbsp;·&nbsp; context integrity &nbsp;·&nbsp; cross-machine sync &nbsp;·&nbsp; secret isolation
+            &nbsp;·&nbsp; progressive context loading &nbsp;·&nbsp; autonomous loops &nbsp;·&nbsp; surgical changes
+            &nbsp;·&nbsp;</div>
+    </div>
+
+    <!-- PROBLEMS -->
+    <section class="section fade-in">
+        <div class="container">
+            <div class="section-num">01 — THE PROBLEM</div>
+            <h2 class="section-title">Every developer<br>hits the same <em>walls</em></h2>
+
+            <div class="problems">
+                <div class="problem-card">
+                    <span class="problem-icon">⟳</span>
+                    <div class="problem-title">Context Decay</div>
+                    <p class="problem-body">Context degrades mid-task. The agent repeats itself, compaction loses
+                        nuance,
+                        quality drops. A fresh conversation has no idea where things left off.</p>
+                </div>
+                <div class="problem-card">
+                    <span class="problem-icon">⊘</span>
+                    <div class="problem-title">Instruction Drift</div>
+                    <p class="problem-body">Instructions drift between your laptop and VPS. Different machines run
+                        different
+                        rules. There's no single source of truth.</p>
+                </div>
+                <div class="problem-card">
+                    <span class="problem-icon">⚠</span>
+                    <div class="problem-title">Secret Exposure</div>
+                    <p class="problem-body">Secrets leak into agent context. API keys, tokens, passwords visible inside
+                        the
+                        conversation — or worse, logged somewhere they shouldn't be.</p>
+                </div>
+                <div class="problem-card">
+                    <span class="problem-icon">≡</span>
+                    <div class="problem-title">Rule Pollution</div>
+                    <p class="problem-body">Irrelevant rules load for every project regardless of stack. Next.js rules
+                        on a
+                        PHP project. PHP rules in a Python repo. Noise drowning signal.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section fade-in" id="how">
+        <div class="container">
+            <div class="section-num">02 — HOW IT WORKS</div>
+            <h2 class="section-title">One repo,<br><em>every</em> machine</h2>
+
+            <div class="features">
+                <div class="feature fade-in">
+                    <div class="feature-label">Context Integrity</div>
+                    <div class="feature-title">Persistent Plans</div>
+                    <p class="feature-body">When context gets high, the agent writes its plan to <code>working/</code>.
+                        A
+                        fresh conversation continues exactly where the old one left off — no repetition, no lost nuance.
+                    </p>
+                    <div class="feature-code">
+                        <span class="kw">working/</span><br>
+                        <span class="cm"> └─ plan.md &nbsp;&nbsp;&nbsp;</span><span class="cm"># persisted
+                            state</span><br>
+                        <span class="cm"> └─ research.md </span><span class="cm"># cached explorations</span>
+                    </div>
+                </div>
+                <div class="feature fade-in">
+                    <div class="feature-label">Stack-Aware Rules</div>
+                    <div class="feature-title">Progressive Loading</div>
+                    <p class="feature-body"><code>detect-context.sh</code> scans your working directory. A Next.js
+                        project
+                        loads Next.js rules. Nothing from PHP. Nothing from Python. Only what matches.</p>
+                    <div class="feature-code">
+                        <span class="cm"># auto-detected on cd</span><br>
+                        <span class="kw">ACTIVE_CONTEXTS</span>=<span class="str">general,nextjs,node,ts</span><br>
+                        <span class="cm"># loads matching instructions/*.md</span>
+                    </div>
+                </div>
+                <div class="feature fade-in">
+                    <div class="feature-label">Secret Isolation</div>
+                    <div class="feature-title">Three-Tier Secrets</div>
+                    <p class="feature-body">Three tiers: config agents can see, credentials scoped to a child
+                        process, and AFK iteration tokens (short-lived GitHub App installation tokens) minted per
+                        loop. <code>run-with-secrets.sh</code>
+                        injects
+                        API keys into a child process — they vanish on exit. Deny rules block <code>env</code>,
+                        <code>printenv</code>, and <code>cat secrets/*</code>.
+                    </p>
+                    <div class="feature-code">
+                        <span class="str">.env.agent &nbsp;&nbsp;</span><span class="cm"># agent-visible
+                            config</span><br>
+                        <span class="str">.env.secrets </span><span class="cm"># process-scoped only</span><br>
+                        <span class="cm"># credentials vanish on exit</span>
+                    </div>
+                </div>
+                <div class="feature fade-in">
+                    <div class="feature-label">Git-Synced</div>
+                    <div class="feature-title">Clone Once, Pull Forever</div>
+                    <p class="feature-body">Clone to <code>~/dotfiles</code> on your laptop, your VPS, anywhere.
+                        <code>git pull</code> updates every machine simultaneously. Bootstrap is idempotent — safe to
+                        re-run
+                        anytime.
+                    </p>
+                    <div class="feature-code">
+                        <span class="cm"># update everywhere at once</span><br>
+                        <span class="kw">cd</span> ~/dotfiles &amp;&amp; <span class="kw">git pull</span><br>
+                        <span class="kw">bash</span> bin/bootstrap.sh
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PIPELINE -->
+    <section class="section fade-in">
+        <div class="container">
+            <div class="section-num">03 — THE PIPELINE</div>
+            <h2 class="section-title">Intent to<br><em>commit</em></h2>
+
+            <div class="pipeline fade-in">
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>/grill-me</code></div>
+                    <div class="pipeline-desc">Interrogate you about a feature until shared understanding. One question
+                        at a
+                        time, recommended answers.</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>/write-a-prd</code></div>
+                    <div class="pipeline-desc">Explore codebase, interview you, sketch module boundaries, write Product
+                        Requirements Document (PRD),
+                        submit
+                        as GitHub issue.</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>/prd-to-issues</code></div>
+                    <div class="pipeline-desc">Break the PRD into vertical slices. Label each AFK or HITL. Create GitHub
+                        issues with dependencies.</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>/do-work</code></div>
+                    <div class="pipeline-desc">Understand → Plan → Implement → Validate → Commit. Auto-detects your
+                        stack's
+                        feedback loops. Loops until done.</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>shft</code></div>
+                    <div class="pipeline-desc">Pick issues from the backlog, implement in a Docker sandbox, commit,
+                        repeat.
+                        Runs AFK until backlog is empty.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="section fade-in" id="skills">
+        <div class="container">
+            <div class="section-num">04 — SKILLS</div>
+            <h2 class="section-title">What the<br>agent <em>knows</em></h2>
+
+            <div class="skills-grid">
+                <div class="skill-item">
+                    <div class="skill-name"><code>/do-work</code></div>
+                    <div class="skill-desc">Understand → Plan → Implement → Validate → Commit</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>/grill-me</code></div>
+                    <div class="skill-desc">Interrogate until shared understanding, one question at a time</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>/write-a-prd</code></div>
+                    <div class="skill-desc">Explore, interview, write PRD, submit as GitHub issue</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>/prd-to-issues</code></div>
+                    <div class="skill-desc">Break PRDs into labeled vertical slices</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>technical-fellow</code></div>
+                    <div class="skill-desc">Vertical slices, dependency graphs, acceptance criteria</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>skill-scaffolder</code></div>
+                    <div class="skill-desc">Scaffold new skills from production-tested patterns</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>explore</code></div>
+                    <div class="skill-desc">Decompose, spawn parallel sub-agents, synthesize summary</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>research</code></div>
+                    <div class="skill-desc">Cache exploration into research.md with lifecycle management</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>codebase-audit</code></div>
+                    <div class="skill-desc">Real problems only, grouped by severity. No manufactured issues.</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>improve-architecture</code></div>
+                    <div class="skill-desc">Shallow-module clusters → parallel design agents → GitHub RFC</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>/tdd</code></div>
+                    <div class="skill-desc">Red-green refactor. Failing test → implement → refactor.</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>systematic-debugging</code></div>
+                    <div class="skill-desc">Root-cause-first — investigate → pattern → hypothesis → fix</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+            </div>
+
+            <div
+                style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); display: flex; align-items: center; gap: 1rem;">
+                <span style="color: var(--accent);">+</span>
+                Add private skills: <code style="color: var(--accent);">skills/_local/your-skill/SKILL.md</code> —
+                auto-discovered, gitignored.
+            </div>
+        </div>
+    </section>
+
+    <!-- AGENTS -->
+    <section class="section fade-in">
+        <div class="container">
+            <div class="section-num">05 — SUBAGENTS</div>
+            <h2 class="section-title">Isolated<br><em>specialists</em></h2>
+
+            <p style="max-width: 56rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                Each subagent runs in an isolated context window with its own system prompt and tool restrictions.
+                Exploration stays out of your main conversation.
+            </p>
+
+            <div class="agents-grid">
+                <div class="agent-card">
+                    <div class="agent-name">code-reviewer</div>
+                    <div class="agent-focus">Bugs, security, logic errors — not style nits. Finds what actually matters
+                        in a
+                        diff.</div>
+                    <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">read-only</span><span
+                            class="badge">persistent memory</span></div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">researcher</div>
+                    <div class="agent-focus">Deep codebase exploration, architecture mapping. Builds a mental model
+                        without
+                        polluting yours.</div>
+                    <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">grep / glob</span><span
+                            class="badge">persistent memory</span></div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">security-auditor</div>
+                    <div class="agent-focus">OWASP Top 10, secrets exposure, config hardening. Paranoid by design.</div>
+                    <div class="agent-meta"><span class="badge">sonnet</span><span class="badge">read-only</span><span
+                            class="badge">persistent memory</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRINCIPLES -->
+    <section class="section fade-in">
+        <div class="container">
+            <div class="section-num">06 — PRINCIPLES</div>
+            <h2 class="section-title">Baked-in<br><em>discipline</em></h2>
+
+            <p
+                style="max-width: 72rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7; margin-bottom: 4rem;">
+                Four behavioral rules in <code>global.instructions.md</code>, addressing the most expensive AI failure
+                modes: building wrong things,
+                overengineering, drive-by refactoring, and vague success criteria — derived from
+                <a href="https://x.com/karpathy/status/2015883857489522876"
+                    style="color: var(--accent); text-decoration: none;">Andrej Karpathy's observations on LLM coding
+                    pitfalls</a>
+                and adapted here for this workflow to bias toward correctness over speed.
+            </p>
+
+            <div class="principles">
+                <div class="principle">
+                    <div class="principle-num">1</div>
+                    <div class="principle-title">Think Before Coding</div>
+                    <p class="principle-body">Surface confusion before acting. Present multiple interpretations. Name
+                        assumptions explicitly. Push back when simpler exists. Clarifying questions come before
+                        implementation, not after a wrong turn.</p>
+                    <div class="principle-rule">"Stop when confused — ask, never pick an interpretation silently."</div>
+                </div>
+                <div class="principle">
+                    <div class="principle-num">2</div>
+                    <div class="principle-title">Simplicity First</div>
+                    <p class="principle-body">Minimum code that solves the problem. No speculative features. No
+                        abstractions
+                        for single-use code. If 200 lines could be 50, rewrite it. Prefer straightforward solutions a
+                        senior
+                        engineer would call obvious and maintainable.</p>
+                    <div class="principle-rule">"Would a senior engineer say this is overcomplicated? If yes, simplify."
+                    </div>
+                </div>
+                <div class="principle">
+                    <div class="principle-num">3</div>
+                    <div class="principle-title">Surgical Changes</div>
+                    <p class="principle-body">Touch only what you must. Match existing style exactly. Don't refactor
+                        what
+                        isn't broken. Every changed line traces to the user's request. Mention adjacent issues, but
+                        don't
+                        fold unrelated cleanup into the same diff.</p>
+                    <div class="principle-rule">"Mention unrelated dead code — don't delete it."</div>
+                </div>
+                <div class="principle">
+                    <div class="principle-num">4</div>
+                    <div class="principle-title">Goal-Driven Execution</div>
+                    <p class="principle-body">Define success criteria. Loop until verified. Transform imperative tasks
+                        into
+                        verifiable goals with acceptance criteria at each step. Convert vague asks into outcomes that
+                        can be
+                        tested and proven.</p>
+                    <div class="principle-rule">"Write a test that reproduces it, then make it pass."</div>
+                </div>
+            </div>
+
+            <div
+                style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                <strong style="color: var(--text); font-family: var(--mono); letter-spacing: 0.08rem;">How you know it's
+                    working:</strong>
+                fewer unnecessary diff lines, fewer overengineered rewrites, cleaner scope boundaries, and verification
+                steps that are visible before a task is marked done.
+            </div>
+        </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section class="section fade-in">
+        <div class="container">
+            <div class="section-num">07 — SECURITY</div>
+            <h2 class="section-title">Agents see config,<br><em>never</em> credentials</h2>
+
+            <p style="max-width: 62rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                Three tiers. Config lives in shell, <code>run-with-secrets.sh</code> injects credentials into a child
+                process only, and AFK loops use AFK iteration tokens (short-lived GitHub App installation tokens)
+                minted per loop.
+                Deny rules block any attempt to read
+                secrets.
+            </p>
+
+            <table class="secrets-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>In Shell?</th>
+                        <th>Agent-Visible?</th>
+                        <th>Contains</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code style="color: var(--accent);">.env.agent</code></td>
+                        <td class="tag-yes">YES</td>
+                        <td class="tag-yes">YES</td>
+                        <td style="color: var(--text-secondary); font-family: var(--sans);">Usernames, hosts, IDs</td>
+                    </tr>
+                    <tr>
+                        <td><code style="color: var(--accent);">.env.secrets</code></td>
+                        <td class="tag-no">NO</td>
+                        <td class="tag-no">NO</td>
+                        <td style="color: var(--text-secondary); font-family: var(--sans);">API keys, tokens, passwords
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code style="color: var(--accent);">AFK iteration token</code></td>
+                        <td class="tag-no">NO</td>
+                        <td class="tag-no">NO</td>
+                        <td style="color: var(--text-secondary); font-family: var(--sans);">Minted per loop, expires
+                            ~1h
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div
+                style="margin-top: 1.6rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.6;">
+                Deny rules block <code>env</code>, <code>printenv</code>, <code>cat secrets/*</code>, and
+                <code>echo $*KEY*</code> at the agent level. Agents can't accidentally inherit what they can't see.
+            </div>
+
+            <div
+                style="margin-top: 1.2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.6;">
+                AFK hardening path: one token per Docker iteration, no PAT fallback in AFK mode, fail closed when mint
+                fails.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- SHFT -->
+    <section class="section fade-in" id="shft">
+        <div class="container">
+            <div class="section-num">08 — SHFT</div>
+            <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
+
+            <p style="max-width: 54rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                Not a framework. A bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker
+                for
+                AFK mode, direct on host for HITL. Exits when the backlog is empty.
+            </p>
+
+            <div class="shift-modes">
+                <div class="shift-mode">
+                    <div class="shift-mode-label">Human In The Loop</div>
+                    <div class="shift-mode-name">HITL</div>
+                    <div class="shift-mode-desc">Runs once while you watch. Use when learning, reviewing each step, or
+                        validating a new task type before going fully autonomous.</div>
+                </div>
+                <div class="shift-mode">
+                    <div class="shift-mode-label">Away From Keyboard</div>
+                    <div class="shift-mode-name afk">AFK</div>
+                    <div class="shift-mode-desc">Loops in Docker sandbox. Claude picks a task, implements, commits,
+                        closes
+                        the issue, picks the next. You review PRs async.</div>
+                </div>
+            </div>
+
+            <div
+                style="margin-top: 1.4rem; padding: 1.2rem 1.8rem; border: 1px solid var(--border); font-size: 1.1rem; color: var(--text-dimmer); font-family: var(--sans);">
+                Requires Claude Max, Docker Desktop, and 5–10 well-formed GitHub issues. AFK also requires
+                <code>jq</code> and <code>sbx</code> on PATH.
+            </div>
+        </div>
+    </section>
+
+    <!-- INSTALL -->
+    <section class="section fade-in" id="install">
+        <div class="container">
+            <div class="section-num">09 — INSTALLATION</div>
+            <h2 class="section-title">Running in<br><em>minutes</em></h2>
+
+            <div class="install-block">
+
+                <!-- Step 1: Clone -->
+                <div class="install-step open" data-step="1">
+                    <button class="step-header" type="button" aria-expanded="true">
+                        <span class="step-num">1</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                            </svg>
+                        </span>
+                        <span class="step-label">Clone the repository</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
+                            <div class="step-code-wrap">
+                                <pre class="step-code">git clone https://github.com/arndvs/ctrl.git ~/dotfiles</pre>
+                                <button class="copy-btn"
+                                    data-copy="git clone https://github.com/arndvs/ctrl.git ~/dotfiles"
+                                    aria-label="Copy command">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <div class="step-note">Always clone to ~/dotfiles — hardcoded across 40+ references.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Bootstrap -->
+                <div class="install-step" data-step="2">
+                    <button class="step-header" type="button" aria-expanded="false">
+                        <span class="step-num">2</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="4 17 10 11 4 5" />
+                                <line x1="12" x2="20" y1="19" y2="19" />
+                            </svg>
+                        </span>
+                        <span class="step-label">Run bootstrap script</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
+                            <div class="step-code-wrap">
+                                <pre class="step-code">bash ~/dotfiles/bin/bootstrap.sh</pre>
+                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/bootstrap.sh"
+                                    aria-label="Copy command">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates
+                                secrets from templates. Wires shell integration. Installs Python deps into
+                                <code>secrets/.venv</code> (including <code>PyJWT</code> for AFK GitHub App token
+                                minting).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: GitHub App (AFK) -->
+                <div class="install-step" data-step="3">
+                    <button class="step-header" type="button" aria-expanded="false">
+                        <span class="step-num">3</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        </span>
+                        <span class="step-label">Configure GitHub App (AFK)</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
+                            <div class="step-intro">Do this once, in order: create and install the app, set secrets,
+                                then validate.</div>
+                            <div class="install-tab-list" role="tablist">
+                                <button class="install-tab-btn active" data-tab="create" role="tab"
+                                    aria-selected="true">A — Create App</button>
+                                <button class="install-tab-btn" data-tab="secrets" role="tab" aria-selected="false">B —
+                                    Set Secrets</button>
+                                <button class="install-tab-btn" data-tab="validate" role="tab" aria-selected="false">C —
+                                    Validate</button>
+                            </div>
+
+                            <div class="install-tab-content active" data-tab-panel="create">
+                                <ol class="step-checklist">
+                                    <li><span class="check-num">1</span><span>Create the App at
+                                            <code>github.com/settings/apps/new</code>.</span></li>
+                                    <li><span class="check-num">2</span><span>Set Homepage URL to your own GitHub
+                                            dotfiles repository URL (e.g.
+                                            <code>https://github.com/&lt;you&gt;/dotfiles</code>).</span></li>
+                                    <li><span class="check-num">3</span><span>Use minimum permissions: Contents (R/W),
+                                            Issues (R/W), Pull requests (R/W), Workflows (R/W only if AFK edits workflow
+                                            files). Disable webhook.</span></li>
+                                    <li><span class="check-num">4</span><span>Install the app on your target repo
+                                            (<em>Install App → Only select repositories → pick repo</em>). That should
+                                            be the same dotfiles repo you created.</span></li>
+                                    <li><span class="check-num">5</span><span>Copy installation ID from
+                                            <code>github.com/settings/installations/&lt;id&gt;</code>.</span></li>
+                                </ol>
+                            </div>
+
+                            <div class="install-tab-content" data-tab-panel="secrets">
+                                <div class="step-code-wrap">
+                                    <pre class="step-code">$EDITOR ~/dotfiles/secrets/.env.agent   # non-sensitive config
+$EDITOR ~/dotfiles/secrets/.env.secrets # process-scoped credentials
+
+# Required for AFK credential rotation:
+GITHUB_APP_ID=...
+GITHUB_APP_INSTALLATION_ID=...
+GITHUB_APP_PRIVATE_KEY_B64=...</pre>
+                                    <button class="copy-btn"
+                                        data-copy="$EDITOR ~/dotfiles/secrets/.env.agent&#10;$EDITOR ~/dotfiles/secrets/.env.secrets&#10;&#10;GITHUB_APP_ID=...&#10;GITHUB_APP_INSTALLATION_ID=...&#10;GITHUB_APP_PRIVATE_KEY_B64=..."
+                                        aria-label="Copy command">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                        </svg>
+                                        <span>Copy</span>
+                                    </button>
+                                </div>
+                                <div class="step-note">Base64 your private key to one line (Git Bash:
+                                    <code>base64 -w 0 ~/Downloads/your-app-key.pem</code>) and place all three values in
+                                    <code>secrets/.env.secrets</code>.</div>
+                            </div>
+
+                            <div class="install-tab-content" data-tab-panel="validate">
+                                <div class="step-code-wrap">
+                                    <pre class="step-code">bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk
+bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
+                                    <button class="copy-btn"
+                                        data-copy="bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk&#10;bash ~/dotfiles/bin/verify-github-app-token.sh"
+                                        aria-label="Copy command">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                        </svg>
+                                        <span>Copy</span>
+                                    </button>
+                                </div>
+                                <div class="step-note">Expected output: <code>mint_success=yes</code>,
+                                    <code>expires_at=...</code>, <code>token_len=40</code>.</div>
+                            </div>
+
+                            <button class="step-troubleshoot-toggle" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round"
+                                    style="width:1.2rem;height:1.2rem;flex-shrink:0;display:block">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" x2="12" y1="8" y2="12" />
+                                    <line x1="12" x2="12.01" y1="16" y2="16" />
+                                </svg>
+                                <span>Troubleshooting</span>
+                                <span class="t-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
+                                </span>
+                            </button>
+                            <div class="step-troubleshoot-body">
+                                <div class="step-note"><strong>Windows:</strong> if <code>python3</code> opens Microsoft
+                                    Store, AFK scripts use <code>secrets/.venv</code> Python first. Re-run bootstrap.sh
+                                    if venv is missing.</div>
+                                <div class="step-note">If token minting reports missing <code>PyJWT</code> or
+                                    <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
+                                <div class="step-note">If minting fails with status=404, recheck installation ID, app
+                                    install target, and key/app pairing.</div>
+                                <div class="step-note">If a raw token is ever printed, rotate App private key
+                                    immediately, update <code>GITHUB_APP_PRIVATE_KEY_B64</code>, then rerun mint
+                                    verification.</div>
+                                <div class="step-note">Full guide: <a
+                                        href="https://github.com/arndvs/ctrl/blob/main/README.md#exact-secure-setup-after-clone"
+                                        style="color: var(--accent); text-decoration: none;">README → Exact secure setup
+                                        after clone</a>.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Sync settings -->
+                <div class="install-step" data-step="4">
+                    <button class="step-header" type="button" aria-expanded="false">
+                        <span class="step-num">4</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                                <path d="M21 3v5h-5" />
+                            </svg>
+                        </span>
+                        <span class="step-label">Sync VS Code settings</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
+                            <div class="step-code-wrap">
+                                <pre class="step-code">bash ~/dotfiles/bin/sync-settings.sh</pre>
+                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh"
+                                    aria-label="Copy command">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <div class="step-note">Enables the instruction discovery chain. Run with --dry-run first to
+                                preview changes.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Reload shell -->
+                <div class="install-step" data-step="5">
+                    <button class="step-header" type="button" aria-expanded="false">
+                        <span class="step-num">5</span>
+                        <span class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="4 17 10 11 4 5" />
+                                <line x1="12" x2="20" y1="19" y2="19" />
+                            </svg>
+                        </span>
+                        <span class="step-label">Reload shell</span>
+                        <span class="step-chevron">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="step-body">
+                        <div class="step-body-inner">
+                            <div class="step-code-wrap">
+                                <pre class="step-code">source ~/.bashrc   # bash
+source ~/.zshrc    # zsh</pre>
+                                <button class="copy-btn" data-copy="source ~/.bashrc&#10;source ~/.zshrc"
+                                    aria-label="Copy command">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <div class="step-note">Activates context detection on cd and secret loading.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="margin-top: 2.4rem; display: flex; gap: 2.4rem; flex-wrap: wrap; align-items: center;">
+                <a href="https://github.com/arndvs/ctrl" class="btn-primary sheen-cta">View on GitHub →</a>
+                <div
+                    style="font-size: 1.2rem; color: var(--text-dimmer); display: flex; align-items: center; gap: 0.8rem;">
+                    <span style="color: var(--green);">●</span> MIT License &nbsp;·&nbsp; macOS / Linux / WSL
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="ticker">
+        <div class="ticker-inner">ctrl+shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp; execute the work &nbsp;·&nbsp;
+            git pull to update everywhere &nbsp;·&nbsp; credentials vanish on exit &nbsp;·&nbsp; context persists
+            between conversations &nbsp;·&nbsp; ctrl+shft &nbsp;·&nbsp; define the rules &nbsp;·&nbsp; execute the work
+            &nbsp;·&nbsp; git pull to update everywhere &nbsp;·&nbsp; credentials vanish on exit &nbsp;·&nbsp; context
+            persists between conversations &nbsp;·&nbsp;</div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div>
+                <div class="footer-logo"><span class="sheen-text">ctrl</span><span
+                        style="color: var(--text-dim); font-size: 0.7em; letter-spacing: 0.4rem;">+shft</span></div>
+                <div class="footer-tagline">ctrl defines the rules. shft executes them. One repo syncs instructions,
+                    skills,
+                    secrets, and autonomous loops across every machine.</div>
+                <div style="margin-top: 1.6rem;">
+                    <a href="https://github.com/arndvs/ctrl" class="btn-ghost sheen-cta"
+                        style="font-size: 1.1rem;">github.com/arndvs/ctrl →</a>
+                </div>
+            </div>
+            <div class="footer-note">
+                MIT License<br>
+                Clone to <code style="color: var(--accent);">~/dotfiles</code><br>
+                macOS / Linux / WSL<br>
+                <br>
+                <a href="https://github.com/arndvs/ctrl" class="footer-link">GitHub</a> &nbsp;·&nbsp;
+                <a href="https://github.com/arndvs/ctrl/issues" class="footer-link">Issues</a> &nbsp;·&nbsp;
+                <a href="https://github.com/arndvs/ctrl/blob/main/README.md" class="footer-link">Docs</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.08 });
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const text = btn.dataset.copy.replace(/&#10;/g, '\n');
+                navigator.clipboard.writeText(text).then(() => {
+                    const span = btn.querySelector('span');
+                    btn.classList.add('copied');
+                    span.textContent = 'Copied!';
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        span.textContent = 'Copy';
+                    }, 2000);
+                });
+            });
+        });
+
+        // Install accordion
+        document.querySelectorAll('.install-step .step-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const step = header.closest('.install-step');
+                const isOpen = step.classList.contains('open');
+                step.classList.toggle('open');
+                header.setAttribute('aria-expanded', String(!isOpen));
+            });
+        });
+
+        // Install tabs
+        document.querySelectorAll('.install-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const inner = btn.closest('.step-body-inner');
+                const tab = btn.dataset.tab;
+                inner.querySelectorAll('.install-tab-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                inner.querySelectorAll('.install-tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+                inner.querySelector(`[data-tab-panel="${tab}"]`).classList.add('active');
+            });
+        });
+
+        // Troubleshoot toggle
+        document.querySelectorAll('.step-troubleshoot-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                toggle.classList.toggle('open');
+                toggle.nextElementSibling.classList.toggle('open');
+            });
+        });
+    </script>
+</body>
+
+</html>
