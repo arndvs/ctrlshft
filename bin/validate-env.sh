@@ -74,6 +74,7 @@ if [[ $_afk_mode -eq 1 ]]; then
         green "  ✓ jq"
     else
         red "  ✗ jq not found — required by shft/afk.sh token parsing"
+        red "    Install: see README.md → Prerequisites"
         _fail=1
     fi
 
@@ -81,6 +82,7 @@ if [[ $_afk_mode -eq 1 ]]; then
         green "  ✓ sbx"
     else
         red "  ✗ sbx not found — required by shft/afk.sh sandbox execution"
+        red "    Install: see README.md → Prerequisites"
         _fail=1
     fi
 
