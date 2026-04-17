@@ -75,7 +75,7 @@ if [[ ! -f "$USER_SETTINGS" ]]; then
 fi
 
 # ── Find Python ───────────────────────────────────────────────────────────────
-VENV_DIR="$HOME/dotfiles/secrets/.venv"
+VENV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/secrets/.venv"
 if ! find_python; then
     red "Python not found" >&2
     exit 1

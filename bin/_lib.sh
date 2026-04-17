@@ -73,9 +73,10 @@ find_venv_python() {
 #   4. Nothing exists → create symlink (green)
 #      On Windows fallback: delete-then-copy
 #
-# Sets _fail=1 on unrecoverable errors. Requires OS to be set.
+# Sets _fail=1 on unrecoverable errors.
 ensure_symlink() {
     local source="$1" target="$2" label="$3"
+    local _os="${OS:-$(detect_os)}"
 
     if [[ -L "$target" ]]; then
         local _current
@@ -100,7 +101,7 @@ ensure_symlink() {
     ln -sf "$source" "$target"
     if [[ -L "$target" ]]; then
         green "  Symlinked $label -> $source"
-    elif [[ "$OS" == "windows" ]]; then
+    elif [[ "$_os" == "windows" ]]; then
         # Symlink failed on Windows — delete-then-copy (never copy-into)
         rm -rf "$target" 2>/dev/null
         cp -r "$source" "$target"

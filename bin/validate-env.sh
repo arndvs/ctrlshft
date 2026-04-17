@@ -61,18 +61,10 @@ _recommend GCP_CREDENTIALS_FILE "Needed for Google API scripts — set in secret
 
 if [[ $_afk_mode -eq 1 ]]; then
 
+    VENV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/secrets/.venv"
     _py_bin=""
-    _venv_python_unix="$HOME/dotfiles/secrets/.venv/bin/python"
-    _venv_python_win="$HOME/dotfiles/secrets/.venv/Scripts/python.exe"
-
-    if [[ -x "$_venv_python_unix" ]] && "$_venv_python_unix" --version >/dev/null 2>&1; then
-        _py_bin="$_venv_python_unix"
-    elif [[ -f "$_venv_python_win" ]] && "$_venv_python_win" --version >/dev/null 2>&1; then
-        _py_bin="$_venv_python_win"
-    elif command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
-        _py_bin="python3"
-    elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
-        _py_bin="python"
+    if find_python; then
+        _py_bin="$PYTHON"
     fi
 
     echo
@@ -185,7 +177,7 @@ else
     _fail=1
 fi
 
-VENV_DIR="$HOME/dotfiles/secrets/.venv"
+VENV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/secrets/.venv"
 if [[ -d "$VENV_DIR" ]]; then
     find_venv_python
     if [[ -n "$_venv_python" ]] && "$_venv_python" --version &>/dev/null; then
