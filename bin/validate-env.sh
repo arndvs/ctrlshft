@@ -68,8 +68,7 @@ if [[ $_afk_mode -eq 1 ]]; then
     fi
 
     echo
-    echo "AFK GitHub App Credentials (from secrets/.env.secrets):"
-    echo "  (Run via: bash bin/run-with-secrets.sh bash bin/validate-env.sh --afk)"
+    echo "AFK Tool Dependencies:"
 
     if command -v jq >/dev/null 2>&1; then
         green "  ✓ jq"
@@ -85,9 +84,19 @@ if [[ $_afk_mode -eq 1 ]]; then
         _fail=1
     fi
 
-    _require GITHUB_APP_ID "Required for AFK short-lived token minting"
-    _require GITHUB_APP_INSTALLATION_ID "Required for AFK short-lived token minting"
-    _require GITHUB_APP_PRIVATE_KEY_B64 "Required for AFK short-lived token minting"
+    echo
+    echo "AFK GitHub App Credentials (from secrets/.env.secrets):"
+
+    # Secrets are only available when run via run-with-secrets.sh.
+    # If not loaded, skip with a hint instead of showing false failures.
+    if [[ -z "${GITHUB_APP_ID:-}" && -z "${GITHUB_APP_INSTALLATION_ID:-}" && -z "${GITHUB_APP_PRIVATE_KEY_B64:-}" ]]; then
+        yellow "  ~ Secrets not loaded — skipping credential checks"
+        yellow "    To validate: bash bin/run-with-secrets.sh bash bin/validate-env.sh --afk"
+    else
+        _require GITHUB_APP_ID "Required for AFK short-lived token minting"
+        _require GITHUB_APP_INSTALLATION_ID "Required for AFK short-lived token minting"
+        _require GITHUB_APP_PRIVATE_KEY_B64 "Required for AFK short-lived token minting"
+    fi
 
     if [[ -n "${GITHUB_APP_INSTALLATION_ID:-}" ]]; then
 
