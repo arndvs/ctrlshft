@@ -638,9 +638,13 @@ source ~/.bashrc
 - [GitHub Copilot](https://github.com/features/copilot) (optional — ctrl works with Claude Code alone)
 - Git Bash (Windows) or bash (Linux/macOS)
 - Python 3.10+
-- `jq` (required by `shft/afk.sh` token parsing)
-- `sbx` (Claude Code sandbox CLI used by `shft/afk.sh`)
-- Docker Desktop (for shft)
+- [`jq`](https://jqlang.github.io/jq/) — JSON processor (required by `shft/afk.sh` token parsing)
+  - Windows: `winget install jqlang.jq` or `choco install jq`
+  - macOS: `brew install jq`
+  - Linux: `sudo apt install jq`
+- [`sbx`](https://docs.anthropic.com/en/docs/claude-code/sandbox) — Claude Code sandbox CLI (used by `shft/afk.sh`)
+  - Install: `npm install -g @anthropic-ai/claude-code-sandbox`
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for shft)
 
 ---
 
