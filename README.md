@@ -642,8 +642,8 @@ source ~/.bashrc
   - Windows: `winget install jqlang.jq` or `choco install jq`
   - macOS: `brew install jq`
   - Linux: `sudo apt install jq`
-- [`sbx`](https://docs.anthropic.com/en/docs/claude-code/sandbox) — Claude Code sandbox CLI (used by `shft/afk.sh`)
-  - Install: `npm install -g @anthropic-ai/claude-code-sandbox`
+- [`srt`](https://github.com/anthropic-experimental/sandbox-runtime) — Anthropic Sandbox Runtime (used by `shft/afk.sh`)
+  - Install: `npm install -g @anthropic-ai/sandbox-runtime`
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for shft)
 
 ---

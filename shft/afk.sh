@@ -72,12 +72,12 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
     raw_output=$(mktemp)
     trap 'rm -f "$raw_output" "$PROMPT_FILE"; rmdir "$LOCKDIR" 2>/dev/null' EXIT
 
-    if ! GITHUB_TOKEN="$afk_token" sbx run --name shft-afk claude . "$CTRL_DIR:ro" \
-        -- --print \
+    if ! GITHUB_TOKEN="$afk_token" srt claude \
+        --print \
         --output-format stream-json \
         < "$PROMPT_FILE" \
         2>/dev/null | tee /dev/stderr > "$raw_output"; then
-        echo "ERROR: sbx failed on iteration $i" >&2
+        echo "ERROR: srt failed on iteration $i" >&2
         exit 1
     fi
 

@@ -78,10 +78,10 @@ if [[ $_afk_mode -eq 1 ]]; then
         _fail=1
     fi
 
-    if command -v sbx >/dev/null 2>&1; then
-        green "  ✓ sbx"
+    if command -v srt >/dev/null 2>&1; then
+        green "  ✓ srt"
     else
-        red "  ✗ sbx not found — required by shft/afk.sh sandbox execution"
+        red "  ✗ srt not found — required by shft/afk.sh sandbox execution"
         red "    Install: see README.md → Prerequisites"
         _fail=1
     fi
