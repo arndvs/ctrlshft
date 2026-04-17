@@ -372,7 +372,7 @@ When writing phase methods for the orchestrator, follow these rules:
 
 ## VS Code Browser Tools Reference
 
-When a skill uses browser automation in VS Code mode, the agent uses these deferred tools (load via `tool_search_tool_regex` before first use):
+When a skill uses browser automation in VS Code mode, the agent uses these deferred tools (load via `tool_search` before first use):
 
 | Tool                | Purpose                        |
 | ------------------- | ------------------------------ |

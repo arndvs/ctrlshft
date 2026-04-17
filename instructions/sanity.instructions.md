@@ -192,8 +192,7 @@ export default defineCliConfig({
 
 ## Next.js Integration Caveats
 
-- Use `defineLive` from `next-sanity/live` (not from `next-sanity`).
-- When adding Live Content API support, centralize fetches through `sanityFetch` and mount `<SanityLive />` in root layout.
+For Next.js Live Content API setup (`defineLive`, `sanityFetch`, `<SanityLive />`), see `nextjs.instructions.md`.
 
 ## Rule/Docs Conflict Caveat
 

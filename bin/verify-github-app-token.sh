@@ -26,19 +26,11 @@ if [[ ! -f "$MINT_SCRIPT" ]]; then
     exit 1
 fi
 
-find_venv_python
-
-PYTHON_BIN=""
-if [[ -n "${_venv_python:-}" ]] && "$_venv_python" --version >/dev/null 2>&1; then
-    PYTHON_BIN="$_venv_python"
-elif command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
-    PYTHON_BIN="python3"
-elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
-    PYTHON_BIN="python"
-else
+if ! find_python; then
     red "ERROR: No working Python found. Re-run: bash ~/dotfiles/bin/bootstrap.sh"
     exit 1
 fi
+PYTHON_BIN="$PYTHON"
 
 echo "================================================"
 echo "GitHub App Token Smoke Test (safe output)"

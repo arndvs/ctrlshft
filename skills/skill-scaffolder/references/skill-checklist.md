@@ -65,7 +65,7 @@ Run through this checklist after generating a new skill. Every item must pass be
 
 ## Browser Automation (if applicable)
 
-- [ ] SKILL.md instructs agent to load browser tools via `tool_search_tool_regex`
+- [ ] SKILL.md instructs agent to load browser tools via `tool_search`
 - [ ] Phase docstrings tell agent exactly what to do with browser
 - [ ] Screenshot evidence captured at key steps
 - [ ] Evidence directory uses sanitized work-unit names (no path traversal)

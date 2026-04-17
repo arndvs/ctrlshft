@@ -222,7 +222,7 @@ if [[ -f "$ZSHRC" ]] || [[ "$(basename "$SHELL" 2>/dev/null)" == "zsh" ]]; then
     _wire_shell_rc "$ZSHRC" "~/.zshrc"
 fi
 
-# ── 7. Python venv ───────────────────────────────────────────────────────────
+# ── 9. Python venv ───────────────────────────────────────────────────────────
 echo
 green "[9/11] Python venv"
 
@@ -257,7 +257,7 @@ if [[ -d "$VENV_DIR" ]]; then
     fi
 fi
 
-# ── 8. Supply chain attack protection ─────────────────────────────────────────
+# ── 10. Supply chain attack protection ────────────────────────────────────────
 echo
 green "[10/11] Package manager security (supply chain protection)"
 
@@ -287,13 +287,18 @@ else
     green "  Added exclude-newer = \"$UV_DATE\" to ~/.config/uv/uv.toml"
 fi
 
-# ── 9. Validation ─────────────────────────────────────────────────────────────
+# ── 11. Validation ────────────────────────────────────────────────────────────
 echo
 green "[11/11] Validating setup"
 
 # Delegate to validate-env.sh — single source of truth for all validation checks.
 # validate-env.sh sets _fail and _warn internally and prints results.
+# Save bootstrap's _fail before sourcing — validate-env also uses _fail.
+_bootstrap_fail=$_fail
+_fail=0
 source "$(dirname "${BASH_SOURCE[0]}")/validate-env.sh"
+(( _fail )) && _bootstrap_fail=1
+_fail=$_bootstrap_fail
 
 echo ""
 echo "Next steps:"

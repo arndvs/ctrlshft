@@ -12,9 +12,9 @@ MAX_ITERATIONS="${1:-5}"
 LOCKDIR="/tmp/shft-afk.lock"
 MINT_SCRIPT="$CTRL_DIR/bin/mint_github_app_token.py"
 RUN_WITH_SECRETS="$CTRL_DIR/bin/run-with-secrets.sh"
-PYTHON_BIN=""
-VENV_PYTHON_UNIX="$CTRL_DIR/secrets/.venv/bin/python"
-VENV_PYTHON_WIN="$CTRL_DIR/secrets/.venv/Scripts/python.exe"
+VENV_DIR="$CTRL_DIR/secrets/.venv"
+
+source "$CTRL_DIR/bin/_lib.sh"
 
 # Concurrency guard — mkdir is atomic and portable (no flock on macOS)
 if ! mkdir "$LOCKDIR" 2>/dev/null; then
@@ -33,18 +33,11 @@ if [[ ! -f "$MINT_SCRIPT" ]]; then
     exit 1
 fi
 
-if [[ -x "$VENV_PYTHON_UNIX" ]] && "$VENV_PYTHON_UNIX" --version >/dev/null 2>&1; then
-    PYTHON_BIN="$VENV_PYTHON_UNIX"
-elif [[ -f "$VENV_PYTHON_WIN" ]] && "$VENV_PYTHON_WIN" --version >/dev/null 2>&1; then
-    PYTHON_BIN="$VENV_PYTHON_WIN"
-elif command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
-    PYTHON_BIN="python3"
-elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
-    PYTHON_BIN="python"
-else
+if ! find_python; then
     echo "ERROR: python3/python not found. Required for GitHub App token mint helper." >&2
     exit 1
 fi
+PYTHON_BIN="$PYTHON"
 
 if ! "$RUN_WITH_SECRETS" bash "$CTRL_DIR/bin/validate-env.sh" --afk; then
     echo "ERROR: AFK environment validation failed" >&2

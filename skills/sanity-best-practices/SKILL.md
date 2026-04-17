@@ -5,6 +5,8 @@ description: Sanity development best practices for schema design, GROQ queries, 
 
 # Sanity Best Practices
 
+Output "Read Sanity Best Practices skill." to chat to acknowledge you read this file.
+
 Comprehensive best practices and integration guides for Sanity development, maintained by Sanity. Use the quick reference below to load only the one or two topic files that match the task.
 
 ## When to Apply

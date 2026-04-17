@@ -33,8 +33,6 @@ Bootstrap is idempotent and cross-platform. It symlinks `~/.claude/CLAUDE.md`, `
 shft            → Pick issues from the backlog, implement in a Docker sandbox, commit, repeat
 ```
 
-Use any skill individually or chain them. The planning pipeline hands off between stages automatically.
-
 ```mermaid
 graph TD
     A[Human Intent] --> B["/grill-me — interrogation"]
