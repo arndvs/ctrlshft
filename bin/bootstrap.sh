@@ -154,9 +154,12 @@ _local_skills=0
 for d in "$DOTFILES/skills/"*/; do
     [[ -d "$d" ]] || continue
     _name=$(basename "$d")
-    [[ "$_name" == "_local" ]] && continue
+    [[ "$_name" == "_local" || "$_name" == "_vendor" ]] && continue
     _shared_skills=$(( _shared_skills + 1 ))
 done
+if [[ -d "$DOTFILES/skills/_vendor" ]]; then
+    yellow "  \"_vendor/ detected. Per ADR-001, move contents to skills/_local/vendor/ then delete skills/_vendor/.\""
+fi
 if [[ -d "$DOTFILES/skills/_local" ]]; then
     for d in "$DOTFILES/skills/_local/"*/; do
         [[ -d "$d" ]] && [[ -f "$d/SKILL.md" ]] && _local_skills=$(( _local_skills + 1 ))
