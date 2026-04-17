@@ -28,6 +28,7 @@ Bootstrap is idempotent and cross-platform. It symlinks `~/.claude/CLAUDE.md`, `
 ```
 /grill-me       → Interrogate you about a feature until shared understanding
 /write-a-prd    → Explore codebase, interview, write PRD, submit as GitHub issue
+/architect      → Plan implementation — vertical slices, dependency graphs, acceptance criteria
 /prd-to-issues  → Break the PRD into vertical slices → GitHub issues (AFK vs HITL labeled)
 /do-work        → Understand → Plan → Implement → Validate → Commit (loops)
 shft            → Pick issues from the backlog, implement in a Docker sandbox, commit, repeat
@@ -37,7 +38,8 @@ shft            → Pick issues from the backlog, implement in a Docker sandbox,
 graph TD
     A[Human Intent] --> B["/grill-me — interrogation"]
     B --> C["/write-a-prd — PRD → GitHub Issue"]
-    C --> D["/prd-to-issues — vertical slices → GitHub Issues"]
+    C --> AR["/architect — vertical slices, dependency graphs"]
+    AR --> D["/prd-to-issues — slices → GitHub Issues"]
     D --> E["/do-work — Understand → Plan → Implement → Validate → Commit"]
     E -->|loop| E
     E -->|"context high → persist plan to working/"| H["Fresh conversation picks up @working/plan.md"]
@@ -48,7 +50,7 @@ graph TD
     G -->|new issues| D
 ```
 
-Use any skill individually or chain them. The planning pipeline (grill-me → write-a-prd → prd-to-issues → do-work) hands off between stages.
+Use any skill individually or chain them. The planning pipeline (grill-me → write-a-prd → architect → prd-to-issues → do-work) hands off between stages.
 
 ---
 
@@ -122,10 +124,10 @@ Rules without `paths:` load every session. Add your own: `rules/your-rule.md` �
 
 Three tiers. Agents see config, never credentials — and AFK loops use AFK iteration tokens instead of long-lived auth tokens.
 
-| File                   | In shell? | Agent-visible? | Contains                    |
-| ---------------------- | --------- | -------------- | --------------------------- |
-| `secrets/.env.agent`   | Yes       | Yes            | Usernames, hosts, IDs       |
-| `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords |
+| File                   | In shell? | Agent-visible? | Contains                     |
+| ---------------------- | --------- | -------------- | ---------------------------- |
+| `secrets/.env.agent`   | Yes       | Yes            | Usernames, hosts, IDs        |
+| `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords  |
 | AFK iteration token    | No        | No             | Minted per loop, expires ~1h |
 
 `run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see.
@@ -147,7 +149,7 @@ After clone + bootstrap, this is the exact secure AFK setup path:
 
 1. Create a GitHub App at `https://github.com/settings/apps/new`.
    - Name: e.g. `ctrl-shft-bot`
-    - Homepage URL: your own GitHub dotfiles repository URL (e.g. `https://github.com/<you>/dotfiles`)
+   - Homepage URL: your own GitHub dotfiles repository URL (e.g. `https://github.com/<you>/dotfiles`)
    - Webhook: disable for now (not required for this flow)
    - Repository permissions (minimum):
      - Contents: Read & Write
@@ -189,6 +191,7 @@ After clone + bootstrap, this is the exact secure AFK setup path:
        token_len=40
    ================================================================
    ```
+
 9. Start AFK with one iteration (`shft/afk.sh 1`), then scale iterations once stable.
 
 > **Windows note (important):** On some Windows setups, `python3` resolves to a Microsoft Store alias and fails. AFK scripts now prefer `secrets/.venv` Python automatically. If you hit Python launch/dependency errors, rerun `bash ~/dotfiles/bin/bootstrap.sh` to rebuild the venv and retry.
@@ -218,7 +221,7 @@ Skills marked ⚡ auto-invoke when the agent detects a matching task. Others req
 | `grill-me`                | Interrogate you about a plan until shared understanding. One question at a time, recommended answers. |
 | `write-a-prd`             | Explore codebase, interview you, sketch module boundaries, write PRD, submit as GitHub issue.         |
 | `prd-to-issues`           | Break a PRD into vertical slices. Label each AFK or HITL. Create GitHub issues with dependencies.     |
-| `technical-fellow` ⚡     | Plan implementation — vertical slices, dependency graphs, acceptance criteria.                        |
+| `architect` ⚡            | Plan implementation — vertical slices, dependency graphs, acceptance criteria.                        |
 | `skill-scaffolder`        | Scaffold new agent skills from production-tested patterns. Interview → architecture → directory.      |
 | `explore` ⚡              | Decompose a topic, spawn parallel sub-agents, synthesize a summary.                                   |
 | `research` ⚡             | Cache expensive exploration into `research.md`. Staleness checks, lifecycle management.               |
@@ -378,7 +381,7 @@ docker sandbox run claude .
 │   ├── grill-me/
 │   ├── write-a-prd/
 │   ├── prd-to-issues/
-│   ├── technical-fellow/
+│   ├── architect/
 │   ├── skill-scaffolder/
 │   ├── explore/
 │   ├── research/
@@ -543,20 +546,20 @@ bash ~/dotfiles/bin/sync-settings.sh
 
 > Bootstrap is mostly idempotent. Here's everything it modifies:
 
-| File                     | Change                                                                   |
-| ------------------------ | ------------------------------------------------------------------------ |
-| `~/.claude/CLAUDE.md`    | Symlinked → `~/dotfiles/CLAUDE.md` (or copied on Windows without admin)  |
+| File                     | Change                                                                              |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `~/.claude/CLAUDE.md`    | Symlinked → `~/dotfiles/CLAUDE.md` (or copied on Windows without admin)             |
 | `~/.claude/skills/`      | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.claude/agents/`      | Linked to `~/dotfiles/agents/` (or replaced with verified fallback copy on Windows) |
-| `~/.claude/rules/`       | Linked to `~/dotfiles/rules/` (or replaced with verified fallback copy on Windows) |
+| `~/.claude/rules/`       | Linked to `~/dotfiles/rules/` (or replaced with verified fallback copy on Windows)  |
 | `~/.copilot/skills/`     | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.agents/skills/`      | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
-| `~/.bashrc` / `~/.zshrc` | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent) |
-| `~/.npmrc`               | Appends `min-release-age=7` (supply chain protection)                    |
-| `~/.config/uv/uv.toml`   | Adds `exclude-newer` date (supply chain protection)                      |
-| `secrets/.env.agent`     | Created from `.env.agent.example` if missing                             |
-| `secrets/.env.secrets`   | Created from `.env.secrets.example` if missing                           |
-| `secrets/.venv/`         | Python venv created for local skill packages                             |
+| `~/.bashrc` / `~/.zshrc` | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent)            |
+| `~/.npmrc`               | Appends `min-release-age=7` (supply chain protection)                               |
+| `~/.config/uv/uv.toml`   | Adds `exclude-newer` date (supply chain protection)                                 |
+| `secrets/.env.agent`     | Created from `.env.agent.example` if missing                                        |
+| `secrets/.env.secrets`   | Created from `.env.secrets.example` if missing                                      |
+| `secrets/.venv/`         | Python venv created for local skill packages                                        |
 
 **Not run by bootstrap:** `sync-settings.sh` (VS Code settings merge) is manual. Run with `--dry-run` first.
 

@@ -1627,6 +1627,11 @@
                         as GitHub issue.</div>
                 </div>
                 <div class="pipeline-step">
+                    <div class="pipeline-cmd"><code>/architect</code></div>
+                    <div class="pipeline-desc">Plan implementation — vertical slices, dependency graphs, acceptance
+                        criteria. Designs the how before building starts.</div>
+                </div>
+                <div class="pipeline-step">
                     <div class="pipeline-cmd"><code>/prd-to-issues</code></div>
                     <div class="pipeline-desc">Break the PRD into vertical slices. Label each AFK or HITL. Create GitHub
                         issues with dependencies.</div>
@@ -1671,7 +1676,7 @@
                     <div class="skill-desc">Break PRDs into labeled vertical slices</div>
                 </div>
                 <div class="skill-item">
-                    <div class="skill-name"><code>technical-fellow</code></div>
+                    <div class="skill-name"><code>/architect</code></div>
                     <div class="skill-desc">Vertical slices, dependency graphs, acceptance criteria</div>
                     <div class="skill-auto">⚡ auto-invoke</div>
                 </div>
@@ -2005,7 +2010,8 @@
                             <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates
                                 secrets from templates. Wires shell integration. Installs Python deps into
                                 <code>secrets/.venv</code> (including <code>PyJWT</code> for AFK GitHub App token
-                                minting).</div>
+                                minting).
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2082,7 +2088,8 @@ GITHUB_APP_PRIVATE_KEY_B64=...</pre>
                                 </div>
                                 <div class="step-note">Base64 your private key to one line (Git Bash:
                                     <code>base64 -w 0 ~/Downloads/your-app-key.pem</code>) and place all three values in
-                                    <code>secrets/.env.secrets</code>.</div>
+                                    <code>secrets/.env.secrets</code>.
+                                </div>
                             </div>
 
                             <div class="install-tab-content" data-tab-panel="validate">
@@ -2100,7 +2107,8 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                                     </button>
                                 </div>
                                 <div class="step-note">Expected output: <code>mint_success=yes</code>,
-                                    <code>expires_at=...</code>, <code>token_len=40</code>.</div>
+                                    <code>expires_at=...</code>, <code>token_len=40</code>.
+                                </div>
                             </div>
 
                             <button class="step-troubleshoot-toggle" type="button">
@@ -2124,7 +2132,8 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                                     Store, AFK scripts use <code>secrets/.venv</code> Python first. Re-run bootstrap.sh
                                     if venv is missing.</div>
                                 <div class="step-note">If token minting reports missing <code>PyJWT</code> or
-                                    <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.</div>
+                                    <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.
+                                </div>
                                 <div class="step-note">If minting fails with status=404, recheck installation ID, app
                                     install target, and key/app pairing.</div>
                                 <div class="step-note">If a raw token is ever printed, rotate App private key

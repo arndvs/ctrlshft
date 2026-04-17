@@ -7,6 +7,8 @@ description: "Write a Product Requirements Document from a rough idea. Use when 
 
 Output "Read Write a PRD skill." to chat to acknowledge you read this file.
 
+Pipeline position: `/grill-me` → **`/write-a-prd`** → `/architect` → `/prd-to-issues` → `/do-work` → `shft`
+
 ## Process
 
 1. Ask the user for a detailed description of the problem they want to solve. Let them be vague — your job is to extract clarity.
@@ -71,5 +73,10 @@ Output "Read Write a PRD skill." to chat to acknowledge you read this file.
 ```
 
 ## Handoff
+
+After the PRD is complete, offer:
+
+1. `/architect` — plan the implementation (vertical slices, dependency graphs, acceptance criteria)
+2. `/prd-to-issues` — skip straight to creating GitHub issues if the PRD is detailed enough
 
 If context is high before the PRD is complete, follow the standard handoff protocol (global instructions `<handoff>`) — persist progress to `working/` and provide the pickup command.

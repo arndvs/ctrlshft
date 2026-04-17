@@ -7,6 +7,8 @@ description: "Core execution loop for implementing tasks. Use when asked to 'do 
 
 Output "Read Do Work skill." to chat to acknowledge you read this file.
 
+Pipeline position: `/grill-me` → `/write-a-prd` → `/architect` → `/prd-to-issues` → **`/do-work`** → `shft`
+
 ## Workflow
 
 ### 1. Understand
