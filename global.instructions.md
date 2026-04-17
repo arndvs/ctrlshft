@@ -2,6 +2,15 @@
      Referenced by CLAUDE.md via @~/dotfiles/global.instructions.md.
      Always loaded regardless of ACTIVE_CONTEXTS. -->
 
+<source-of-truth>
+~/dotfiles/ is the single source of truth for all agent configuration.
+~/.claude/, ~/.copilot/, and ~/.agents/ are consumer targets, not sources.
+NEVER edit files directly in ~/.claude/, ~/.copilot/, or ~/.agents/.
+ALL changes must be made in ~/dotfiles/ and propagated via bootstrap.sh.
+If a consumer path is not a symlink (or verified Windows fallback copy) from ~/dotfiles/, treat that as broken state and repair it.
+Public shared skills belong in ~/dotfiles/skills/. Private machine/client skills belong in ~/dotfiles/skills/_local/ (gitignored).
+</source-of-truth>
+
 Output "Read global instructions." to chat to acknowledge you read this file.
 
 <general>

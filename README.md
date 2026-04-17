@@ -12,6 +12,8 @@ Every developer using Claude Code or Copilot hits the same walls. Context degrad
 
 ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and AFK iteration tokens (short-lived GitHub App installation tokens) minted per loop. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
+**Source of truth:** `~/dotfiles/` is canonical. `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Make all edits in `~/dotfiles/` only.
+
 ```bash
 git clone https://github.com/arndvs/ctrl.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
@@ -541,9 +543,11 @@ bash ~/dotfiles/bin/sync-settings.sh
 | File                     | Change                                                                   |
 | ------------------------ | ------------------------------------------------------------------------ |
 | `~/.claude/CLAUDE.md`    | Symlinked → `~/dotfiles/CLAUDE.md` (or copied on Windows without admin)  |
-| `~/.claude/skills/`      | Symlinked → `~/dotfiles/skills/` (existing real dirs left alone)         |
-| `~/.claude/agents/`      | Symlinked → `~/dotfiles/agents/` (existing real dirs left alone)         |
-| `~/.claude/rules/`       | Symlinked → `~/dotfiles/rules/` (existing real dirs left alone)          |
+| `~/.claude/skills/`      | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
+| `~/.claude/agents/`      | Linked to `~/dotfiles/agents/` (or replaced with verified fallback copy on Windows) |
+| `~/.claude/rules/`       | Linked to `~/dotfiles/rules/` (or replaced with verified fallback copy on Windows) |
+| `~/.copilot/skills/`     | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
+| `~/.agents/skills/`      | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.bashrc` / `~/.zshrc` | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent) |
 | `~/.npmrc`               | Appends `min-release-age=7` (supply chain protection)                    |
 | `~/.config/uv/uv.toml`   | Adds `exclude-newer` date (supply chain protection)                      |
