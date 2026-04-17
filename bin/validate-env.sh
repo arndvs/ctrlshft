@@ -69,6 +69,7 @@ if [[ $_afk_mode -eq 1 ]]; then
 
     echo
     echo "AFK GitHub App Credentials (from secrets/.env.secrets):"
+    echo "  (Run via: bash bin/run-with-secrets.sh bash bin/validate-env.sh --afk)"
 
     if command -v jq >/dev/null 2>&1; then
         green "  ✓ jq"
