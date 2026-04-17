@@ -146,6 +146,12 @@ fi
 echo
 echo "File System:"
 
+if bash "$HOME/dotfiles/bin/validate-symlinks.sh"; then
+    :
+else
+    _fail=1
+fi
+
 if [[ -f "$HOME/.claude/CLAUDE.md" ]]; then
     green "  ✓ ~/.claude/CLAUDE.md exists"
 else
