@@ -7,8 +7,6 @@ description: "Core execution loop for implementing tasks. Use when asked to 'do 
 
 Output "Read Do Work skill." to chat to acknowledge you read this file.
 
-Pipeline position: `/grill-me` → `/write-a-prd` → `/architect` → `/prd-to-issues` → **`/do-work`** → `shft`
-
 ## Workflow
 
 ### 1. Understand
@@ -39,10 +37,10 @@ If no feedback loops are detected, tell the user and ask what validation command
 
 ### 5. Commit
 
-Once validation passes, commit the work using atomic commit format (one logical change per commit, conventional commit message).
+Once validation passes, commit the work using the atomic-commits skill (one logical change per commit, conventional commit message). If this is the final slice and the work is ready for review, use **Ship** mode — push and open a PR.
 
 ### 6. Context Check
 
-If this is one phase of a multi-phase plan, or if context usage is over 40%, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — commit all work, persist the remaining plan to `working/`, and provide the pickup command.
+If this is one phase of a multi-phase plan, or if context usage is over 40%, follow the standard handoff protocol (global instructions `<handoff>`) — commit all work, persist the remaining plan to `working/`, and provide the pickup command.
 
 Include @-references to research.md, PRD issues, and key files modified this session.
