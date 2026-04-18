@@ -232,7 +232,7 @@ The benefit: ⚡ skills act as passive guardrails. You don't remember to say "us
 | `improve-architecture` ⚡ | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                        |
 | `tdd`                     | Red-green refactor. Failing test → implement → refactor. Backend only.                                |
 | `systematic-debugging` ⚡ | Root-cause-first — investigate → pattern analysis → hypothesis → fix.                                 |
-| `atomic-commits` ⚡       | One logical change per commit. Survey diff, group by seam, conventional commit messages.              |
+| `atomic-commits` ⚡       | Branch-isolated atomic commits. Survey diff, group by seam, commit or ship (push + PR).               |
 | `code-review`             | Focused review of staged or recent changes. Edge cases, logic errors, integration risks.              |
 | `document`                | Write, update, or audit documentation. Accurate, minimal, audience-appropriate.                       |
 | `sanity-best-practices`   | Sanity schema design, GROQ, TypeGen, Visual Editing, Portable Text, framework integrations.           |
