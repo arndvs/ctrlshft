@@ -1894,10 +1894,62 @@
         </div>
     </section>
 
+    <!-- HOOKS -->
+    <section class="section fade-in">
+        <div class="container">
+            <div class="section-num">08 — HOOKS</div>
+            <h2 class="section-title">Guardrails that<br><em>never sleep</em></h2>
+
+            <p style="max-width: 56rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                Claude Code hooks fire on lifecycle events — before tools run, when the agent stops.
+                Shell scripts receive JSON on stdin, return exit codes. No model judgment required.
+            </p>
+
+            <div class="agents-grid">
+                <div class="agent-card">
+                    <div class="agent-name">secret-guard</div>
+                    <div class="agent-focus">Blocks credential-exposing commands before they execute. Defense-in-depth
+                        alongside deny rules.</div>
+                    <div class="agent-meta"><span class="badge">PreToolUse</span><span class="badge">Bash</span></div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">migration-guard</div>
+                    <div class="agent-focus">Blocks database migrations targeting non-test databases. Requires explicit
+                        confirmation before proceeding.</div>
+                    <div class="agent-meta"><span class="badge">PreToolUse</span><span class="badge">Bash</span></div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">format-check</div>
+                    <div class="agent-focus">Detects Biome, Prettier, or ESLint and formats all modified files when the
+                        agent
+                        stops.</div>
+                    <div class="agent-meta"><span class="badge">Stop</span><span class="badge">non-blocking</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">typecheck</div>
+                    <div class="agent-focus">Runs <code>tsc --noEmit</code> on TypeScript projects. Blocks the agent
+                        from
+                        stopping until types pass.</div>
+                    <div class="agent-meta"><span class="badge">Stop</span><span class="badge">blocking</span></div>
+                </div>
+            </div>
+
+            <div
+                style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                <strong
+                    style="color: var(--text); font-family: var(--mono); letter-spacing: 0.08rem;">How it works:</strong>
+                Scripts in <code>hooks/</code> receive JSON on stdin, check conditions, return exit code 0 (allow)
+                or 2 (block). Bootstrap symlinks <code>hooks/</code> → <code>~/.claude/hooks/</code> and merges
+                configuration into <code>~/.claude/settings.json</code>.
+            </div>
+        </div>
+    </section>
+
     <!-- SHFT -->
     <section class="section fade-in" id="shft">
         <div class="container">
-            <div class="section-num">08 — SHFT</div>
+            <div class="section-num">09 — SHFT</div>
             <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
 
             <p style="max-width: 54rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
@@ -1933,7 +1985,7 @@
     <!-- INSTALL -->
     <section class="section fade-in" id="install">
         <div class="container">
-            <div class="section-num">09 — INSTALLATION</div>
+            <div class="section-num">10 — INSTALLATION</div>
             <h2 class="section-title">Running in<br><em>minutes</em></h2>
 
             <div class="install-block">
@@ -2007,8 +2059,9 @@
                                     <span>Copy</span>
                                 </button>
                             </div>
-                            <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/. Creates
-                                secrets from templates. Wires shell integration. Installs Python deps into
+                            <div class="step-note">Idempotent. Symlinks CLAUDE.md, skills/, agents/, rules/,
+                                commands/, hooks/. Merges hook config into <code>~/.claude/settings.json</code>.
+                                Creates secrets from templates. Wires shell integration. Installs Python deps into
                                 <code>secrets/.venv</code> (including <code>PyJWT</code> for AFK GitHub App token
                                 minting).
                             </div>

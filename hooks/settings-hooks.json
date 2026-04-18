@@ -1,0 +1,33 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/secret-guard.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/migration-guard.sh\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/format-check.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/typecheck.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
