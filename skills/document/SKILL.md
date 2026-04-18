@@ -139,4 +139,4 @@ Read git log or merged PRs to populate. Never fabricate entries.
 
 ## Handoff
 
-If context is high before documentation is complete, follow the standard handoff protocol (global instructions `<handoff>`) — persist progress to `working/` and provide the pickup command.
+If context is high before documentation is complete, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — persist progress to `working/` and provide the pickup command.
