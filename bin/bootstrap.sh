@@ -34,7 +34,7 @@ fi
 
 # ── 1. Create secrets directory and split env files ───────────────────────────
 echo
-green "[1/11] Secrets directory"
+green "[1/12] Secrets directory"
 mkdir -p "$SECRETS_DIR"
 
 # Migration hint for legacy .env users (must check BEFORE creating new files)
@@ -72,7 +72,7 @@ fi
 
 # ── 2. Generate and link CLAUDE.md ─────────────────────────────────────────────
 echo
-green "[2/11] CLAUDE.md (generated from CLAUDE.base.md + local instructions)"
+green "[2/12] CLAUDE.md (generated from CLAUDE.base.md + local instructions)"
 mkdir -p "$CLAUDE_DIR"
 mkdir -p "$DOTFILES/skills/_local"
 mkdir -p "$DOTFILES/instructions/_local"
@@ -124,7 +124,7 @@ fi
 
 # ── 3. Symlink ~/.claude/skills/ ──────────────────────────────────────────────
 echo
-green "[3/11] Skills directory (Claude Code)"
+green "[3/12] Skills directory (Claude Code)"
 ensure_symlink "$DOTFILES/skills" "$CLAUDE_DIR/skills" "~/.claude/skills"
 
 # Report discovered skills
@@ -148,7 +148,7 @@ green "  Skills found: $_shared_skills shared, $_local_skills local"
 
 # ── 4. Symlink ~/.claude/agents/ ─────────────────────────────────────────────
 echo
-green "[4/11] Agents directory"
+green "[4/12] Agents directory"
 mkdir -p "$DOTFILES/agents"
 ensure_symlink "$DOTFILES/agents" "$CLAUDE_DIR/agents" "~/.claude/agents"
 
@@ -160,7 +160,7 @@ green "  Agents found: $_agents"
 
 # ── 5. Symlink ~/.claude/rules/ ──────────────────────────────────────────────
 echo
-green "[5/11] Rules directory"
+green "[5/12] Rules directory"
 mkdir -p "$DOTFILES/rules"
 ensure_symlink "$DOTFILES/rules" "$CLAUDE_DIR/rules" "~/.claude/rules"
 
@@ -170,21 +170,33 @@ for f in "$DOTFILES/rules/"*.md; do
 done
 green "  Rules found: $_rules"
 
-# ── 6. Symlink ~/.copilot/skills/ ────────────────────────────────────────────
+# ── 6. Symlink ~/.claude/commands/ ────────────────────────────────────────────
 echo
-green "[6/11] Copilot skills directory"
+green "[6/12] Commands directory"
+mkdir -p "$DOTFILES/commands"
+ensure_symlink "$DOTFILES/commands" "$CLAUDE_DIR/commands" "~/.claude/commands"
+
+_commands=0
+for f in "$DOTFILES/commands/"*.md; do
+    [[ -f "$f" ]] && _commands=$(( _commands + 1 ))
+done
+green "  Commands found: $_commands"
+
+# ── 7. Symlink ~/.copilot/skills/ ────────────────────────────────────────────
+echo
+green "[7/12] Copilot skills directory"
 mkdir -p "$COPILOT_DIR"
 ensure_symlink "$DOTFILES/skills" "$COPILOT_DIR/skills" "~/.copilot/skills"
 
-# ── 7. Symlink ~/.agents/skills/ ─────────────────────────────────────────────
+# ── 8. Symlink ~/.agents/skills/ ─────────────────────────────────────────────
 echo
-green "[7/11] Agent framework skills directory"
+green "[8/12] Agent framework skills directory"
 mkdir -p "$AGENTS_DIR"
 ensure_symlink "$DOTFILES/skills" "$AGENTS_DIR/skills" "~/.agents/skills"
 
-# ── 8. Wire up shell ──────────────────────────────────────────────────────────
+# ── 9. Wire up shell ──────────────────────────────────────────────────────────
 echo
-green "[8/11] Shell integration"
+green "[9/12] Shell integration"
 
 _SHELL_SNIPPET=$(cat << 'SHELLEOF'
 
@@ -222,9 +234,9 @@ if [[ -f "$ZSHRC" ]] || [[ "$(basename "$SHELL" 2>/dev/null)" == "zsh" ]]; then
     _wire_shell_rc "$ZSHRC" "~/.zshrc"
 fi
 
-# ── 9. Python venv ───────────────────────────────────────────────────────────
+# ── 10. Python venv ──────────────────────────────────────────────────────────
 echo
-green "[9/11] Python venv"
+green "[10/12] Python venv"
 
 # Find a python executable (venv first, then system)
 if ! find_python; then
@@ -257,9 +269,9 @@ if [[ -d "$VENV_DIR" ]]; then
     fi
 fi
 
-# ── 10. Supply chain attack protection ────────────────────────────────────────
+# ── 11. Supply chain attack protection ────────────────────────────────────────
 echo
-green "[10/11] Package manager security (supply chain protection)"
+green "[11/12] Package manager security (supply chain protection)"
 
 # ~/.npmrc — refuse npm packages published < 7 days ago
 if [[ -f "$HOME/.npmrc" ]] && grep -qF "min-release-age" "$HOME/.npmrc"; then
@@ -287,9 +299,9 @@ else
     green "  Added exclude-newer = \"$UV_DATE\" to ~/.config/uv/uv.toml"
 fi
 
-# ── 11. Validation ────────────────────────────────────────────────────────────
+# ── 12. Validation ────────────────────────────────────────────────────────────
 echo
-green "[11/11] Validating setup"
+green "[12/12] Validating setup"
 
 # Delegate to validate-env.sh — single source of truth for all validation checks.
 # validate-env.sh sets _fail and _warn internally and prints results.
