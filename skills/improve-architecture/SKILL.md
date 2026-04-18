@@ -44,4 +44,4 @@ Once the user accepts a design, create a GitHub issue as a refactor RFC describi
 
 ## Handoff
 
-If context is high at any step, follow the standard handoff protocol (global instructions `<handoff>`) — persist analysis and current progress to `working/` and provide the pickup command.
+If context is high at any step, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — persist analysis and current progress to `working/` and provide the pickup command.

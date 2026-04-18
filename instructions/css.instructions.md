@@ -62,6 +62,9 @@ Define all colors as CSS custom properties in `globals.css` `:root` / `.dark` bl
 - Do not use top borders as visual separators
 - No decorative borders except on native DOM elements (input, textarea)
 - If using borders on focus/hover/selected states, add an invisible border to the default state to prevent layout shift
+- Before using any CSS variable, class, or Tailwind token, verify it actually exists in the codebase. Search for its definition first — never assume a name exists based on convention or naming patterns
+- When reorganizing or moving elements, check and fix spacing
+- When I upload an image for you, describe it with pixel perfect accuracy and aim to replicate it perfectly as close to the image as possible
 - Use Tailwind utility classes directly — avoid custom CSS unless defining `@theme` tokens, `@keyframes`, or `@utility` rules
 - Use shadcn/ui components for interactive elements — do not build custom accessible widgets from scratch
 - When shadcn/ui doesn't have the component, use Radix UI primitives directly

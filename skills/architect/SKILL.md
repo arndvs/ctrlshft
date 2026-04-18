@@ -185,4 +185,4 @@ After presenting the plan, offer the user:
 
 1. `/prd-to-issues` — create GitHub issues from this plan
 2. `/do-work` — start implementing the first slice immediately
-3. **Save plan to `working/`** — follow the standard handoff protocol (global instructions `<handoff>`) to persist for cross-conversation pickup. Include @-references to research.md, PRD issue, and key files.
+3. **Save plan to `working/`** — follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) to persist for cross-conversation pickup. Include @-references to research.md, PRD issue, and key files.

@@ -25,4 +25,4 @@ After reaching shared understanding, offer the user three paths:
 
 Let the user choose.
 
-If context fills up during the interview, follow the standard handoff protocol (global instructions `<handoff>`) — persist decisions made so far to `working/` and provide the pickup command.
+If context fills up during the interview, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — persist decisions made so far to `working/` and provide the pickup command.

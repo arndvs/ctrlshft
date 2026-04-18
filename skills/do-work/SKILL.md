@@ -43,6 +43,6 @@ Once validation passes, commit the work using atomic commit format (one logical 
 
 ### 6. Context Check
 
-If this is one phase of a multi-phase plan, or if context usage is over 40%, follow the standard handoff protocol (global instructions `<handoff>`) — commit all work, persist the remaining plan to `working/`, and provide the pickup command.
+If this is one phase of a multi-phase plan, or if context usage is over 40%, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — commit all work, persist the remaining plan to `working/`, and provide the pickup command.
 
 Include @-references to research.md, PRD issues, and key files modified this session.

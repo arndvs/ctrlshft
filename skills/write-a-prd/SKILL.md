@@ -79,4 +79,4 @@ After the PRD is complete, offer:
 1. `/architect` — plan the implementation (vertical slices, dependency graphs, acceptance criteria)
 2. `/prd-to-issues` — skip straight to creating GitHub issues if the PRD is detailed enough
 
-If context is high before the PRD is complete, follow the standard handoff protocol (global instructions `<handoff>`) — persist progress to `working/` and provide the pickup command.
+If context is high before the PRD is complete, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — persist progress to `working/` and provide the pickup command.
