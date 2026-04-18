@@ -39,7 +39,7 @@ If no feedback loops are detected, tell the user and ask what validation command
 
 ### 5. Commit
 
-Once validation passes, commit the work using atomic commit format (one logical change per commit, conventional commit message).
+Once validation passes, commit the work using the atomic-commits skill (one logical change per commit, conventional commit message). If this is the final slice and the work is ready for review, use **Ship** mode — push and open a PR.
 
 ### 6. Context Check
 
