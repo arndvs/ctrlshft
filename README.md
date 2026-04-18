@@ -112,11 +112,12 @@ All three use `model: sonnet`, read-only tools (Read, Grep, Glob, Bash), and `me
 
 `rules/` contains convention-enforcement files that load only when the agent touches matching files. Each rule uses `paths:` YAML frontmatter to scope itself.
 
-| Rule               | Scoped to                                       |
-| ------------------ | ----------------------------------------------- |
-| `test-conventions` | `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**` |
-| `migration-safety` | `**/migrations/**`, `**/prisma/migrations/**`   |
-| `env-security`     | `**/.env*`, `**/secrets/**`, `**/credentials*`  |
+| Rule                   | Scoped to                                       |
+| ---------------------- | ----------------------------------------------- |
+| `test-conventions`     | `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**` |
+| `migration-safety`     | `**/migrations/**`, `**/prisma/migrations/**`   |
+| `env-security`         | `**/.env*`, `**/secrets/**`, `**/credentials*`  |
+| `terminal-workarounds` | Terminal sessions                               |
 
 Rules without `paths:` load every session. Add your own: `rules/your-rule.md` — auto-discovered.
 
@@ -213,7 +214,9 @@ If a raw token is ever printed to terminal/chat/logs, treat that as an exposure 
 
 ## Skills
 
-Skills marked ⚡ auto-invoke when the agent detects a matching task. Others require explicit `/slash-command` invocation.
+Every skill's `description` is loaded into the agent's system prompt at session start. The agent reads a skill's full `SKILL.md` when it detects a matching situation. Skills marked ⚡ have broad descriptions that match common task patterns — the agent loads them automatically without you asking. The rest have narrow descriptions and fire only when you invoke them by name or via `/slash-command`.
+
+The benefit: ⚡ skills act as passive guardrails. You don't remember to say "use the debugging skill" — the agent recognizes an error and loads the root-cause-first investigation protocol on its own. Same rigorous process every time, without you thinking about it.
 
 | Skill                     | What it does                                                                                          |
 | ------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -229,8 +232,30 @@ Skills marked ⚡ auto-invoke when the agent detects a matching task. Others req
 | `improve-architecture` ⚡ | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                        |
 | `tdd`                     | Red-green refactor. Failing test → implement → refactor. Backend only.                                |
 | `systematic-debugging` ⚡ | Root-cause-first — investigate → pattern analysis → hypothesis → fix.                                 |
+| `atomic-commits` ⚡       | One logical change per commit. Survey diff, group by seam, conventional commit messages.              |
+| `code-review`             | Focused review of staged or recent changes. Edge cases, logic errors, integration risks.              |
+| `document`                | Write, update, or audit documentation. Accurate, minimal, audience-appropriate.                       |
+| `sanity-best-practices`   | Sanity schema design, GROQ, TypeGen, Visual Editing, Portable Text, framework integrations.           |
 
 Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored.
+
+---
+
+## Slash Commands
+
+Thin launchers in `commands/` that load a skill with your arguments. Type the command in chat — the agent loads the full skill protocol automatically.
+
+| Command      | Loads skill        | What it does                                                          |
+| ------------ | ------------------ | --------------------------------------------------------------------- |
+| `/work`      | `do-work`          | Core execution loop — understand, plan, implement, validate, commit.  |
+| `/plan`      | `architect`        | Vertical slices, dependency graphs, acceptance criteria.              |
+| `/audit`     | `codebase-audit`   | Ruthless audit — real problems only, grouped by severity.             |
+| `/review`    | `code-review`      | Focused review of staged or recent changes.                           |
+| `/explore`   | `explore`          | Decompose a topic, spawn parallel sub-agents, synthesize.             |
+| `/test`      | `tdd`              | Red-green refactor. Failing test → implement → refactor.              |
+| `/document`  | `document`         | Write, update, or audit documentation.                                |
+
+Add your own: `commands/your-command.md` — auto-discovered. Each file is a prompt template with `$ARGUMENTS` passthrough.
 
 ---
 
@@ -367,33 +392,35 @@ docker sandbox run claude .
 │   ├── google-docs.instructions.md
 │   ├── css.instructions.md
 │   ├── ux-prototyping.instructions.md
+│   ├── handoff.instructions.md      ← cross-conversation persistence protocol
 │   └── _local/                      ← GITIGNORED — your private instructions
+├── commands/
+│   ├── audit.md                     /audit → codebase-audit skill
+│   ├── document.md                  /document → document skill
+│   ├── explore.md                   /explore → explore skill
+│   ├── plan.md                      /plan → architect skill
+│   ├── review.md                    /review → code-review skill
+│   ├── test.md                      /test → tdd skill
+│   └── work.md                      /work → do-work skill
 ├── agents/
 │   ├── code-reviewer.md             subagent: bugs, correctness, security
 │   ├── researcher.md                subagent: deep codebase exploration
 │   └── security-auditor.md          subagent: OWASP, secrets, config
-├── commands/
-│   ├── review.md                    /review → code-review skill
-│   ├── explore.md                   /explore → explore skill
-│   ├── audit.md                     /audit → codebase-audit skill
-│   ├── plan.md                      /plan → architect skill
-│   ├── test.md                      /test → tdd skill
-│   ├── work.md                      /work → do-work skill
-│   └── document.md                  /document → document skill
 ├── hooks/
-│   ├── secret-guard.sh              PreToolUse: block credential exposure
-│   ├── migration-guard.sh           PreToolUse: block non-test migrations
-│   ├── format-check.sh              Stop: run Biome/Prettier on modified files
-│   ├── typecheck.sh                 Stop: run tsc --noEmit, block on errors
-│   ├── compaction-guard.sh          PreCompact: block auto-compaction, enforce handoff
-│   ├── context-warning.sh           UserPromptSubmit: graduated warnings (stub)
+│   ├── secret-guard.sh              PreToolUse(Bash) — blocks credential exposure
+│   ├── migration-guard.sh           PreToolUse(Bash) — blocks non-test migrations
+│   ├── format-check.sh              Stop — auto-formats modified files
+│   ├── typecheck.sh                 Stop — blocks on type errors
+│   ├── compaction-guard.sh          PreCompact(auto) — blocks auto-compaction
+│   ├── context-warning.sh           UserPromptSubmit — graduated warnings (stub)
 │   ├── settings-hooks.json          hook config merged into ~/.claude/settings.json
-│   ├── experiments/                 probes for undocumented features
-│   └── README.md                    hook documentation
+│   ├── experiments/                 ← feature discovery probes
+│   └── README.md
 ├── rules/
 │   ├── test-conventions.md          scoped to **/*.test.*, **/*.spec.*
 │   ├── migration-safety.md          scoped to **/migrations/**
-│   └── env-security.md              scoped to **/.env*, **/secrets/**
+│   ├── env-security.md              scoped to **/.env*, **/secrets/**
+│   └── terminal-workarounds.md      scoped to terminal sessions
 ├── skills/
 │   ├── do-work/
 │   ├── grill-me/
@@ -407,19 +434,28 @@ docker sandbox run claude .
 │   ├── improve-architecture/
 │   ├── tdd/
 │   ├── systematic-debugging/
+│   ├── atomic-commits/
+│   ├── code-review/
+│   ├── document/
+│   ├── sanity-best-practices/
 │   └── _local/                      ← GITIGNORED — your private skills
 ├── shft/
 │   ├── afk.sh                       AFK autonomous loop
 │   ├── once.sh                      HITL single-run
+│   ├── _build_prompt.sh             prompt assembly for shft runs
 │   └── prompt.md                    shared agent prompt
 ├── bin/
+│   ├── _lib.sh                      shared shell library
 │   ├── bootstrap.sh                 one-command setup, idempotent
 │   ├── agent-shell.sh               secrets-free shell for agent sessions
 │   ├── sync-settings.sh             deep-merge VS Code settings
 │   ├── load-secrets.sh              sources .env.agent into shell
 │   ├── run-with-secrets.sh          process-scoped secret injection
 │   ├── detect-context.sh            exports ACTIVE_CONTEXTS
-│   └── validate-env.sh              env + hardening validation
+│   ├── validate-env.sh              env + hardening validation
+│   ├── validate-symlinks.sh         verify bootstrap symlinks
+│   ├── mint_github_app_token.py     AFK token minting
+│   └── verify-github-app-token.sh   safe token verification
 ├── site/                            ← landing page (ctrlshft.dev)
 │   ├── index.html
 │   ├── CNAME
@@ -476,9 +512,6 @@ docker sandbox run claude .
 > - **`~/.claude/skills/`** — symlinked if absent or a stale link. Existing real directories are left alone (manual merge message shown).
 > - **`~/.claude/agents/`** — symlinked if absent or a stale link. Same behavior as skills/.
 > - **`~/.claude/rules/`** — symlinked if absent or a stale link. Same behavior as skills/.
-> - **`~/.claude/commands/`** — symlinked if absent or a stale link. Slash command wrappers.
-> - **`~/.claude/hooks/`** — symlinked if absent or a stale link. Lifecycle hook scripts.
-> - **`~/.claude/settings.json`** — hook configuration merged (requires jq). Existing settings preserved.
 > - **`~/.bashrc` / `~/.zshrc`** — appends shell integration (load-secrets + context detection). Idempotent on re-runs.
 > - **`~/.npmrc`** — appends `min-release-age=7` for supply chain protection.
 > - **`~/.config/uv/uv.toml`** — adds `exclude-newer` date for supply chain protection.
@@ -497,8 +530,7 @@ Bootstrap is idempotent — safe to re-run. It handles:
 
 - Generating `CLAUDE.md` from `CLAUDE.base.md` + your local instruction files
 - Creating `secrets/.env.agent` and `secrets/.env.secrets` from templates
-- Symlinking `~/.claude/CLAUDE.md`, `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/rules/`, `~/.claude/commands/`, and `~/.claude/hooks/`
-- Merging hook configuration into `~/.claude/settings.json`
+- Symlinking `~/.claude/CLAUDE.md`, `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/rules/`
 - Creating `skills/_local/` and `instructions/_local/`
 - Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc`
 - Creating the Python venv
@@ -546,8 +578,6 @@ ln -sf ~/dotfiles/CLAUDE.md ~/.claude/CLAUDE.md
 ln -sf ~/dotfiles/skills ~/.claude/skills
 ln -sf ~/dotfiles/agents ~/.claude/agents
 ln -sf ~/dotfiles/rules ~/.claude/rules
-ln -sf ~/dotfiles/commands ~/.claude/commands
-ln -sf ~/dotfiles/hooks ~/.claude/hooks
 
 # 3. Secrets
 cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent
@@ -576,9 +606,6 @@ bash ~/dotfiles/bin/sync-settings.sh
 | `~/.claude/skills/`      | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.claude/agents/`      | Linked to `~/dotfiles/agents/` (or replaced with verified fallback copy on Windows) |
 | `~/.claude/rules/`       | Linked to `~/dotfiles/rules/` (or replaced with verified fallback copy on Windows)  |
-| `~/.claude/commands/`    | Linked to `~/dotfiles/commands/` (slash command wrappers)                           |
-| `~/.claude/hooks/`       | Linked to `~/dotfiles/hooks/` (lifecycle hook scripts)                              |
-| `~/.claude/settings.json`| Hook configuration merged from `hooks/settings-hooks.json` (requires jq)            |
 | `~/.copilot/skills/`     | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.agents/skills/`      | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.bashrc` / `~/.zshrc` | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent)            |
@@ -604,8 +631,6 @@ bash ~/dotfiles/bin/sync-settings.sh
 | Add a private instruction | Create `instructions/_local/your-topic.instructions.md`, re-run `bootstrap.sh`                                                              |
 | Add an agent              | Create `agents/your-agent.md` with YAML frontmatter (`name`, `description`, `tools`, `model`) — auto-discovered                             |
 | Add a rule                | Create `rules/your-rule.md` with optional `paths:` frontmatter for file-glob scoping — auto-discovered                                      |
-| Add a command             | Create `commands/your-cmd.md` — thin wrapper that loads a skill with `$ARGUMENTS` passthrough                                                |
-| Add a hook                | Create `hooks/your-hook.sh`, add entry to `hooks/settings-hooks.json`, re-run `bootstrap.sh`                                                |
 | Add config                | Add key to `.env.agent.example`, value to `secrets/.env.agent`                                                                              |
 | Add a secret              | Add key to `.env.secrets.example`, value to `secrets/.env.secrets`                                                                          |
 
