@@ -34,7 +34,7 @@ fi
 
 # ── 1. Create secrets directory and split env files ───────────────────────────
 echo
-green "[1/11] Secrets directory"
+green "[1/13] Secrets directory"
 mkdir -p "$SECRETS_DIR"
 
 # Migration hint for legacy .env users (must check BEFORE creating new files)
@@ -72,7 +72,7 @@ fi
 
 # ── 2. Generate and link CLAUDE.md ─────────────────────────────────────────────
 echo
-green "[2/11] CLAUDE.md (generated from CLAUDE.base.md + local instructions)"
+green "[2/13] CLAUDE.md (generated from CLAUDE.base.md + local instructions)"
 mkdir -p "$CLAUDE_DIR"
 mkdir -p "$DOTFILES/skills/_local"
 mkdir -p "$DOTFILES/instructions/_local"
@@ -124,7 +124,7 @@ fi
 
 # ── 3. Symlink ~/.claude/skills/ ──────────────────────────────────────────────
 echo
-green "[3/11] Skills directory (Claude Code)"
+green "[3/13] Skills directory (Claude Code)"
 ensure_symlink "$DOTFILES/skills" "$CLAUDE_DIR/skills" "~/.claude/skills"
 
 # Report discovered skills
@@ -148,7 +148,7 @@ green "  Skills found: $_shared_skills shared, $_local_skills local"
 
 # ── 4. Symlink ~/.claude/agents/ ─────────────────────────────────────────────
 echo
-green "[4/11] Agents directory"
+green "[4/13] Agents directory"
 mkdir -p "$DOTFILES/agents"
 ensure_symlink "$DOTFILES/agents" "$CLAUDE_DIR/agents" "~/.claude/agents"
 
@@ -160,7 +160,7 @@ green "  Agents found: $_agents"
 
 # ── 5. Symlink ~/.claude/rules/ ──────────────────────────────────────────────
 echo
-green "[5/11] Rules directory"
+green "[5/13] Rules directory"
 mkdir -p "$DOTFILES/rules"
 ensure_symlink "$DOTFILES/rules" "$CLAUDE_DIR/rules" "~/.claude/rules"
 
@@ -170,21 +170,64 @@ for f in "$DOTFILES/rules/"*.md; do
 done
 green "  Rules found: $_rules"
 
-# ── 6. Symlink ~/.copilot/skills/ ────────────────────────────────────────────
+# ── 6. Symlink ~/.claude/commands/ ────────────────────────────────────────────
 echo
-green "[6/11] Copilot skills directory"
+green "[6/13] Commands directory"
+mkdir -p "$DOTFILES/commands"
+ensure_symlink "$DOTFILES/commands" "$CLAUDE_DIR/commands" "~/.claude/commands"
+
+_commands=0
+for f in "$DOTFILES/commands/"*.md; do
+    [[ -f "$f" ]] && _commands=$(( _commands + 1 ))
+done
+green "  Commands found: $_commands"
+
+# ── 7. Claude Code hooks ──────────────────────────────────────────────────────
+echo
+green "[7/13] Claude Code hooks"
+mkdir -p "$DOTFILES/hooks"
+ensure_symlink "$DOTFILES/hooks" "$CLAUDE_DIR/hooks" "~/.claude/hooks"
+
+_hooks=0
+for f in "$DOTFILES/hooks/"*.sh; do
+    [[ -f "$f" ]] && _hooks=$(( _hooks + 1 ))
+done
+green "  Hook scripts found: $_hooks"
+
+# Merge hook configuration into ~/.claude/settings.json
+if [[ -f "$DOTFILES/hooks/settings-hooks.json" ]]; then
+    if [[ -f "$CLAUDE_DIR/settings.json" ]]; then
+        if command -v jq &>/dev/null && jq -e '.hooks' "$CLAUDE_DIR/settings.json" &>/dev/null; then
+            yellow "  ~/.claude/settings.json already has hooks — skipping merge"
+        elif command -v jq &>/dev/null; then
+            jq -s '.[0] * .[1]' "$CLAUDE_DIR/settings.json" "$DOTFILES/hooks/settings-hooks.json" > "$CLAUDE_DIR/settings.json.tmp"
+            mv "$CLAUDE_DIR/settings.json.tmp" "$CLAUDE_DIR/settings.json"
+            green "  Merged hook config into ~/.claude/settings.json"
+        else
+            yellow "  jq not found — cannot merge hooks into settings.json"
+            yellow "  Install jq and re-run, or manually merge hooks/settings-hooks.json"
+        fi
+    else
+        cp "$DOTFILES/hooks/settings-hooks.json" "$CLAUDE_DIR/settings.json"
+        green "  Created ~/.claude/settings.json with hook configuration"
+    fi
+fi
+
+# ── 8. Symlink ~/.copilot/skills/ ────────────────────────────────────────────
+echo
+green "[8/13] Copilot skills directory"
 mkdir -p "$COPILOT_DIR"
 ensure_symlink "$DOTFILES/skills" "$COPILOT_DIR/skills" "~/.copilot/skills"
 
-# ── 7. Symlink ~/.agents/skills/ ─────────────────────────────────────────────
+# ── 9. Symlink ~/.agents/skills/ ─────────────────────────────────────────────
 echo
-green "[7/11] Agent framework skills directory"
+green "[9/13] Agent framework skills directory"
 mkdir -p "$AGENTS_DIR"
 ensure_symlink "$DOTFILES/skills" "$AGENTS_DIR/skills" "~/.agents/skills"
 
-# ── 8. Wire up shell ──────────────────────────────────────────────────────────
+# ── 10. Wire up shell ─────────────────────────────────────────────────────────
 echo
-green "[8/11] Shell integration"
+green "[10/13] Shell integration"
 
 _SHELL_SNIPPET=$(cat << 'SHELLEOF'
 
@@ -222,9 +265,9 @@ if [[ -f "$ZSHRC" ]] || [[ "$(basename "$SHELL" 2>/dev/null)" == "zsh" ]]; then
     _wire_shell_rc "$ZSHRC" "~/.zshrc"
 fi
 
-# ── 9. Python venv ───────────────────────────────────────────────────────────
+# ── 11. Python venv ──────────────────────────────────────────────────────────
 echo
-green "[9/11] Python venv"
+green "[11/13] Python venv"
 
 # Find a python executable (venv first, then system)
 if ! find_python; then
@@ -257,9 +300,9 @@ if [[ -d "$VENV_DIR" ]]; then
     fi
 fi
 
-# ── 10. Supply chain attack protection ────────────────────────────────────────
+# ── 12. Supply chain attack protection ────────────────────────────────────────
 echo
-green "[10/11] Package manager security (supply chain protection)"
+green "[12/13] Package manager security (supply chain protection)"
 
 # ~/.npmrc — refuse npm packages published < 7 days ago
 if [[ -f "$HOME/.npmrc" ]] && grep -qF "min-release-age" "$HOME/.npmrc"; then
@@ -287,9 +330,9 @@ else
     green "  Added exclude-newer = \"$UV_DATE\" to ~/.config/uv/uv.toml"
 fi
 
-# ── 11. Validation ────────────────────────────────────────────────────────────
+# ── 13. Validation ────────────────────────────────────────────────────────────
 echo
-green "[11/11] Validating setup"
+green "[13/13] Validating setup"
 
 # Delegate to validate-env.sh — single source of truth for all validation checks.
 # validate-env.sh sets _fail and _warn internally and prints results.

@@ -7,6 +7,8 @@ description: "Interview the user relentlessly about a plan or design until reach
 
 Output "Read Grill Me skill." to chat to acknowledge you read this file.
 
+Pipeline position: **`/grill-me`** → `/write-a-prd` → `/architect` → `/prd-to-issues` → `/do-work` → `shft`
+
 Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
 
 Ask the questions one at a time.
@@ -23,4 +25,4 @@ After reaching shared understanding, offer the user three paths:
 
 Let the user choose.
 
-If context fills up during the interview, follow the standard handoff protocol (global instructions `<handoff>`) — persist decisions made so far to `working/` and provide the pickup command.
+If context fills up during the interview, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — persist decisions made so far to `working/` and provide the pickup command.

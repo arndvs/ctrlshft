@@ -2,6 +2,8 @@ Output "Read UX Prototyping instructions." to chat to acknowledge you read this 
 
 # UX/UI Prototyping Guidelines
 
+- Never change website copy unless told to
+
 ## Objective
 
 Develop isolated components that developers can easily implement within a large headless CRM project. Each component should be self-contained with all utilities, Tailwind styles, and functionality in a single TSX file. Include JSON data at the top to populate text and images, facilitating future integration with a headless CMS. The caveat here is that if an external component data set is already being brought in, use that data set rather than refactoring the data set to then bring it into the component.

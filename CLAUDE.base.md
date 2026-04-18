@@ -21,6 +21,10 @@ If `$ACTIVE_CONTEXTS` is not set, fall back to checking for file signatures (`ne
 
 Output "Active Context: [list of detected contexts]." to chat (e.g. "Active Context: nextjs, sanity."). If no contexts were detected, output "Active Context: none."
 
+## Always-Loaded Instructions
+
+@~/dotfiles/instructions/handoff.instructions.md
+
 ## Service-Triggered Instructions
 
 If working with Google Docs, Sheets, or Slides, also read:

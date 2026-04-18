@@ -7,7 +7,9 @@ description: "Break a PRD into independently grabbable GitHub issues with depend
 
 Output "Read PRD to Issues skill." to chat to acknowledge you read this file.
 
-Use this skill to create GitHub issues from a finalized PRD or plan. Use `technical-fellow` for deeper analysis and planning before issue creation.
+Pipeline position: `/grill-me` → `/write-a-prd` → `/architect` → **`/prd-to-issues`** → `/do-work` → `shft`
+
+Use this skill to create GitHub issues from a finalized PRD or plan. Use `/architect` for deeper analysis and planning before issue creation.
 
 ## Process
 
@@ -52,4 +54,4 @@ Use this skill to create GitHub issues from a finalized PRD or plan. Use `techni
 After issues are created, offer:
 
 1. `/do-work` — start implementing the first slice
-2. **Save plan to `working/`** — if context is high or multi-session work, follow the standard handoff protocol (global instructions `<handoff>`) to persist the issue list and dependency order. Include @-references to the parent PRD issue.
+2. **Save plan to `working/`** — if context is high or multi-session work, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) to persist the issue list and dependency order. Include @-references to the parent PRD issue.
