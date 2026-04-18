@@ -4,11 +4,12 @@
 # Handoff Protocol
 
 When I say "wrap up", "hand off", "fresh context", or when you notice your own outputs degrading (repeating yourself, losing track of earlier decisions, tool calls returning stale results): stop current work, commit what's done, and output a handoff block containing:
-  - Current plan file path or PRD issue number
-  - Research file path (research.md) if one exists
-  - List of files modified this session
-  - What's done vs what remains
-  - Exact @-reference command to start the next conversation (see pickup command below)
+
+- Current plan file path or PRD issue number
+- Research file path (research.md) if one exists
+- List of files modified this session
+- What's done vs what remains
+- Exact @-reference command to start the next conversation (see pickup command below)
 
 **Plan persistence:** When a task spans multiple conversations, write the remaining plan to `working/` in the project root with a descriptive name: `working/<topic>-plan.md` (e.g. `working/production-docs-audit-plan.md`). Include full slice details, acceptance criteria, what's done, and what remains. This file is the handoff artifact — the next conversation starts by reading it.
 
