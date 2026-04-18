@@ -14,22 +14,16 @@ Public shared skills belong in ~/dotfiles/skills/. Private machine/client skills
 Output "Read global instructions." to chat to acknowledge you read this file.
 
 <general>
-- Read entire file contents instead of many small chunk reads
 - Leave NO todo's, placeholders or missing pieces
-- Include all required imports, and ensure proper naming of key components
-- Keep it simple, lean, reuse what we have. Think how can we REMOVE code from this repo instead of adding baggage or bloat
-- Use early returns whenever possible to make the code more readable
-- Use fast and type-safe design principles that throw errors
+- Keep it simple, lean, reuse what we have. Prefer early returns, removing code over adding. Think how can we REMOVE code from this repo instead of adding baggage or bloat
 - Do not add legacy or backward compatibility except for database migrations
-- Never fail silently. No sample data, placeholder text, || or ?? fallbacks, or defensive fixes — exception: UI prototyping components use CMS-replaceable static data and graceful degradation per ux-prototyping instructions. Throw explicit errors with context. If a response is unexpected, print it raw for debugging
+- Never fail silently. No sample data, placeholder text, || or ?? fallbacks, or defensive fixes — use fast, type-safe patterns that throw explicit errors with context. Exception: UI prototyping components use CMS-replaceable static data and graceful degradation per ux-prototyping instructions. If a response is unexpected, print it raw for debugging
 - Before adding or changing code, read existing examples of the same pattern. Scan all usages of shared methods before modifying. Match existing style exactly
 - Verify utilities and functions exist in the codebase before using them — search for definitions first, never assume a name exists
 - Don't touch code outside the task. If you notice dead code or problems, mention them — don't fix them. Only remove imports/variables your changes made unused
 - Never change my AI model, its context window, settings, URL or API keys unless explicitly told to do so
 - If anything is unclear, ambiguous, or has a simpler alternative, stop and ask before implementing. List options when multiple valid interpretations exist
 - Use modern APIs and patterns over legacy approaches. Baseline browser support is February 2026
-- Don't hide functionality in methods appearing as getters or checks
-- Create skills in ~/dotfiles/skills/ (symlinked to ~/.claude/skills). Local skills go in ~/dotfiles/skills/_local/ (gitignored)
 - NEVER print credentials: Not in logs, not in error messages, not in agent outputs
 - If I tell you to "report" or ask "how feasible", enter discuss mode and DO NOT EDIT CODE UNTIL I EXPLICITLY TELL YOU TO DO SO. Simply report, discuss, get skeptical, double check and plan all changes in a lean, DRY way
 - When an API call fails (expired token, auth error, missing permissions), STOP IMMEDIATELY. Do not continue the task, do not speculate. Tell me the exact error, which token/key needs updating and in which file, then wait for me to fix it
