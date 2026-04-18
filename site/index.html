@@ -1933,6 +1933,18 @@
                         stopping until types pass.</div>
                     <div class="agent-meta"><span class="badge">Stop</span><span class="badge">blocking</span></div>
                 </div>
+                <div class="agent-card">
+                    <div class="agent-name">compaction-guard</div>
+                    <div class="agent-focus">Blocks auto-compaction at ~95% context. Directs the agent to commit work
+                        and follow the handoff protocol instead of losing nuance.</div>
+                    <div class="agent-meta"><span class="badge">PreCompact</span><span class="badge">blocking</span></div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">context-warning</div>
+                    <div class="agent-focus">Graduated context warnings at 40% and 70% usage. Injects advisory messages
+                        without blocking prompts. <em>Stub — pending statusLine experiment.</em></div>
+                    <div class="agent-meta"><span class="badge">UserPromptSubmit</span><span class="badge">stub</span></div>
+                </div>
             </div>
 
             <div

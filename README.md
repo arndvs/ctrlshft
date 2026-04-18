@@ -385,7 +385,10 @@ docker sandbox run claude .
 │   ├── migration-guard.sh           PreToolUse: block non-test migrations
 │   ├── format-check.sh              Stop: run Biome/Prettier on modified files
 │   ├── typecheck.sh                 Stop: run tsc --noEmit, block on errors
+│   ├── compaction-guard.sh          PreCompact: block auto-compaction, enforce handoff
+│   ├── context-warning.sh           UserPromptSubmit: graduated warnings (stub)
 │   ├── settings-hooks.json          hook config merged into ~/.claude/settings.json
+│   ├── experiments/                 probes for undocumented features
 │   └── README.md                    hook documentation
 ├── rules/
 │   ├── test-conventions.md          scoped to **/*.test.*, **/*.spec.*

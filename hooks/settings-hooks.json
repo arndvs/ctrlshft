@@ -28,6 +28,17 @@
           }
         ]
       }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/compaction-guard.sh\""
+          }
+        ]
+      }
     ]
   }
 }

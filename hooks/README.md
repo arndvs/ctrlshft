@@ -19,6 +19,8 @@ Bootstrap symlinks `hooks/` → `~/.claude/hooks/` and merges the configuration 
 | `migration-guard.sh` | PreToolUse | Bash | Blocks database migration commands targeting non-test databases |
 | `format-check.sh` | Stop | — | Detects Biome/Prettier/ESLint and formats modified files (non-blocking) |
 | `typecheck.sh` | Stop | — | Runs `tsc --noEmit` on TypeScript projects; blocks stop until types pass |
+| `compaction-guard.sh` | PreCompact | auto | Blocks auto-compaction at ~95% context; directs agent to follow handoff protocol |
+| `context-warning.sh` | UserPromptSubmit | — | ⚠️ STUB: graduated context warnings at 40/70% (pending statusLine experiment) |
 
 ## Requirements
 
@@ -33,9 +35,11 @@ Hooks are a **Claude Code CLI** feature. They fire in:
 
 They do **not** fire in Cursor or GitHub Copilot Chat. The scripts themselves are portable bash — they can be run manually or referenced from other tools.
 
-## Context Warning
+## Context Awareness
 
-The user's original design included a context-window-usage warning hook. This **cannot** be implemented as a hook because context usage percentage is not exposed in the hook input JSON. Context warnings are handled by instructions in `global.instructions.md` and `instructions/handoff.instructions.md`.
+**Compaction guard** (`compaction-guard.sh`) — fully operational. Blocks auto-compaction at ~95% context and directs the agent to commit work and follow the handoff protocol instead. Manual `/compact` is unaffected. This mechanically enforces the `global.instructions.md` policy: "prefer clearing context over compacting."
+
+**Graduated warnings** (`context-warning.sh`) — stub, pending experiment. Hook input JSON does not include context usage. However, the `statusLine` setting receives `context_window.used_percentage` (confirmed in env vars docs). A statusLine command can write the percentage to a state file; this hook reads it and injects warnings via `additionalContext` at 40% and 70%. Run `hooks/experiments/statusline-probe.sh` to discover the statusLine input format, then fill in the bridge. See `hooks/experiments/README.md` for setup instructions.
 
 ## Customization
 
