@@ -245,15 +245,15 @@ Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignore
 
 Thin launchers in `commands/` that load a skill with your arguments. Type the command in chat — the agent loads the full skill protocol automatically.
 
-| Command      | Loads skill        | What it does                                                          |
-| ------------ | ------------------ | --------------------------------------------------------------------- |
-| `/work`      | `do-work`          | Core execution loop — understand, plan, implement, validate, commit.  |
-| `/plan`      | `architect`        | Vertical slices, dependency graphs, acceptance criteria.              |
-| `/audit`     | `codebase-audit`   | Ruthless audit — real problems only, grouped by severity.             |
-| `/review`    | `code-review`      | Focused review of staged or recent changes.                           |
-| `/explore`   | `explore`          | Decompose a topic, spawn parallel sub-agents, synthesize.             |
-| `/test`      | `tdd`              | Red-green refactor. Failing test → implement → refactor.              |
-| `/document`  | `document`         | Write, update, or audit documentation.                                |
+| Command     | Loads skill      | What it does                                                         |
+| ----------- | ---------------- | -------------------------------------------------------------------- |
+| `/work`     | `do-work`        | Core execution loop — understand, plan, implement, validate, commit. |
+| `/plan`     | `architect`      | Vertical slices, dependency graphs, acceptance criteria.             |
+| `/audit`    | `codebase-audit` | Ruthless audit — real problems only, grouped by severity.            |
+| `/review`   | `code-review`    | Focused review of staged or recent changes.                          |
+| `/explore`  | `explore`        | Decompose a topic, spawn parallel sub-agents, synthesize.            |
+| `/test`     | `tdd`            | Red-green refactor. Failing test → implement → refactor.             |
+| `/document` | `document`       | Write, update, or audit documentation.                               |
 
 Add your own: `commands/your-command.md` — auto-discovered. Each file is a prompt template with `$ARGUMENTS` passthrough.
 
@@ -406,16 +406,6 @@ docker sandbox run claude .
 │   ├── code-reviewer.md             subagent: bugs, correctness, security
 │   ├── researcher.md                subagent: deep codebase exploration
 │   └── security-auditor.md          subagent: OWASP, secrets, config
-├── hooks/
-│   ├── secret-guard.sh              PreToolUse(Bash) — blocks credential exposure
-│   ├── migration-guard.sh           PreToolUse(Bash) — blocks non-test migrations
-│   ├── format-check.sh              Stop — auto-formats modified files
-│   ├── typecheck.sh                 Stop — blocks on type errors
-│   ├── compaction-guard.sh          PreCompact(auto) — blocks auto-compaction
-│   ├── context-warning.sh           UserPromptSubmit — graduated warnings (stub)
-│   ├── settings-hooks.json          hook config merged into ~/.claude/settings.json
-│   ├── experiments/                 ← feature discovery probes
-│   └── README.md
 ├── rules/
 │   ├── test-conventions.md          scoped to **/*.test.*, **/*.spec.*
 │   ├── migration-safety.md          scoped to **/migrations/**
@@ -512,6 +502,9 @@ docker sandbox run claude .
 > - **`~/.claude/skills/`** — symlinked if absent or a stale link. Existing real directories are left alone (manual merge message shown).
 > - **`~/.claude/agents/`** — symlinked if absent or a stale link. Same behavior as skills/.
 > - **`~/.claude/rules/`** — symlinked if absent or a stale link. Same behavior as skills/.
+> - **`~/.claude/commands/`** — symlinked if absent or a stale link. Slash command wrappers.
+> - **`~/.claude/hooks/`** — symlinked if absent or a stale link. Lifecycle hook scripts.
+> - **`~/.claude/settings.json`** — hook configuration merged (requires jq). Existing settings preserved.
 > - **`~/.bashrc` / `~/.zshrc`** — appends shell integration (load-secrets + context detection). Idempotent on re-runs.
 > - **`~/.npmrc`** — appends `min-release-age=7` for supply chain protection.
 > - **`~/.config/uv/uv.toml`** — adds `exclude-newer` date for supply chain protection.
@@ -530,7 +523,8 @@ Bootstrap is idempotent — safe to re-run. It handles:
 
 - Generating `CLAUDE.md` from `CLAUDE.base.md` + your local instruction files
 - Creating `secrets/.env.agent` and `secrets/.env.secrets` from templates
-- Symlinking `~/.claude/CLAUDE.md`, `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/rules/`
+- Symlinking `~/.claude/CLAUDE.md`, `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/rules/`, `~/.claude/commands/`, and `~/.claude/hooks/`
+- Merging hook configuration into `~/.claude/settings.json`
 - Creating `skills/_local/` and `instructions/_local/`
 - Wiring `load-secrets.sh` and `detect-context.sh` into `~/.bashrc`
 - Creating the Python venv
@@ -578,6 +572,8 @@ ln -sf ~/dotfiles/CLAUDE.md ~/.claude/CLAUDE.md
 ln -sf ~/dotfiles/skills ~/.claude/skills
 ln -sf ~/dotfiles/agents ~/.claude/agents
 ln -sf ~/dotfiles/rules ~/.claude/rules
+ln -sf ~/dotfiles/commands ~/.claude/commands
+ln -sf ~/dotfiles/hooks ~/.claude/hooks
 
 # 3. Secrets
 cp ~/dotfiles/.env.agent.example ~/dotfiles/secrets/.env.agent
@@ -631,6 +627,8 @@ bash ~/dotfiles/bin/sync-settings.sh
 | Add a private instruction | Create `instructions/_local/your-topic.instructions.md`, re-run `bootstrap.sh`                                                              |
 | Add an agent              | Create `agents/your-agent.md` with YAML frontmatter (`name`, `description`, `tools`, `model`) — auto-discovered                             |
 | Add a rule                | Create `rules/your-rule.md` with optional `paths:` frontmatter for file-glob scoping — auto-discovered                                      |
+| Add a command             | Create `commands/your-cmd.md` — thin wrapper that loads a skill with `$ARGUMENTS` passthrough                                               |
+| Add a hook                | Create `hooks/your-hook.sh`, add entry to `hooks/settings-hooks.json`, re-run `bootstrap.sh`                                                |
 | Add config                | Add key to `.env.agent.example`, value to `secrets/.env.agent`                                                                              |
 | Add a secret              | Add key to `.env.secrets.example`, value to `secrets/.env.secrets`                                                                          |
 
