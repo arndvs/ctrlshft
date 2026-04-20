@@ -1715,31 +1715,39 @@
                 </div>
                 <div class="skill-item">
                     <div class="skill-name"><code>atomic-commits</code></div>
-                    <div class="skill-desc">Branch-isolated atomic commits. Survey diff, group by seam, commit or ship (push + PR).</div>
+                    <div class="skill-desc">Branch-isolated atomic commits. Survey diff, group by seam, commit or ship
+                        (push + PR).</div>
                     <div class="skill-auto">⚡ auto-invoke</div>
                 </div>
                 <div class="skill-item">
                     <div class="skill-name"><code>/review</code></div>
-                    <div class="skill-desc">Focused review of staged changes. Edge cases, logic errors, integration risks.</div>
+                    <div class="skill-desc">Focused review of staged changes. Edge cases, logic errors, integration
+                        risks.</div>
                 </div>
                 <div class="skill-item">
                     <div class="skill-name"><code>/document</code></div>
-                    <div class="skill-desc">Write, update, or audit documentation. Accurate, minimal, audience-appropriate.</div>
+                    <div class="skill-desc">Write, update, or audit documentation. Accurate, minimal,
+                        audience-appropriate.</div>
                 </div>
                 <div class="skill-item">
                     <div class="skill-name"><code>sanity-best-practices</code></div>
-                    <div class="skill-desc">Schema design, GROQ, TypeGen, Visual Editing, Portable Text, integrations.</div>
+                    <div class="skill-desc">Schema design, GROQ, TypeGen, Visual Editing, Portable Text, integrations.
+                    </div>
                 </div>
             </div>
 
             <div
                 style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); line-height: 1.6;">
-                <p style="margin: 0 0 0.8rem 0;"><span style="color: var(--accent);">⚡</span> <strong>How auto-invoke works:</strong> Every skill's description is loaded into the agent's system prompt at session start.
-                    Skills marked ⚡ have broad descriptions that match common task patterns — the agent loads them automatically when it detects a matching situation.
-                    No slash command needed. They act as passive quality guardrails: same rigorous process every time, without you remembering to ask.</p>
+                <p style="margin: 0 0 0.8rem 0;"><span style="color: var(--accent);">⚡</span> <strong>How auto-invoke
+                        works:</strong> Every skill's description is loaded into the agent's system prompt at session
+                    start.
+                    Skills marked ⚡ have broad descriptions that match common task patterns — the agent loads them
+                    automatically when it detects a matching situation.
+                    No slash command needed. They act as passive quality guardrails: same rigorous process every time,
+                    without you remembering to ask.</p>
                 <p style="margin: 0;"><span style="color: var(--accent);">+</span>
-                Add private skills: <code style="color: var(--accent);">skills/_local/your-skill/SKILL.md</code> —
-                auto-discovered, gitignored.</p>
+                    Add private skills: <code style="color: var(--accent);">skills/_local/your-skill/SKILL.md</code> —
+                    auto-discovered, gitignored.</p>
             </div>
         </div>
     </section>
@@ -1957,20 +1965,22 @@
                     <div class="agent-name">compaction-guard</div>
                     <div class="agent-focus">Blocks auto-compaction at ~95% context. Directs the agent to commit work
                         and follow the handoff protocol instead of losing nuance.</div>
-                    <div class="agent-meta"><span class="badge">PreCompact</span><span class="badge">blocking</span></div>
+                    <div class="agent-meta"><span class="badge">PreCompact</span><span class="badge">blocking</span>
+                    </div>
                 </div>
                 <div class="agent-card">
                     <div class="agent-name">context-warning</div>
                     <div class="agent-focus">Graduated context warnings at 40% and 70% usage. Injects advisory messages
                         without blocking prompts. <em>Stub — pending statusLine experiment.</em></div>
-                    <div class="agent-meta"><span class="badge">UserPromptSubmit</span><span class="badge">stub</span></div>
+                    <div class="agent-meta"><span class="badge">UserPromptSubmit</span><span class="badge">stub</span>
+                    </div>
                 </div>
             </div>
 
             <div
                 style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
-                <strong
-                    style="color: var(--text); font-family: var(--mono); letter-spacing: 0.08rem;">How it works:</strong>
+                <strong style="color: var(--text); font-family: var(--mono); letter-spacing: 0.08rem;">How it
+                    works:</strong>
                 Scripts in <code>hooks/</code> receive JSON on stdin, check conditions, return exit code 0 (allow)
                 or 2 (block). Bootstrap symlinks <code>hooks/</code> → <code>~/.claude/hooks/</code> and merges
                 configuration into <code>~/.claude/settings.json</code>.
