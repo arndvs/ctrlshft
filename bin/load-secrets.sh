@@ -36,4 +36,14 @@ fi
 
 unset -f _source_env
 
+# Ensure GitHub CLI is available in Git Bash sessions on Windows.
+# Some shells miss this path even when gh is installed via WinGet.
+if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || "$OSTYPE" == win32* ]]; then
+    _gh_dir="/c/Program Files/GitHub CLI"
+    if [[ -x "$_gh_dir/gh.exe" ]] && ! command -v gh >/dev/null 2>&1; then
+        export PATH="$_gh_dir:$PATH"
+    fi
+    unset _gh_dir
+fi
+
 unset _DOTFILES_ENV_AGENT
