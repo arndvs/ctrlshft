@@ -2,7 +2,7 @@
   <img src="site/assets/ctrl-shift-logo.jpg" alt="ctrl+shft logo" style="width: 100%; max-width: 862px; height: auto;" />
 </p>
 
-# ctrl
+# ctrlshft
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -10,7 +10,7 @@
 
 Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
 
-ctrl fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and AFK iteration tokens (short-lived GitHub App installation tokens) minted per loop. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
+ctrlshft fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and AFK iteration tokens (short-lived GitHub App installation tokens) minted per loop. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
 **Source of truth:** `~/dotfiles/` is canonical. `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Make all edits in `~/dotfiles/` only.
 
@@ -100,13 +100,20 @@ skills/
 
 `agents/` defines specialized subagents with their own system prompts, tool restrictions, and model preferences. Each runs in an isolated context window — exploration stays out of your main conversation.
 
-| Agent              | Focus                                            |
-| ------------------ | ------------------------------------------------ |
-| `code-reviewer`    | Bugs, security, logic errors — not style nits    |
-| `researcher`       | Deep codebase exploration, architecture mapping  |
-| `security-auditor` | OWASP Top 10, secrets exposure, config hardening |
+Agents come in **model variants** — choose based on task complexity and cost sensitivity:
 
-All three use `model: sonnet`, read-only tools (Read, Grep, Glob, Bash), and `memory: user` for persistent cross-project learnings. Add your own: `agents/your-agent.md` — auto-discovered.
+| Agent                | Model  | When to use                                           |
+| -------------------- | ------ | ----------------------------------------------------- |
+| `researcher`         | Sonnet | Default. General codebase exploration                 |
+| `researcher-opus`    | Opus   | Complex cross-system analysis, architecture decisions |
+| `researcher-haiku`   | Haiku  | Quick lookups, bulk scanning, simple patterns         |
+| `code-reviewer`      | Sonnet | Default. Standard PR reviews, bug checks              |
+| `code-reviewer-opus` | Opus   | Security-critical code, pre-deploy, complex changes   |
+| `security-auditor`   | Sonnet | OWASP Top 10, secrets exposure, config hardening      |
+
+All agents use read-only tools (Read, Grep, Glob, Bash) and `memory: user` for persistent cross-project learnings. Add your own: `agents/your-agent.md` — auto-discovered. See [agents/README.md](agents/README.md) for the full model selection guide.
+
+> **Platform limitation:** Runtime model injection is not supported. Neither `search_subagent` nor `runSubagent` accepts a model parameter per-call. Model selection is static — set via `model:` frontmatter in agent files, or `chat.exploreAgent.defaultModel` for VS Code sub-agents. Create variant agent files to benchmark different models on the same task.
 
 ### Path-scoped rules
 
@@ -403,9 +410,13 @@ docker sandbox run claude .
 │   ├── test.md                      /test → tdd skill
 │   └── work.md                      /work → do-work skill
 ├── agents/
-│   ├── code-reviewer.md             subagent: bugs, correctness, security
-│   ├── researcher.md                subagent: deep codebase exploration
-│   └── security-auditor.md          subagent: OWASP, secrets, config
+│   ├── README.md                    model selection guide + agent docs
+│   ├── code-reviewer.md             subagent: bugs, correctness, security (sonnet)
+│   ├── code-reviewer-opus.md        subagent: high-stakes reviews (opus)
+│   ├── researcher.md                subagent: deep codebase exploration (sonnet)
+│   ├── researcher-opus.md           subagent: complex architecture analysis (opus)
+│   ├── researcher-haiku.md          subagent: fast bulk scanning (haiku)
+│   └── security-auditor.md          subagent: OWASP, secrets, config (sonnet)
 ├── rules/
 │   ├── test-conventions.md          scoped to **/*.test.*, **/*.spec.*
 │   ├── migration-safety.md          scoped to **/migrations/**
@@ -643,6 +654,43 @@ source ~/.bashrc
 
 ---
 
+## Observability & Benchmarking (Roadmap)
+
+> Status: **planned** — see [working/observability-benchmarking-plan.md](working/observability-benchmarking-plan.md) for the full implementation plan.
+
+ctrl+shft currently operates blind — no token tracking, no cost data, no accuracy metrics. To prove the system as a proof of concept, stakeholders need hard numbers. This roadmap addresses the full observability gap.
+
+### What's available today
+
+| Capability              | Status              | Notes                                                                          |
+| ----------------------- | ------------------- | ------------------------------------------------------------------------------ |
+| OpenTelemetry (VS Code) | Available, disabled | `otel.enabled` and `otel.captureContent` in settings.json — 2 settings to flip |
+| Agent debug logs        | Enabled             | `agentDebugLog.fileLogging.enabled: true` — raw Copilot agent logs to disk     |
+| Model attribution       | Static only         | Agent files declare `model:` in frontmatter. No runtime tracking               |
+| Token/cost tracking     | Not built           | shft deletes raw Claude output after each iteration                            |
+| Accuracy tracking       | Not built           | No scoring, no proxy signals, no trend data                                    |
+| Dashboard               | Not built           | docs/ has Next.js scaffolding ready for a `/telemetry` route                   |
+
+### What's planned
+
+| Slice                  | Type     | What it does                                                                                                                        |
+| ---------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| shft Telemetry Wrapper | AFK      | Instrument `afk.sh`/`once.sh` with JSONL logging. Persist raw Claude output. Extract token counts and model info from `stream-json` |
+| Cost Calculator        | AFK      | Shell script reads JSONL, applies per-model pricing, outputs markdown cost reports                                                  |
+| Model Variant Agents   | **Done** | Opus/Haiku variants of researcher and code-reviewer for benchmarking                                                                |
+| CI Telemetry Reports   | AFK      | GitHub Actions daily reports + README badge for cost and accuracy                                                                   |
+| Enable OTEL            | HITL     | Turn on VS Code's built-in OpenTelemetry, document what it actually emits                                                           |
+| Accuracy Framework     | HITL     | Human scoring UX + automated proxy signals (test pass/fail, reverts, re-opened issues)                                              |
+| Telemetry Dashboard    | HITL     | Next.js dashboard in docs/ — cost, tokens, model distribution, accuracy, hallucination rate                                         |
+
+### Key constraints
+
+- **Sub-agent model injection is not possible at runtime.** Neither `search_subagent` nor `runSubagent` accepts a model parameter. Workaround: model-variant agent files.
+- **Hallucination detection requires human scoring.** Automated proxy signals (test failures, reverts) augment but cannot replace human judgment.
+- **OTEL schema is undocumented.** Need to enable it and inspect raw spans before building on it.
+
+---
+
 ## Troubleshooting
 
 <details>
@@ -709,4 +757,4 @@ source ~/.bashrc
 
 ---
 
-> **Naming:** The GitHub repo is `arndvs/ctrl` but the on-disk path is `~/dotfiles` — hardcoded across 40+ references. Clone it to `~/dotfiles` and leave it there.
+> **Naming:** The GitHub repo is `arndvs/ctrlshft` but the on-disk path is `~/dotfiles` — hardcoded across 40+ references. Clone it to `~/dotfiles` and leave it there.
