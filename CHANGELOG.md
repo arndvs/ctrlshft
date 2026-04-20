@@ -10,6 +10,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - Contribution infrastructure for GitHub collaboration:
+  - `CHANGELOG.md`
   - `CONTRIBUTING.md`
   - issue templates (`bug-report`, `feature-request`, `skill-request`)
   - pull request template

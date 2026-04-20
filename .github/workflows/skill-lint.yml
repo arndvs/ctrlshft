@@ -28,7 +28,7 @@ jobs:
 
             # First non-empty line must be opening front matter delimiter
             first_non_empty=$(grep -m1 -v '^[[:space:]]*$' "$skill_file" || true)
-            if [[ "$first_non_empty" != "---" ]]; then
+            if [[ ! "$first_non_empty" =~ ^---[[:space:]]*$ ]]; then
               echo "  ✗ First non-empty line must be front matter delimiter (---): $skill_file"
               ERRORS=$((ERRORS + 1))
               continue

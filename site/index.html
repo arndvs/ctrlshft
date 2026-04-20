@@ -2685,6 +2685,17 @@ source ~/.zshrc    # zsh</pre>
                 ...Object.keys(NORMALIZED_CONTRIBUTOR_ROLES)
             ]);
 
+            const withAvatarSize = (avatarUrl) => {
+                try {
+                    const url = new URL(String(avatarUrl));
+                    url.searchParams.set('s', '128');
+                    return url.toString();
+                } catch {
+                    const base = String(avatarUrl || '');
+                    return base.includes('?') ? `${base}&s=128` : `${base}?s=128`;
+                }
+            };
+
             grid.innerHTML = contributors.map((contributor) => {
                 const normalizedLogin = String(contributor.login).toLowerCase();
                 const isAuthor = knownAuthorLogins.has(normalizedLogin);
@@ -2698,7 +2709,7 @@ source ~/.zshrc    # zsh</pre>
                 return `
                     <a href="${contributor.html_url}" target="_blank" rel="noopener noreferrer" class="contributor-card" aria-label="${contributor.login} on GitHub">
                         <div class="contributor-avatar-wrap">
-                            <img src="${contributor.avatar_url}&s=128" alt="${contributor.login}" class="contributor-avatar" width="64" height="64" loading="lazy" />
+                            <img src="${withAvatarSize(contributor.avatar_url)}" alt="${contributor.login}" class="contributor-avatar" width="64" height="64" loading="lazy" />
                             ${isAuthor ? '<span class="contributor-badge">Author</span>' : ''}
                         </div>
                         <div class="contributor-info">
@@ -2743,12 +2754,19 @@ source ~/.zshrc    # zsh</pre>
                 const message = error instanceof Error ? error.message : String(error);
                 console.error('Contributors fetch failed:', error);
                 renderContributors(grid, FALLBACK_CONTRIBUTORS);
-                grid.insertAdjacentHTML('beforeend', `
-                    <div class="contributors-error">
-                        Live contributor stats are temporarily unavailable (${message}).
-                        View the full list on <a href="https://github.com/${CONTRIBUTOR_REPO}/graphs/contributors" class="footer-link">GitHub</a>.
-                    </div>
-                `);
+
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'contributors-error';
+                errorMessage.appendChild(document.createTextNode(`Live contributor stats are temporarily unavailable (${message}). View the full list on `));
+
+                const githubLink = document.createElement('a');
+                githubLink.href = `https://github.com/${CONTRIBUTOR_REPO}/graphs/contributors`;
+                githubLink.className = 'footer-link';
+                githubLink.textContent = 'GitHub';
+                errorMessage.appendChild(githubLink);
+                errorMessage.appendChild(document.createTextNode('.'));
+
+                grid.appendChild(errorMessage);
             }
         }
 
