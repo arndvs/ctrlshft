@@ -1,0 +1,71 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing — check existing issues to see if this is already reported.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect vs. what actually happened?
+      placeholder: |
+        Expected: bootstrap.sh completes and symlinks ~/.claude/skills
+        Actual: script exits at step 3 with permission error
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Clone repo to ~/dotfiles
+        2. Run bash ~/dotfiles/bin/bootstrap.sh
+        3. See error at step [3/9]
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error output
+      description: Paste the exact error message or terminal output
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: macOS 14.5 / Ubuntu 22.04 / Windows 11 (WSL2)
+    validations:
+      required: true
+
+  - type: input
+    id: shell
+    attributes:
+      label: Shell
+      placeholder: zsh 5.9 / bash 5.2
+    validations:
+      required: true
+
+  - type: input
+    id: script
+    attributes:
+      label: Which script or component?
+      placeholder: bootstrap.sh / uninstall.sh / detect-context.sh / skills / other
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?
+      description: Relevant config, previous workarounds, related issues
+    validations:
+      required: false

@@ -1,0 +1,78 @@
+name: Skill lint
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+
+jobs:
+  lint-skills:
+    runs-on: ubuntu-latest
+    name: Validate skill files
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check skill file structure
+        run: |
+          set -e
+          ERRORS=0
+
+          # Find all SKILL.md files outside _local (gitignored, not in PRs)
+          while IFS= read -r skill_file; do
+            skill_dir=$(dirname "$skill_file")
+            skill_name=$(basename "$skill_dir")
+
+            echo "Checking: $skill_file"
+
+            # Must have front matter delimiters
+            if ! grep -q "^---" "$skill_file"; then
+              echo "  ✗ Missing front matter (---) in $skill_file"
+              ERRORS=$((ERRORS + 1))
+              continue
+            fi
+
+            # Must have 'name' field
+            if ! grep -q "^name:" "$skill_file"; then
+              echo "  ✗ Missing 'name:' field in front matter: $skill_file"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "  ✓ name field present"
+            fi
+
+            # Must have 'description' field
+            if ! grep -q "^description:" "$skill_file"; then
+              echo "  ✗ Missing 'description:' field in front matter: $skill_file"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "  ✓ description field present"
+            fi
+
+            # Description must not be empty
+            desc=$(grep "^description:" "$skill_file" | head -1 | sed 's/^description: *//')
+            if [[ -z "$desc" || "$desc" == '""' || "$desc" == "''" ]]; then
+              echo "  ✗ description is empty in $skill_file"
+              ERRORS=$((ERRORS + 1))
+            fi
+
+            # File must have content beyond front matter (at least 10 lines)
+            line_count=$(wc -l < "$skill_file")
+            if [[ "$line_count" -lt 10 ]]; then
+              echo "  ✗ Skill file too short ($line_count lines) — likely a stub: $skill_file"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "  ✓ Content present ($line_count lines)"
+            fi
+
+          done < <(find skills -name "SKILL.md" -not -path "skills/_local/*")
+
+          if [[ "$ERRORS" -gt 0 ]]; then
+            echo ""
+            echo "✗ $ERRORS skill file error(s) found."
+            echo "See CONTRIBUTING.md for the required skill file format."
+            exit 1
+          else
+            echo ""
+            echo "✓ All skill files valid."
+          fi

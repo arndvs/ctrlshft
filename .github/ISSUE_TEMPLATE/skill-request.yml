@@ -1,0 +1,80 @@
+name: Skill request
+description: Request a new skill or improvement to an existing one
+labels: ["skill", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing — read [where things belong](https://github.com/arndvs/ctrlshft/blob/main/CONTRIBUTING.md#where-things-belong) in CONTRIBUTING.md.
+
+        **`skills/`** is for universal, stack-agnostic methods that every Claude Code user would want.
+        **`examples/`** is for domain-specific skills that only make sense inside a particular architecture.
+        **`skills/_local/`** is for personal or client-specific skills that should never be shared.
+
+        If your skill is domain-specific (ads, ecommerce, support, a particular framework), it likely belongs in an example, not in `skills/`.
+
+  - type: dropdown
+    id: placement
+    attributes:
+      label: Where does this belong?
+      options:
+        - skills/ — universal, works for any project
+        - examples/ — domain or architecture specific
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: New skill or improvement?
+      options:
+        - New skill
+        - Improvement to existing skill
+    validations:
+      required: true
+
+  - type: input
+    id: existing-skill
+    attributes:
+      label: If improving — which skill?
+      placeholder: e.g. systematic-debugging
+    validations:
+      required: false
+
+  - type: textarea
+    id: trigger
+    attributes:
+      label: What triggers this skill?
+      description: What does the user say or what situation calls for it?
+      placeholder: |
+        When a user asks to review a PR diff, or when /code-review is invoked
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: What should it produce?
+      description: Describe the output format and content
+      placeholder: |
+        A structured review grouped by: bugs, security issues, logic errors.
+        No style nits. Each finding includes file, line, explanation, and suggested fix.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why-universal
+    attributes:
+      label: Why does this belong in `skills/` rather than an example or `_local/`?
+      description: Explain why this is useful regardless of stack, domain, or business context
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example input / output (optional but helpful)
+      description: Show what a good invocation and result would look like
+    validations:
+      required: false
