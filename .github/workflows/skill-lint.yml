@@ -16,7 +16,7 @@ jobs:
 
       - name: Check skill file structure
         run: |
-          set -e
+          set -euo pipefail
           ERRORS=0
 
           # Find all SKILL.md files outside _local (gitignored, not in PRs)

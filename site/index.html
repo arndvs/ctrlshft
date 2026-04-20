@@ -2215,7 +2215,7 @@
                 </div>
             </div>
 
-            <div class="contributors-source-badge"><span class="dot"></span>Live from GitHub API · Top 12 shown</div>
+            <div class="contributors-source-badge" id="contributors-source-badge"><span class="dot"></span>Live from GitHub API · Top contributors shown</div>
 
             <div class="contributors-cta">
                 <a href="https://github.com/arndvs/ctrlshft/fork" class="btn-ghost">Fork on GitHub →</a>
@@ -2644,6 +2644,10 @@ source ~/.zshrc    # zsh</pre>
             arndvs: 'Author · AI infrastructure & agentic systems'
         };
 
+        const NORMALIZED_CONTRIBUTOR_ROLES = Object.fromEntries(
+            Object.entries(CONTRIBUTOR_ROLES).map(([login, role]) => [login.toLowerCase(), role])
+        );
+
         function getCachedContributors() {
             try {
                 const raw = localStorage.getItem(CONTRIBUTORS_CACHE_KEY);
@@ -2678,12 +2682,13 @@ source ~/.zshrc    # zsh</pre>
             const repoOwnerLogin = CONTRIBUTOR_REPO.split('/')[0].toLowerCase();
             const knownAuthorLogins = new Set([
                 repoOwnerLogin,
-                ...Object.keys(CONTRIBUTOR_ROLES).map(login => login.toLowerCase())
+                ...Object.keys(NORMALIZED_CONTRIBUTOR_ROLES)
             ]);
 
             grid.innerHTML = contributors.map((contributor) => {
-                const isAuthor = knownAuthorLogins.has(String(contributor.login).toLowerCase());
-                const role = CONTRIBUTOR_ROLES[contributor.login] || 'Contributor';
+                const normalizedLogin = String(contributor.login).toLowerCase();
+                const isAuthor = knownAuthorLogins.has(normalizedLogin);
+                const role = NORMALIZED_CONTRIBUTOR_ROLES[normalizedLogin] || 'Contributor';
                 const hasContribCount = typeof contributor.contributions === 'number';
                 const commitLabel = hasContribCount && contributor.contributions === 1 ? 'commit' : 'commits';
                 const contributionChip = hasContribCount
@@ -2719,7 +2724,7 @@ source ~/.zshrc    # zsh</pre>
             }
 
             try {
-                const response = await fetch(`https://api.github.com/repos/${CONTRIBUTOR_REPO}/contributors`);
+                const response = await fetch(`https://api.github.com/repos/${CONTRIBUTOR_REPO}/contributors?per_page=${MAX_CONTRIBUTORS}`);
 
                 if (!response.ok) {
                     throw new Error(`GitHub API ${response.status}`);
@@ -2750,6 +2755,16 @@ source ~/.zshrc    # zsh</pre>
         function loadContributorsWhenVisible() {
             const contributorsSection = document.getElementById('contributors');
             if (!contributorsSection) {
+                return;
+            }
+
+            const sourceBadge = document.getElementById('contributors-source-badge');
+            if (sourceBadge) {
+                sourceBadge.innerHTML = `<span class="dot"></span>Live from GitHub API · Top ${MAX_CONTRIBUTORS} shown`;
+            }
+
+            if (typeof IntersectionObserver === 'undefined') {
+                loadContributors();
                 return;
             }
 
