@@ -26,23 +26,51 @@ jobs:
 
             echo "Checking: $skill_file"
 
-            # Must have front matter delimiters
-            if ! grep -q "^---" "$skill_file"; then
-              echo "  ✗ Missing front matter (---) in $skill_file"
+            # First non-empty line must be opening front matter delimiter
+            first_non_empty=$(grep -m1 -v '^[[:space:]]*$' "$skill_file" || true)
+            if [[ "$first_non_empty" != "---" ]]; then
+              echo "  ✗ First non-empty line must be front matter delimiter (---): $skill_file"
               ERRORS=$((ERRORS + 1))
               continue
             fi
 
+            # Must have a closing front matter delimiter
+            fm_delims=$(grep -c '^---[[:space:]]*$' "$skill_file" || true)
+            if [[ "$fm_delims" -lt 2 ]]; then
+              echo "  ✗ Missing closing front matter delimiter (---) in $skill_file"
+              ERRORS=$((ERRORS + 1))
+              continue
+            fi
+
+            # Extract front matter block only
+            front_matter=$(awk '
+              BEGIN { in_fm=0; delims=0 }
+              /^---[[:space:]]*$/ {
+                delims++
+                if (delims == 1) { in_fm=1; next }
+                if (delims == 2) { exit }
+              }
+              in_fm { print }
+            ' "$skill_file")
+
             # Must have 'name' field
-            if ! grep -q "^name:" "$skill_file"; then
+            name=$(printf '%s\n' "$front_matter" | sed -n 's/^name:[[:space:]]*//p' | head -1)
+            if [[ -z "$name" ]]; then
               echo "  ✗ Missing 'name:' field in front matter: $skill_file"
               ERRORS=$((ERRORS + 1))
             else
               echo "  ✓ name field present"
             fi
 
+            # Name should match skill directory name
+            if [[ -n "$name" && "$name" != "$skill_name" ]]; then
+              echo "  ✗ name ('${name}') does not match folder name ('${skill_name}') in $skill_file"
+              ERRORS=$((ERRORS + 1))
+            fi
+
             # Must have 'description' field
-            if ! grep -q "^description:" "$skill_file"; then
+            desc=$(printf '%s\n' "$front_matter" | sed -n 's/^description:[[:space:]]*//p' | head -1)
+            if [[ -z "$desc" ]]; then
               echo "  ✗ Missing 'description:' field in front matter: $skill_file"
               ERRORS=$((ERRORS + 1))
             else
@@ -50,7 +78,6 @@ jobs:
             fi
 
             # Description must not be empty
-            desc=$(grep "^description:" "$skill_file" | head -1 | sed 's/^description: *//')
             if [[ -z "$desc" || "$desc" == '""' || "$desc" == "''" ]]; then
               echo "  ✗ description is empty in $skill_file"
               ERRORS=$((ERRORS + 1))

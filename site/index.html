@@ -2630,13 +2630,79 @@ source ~/.zshrc    # zsh</pre>
 
         const CONTRIBUTOR_REPO = 'arndvs/ctrlshft';
         const MAX_CONTRIBUTORS = 12;
+        const CONTRIBUTORS_CACHE_KEY = `contributors-cache:${CONTRIBUTOR_REPO}`;
+        const CONTRIBUTORS_CACHE_TTL_MS = 30 * 60 * 1000;
         const CONTRIBUTOR_ROLES = {
             arndvs: 'Author · AI infrastructure & agentic systems'
         };
 
+        function getCachedContributors() {
+            try {
+                const raw = localStorage.getItem(CONTRIBUTORS_CACHE_KEY);
+                if (!raw) {
+                    return null;
+                }
+
+                const parsed = JSON.parse(raw);
+                if (!parsed || !Array.isArray(parsed.contributors) || typeof parsed.cachedAt !== 'number') {
+                    return null;
+                }
+
+                const isFresh = (Date.now() - parsed.cachedAt) < CONTRIBUTORS_CACHE_TTL_MS;
+                return isFresh ? parsed.contributors : null;
+            } catch {
+                return null;
+            }
+        }
+
+        function setCachedContributors(contributors) {
+            try {
+                localStorage.setItem(CONTRIBUTORS_CACHE_KEY, JSON.stringify({
+                    cachedAt: Date.now(),
+                    contributors
+                }));
+            } catch {
+                // Ignore storage failures (quota/private mode)
+            }
+        }
+
+        function renderContributors(grid, contributors) {
+            const repoOwnerLogin = CONTRIBUTOR_REPO.split('/')[0].toLowerCase();
+            const knownAuthorLogins = new Set([
+                repoOwnerLogin,
+                ...Object.keys(CONTRIBUTOR_ROLES).map(login => login.toLowerCase())
+            ]);
+
+            grid.innerHTML = contributors.map((contributor) => {
+                const isAuthor = knownAuthorLogins.has(String(contributor.login).toLowerCase());
+                const role = CONTRIBUTOR_ROLES[contributor.login] || 'Contributor';
+                const commitLabel = contributor.contributions === 1 ? 'commit' : 'commits';
+
+                return `
+                    <a href="${contributor.html_url}" target="_blank" rel="noopener noreferrer" class="contributor-card" aria-label="${contributor.login} on GitHub">
+                        <div class="contributor-avatar-wrap">
+                            <img src="${contributor.avatar_url}&s=128" alt="${contributor.login}" class="contributor-avatar" width="64" height="64" loading="lazy" />
+                            ${isAuthor ? '<span class="contributor-badge">Author</span>' : ''}
+                        </div>
+                        <div class="contributor-info">
+                            <div class="contributor-login"><span class="at">@</span>${contributor.login}</div>
+                            <div class="contributor-role">${role}</div>
+                            <div class="contributor-commits"><span class="commit-dot"></span>${contributor.contributions} ${commitLabel}</div>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+
         async function loadContributors() {
             const grid = document.getElementById('contributors-grid');
             if (!grid) {
+                return;
+            }
+
+            const cachedContributors = getCachedContributors();
+            if (cachedContributors && cachedContributors.length > 0) {
+                renderContributors(grid, cachedContributors);
                 return;
             }
 
@@ -2654,26 +2720,8 @@ source ~/.zshrc    # zsh</pre>
                 }
 
                 const topContributors = contributors.slice(0, MAX_CONTRIBUTORS);
-
-                grid.innerHTML = topContributors.map((contributor, index) => {
-                    const isAuthor = index === 0;
-                    const role = CONTRIBUTOR_ROLES[contributor.login] || 'Contributor';
-                    const commitLabel = contributor.contributions === 1 ? 'commit' : 'commits';
-
-                    return `
-                        <a href="${contributor.html_url}" target="_blank" rel="noopener noreferrer" class="contributor-card" aria-label="${contributor.login} on GitHub">
-                            <div class="contributor-avatar-wrap">
-                                <img src="${contributor.avatar_url}&s=128" alt="${contributor.login}" class="contributor-avatar" width="64" height="64" loading="lazy" />
-                                ${isAuthor ? '<span class="contributor-badge">Author</span>' : ''}
-                            </div>
-                            <div class="contributor-info">
-                                <div class="contributor-login"><span class="at">@</span>${contributor.login}</div>
-                                <div class="contributor-role">${role}</div>
-                                <div class="contributor-commits"><span class="commit-dot"></span>${contributor.contributions} ${commitLabel}</div>
-                            </div>
-                        </a>
-                    `;
-                }).join('');
+                setCachedContributors(topContributors);
+                renderContributors(grid, topContributors);
             } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
                 console.error('Contributors fetch failed:', error);
@@ -2686,7 +2734,23 @@ source ~/.zshrc    # zsh</pre>
             }
         }
 
-        loadContributors();
+        function loadContributorsWhenVisible() {
+            const contributorsSection = document.getElementById('contributors');
+            if (!contributorsSection) {
+                return;
+            }
+
+            const visibilityObserver = new IntersectionObserver((entries, observerInstance) => {
+                if (entries.some(entry => entry.isIntersecting)) {
+                    observerInstance.disconnect();
+                    loadContributors();
+                }
+            }, { rootMargin: '200px 0px' });
+
+            visibilityObserver.observe(contributorsSection);
+        }
+
+        loadContributorsWhenVisible();
     </script>
 </body>
 

@@ -18,7 +18,7 @@ bash ~/dotfiles/bin/bootstrap.sh
 # 3. Create a branch
 git checkout -b skill/your-skill-name
 
-# 4. Make your changes, then open a PR against dev
+# 4. Make your changes, then open a PR against the default branch
 ```
 
 Always clone to `~/dotfiles` — paths are hardcoded across the project.

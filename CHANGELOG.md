@@ -23,7 +23,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [0.1.0] — Initial release
+## [0.1.0] - YYYY-MM-DD
 
 ### Added
 - `bootstrap.sh` — idempotent setup script for macOS, Linux, and WSL
