@@ -2193,6 +2193,10 @@
                 </div>
             </div>
 
+            <div class="contributors-note" style="margin-top: 1.2rem;">
+                Showing top contributors from the GitHub API.
+            </div>
+
             <div class="contributors-cta">
                 <a href="https://github.com/arndvs/ctrlshft/fork" class="btn-ghost">Fork on GitHub →</a>
                 <a href="https://github.com/arndvs/ctrlshft/blob/main/CONTRIBUTING.md" class="btn-ghost">CONTRIBUTING.md →</a>
@@ -2605,6 +2609,7 @@ source ~/.zshrc    # zsh</pre>
         });
 
         const CONTRIBUTOR_REPO = 'arndvs/ctrlshft';
+        const MAX_CONTRIBUTORS = 12;
         const CONTRIBUTOR_ROLES = {
             arndvs: 'Author · AI infrastructure & agentic systems'
         };
@@ -2628,7 +2633,9 @@ source ~/.zshrc    # zsh</pre>
                     throw new Error('No contributors returned by GitHub API');
                 }
 
-                grid.innerHTML = contributors.map((contributor, index) => {
+                const topContributors = contributors.slice(0, MAX_CONTRIBUTORS);
+
+                grid.innerHTML = topContributors.map((contributor, index) => {
                     const isAuthor = index === 0;
                     const role = CONTRIBUTOR_ROLES[contributor.login] || 'Contributor';
                     const commitLabel = contributor.contributions === 1 ? 'commit' : 'commits';
