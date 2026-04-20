@@ -8,6 +8,8 @@
 \*\*
 
 > Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across every machine.
+>
+> **ctrl** is the structure — instructions, skills, rules, secrets, context. **shft** is the autonomous loop — it picks issues, implements, commits, repeats.
 
 Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
 
@@ -16,7 +18,7 @@ ctrl+shft fixes all four. Clone it once, `bootstrap.sh` symlinks your instructio
 **Source of truth:** `~/dotfiles/` is canonical. `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Make all edits in `~/dotfiles/` only.
 
 ```bash
-git clone https://github.com/arndvs/ctrl.git ~/dotfiles
+git clone https://github.com/arndvs/ctrlshft.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
 ```
 
@@ -340,7 +342,7 @@ These principles are working if you see:
 
 ## shft: autonomous agent loop
 
-> `ctrl` is the system. `shft` is the worker. **ctrl+shft** — you define the rules, shft executes them.
+> `ctrl` is the structure — instructions, skills, rules, secrets, context. `shft` is the autonomous loop — it picks issues, implements, commits, repeats. **ctrl+shft** — you define the rules, shft executes them.
 
 shft is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
 
@@ -527,7 +529,7 @@ docker sandbox run claude .
 <summary>Quick setup (recommended)</summary>
 
 ```bash
-git clone https://github.com/arndvs/ctrl.git ~/dotfiles
+git clone https://github.com/arndvs/ctrlshft.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
 ```
 
@@ -561,7 +563,7 @@ source ~/.bashrc
 Same as local — skip `sync-settings.sh` (VS Code Remote SSH forwards your settings).
 
 ```bash
-git clone https://github.com/arndvs/ctrl.git ~/dotfiles
+git clone https://github.com/arndvs/ctrlshft.git ~/dotfiles
 bash ~/dotfiles/bin/bootstrap.sh
 $EDITOR ~/dotfiles/secrets/.env.agent
 $EDITOR ~/dotfiles/secrets/.env.secrets
@@ -575,7 +577,7 @@ source ~/.bashrc
 
 ```bash
 # 1. Clone
-git clone https://github.com/arndvs/ctrl.git ~/dotfiles
+git clone https://github.com/arndvs/ctrlshft.git ~/dotfiles
 
 # 2. Generate CLAUDE.md and symlink
 bash ~/dotfiles/bin/bootstrap.sh   # or manually:
