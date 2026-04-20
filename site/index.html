@@ -2632,6 +2632,14 @@ source ~/.zshrc    # zsh</pre>
         const MAX_CONTRIBUTORS = 12;
         const CONTRIBUTORS_CACHE_KEY = `contributors-cache:${CONTRIBUTOR_REPO}`;
         const CONTRIBUTORS_CACHE_TTL_MS = 30 * 60 * 1000;
+        const FALLBACK_CONTRIBUTORS = [
+            {
+                login: 'arndvs',
+                html_url: 'https://github.com/arndvs',
+                avatar_url: 'https://avatars.githubusercontent.com/arndvs',
+                contributions: null
+            }
+        ];
         const CONTRIBUTOR_ROLES = {
             arndvs: 'Author · AI infrastructure & agentic systems'
         };
@@ -2676,7 +2684,11 @@ source ~/.zshrc    # zsh</pre>
             grid.innerHTML = contributors.map((contributor) => {
                 const isAuthor = knownAuthorLogins.has(String(contributor.login).toLowerCase());
                 const role = CONTRIBUTOR_ROLES[contributor.login] || 'Contributor';
-                const commitLabel = contributor.contributions === 1 ? 'commit' : 'commits';
+                const hasContribCount = typeof contributor.contributions === 'number';
+                const commitLabel = hasContribCount && contributor.contributions === 1 ? 'commit' : 'commits';
+                const contributionChip = hasContribCount
+                    ? `<div class="contributor-commits"><span class="commit-dot"></span>${contributor.contributions} ${commitLabel}</div>`
+                    : '<div class="contributor-commits"><span class="commit-dot"></span>profile</div>';
 
                 return `
                     <a href="${contributor.html_url}" target="_blank" rel="noopener noreferrer" class="contributor-card" aria-label="${contributor.login} on GitHub">
@@ -2687,7 +2699,7 @@ source ~/.zshrc    # zsh</pre>
                         <div class="contributor-info">
                             <div class="contributor-login"><span class="at">@</span>${contributor.login}</div>
                             <div class="contributor-role">${role}</div>
-                            <div class="contributor-commits"><span class="commit-dot"></span>${contributor.contributions} ${commitLabel}</div>
+                            ${contributionChip}
                         </div>
                     </a>
                 `;
@@ -2725,12 +2737,13 @@ source ~/.zshrc    # zsh</pre>
             } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
                 console.error('Contributors fetch failed:', error);
-                grid.innerHTML = `
+                renderContributors(grid, FALLBACK_CONTRIBUTORS);
+                grid.insertAdjacentHTML('beforeend', `
                     <div class="contributors-error">
-                        Unable to load contributors (${message}).
+                        Live contributor stats are temporarily unavailable (${message}).
                         View the full list on <a href="https://github.com/${CONTRIBUTOR_REPO}/graphs/contributors" class="footer-link">GitHub</a>.
                     </div>
-                `;
+                `);
             }
         }
 
