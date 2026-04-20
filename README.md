@@ -675,6 +675,20 @@ Notes:
 - Windows fallback copies are allowed when content matches the `~/dotfiles` source.
 - CI is stricter for deprecated skill flags; local `validate-symlinks.sh` reports them as warnings.
 
+## Contributing
+
+Contribution infrastructure is now in-repo:
+
+- Guide: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- Changelog: [`CHANGELOG.md`](CHANGELOG.md)
+- Issue templates: [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE)
+- PR template: [`.github/pull_request_template.md`](.github/pull_request_template.md)
+- Skill lint workflow: [`.github/workflows/skill-lint.yml`](.github/workflows/skill-lint.yml)
+
+When your PR touches `skills/**`, the `Skill lint` workflow validates skill file structure automatically.
+
+Project contributors: [arndvs/ctrlshft/graphs/contributors](https://github.com/arndvs/ctrlshft/graphs/contributors)
+
 ---
 
 ## Observability & Benchmarking (Roadmap)
