@@ -35,6 +35,15 @@ Output "Read global instructions." to chat to acknowledge you read this file.
 If the ACTIVE_CONTEXTS environment variable is set (by ~/dotfiles/bin/detect-context.sh), use it as the authoritative context list. Otherwise, check the workspace for file signatures (next.config.*, composer.json, sanity.config.*, prisma/schema.prisma, etc.) before loading domain-specific skills. Do not load skills irrelevant to the current workspace context.
 </skill-context>
 
+<!-- Counter-directive for microsoft/vscode#311462: VS Code Insiders 1.117 changed the
+     system prompt to inject ALL rule files (including those with applyTo globs) alongside
+     a blanket "acquire the instructions" directive, causing the model to eagerly load
+     every rule at session start regardless of context. This block tells the model to
+     treat applyTo as a conditional gate. Remove once the upstream bug is fixed. -->
+<rule-loading>
+Instruction/rule files that include an `<applyTo>` glob pattern are CONDITIONAL — only read them when a file matching that glob is actively being edited or is directly relevant to the current task. Do NOT eagerly load all rule files at session start. The `<applyTo>` metadata is a gate, not a label. If no files matching the glob are in context, skip that rule entirely.
+</rule-loading>
+
 <skill-self-learning>
 This section covers two triggers: automatic self-learning after tasks, and explicit "remember" commands from the user.
 
