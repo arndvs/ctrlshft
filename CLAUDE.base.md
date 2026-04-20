@@ -4,6 +4,13 @@
      Edit THIS file, then run bootstrap.sh to regenerate CLAUDE.md.
      Only CLAUDE.md is symlinked to ~/.claude/ and read by Claude Code at runtime. -->
 
+<source-of-truth>
+~/dotfiles/ is the single source of truth for all agent configuration.
+~/.claude/, ~/.copilot/, and ~/.agents/ are consumer targets, not sources.
+NEVER edit files directly in ~/.claude/, ~/.copilot/, or ~/.agents/.
+ALL changes must be made in ~/dotfiles/ and propagated via bootstrap.sh.
+</source-of-truth>
+
 Always read global rule instructions first and confirm that you have done so by writing "Read Claude." in the chat:
 
 @~/dotfiles/global.instructions.md
