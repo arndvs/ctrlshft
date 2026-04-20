@@ -1,0 +1,61 @@
+name: Integrity
+
+on:
+  pull_request:
+    paths:
+      - "global.instructions.md"
+      - "CLAUDE.base.md"
+      - "bin/validate-symlinks.sh"
+      - "skills/**"
+      - ".github/workflows/integrity.yml"
+  push:
+    branches:
+      - dev
+      - master
+    paths:
+      - "global.instructions.md"
+      - "CLAUDE.base.md"
+      - "bin/validate-symlinks.sh"
+      - "skills/**"
+      - ".github/workflows/integrity.yml"
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    name: Validate source-of-truth and skill policy
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure source-of-truth language exists
+        run: |
+          set -euo pipefail
+
+          if ! grep -qi "source of truth" global.instructions.md; then
+            echo "✗ global.instructions.md is missing source-of-truth language"
+            exit 1
+          fi
+
+          if ! grep -qi "source of truth" CLAUDE.base.md; then
+            echo "✗ CLAUDE.base.md is missing source-of-truth language"
+            exit 1
+          fi
+
+          echo "✓ Source-of-truth language found in required files"
+
+      - name: Ensure deprecated skill flag is absent
+        run: |
+          set -euo pipefail
+
+          if grep -Rin --include="SKILL.md" "disable-model-invocation" skills; then
+            echo "✗ Found deprecated disable-model-invocation flag"
+            exit 1
+          fi
+
+          echo "✓ No deprecated skill flags detected"
+
+      - name: Run static integrity checks
+        run: |
+          set -euo pipefail
+          bash bin/validate-symlinks.sh --ci
