@@ -1298,6 +1298,28 @@
             font-family: var(--sans);
         }
 
+        .contributors-source-badge {
+            margin-top: 1.2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-bright);
+            color: var(--text-dim);
+            font-size: 1rem;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+            background: var(--surface);
+        }
+
+        .contributors-source-badge .dot {
+            width: 0.55rem;
+            height: 0.55rem;
+            border-radius: 50%;
+            background: var(--accent);
+            display: inline-block;
+        }
+
         /* TICKER */
         .ticker {
             border-top: 1px solid var(--border);
@@ -2193,9 +2215,7 @@
                 </div>
             </div>
 
-            <div class="contributors-note" style="margin-top: 1.2rem;">
-                Showing top contributors from the GitHub API.
-            </div>
+            <div class="contributors-source-badge"><span class="dot"></span>Live from GitHub API · Top 12 shown</div>
 
             <div class="contributors-cta">
                 <a href="https://github.com/arndvs/ctrlshft/fork" class="btn-ghost">Fork on GitHub →</a>
