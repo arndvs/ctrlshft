@@ -6,11 +6,11 @@ Subagent personas for Claude Code. Each `.md` file defines a specialized agent w
 
 Agents come in model variants. Choose based on the task's complexity and cost sensitivity.
 
-| Model | Cost | Reasoning | Best for |
-|-------|------|-----------|----------|
-| **Haiku** | Lowest | Fast, shallow | Bulk file scanning, simple lookups, repetitive tasks |
-| **Sonnet** | Medium | Good general | Day-to-day reviews, standard research, most tasks |
-| **Opus** | Highest | Deep, thorough | Architecture analysis, security-critical reviews, complex cross-system tracing |
+| Model      | Cost    | Reasoning      | Best for                                                                       |
+| ---------- | ------- | -------------- | ------------------------------------------------------------------------------ |
+| **Haiku**  | Lowest  | Fast, shallow  | Bulk file scanning, simple lookups, repetitive tasks                           |
+| **Sonnet** | Medium  | Good general   | Day-to-day reviews, standard research, most tasks                              |
+| **Opus**   | Highest | Deep, thorough | Architecture analysis, security-critical reviews, complex cross-system tracing |
 
 **Default:** All base agents use Sonnet — the best cost/quality balance for general work.
 
@@ -18,23 +18,23 @@ Agents come in model variants. Choose based on the task's complexity and cost se
 
 ### Researchers
 
-| Agent | Model | When to use |
-|-------|-------|-------------|
-| `researcher` | Sonnet | Default. General codebase exploration and architecture mapping |
-| `researcher-opus` | Opus | Complex cross-system data flows, architecture decisions with broad impact |
-| `researcher-haiku` | Haiku | Quick lookups, bulk file scanning, simple pattern searches |
+| Agent              | Model  | When to use                                                               |
+| ------------------ | ------ | ------------------------------------------------------------------------- |
+| `researcher`       | Sonnet | Default. General codebase exploration and architecture mapping            |
+| `researcher-opus`  | Opus   | Complex cross-system data flows, architecture decisions with broad impact |
+| `researcher-haiku` | Haiku  | Quick lookups, bulk file scanning, simple pattern searches                |
 
 ### Code Reviewers
 
-| Agent | Model | When to use |
-|-------|-------|-------------|
-| `code-reviewer` | Sonnet | Default. Standard PR reviews, bug checks |
-| `code-reviewer-opus` | Opus | Security-critical code, pre-deploy reviews, complex architectural changes |
+| Agent                | Model  | When to use                                                               |
+| -------------------- | ------ | ------------------------------------------------------------------------- |
+| `code-reviewer`      | Sonnet | Default. Standard PR reviews, bug checks                                  |
+| `code-reviewer-opus` | Opus   | Security-critical code, pre-deploy reviews, complex architectural changes |
 
 ### Security
 
-| Agent | Model | When to use |
-|-------|-------|-------------|
+| Agent              | Model  | When to use                                                   |
+| ------------------ | ------ | ------------------------------------------------------------- |
 | `security-auditor` | Sonnet | OWASP Top 10 scans, secrets exposure checks, config hardening |
 
 ## Platform Limitations
