@@ -5,7 +5,7 @@
 # ctrl+shft
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-\*\*
+[![Integrity](https://github.com/arndvs/ctrlshft/actions/workflows/integrity.yml/badge.svg)](https://github.com/arndvs/ctrlshft/actions/workflows/integrity.yml)
 
 > Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across every machine.
 >
@@ -654,6 +654,26 @@ bash ~/dotfiles/bin/bootstrap.sh        # re-validates, fixes stale symlinks
 bash ~/dotfiles/bin/sync-settings.sh    # local only — skip on VPS
 source ~/.bashrc
 ```
+
+### Integrity checks
+
+Guardrails are enforced in CI by `.github/workflows/integrity.yml`.
+
+It validates:
+- source-of-truth language exists in `global.instructions.md` and `CLAUDE.base.md`
+- deprecated `disable-model-invocation` flags are absent from `skills/**/SKILL.md`
+- static integrity checks pass via `bash bin/validate-symlinks.sh --ci`
+
+Run local checks before opening a PR:
+
+```bash
+bash ~/dotfiles/bin/validate-env.sh
+bash ~/dotfiles/bin/validate-symlinks.sh --ci
+```
+
+Notes:
+- Windows fallback copies are allowed when content matches the `~/dotfiles` source.
+- CI is stricter for deprecated skill flags; local `validate-symlinks.sh` reports them as warnings.
 
 ---
 
