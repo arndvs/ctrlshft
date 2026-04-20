@@ -12,6 +12,7 @@ on:
     branches:
       - dev
       - master
+      - main
     paths:
       - "global.instructions.md"
       - "CLAUDE.base.md"
