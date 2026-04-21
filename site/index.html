@@ -2685,41 +2685,107 @@ source ~/.zshrc    # zsh</pre>
                 ...Object.keys(NORMALIZED_CONTRIBUTOR_ROLES)
             ]);
 
-            const withAvatarSize = (avatarUrl) => {
+            const getSafeGitHubProfileUrl = (profileUrl) => {
                 try {
-                    const url = new URL(String(avatarUrl));
-                    url.searchParams.set('s', '128');
+                    const url = new URL(String(profileUrl));
+
+                    if (url.protocol !== 'https:' || url.hostname !== 'github.com') {
+                        throw new Error('Invalid GitHub profile URL');
+                    }
+
                     return url.toString();
                 } catch {
-                    const base = String(avatarUrl || '');
-                    return base.includes('?') ? `${base}&s=128` : `${base}?s=128`;
+                    return `https://github.com/${repoOwnerLogin}`;
                 }
             };
 
-            grid.innerHTML = contributors.map((contributor) => {
-                const normalizedLogin = String(contributor.login).toLowerCase();
+            const withAvatarSize = (avatarUrl) => {
+                try {
+                    const url = new URL(String(avatarUrl));
+
+                    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+                        throw new Error('Invalid avatar URL protocol');
+                    }
+
+                    url.searchParams.set('s', '128');
+                    return url.toString();
+                } catch {
+                    return 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+                }
+            };
+
+            grid.replaceChildren();
+
+            contributors.forEach((contributor) => {
+                const login = String(contributor.login || '');
+                const normalizedLogin = login.toLowerCase();
                 const isAuthor = knownAuthorLogins.has(normalizedLogin);
-                const role = NORMALIZED_CONTRIBUTOR_ROLES[normalizedLogin] || 'Contributor';
+                const role = String(NORMALIZED_CONTRIBUTOR_ROLES[normalizedLogin] || 'Contributor');
                 const hasContribCount = typeof contributor.contributions === 'number';
                 const commitLabel = hasContribCount && contributor.contributions === 1 ? 'commit' : 'commits';
-                const contributionChip = hasContribCount
-                    ? `<div class="contributor-commits"><span class="commit-dot"></span>${contributor.contributions} ${commitLabel}</div>`
-                    : '<div class="contributor-commits"><span class="commit-dot"></span>profile</div>';
 
-                return `
-                    <a href="${contributor.html_url}" target="_blank" rel="noopener noreferrer" class="contributor-card" aria-label="${contributor.login} on GitHub">
-                        <div class="contributor-avatar-wrap">
-                            <img src="${withAvatarSize(contributor.avatar_url)}" alt="${contributor.login}" class="contributor-avatar" width="64" height="64" loading="lazy" />
-                            ${isAuthor ? '<span class="contributor-badge">Author</span>' : ''}
-                        </div>
-                        <div class="contributor-info">
-                            <div class="contributor-login"><span class="at">@</span>${contributor.login}</div>
-                            <div class="contributor-role">${role}</div>
-                            ${contributionChip}
-                        </div>
-                    </a>
-                `;
-            }).join('');
+                const card = document.createElement('a');
+                card.href = getSafeGitHubProfileUrl(contributor.html_url);
+                card.target = '_blank';
+                card.rel = 'noopener noreferrer';
+                card.className = 'contributor-card';
+                card.setAttribute('aria-label', `${login} on GitHub`);
+
+                const avatarWrap = document.createElement('div');
+                avatarWrap.className = 'contributor-avatar-wrap';
+
+                const avatar = document.createElement('img');
+                avatar.src = withAvatarSize(contributor.avatar_url);
+                avatar.alt = login;
+                avatar.className = 'contributor-avatar';
+                avatar.width = 64;
+                avatar.height = 64;
+                avatar.loading = 'lazy';
+                avatarWrap.appendChild(avatar);
+
+                if (isAuthor) {
+                    const badge = document.createElement('span');
+                    badge.className = 'contributor-badge';
+                    badge.textContent = 'Author';
+                    avatarWrap.appendChild(badge);
+                }
+
+                const info = document.createElement('div');
+                info.className = 'contributor-info';
+
+                const loginElement = document.createElement('div');
+                loginElement.className = 'contributor-login';
+                const at = document.createElement('span');
+                at.className = 'at';
+                at.textContent = '@';
+                loginElement.appendChild(at);
+                loginElement.appendChild(document.createTextNode(login));
+
+                const roleElement = document.createElement('div');
+                roleElement.className = 'contributor-role';
+                roleElement.textContent = role;
+
+                const contributionChip = document.createElement('div');
+                contributionChip.className = 'contributor-commits';
+                const commitDot = document.createElement('span');
+                commitDot.className = 'commit-dot';
+                contributionChip.appendChild(commitDot);
+                contributionChip.appendChild(
+                    document.createTextNode(
+                        hasContribCount
+                            ? `${contributor.contributions} ${commitLabel}`
+                            : 'profile'
+                    )
+                );
+
+                info.appendChild(loginElement);
+                info.appendChild(roleElement);
+                info.appendChild(contributionChip);
+
+                card.appendChild(avatarWrap);
+                card.appendChild(info);
+                grid.appendChild(card);
+            });
         }
 
         async function loadContributors() {
