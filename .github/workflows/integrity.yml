@@ -1,5 +1,4 @@
 name: Integrity
-
 on:
   pull_request:
     paths:

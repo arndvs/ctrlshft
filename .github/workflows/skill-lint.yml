@@ -1,9 +1,8 @@
 name: Skill lint
-
 on:
   pull_request:
     paths:
-      - 'skills/**'
+      - "skills/**"
 
 jobs:
   lint-skills:

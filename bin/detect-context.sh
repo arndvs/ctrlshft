@@ -80,3 +80,9 @@ fi
 
 export ACTIVE_CONTEXTS="$contexts"
 echo "$contexts"
+
+# Non-blocking dashboard context event (best-effort).
+if [[ -x "${DOTFILES:-$HOME/dotfiles}/bin/write-dashboard-state.sh" ]]; then
+    "${DOTFILES:-$HOME/dotfiles}/bin/write-dashboard-state.sh" \
+        context "Active contexts: $contexts" >/dev/null 2>&1 || true
+fi

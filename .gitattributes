@@ -1,0 +1,26 @@
+# Force LF line endings for shell scripts (prevent CRLF breakage on Windows checkout)
+*.sh        text eol=lf
+*.bash      text eol=lf
+*.py        text eol=lf
+
+# Text files — normalize to LF in repo and force LF on checkout
+*.md        text eol=lf
+*.txt       text eol=lf
+*.json      text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.js        text eol=lf
+*.ts        text eol=lf
+
+# Binary files — no line ending conversion
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.eot       binary

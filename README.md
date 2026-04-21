@@ -693,7 +693,7 @@ Project contributors: [arndvs/ctrlshft/graphs/contributors](https://github.com/a
 
 ## Observability & Benchmarking (Roadmap)
 
-> Status: **planned** — see [working/observability-benchmarking-plan.md](working/observability-benchmarking-plan.md) for the full implementation plan.
+> Status: **planned** — see [docs/observability-benchmarking-plan.md](docs/observability-benchmarking-plan.md) for the tracked implementation plan.
 
 ctrl+shft currently operates blind — no token tracking, no cost data, no accuracy metrics. To prove the system as a proof of concept, stakeholders need hard numbers. This roadmap addresses the full observability gap.
 

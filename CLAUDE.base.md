@@ -32,6 +32,10 @@ Output "Active Context: [list of detected contexts]." to chat (e.g. "Active Cont
 
 @~/dotfiles/instructions/handoff.instructions.md
 
+## Client & Project Context (auto-generated)
+
+@~/dotfiles/working/active-client.md
+
 ## Service-Triggered Instructions
 
 If working with Google Docs, Sheets, or Slides, also read:

@@ -1,0 +1,9 @@
+# .projects — Maps project directory paths to project slugs
+# One mapping per line: /path/to/project = project-slug
+# Lines starting with # are comments. Tilde (~) is expanded.
+# Omit the = project-slug part to load client context only (no project context).
+#
+# Examples:
+#   ~/projects/client-website = website
+#   ~/projects/client-app = mobile-app
+#   /var/www/client = website
