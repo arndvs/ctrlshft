@@ -11,6 +11,15 @@ Pipeline position: `/grill-me` → `/write-a-prd` → `/architect` → `/prd-to-
 
 ## Workflow
 
+### 0. HUD event (if daemon running)
+
+Emit a session-start event so the HUD tracks this work:
+```bash
+source ~/dotfiles/bin/write-hud-state.sh
+write_hud_event "info" "do-work: started — $TASK_SUMMARY"
+```
+Replace `$TASK_SUMMARY` with a short description. Emit again after each commit (`do-work: committed — <message>`) and at session end (`do-work: completed`).
+
 ### 1. Understand
 
 Read any referenced plan, PRD, or GitHub issue. If none provided, clarify the task with the user before proceeding.

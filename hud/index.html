@@ -1,0 +1,2183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ctrl+shft — HUD</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e8ff47' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 19h8'/%3E%3Cpath d='m4 17 6-6-6-6'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #080808;
+            --surface: #0f0f0f;
+            --surface-2: #141414;
+            --surface-3: #1a1a1a;
+            --border: #1e1e1e;
+            --border-bright: #2e2e2e;
+            --text: #ffffff;
+            --text-secondary: #d1d5dc;
+            --text-dim: #9f9fa9;
+            --text-dimmer: #555;
+            --accent: #e8ff47;
+            --accent-dim: rgba(232, 255, 71, 0.1);
+            --green: #44ff88;
+            --green-dim: rgba(68, 255, 136, 0.1);
+            --red: #ff4444;
+            --red-dim: rgba(255, 68, 68, 0.1);
+            --yellow: #ffcc44;
+            --yellow-dim: rgba(255, 204, 68, 0.1);
+            --blue: #4488ff;
+            --blue-dim: rgba(68, 136, 255, 0.1);
+            --mono: 'IBM Plex Mono', monospace;
+            --display: 'Bebas Neue', sans-serif;
+            --sans: 'IBM Plex Sans', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 62.5%;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 1.3rem;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.04) 2px, rgba(0, 0, 0, 0.04) 4px);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* ── HEADER ── */
+        header {
+            border-bottom: 1px solid var(--border);
+            padding: 0 2.4rem;
+            height: 5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: rgba(8, 8, 8, 0.95);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo {
+            font-family: var(--display);
+            font-size: 3.2rem;
+            letter-spacing: 0.4rem;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .logo-dim {
+            color: var(--text-dim);
+            font-size: 0.7em;
+            letter-spacing: 0.2rem;
+        }
+
+        .header-sep {
+            color: var(--text-dimmer);
+            font-size: 1.6rem;
+            font-weight: 200;
+        }
+
+        .header-title {
+            font-size: 1.1rem;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 0.6rem 1.2rem;
+            width: 32rem;
+            transition: border-color 0.15s;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--accent);
+        }
+
+        .search-box input {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            flex: 1;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-dimmer);
+        }
+
+        .search-kbd {
+            font-size: 0.9rem;
+            color: var(--text-dimmer);
+            border: 1px solid var(--border);
+            padding: 0.2rem 0.5rem;
+            background: var(--bg);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.6rem;
+        }
+
+        .header-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: var(--mono);
+            font-size: 1rem;
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .header-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1rem;
+            letter-spacing: 0.15rem;
+            text-transform: uppercase;
+            color: var(--text-dimmer);
+        }
+
+        .live-dot {
+            width: 0.6rem;
+            height: 0.6rem;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s ease infinite;
+        }
+
+        .live-dot.stale {
+            background: var(--yellow);
+            animation: none;
+        }
+
+        .live-dot.error {
+            background: var(--red);
+            animation: none;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .last-updated {
+            font-size: 1rem;
+            color: var(--text-dimmer);
+        }
+
+        /* ── PROJECT SELECTOR ── */
+        .project-bar {
+            border-bottom: 1px solid var(--border);
+            padding: 0 2.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            overflow-x: auto;
+        }
+
+        .project-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1.2rem 2rem;
+            border-right: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s;
+            white-space: nowrap;
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-bottom: 2px solid transparent;
+            font-family: var(--mono);
+        }
+
+        .project-tab:hover {
+            background: var(--surface);
+            color: var(--text-secondary);
+        }
+
+        .project-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: var(--surface);
+        }
+
+        .project-tab-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+        }
+
+        .project-tab-dot.healthy {
+            background: var(--green);
+        }
+
+        .project-tab-dot.warning {
+            background: var(--yellow);
+        }
+
+        .project-tab-dot.error {
+            background: var(--red);
+        }
+
+        .project-tab-stats {
+            display: flex;
+            gap: 0.6rem;
+            margin-left: 0.6rem;
+            font-size: 0.9rem;
+            color: var(--text-dimmer);
+        }
+
+        .project-tab-stats span {
+            padding: 0.1rem 0.4rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+        }
+
+        .project-tab-close {
+            margin-left: auto;
+            padding: 0.2rem 0.5rem;
+            font-size: 1rem;
+            color: var(--text-dimmer);
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+            line-height: 1;
+            opacity: 0;
+            transition: opacity 0.15s, color 0.15s;
+        }
+
+        .project-tab:hover .project-tab-close {
+            opacity: 1;
+        }
+
+        .project-tab-close:hover {
+            color: var(--red);
+            background: rgba(255, 69, 69, 0.12);
+        }
+
+        /* ── MAIN LAYOUT ── */
+        .main {
+            display: grid;
+            grid-template-columns: 26rem 1fr;
+            height: calc(100vh - 9.8rem);
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-search {
+            padding: 1.2rem 1.6rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-search input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            padding: 0.8rem 1rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .sidebar-search input:focus {
+            border-color: var(--border-bright);
+        }
+
+        .sidebar-search input::placeholder {
+            color: var(--text-dimmer);
+        }
+
+        .sidebar-section {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-section.collapsed .sidebar-section-content {
+            display: none;
+        }
+
+        .sidebar-section-header {
+            padding: 1.2rem 1.6rem;
+            font-size: 1rem;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            color: var(--text-dimmer);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.15s;
+            user-select: none;
+        }
+
+        .sidebar-section-header:hover {
+            background: var(--surface);
+        }
+
+        .sidebar-section-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .sidebar-chevron {
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+
+        .sidebar-section.collapsed .sidebar-chevron {
+            transform: rotate(-90deg);
+        }
+
+        .sidebar-count {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            padding: 0.1rem 0.6rem;
+            font-size: 0.9rem;
+            color: var(--text-dimmer);
+        }
+
+        .sidebar-section-content {
+            max-height: 30rem;
+            overflow-y: auto;
+        }
+
+        .sidebar-item {
+            padding: 0.8rem 1.6rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid var(--border);
+            font-size: 1.15rem;
+        }
+
+        .sidebar-item:last-child {
+            border-bottom: none;
+        }
+
+        .sidebar-item:hover {
+            background: var(--surface);
+        }
+
+        .sidebar-item.active {
+            background: var(--surface-2);
+        }
+
+        .sidebar-item-icon {
+            width: 1.6rem;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .sidebar-item-name {
+            flex: 1;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-item-name.dim {
+            color: var(--text-dimmer);
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+            padding: 0.15rem 0.5rem;
+            border: 1px solid;
+            flex-shrink: 0;
+        }
+
+        .status-badge.pass {
+            color: var(--green);
+            border-color: var(--green);
+            background: var(--green-dim);
+        }
+
+        .status-badge.fail {
+            color: var(--red);
+            border-color: var(--red);
+            background: var(--red-dim);
+        }
+
+        .status-badge.warn {
+            color: var(--yellow);
+            border-color: var(--yellow);
+            background: var(--yellow-dim);
+        }
+
+        .status-badge.loaded {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .status-badge.available {
+            color: var(--text-dimmer);
+            border-color: var(--border-bright);
+            background: none;
+        }
+
+        .status-badge.idle {
+            color: var(--text-dimmer);
+            border-color: var(--border-bright);
+        }
+
+        /* ── CONTENT PANEL ── */
+        .content {
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.6rem;
+        }
+
+        /* ── STAT ROW ── */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 1.6rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 0.6rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            letter-spacing: 0.15rem;
+            text-transform: uppercase;
+            color: var(--text-dimmer);
+        }
+
+        .stat-trend {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .stat-trend.up {
+            color: var(--green);
+        }
+
+        .stat-trend.down {
+            color: var(--red);
+        }
+
+        .stat-trend.flat {
+            color: var(--text-dimmer);
+        }
+
+        .stat-value-row {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2.8rem;
+            font-weight: 300;
+            line-height: 1;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-value.green {
+            color: var(--green);
+        }
+
+        .stat-value.red {
+            color: var(--red);
+        }
+
+        .stat-value.yellow {
+            color: var(--yellow);
+        }
+
+        .stat-value.accent {
+            color: var(--accent);
+        }
+
+        .stat-sub {
+            font-size: 1rem;
+            color: var(--text-dimmer);
+            margin-top: 0.6rem;
+        }
+
+        .stat-sparkline {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3rem;
+            opacity: 0.4;
+        }
+
+        .stat-sparkline svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ── ACTIVE CONTEXT PANEL ── */
+        .panel {
+            border: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .panel-header {
+            padding: 1rem 1.6rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1rem;
+            letter-spacing: 0.15rem;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .panel-header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .panel-tabs {
+            display: flex;
+            gap: 0;
+        }
+
+        .panel-tab {
+            font-size: 1rem;
+            padding: 0.4rem 1rem;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dimmer);
+            cursor: pointer;
+            font-family: var(--mono);
+            transition: all 0.15s;
+            border-left: none;
+        }
+
+        .panel-tab:first-child {
+            border-left: 1px solid var(--border);
+        }
+
+        .panel-tab:hover {
+            color: var(--text-secondary);
+        }
+
+        .panel-tab.active {
+            background: var(--surface-2);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .panel-body {
+            padding: 1.4rem 1.6rem;
+        }
+
+        /* Active contexts */
+        .context-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-bottom: 1.4rem;
+        }
+
+        .context-tag {
+            font-size: 1.05rem;
+            letter-spacing: 0.08rem;
+            padding: 0.35rem 0.9rem;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .context-tag.inactive {
+            border-color: var(--border-bright);
+            color: var(--text-dimmer);
+            background: none;
+        }
+
+        /* File list */
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .file-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            gap: 1.4rem;
+            padding: 0.9rem 1.2rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            font-size: 1.15rem;
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .file-row:hover {
+            background: var(--surface-2);
+            border-color: var(--border-bright);
+        }
+
+        .file-name {
+            color: var(--text-secondary);
+            font-family: var(--mono);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .file-name .path {
+            color: var(--text-dimmer);
+        }
+
+        .file-icon {
+            font-size: 1rem;
+        }
+
+        .file-read-time {
+            font-size: 0.95rem;
+            color: var(--text-dimmer);
+            white-space: nowrap;
+        }
+
+        /* ── LOG STREAM ── */
+        .log-stream {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            max-height: 28rem;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            display: grid;
+            grid-template-columns: 7rem 7rem 1fr;
+            gap: 1rem;
+            align-items: start;
+            padding: 0.7rem 1.2rem;
+            background: var(--bg);
+            font-size: 1.1rem;
+            border-left: 2px solid transparent;
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+
+        .log-entry:hover {
+            background: var(--surface-2);
+        }
+
+        .log-entry.expanded {
+            background: var(--surface-2);
+        }
+
+        .log-entry.read {
+            border-left-color: var(--accent);
+        }
+
+        .log-entry.pass {
+            border-left-color: var(--green);
+        }
+
+        .log-entry.fail {
+            border-left-color: var(--red);
+        }
+
+        .log-entry.warn {
+            border-left-color: var(--yellow);
+        }
+
+        .log-entry.info {
+            border-left-color: var(--blue);
+        }
+
+        .log-entry.context {
+            border-left-color: var(--text-dimmer);
+        }
+
+        .log-time {
+            color: var(--text-dimmer);
+            font-size: 1rem;
+        }
+
+        .log-type {
+            font-size: 0.85rem;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+        }
+
+        .log-type.read {
+            color: var(--accent);
+        }
+
+        .log-type.pass {
+            color: var(--green);
+        }
+
+        .log-type.fail {
+            color: var(--red);
+        }
+
+        .log-type.warn {
+            color: var(--yellow);
+        }
+
+        .log-type.info {
+            color: var(--blue);
+        }
+
+        .log-type.context {
+            color: var(--text-dimmer);
+        }
+
+        .log-message {
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .log-message .highlight {
+            color: var(--text);
+        }
+
+        .log-message .path {
+            color: var(--accent);
+        }
+
+        .log-message .rule {
+            color: var(--yellow);
+        }
+
+        .log-message .violation {
+            color: var(--red);
+        }
+
+        .log-details {
+            grid-column: 1 / -1;
+            padding: 1rem;
+            margin-top: 0.6rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            font-size: 1rem;
+            display: none;
+        }
+
+        .log-entry.expanded .log-details {
+            display: block;
+        }
+
+        /* ── COMPLIANCE HISTORY ── */
+        .compliance-chart-container {
+            padding: 1.4rem 1.6rem;
+        }
+
+        .compliance-chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.2rem;
+        }
+
+        .compliance-legend {
+            display: flex;
+            gap: 1.4rem;
+            font-size: 1rem;
+        }
+
+        .compliance-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-dimmer);
+        }
+
+        .compliance-legend-dot {
+            width: 0.8rem;
+            height: 0.8rem;
+            border-radius: 2px;
+        }
+
+        .compliance-legend-dot.high {
+            background: var(--green);
+        }
+
+        .compliance-legend-dot.medium {
+            background: var(--yellow);
+        }
+
+        .compliance-legend-dot.low {
+            background: var(--red);
+        }
+
+        .compliance-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 8rem;
+        }
+
+        .compliance-bar-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .compliance-bar {
+            width: 100%;
+            border-radius: 1px;
+            min-height: 2px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .compliance-bar:hover {
+            filter: brightness(1.2);
+            transform: scaleY(1.05);
+        }
+
+        .compliance-bar.selected {
+            box-shadow: 0 0 0 2px var(--accent);
+        }
+
+        .compliance-tooltip {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-2);
+            border: 1px solid var(--border-bright);
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .compliance-bar:hover .compliance-tooltip {
+            opacity: 1;
+        }
+
+        .compliance-bar.high {
+            background: var(--green);
+        }
+
+        .compliance-bar.medium {
+            background: var(--yellow);
+        }
+
+        .compliance-bar.low {
+            background: var(--red);
+        }
+
+        .compliance-selected-info {
+            margin-top: 1.2rem;
+            padding: 1rem 1.4rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        .compliance-selected-info.visible {
+            display: block;
+        }
+
+        .compliance-selected-info h4 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.6rem;
+            color: var(--text-secondary);
+        }
+
+        .compliance-selected-stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 1rem;
+            color: var(--text-dimmer);
+        }
+
+        /* ── VIOLATION DETAIL ── */
+        .violation-card {
+            border: 1px solid var(--border);
+            background: var(--bg);
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .violation-card:hover {
+            border-color: var(--border-bright);
+        }
+
+        .violation-card.expanded {
+            border-color: var(--border-bright);
+        }
+
+        .violation-header {
+            padding: 1rem 1.4rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1.4rem;
+        }
+
+        .violation-header-left {
+            flex: 1;
+        }
+
+        .violation-title {
+            font-size: 1.15rem;
+            color: var(--text);
+            line-height: 1.4;
+            margin-bottom: 0.4rem;
+        }
+
+        .violation-rule {
+            font-size: 1rem;
+            color: var(--text-dimmer);
+        }
+
+        .violation-severity {
+            font-size: 0.85rem;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+            padding: 0.2rem 0.6rem;
+            border: 1px solid;
+            flex-shrink: 0;
+        }
+
+        .violation-severity.critical {
+            color: var(--red);
+            border-color: var(--red);
+            background: var(--red-dim);
+        }
+
+        .violation-severity.high {
+            color: var(--red);
+            border-color: var(--red);
+            background: var(--red-dim);
+            opacity: 0.85;
+        }
+
+        .violation-severity.medium {
+            color: var(--yellow);
+            border-color: var(--yellow);
+            background: var(--yellow-dim);
+        }
+
+        .violation-severity.low {
+            color: var(--text-dim);
+            border-color: var(--border-bright);
+        }
+
+        .violation-body {
+            padding: 1rem 1.4rem;
+            font-family: var(--sans);
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            display: none;
+        }
+
+        .violation-card.expanded .violation-body {
+            display: block;
+        }
+
+        .violation-code {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .violation-meta {
+            padding: 0.8rem 1.4rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 2rem;
+            font-size: 0.95rem;
+            color: var(--text-dimmer);
+        }
+
+        .violation-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* ── EMPTY STATE ── */
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-dimmer);
+            font-size: 1.15rem;
+            border: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .empty-state-title {
+            font-size: 1.3rem;
+            color: var(--text-dim);
+            margin-bottom: 0.6rem;
+        }
+
+        /* ── KEYBOARD HINTS ── */
+        .kbd-hints {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            gap: 1rem;
+            font-size: 1rem;
+            color: var(--text-dimmer);
+            opacity: 0.6;
+        }
+
+        .kbd-hint {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .kbd-hint kbd {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            padding: 0.2rem 0.5rem;
+            font-family: var(--mono);
+            font-size: 0.9rem;
+        }
+
+        /* ── TOAST ── */
+        .toast-container {
+            position: fixed;
+            top: 6rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            z-index: 200;
+        }
+
+        .toast {
+            padding: 1rem 1.4rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: slideIn 0.3s ease;
+            max-width: 36rem;
+        }
+
+        .toast.success {
+            border-left: 3px solid var(--green);
+        }
+
+        .toast.warning {
+            border-left: 3px solid var(--yellow);
+        }
+
+        .toast.error {
+            border-left: 3px solid var(--red);
+        }
+
+        .toast.info {
+            border-left: 3px solid var(--blue);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-bright);
+            border-radius: 2px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dimmer);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1100px) {
+            .main {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .stat-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header-center {
+                display: none;
+            }
+
+            .kbd-hints {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="header-left">
+            <span class="logo">ctrl<span class="logo-dim">+shft</span></span>
+            <span class="header-sep">/</span>
+            <span class="header-title">HUD</span>
+        </div>
+        <div class="header-center">
+            <div class="search-box">
+                <span style="color:var(--text-dimmer);">&#128269;</span>
+                <input type="text" placeholder="Search rules, files, violations..." id="global-search">
+                <span class="search-kbd">/</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="header-btn" id="refresh-btn">&#8635; Refresh</button>
+            <div class="live-indicator">
+                <div class="live-dot" id="live-dot"></div>
+                <span id="live-status">live</span>
+            </div>
+            <span class="last-updated" id="last-updated">—</span>
+        </div>
+    </header>
+
+    <!-- PROJECT TABS -->
+    <div class="project-bar" id="project-bar"></div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-search">
+                <input type="text" placeholder="Filter sidebar..." id="sidebar-filter">
+            </div>
+
+            <div class="sidebar-section" id="rules-section">
+                <div class="sidebar-section-header" onclick="toggleSection('rules-section')">
+                    <div class="sidebar-section-header-left">
+                        <span class="sidebar-chevron">&#9660;</span>
+                        Rules
+                    </div>
+                    <span class="sidebar-count" id="rules-count">—</span>
+                </div>
+                <div class="sidebar-section-content" id="rules-list"></div>
+            </div>
+
+            <div class="sidebar-section" id="skills-section">
+                <div class="sidebar-section-header" onclick="toggleSection('skills-section')">
+                    <div class="sidebar-section-header-left">
+                        <span class="sidebar-chevron">&#9660;</span>
+                        Skills
+                    </div>
+                    <span class="sidebar-count" id="skills-count">—</span>
+                </div>
+                <div class="sidebar-section-content" id="skills-list"></div>
+            </div>
+
+            <div class="sidebar-section" id="agents-section">
+                <div class="sidebar-section-header" onclick="toggleSection('agents-section')">
+                    <div class="sidebar-section-header-left">
+                        <span class="sidebar-chevron">&#9660;</span>
+                        Agents
+                    </div>
+                    <span class="sidebar-count" id="agents-count">—</span>
+                </div>
+                <div class="sidebar-section-content" id="agents-list"></div>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+
+            <!-- STAT ROW -->
+            <div class="stat-row">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-label">Compliance rate</div>
+                        <div class="stat-trend flat" id="stat-compliance-trend">— 0</div>
+                    </div>
+                    <div class="stat-value-row">
+                        <div class="stat-value accent" id="stat-compliance">—</div>
+                    </div>
+                    <div class="stat-sub" id="stat-compliance-sub">last 30 sessions</div>
+                    <div class="stat-sparkline" id="sparkline-compliance"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-label">Rules loaded</div>
+                        <div class="stat-trend flat" id="stat-rules-trend">— 0</div>
+                    </div>
+                    <div class="stat-value-row">
+                        <div class="stat-value accent" id="stat-rules">—</div>
+                    </div>
+                    <div class="stat-sub" id="stat-contexts">active contexts: —</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-label">Violations</div>
+                        <div class="stat-trend flat" id="stat-violations-trend">— 0</div>
+                    </div>
+                    <div class="stat-value-row">
+                        <div class="stat-value" id="stat-violations" style="color: var(--green);">—</div>
+                    </div>
+                    <div class="stat-sub" id="stat-violations-sub">this session</div>
+                    <div class="stat-sparkline" id="sparkline-violations"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-label">Sessions audited</div>
+                        <div class="stat-trend flat" id="stat-sessions-trend">— 0</div>
+                    </div>
+                    <div class="stat-value-row">
+                        <div class="stat-value accent" id="stat-sessions">—</div>
+                    </div>
+                    <div class="stat-sub">compliance-audit skill</div>
+                </div>
+            </div>
+
+            <!-- ACTIVE CONTEXT -->
+            <div class="panel">
+                <div class="panel-header">
+                    Active context
+                    <div class="panel-header-right">
+                        <span id="active-project-path" style="color:var(--text-dimmer);font-size:1rem;">—</span>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="context-tags" id="context-tags">
+                        <span style="color:var(--text-dimmer);font-size:1.2rem;">Loading...</span>
+                    </div>
+                    <div class="file-list" id="loaded-files"></div>
+                </div>
+            </div>
+
+            <!-- SESSION LOG -->
+            <div class="panel">
+                <div class="panel-header">
+                    Session log
+                    <div class="panel-header-right">
+                        <div class="panel-tabs">
+                            <button class="panel-tab active" data-filter="all">All</button>
+                            <button class="panel-tab" data-filter="context">Context</button>
+                            <button class="panel-tab" data-filter="read">Read</button>
+                            <button class="panel-tab" data-filter="pass">Pass</button>
+                            <button class="panel-tab" data-filter="warn">Warn</button>
+                            <button class="panel-tab" data-filter="fail">Fail</button>
+                        </div>
+                        <span style="font-size:1rem;color:var(--text-dimmer);" id="log-session-id">—</span>
+                    </div>
+                </div>
+                <div class="log-stream" id="log-stream"></div>
+            </div>
+
+            <!-- COMPLIANCE HISTORY -->
+            <div class="panel">
+                <div class="panel-header">
+                    Compliance history
+                    <div class="panel-header-right">
+                        <span style="font-size:1rem;color:var(--text-dimmer);">30 sessions</span>
+                    </div>
+                </div>
+                <div class="compliance-chart-container">
+                    <div class="compliance-chart-header">
+                        <div class="compliance-legend">
+                            <div class="compliance-legend-item">
+                                <span class="compliance-legend-dot high"></span>
+                                90%+
+                            </div>
+                            <div class="compliance-legend-item">
+                                <span class="compliance-legend-dot medium"></span>
+                                75-89%
+                            </div>
+                            <div class="compliance-legend-item">
+                                <span class="compliance-legend-dot low"></span>
+                                &lt;75%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="compliance-chart" id="compliance-chart"></div>
+                    <div class="compliance-selected-info" id="compliance-selected-info">
+                        <h4 id="selected-session-date">Session: —</h4>
+                        <div class="compliance-selected-stats">
+                            <span>Compliance: <strong id="selected-compliance">—</strong></span>
+                            <span>Violations: <strong id="selected-violations">—</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT VIOLATIONS -->
+            <div class="panel">
+                <div class="panel-header">
+                    Recent violations
+                    <div class="panel-header-right">
+                        <span style="font-size:1rem;color:var(--text-dimmer);" id="violation-count-header">—</span>
+                    </div>
+                </div>
+                <div class="panel-body" style="padding:0;">
+                    <div id="violations-list"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- KEYBOARD HINTS -->
+    <div class="kbd-hints">
+        <div class="kbd-hint"><kbd>/</kbd> Search</div>
+        <div class="kbd-hint"><kbd>&#8592;</kbd><kbd>&#8594;</kbd> Switch project</div>
+        <div class="kbd-hint"><kbd>r</kbd> Refresh</div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // ─────────────────────────────────────────────────────────────────────────────
+        // ctrl+shft HUD v2
+        //
+        // Live data from /api/state + WebSocket incremental updates.
+        // No external JS dependencies. Safe DOM APIs only (no innerHTML).
+        // ─────────────────────────────────────────────────────────────────────────────
+
+        // ── State ────────────────────────────────────────────────────────────────────
+        let currentProject = null;
+        let state = null;
+        let selectedHistoryIndex = null;
+        let logFilter = 'all';
+        const API_BASE = window.location.origin;
+
+        // ── URL hash state ───────────────────────────────────────────────────────
+        function readHash() {
+            const params = new URLSearchParams(location.hash.slice(1));
+            return {
+                project: params.get('project') || null,
+                filter: params.get('filter') || 'all',
+            };
+        }
+
+        function writeHash() {
+            const params = new URLSearchParams();
+            if (currentProject) params.set('project', currentProject);
+            if (logFilter && logFilter !== 'all') params.set('filter', logFilter);
+            const hash = '#' + params.toString();
+            if (location.hash !== hash) {
+                history.pushState(null, '', hash || '#');
+            }
+        }
+
+        function restoreFromHash() {
+            const h = readHash();
+            if (h.project && state && state.projects.some(p => p.id === h.project)) {
+                currentProject = h.project;
+            }
+            if (['all', 'context', 'read', 'pass', 'warn', 'fail'].includes(h.filter)) {
+                logFilter = h.filter;
+                document.querySelectorAll('.panel-tab[data-filter]').forEach(function (t) {
+                    t.classList.toggle('active', t.dataset.filter === logFilter);
+                });
+            }
+        }
+
+        window.addEventListener('popstate', function () {
+            restoreFromHash();
+            selectedHistoryIndex = null;
+            renderAll();
+        });
+
+        // ── Helpers ──────────────────────────────────────────────────────────────────
+        function str(val) {
+            return String(val || '');
+        }
+
+        function el(tag, attrs, ...children) {
+            const node = document.createElement(tag);
+            if (attrs) {
+                for (const [k, v] of Object.entries(attrs)) {
+                    if (k === 'className') node.className = v;
+                    else if (k === 'dataset') Object.assign(node.dataset, v);
+                    else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2).toLowerCase(), v);
+                    else if (k === 'style' && typeof v === 'object') Object.assign(node.style, v);
+                    else node.setAttribute(k, v);
+                }
+            }
+            for (const child of children) {
+                if (typeof child === 'string') node.appendChild(document.createTextNode(child));
+                else if (child) node.appendChild(child);
+            }
+            return node;
+        }
+
+        function showToast(message, type) {
+            type = type || 'info';
+            const container = document.getElementById('toast-container');
+            const toast = el('div', { className: 'toast ' + type }, message);
+            container.appendChild(toast);
+            setTimeout(function () { toast.remove(); }, 4000);
+        }
+
+        function toggleSection(sectionId) {
+            document.getElementById(sectionId).classList.toggle('collapsed');
+        }
+
+        // ── Sparkline Generator ──────────────────────────────────────────────────────
+        function createSparkline(containerId, data, color) {
+            var container = document.getElementById(containerId);
+            if (!container || !data.length) return;
+            container.textContent = '';
+
+            var width = 200;
+            var height = 30;
+            var max = Math.max.apply(null, data);
+            var min = Math.min.apply(null, data);
+            var range = max - min || 1;
+
+            var points = data.map(function (v, i) {
+                var x = (i / (data.length - 1)) * width;
+                var y = height - ((v - min) / range) * height;
+                return x + ',' + y;
+            }).join(' ');
+
+            var ns = 'http://www.w3.org/2000/svg';
+            var svg = document.createElementNS(ns, 'svg');
+            svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+            svg.setAttribute('preserveAspectRatio', 'none');
+            var poly = document.createElementNS(ns, 'polyline');
+            poly.setAttribute('fill', 'none');
+            poly.setAttribute('stroke', color);
+            poly.setAttribute('stroke-width', '1.5');
+            poly.setAttribute('points', points);
+            svg.appendChild(poly);
+            container.appendChild(svg);
+        }
+
+        // ── Data layer — live API fetch ──────────────────────────────────────────────
+        async function loadHudState() {
+            const res = await fetch(API_BASE + '/api/state');
+            if (!res.ok) throw new Error('API returned ' + res.status);
+            const raw = await res.json();
+            return transformApiState(raw);
+        }
+
+        function emptyState() {
+            return {
+                lastUpdated: new Date(),
+                projects: [],
+                loadedFiles: {},
+                sessionLog: {},
+                violations: {},
+                history: {},
+            };
+        }
+
+        function transformApiState(raw) {
+            const inventory = raw.inventory || [];
+
+            const projects = (raw.projects || []).map(p => {
+                const comp = (raw.compliance || {})[p.project] || {};
+                const rate = comp.latestRate || 0;
+                const violationList = comp.violations || [];
+                return {
+                    id: p.project,
+                    name: p.project,
+                    path: p.projectPath || p.project,
+                    contexts: typeof p.contexts === 'string' ? p.contexts.split(',').map(c => c.trim()).filter(Boolean) : [],
+                    health: rate >= 90 ? 'healthy' : rate >= 70 ? 'warning' : rate > 0 ? 'error' : 'healthy',
+                    complianceRate: rate,
+                    violations: violationList.length,
+                };
+            });
+
+            const loadedFiles = {};
+            const sessionLog = {};
+            const violations = {};
+            const history = {};
+
+            for (const p of projects) {
+                const rawProj = (raw.projects || []).find(rp => rp.project === p.id) || {};
+                const sessionLoaded = (rawProj.loadedFiles || []).map(f => f.file_name || f.name);
+                loadedFiles[p.id] = inventory.map(inv => ({
+                    name: inv.name,
+                    type: inv.type,
+                    readAt: sessionLoaded.includes(inv.name)
+                        ? ((rawProj.loadedFiles || []).find(f => (f.file_name || f.name) === inv.name)?.read_at || 'yes')
+                        : null,
+                    status: sessionLoaded.includes(inv.name) ? 'loaded' : 'available',
+                }));
+
+                const projectEvents = (raw.events || []).filter(e => e.project === p.id);
+                sessionLog[p.id] = projectEvents.map(e => ({
+                    time: e.time || e.time_display || '',
+                    type: e.type || 'info',
+                    message: e.message || '',
+                }));
+
+                const comp = (raw.compliance || {})[p.id] || {};
+                violations[p.id] = (comp.violations || []).map(v => ({
+                    title: v.title || '',
+                    rule: v.rule || '',
+                    severity: v.severity || 'medium',
+                    commit: '',
+                    file: v.file || '',
+                    body: v.body || '',
+                    timestamp: v.timestamp || '',
+                }));
+
+                history[p.id] = comp.history || [];
+            }
+
+            return { lastUpdated: new Date(), projects, loadedFiles, sessionLog, violations, history, inventory };
+        }
+
+        // ── Render functions (safe DOM APIs — no innerHTML) ───────────────────────────
+
+        function renderProjectTabs(projects, activeId) {
+            const bar = document.getElementById('project-bar');
+            bar.textContent = '';
+
+            if (!projects.length) {
+                bar.appendChild(el('span', { style: 'padding:0.8rem;font-size:1.1rem;color:var(--text-dim);' },
+                    'No projects yet — run a task to populate'));
+                return;
+            }
+
+            for (const p of projects) {
+                const dot = el('span', { className: 'project-tab-dot ' + str(p.health) });
+                const stats = el('span', { className: 'project-tab-stats' },
+                    el('span', null, (p.complianceRate || 0) + '%'),
+                    p.violations > 0 ? el('span', { style: 'color: var(--red)' }, p.violations + ' issues') : null
+                );
+                const closeBtn = el('button', {
+                    className: 'project-tab-close',
+                    title: 'Dismiss project (reappears if new events arrive)',
+                    'aria-label': 'Dismiss ' + str(p.name),
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        dismissProject(p.id);
+                    },
+                }, '\u00d7');
+                const btn = el('button', {
+                    className: 'project-tab' + (p.id === activeId ? ' active' : ''),
+                    dataset: { project: p.id },
+                    onClick: () => { currentProject = p.id; selectedHistoryIndex = null; writeHash(); renderAll(); },
+                }, dot, ' ' + str(p.name), stats, closeBtn);
+                bar.appendChild(btn);
+            }
+        }
+
+        function renderStats(project) {
+            const rate = project.complianceRate || 0;
+            const compEl = document.getElementById('stat-compliance');
+            compEl.textContent = rate + '%';
+            compEl.className = 'stat-value ' + (rate >= 90 ? 'green' : rate >= 80 ? 'accent' : rate >= 70 ? 'yellow' : 'red');
+
+            document.getElementById('stat-rules').textContent =
+                state.loadedFiles[project.id]?.filter(f => f.status === 'loaded' && (f.type === 'rule' || f.type === 'instruction'))?.length ?? '—';
+            document.getElementById('stat-contexts').textContent =
+                'active contexts: ' + (project.contexts?.length || 0);
+
+            const violEl = document.getElementById('stat-violations');
+            violEl.textContent = project.violations || 0;
+            violEl.style.color = project.violations > 0 ? 'var(--red)' : 'var(--green)';
+
+            document.getElementById('stat-sessions').textContent =
+                (state.history[project.id]?.length || 0).toString();
+            document.getElementById('active-project-path').textContent = project.path;
+
+            // Trends from compliance history
+            const hist = state.history[project.id] || [];
+            if (hist.length >= 2) {
+                const curr = hist[hist.length - 1];
+                const prev = hist[hist.length - 2];
+                const diff = curr - prev;
+                const trendEl = document.getElementById('stat-compliance-trend');
+                if (diff > 0) {
+                    trendEl.textContent = '\u25B2 ' + diff + '%';
+                    trendEl.className = 'stat-trend up';
+                } else if (diff < 0) {
+                    trendEl.textContent = '\u25BC ' + Math.abs(diff) + '%';
+                    trendEl.className = 'stat-trend down';
+                } else {
+                    trendEl.textContent = '— 0';
+                    trendEl.className = 'stat-trend flat';
+                }
+            }
+
+            // Sparklines
+            if (hist.length > 1) {
+                createSparkline('sparkline-compliance', hist, 'var(--green)');
+            }
+        }
+
+        function renderContextTags(project) {
+            const container = document.getElementById('context-tags');
+            container.textContent = '';
+            const allContexts = ['general', 'nextjs', 'react', 'react-native', 'node', 'typescript', 'sanity', 'prisma', 'docker', 'python', 'php', 'laravel'];
+
+            for (const c of project.contexts) {
+                container.appendChild(el('span', { className: 'context-tag' }, str(c)));
+            }
+            for (const c of allContexts.filter(c => !project.contexts.includes(c))) {
+                container.appendChild(el('span', { className: 'context-tag inactive' }, str(c)));
+            }
+        }
+
+        function renderLoadedFiles(projectId) {
+            const files = state.loadedFiles[projectId] || [];
+            const loaded = files.filter(f => f.status === 'loaded');
+            const container = document.getElementById('loaded-files');
+            container.textContent = '';
+
+            if (!loaded.length) {
+                container.appendChild(el('div', { className: 'empty-state' },
+                    el('div', { className: 'empty-state-title' }, 'No files loaded'),
+                    'Start a task to see loaded context files'));
+                return;
+            }
+
+            for (const f of loaded.slice(0, 8)) {
+                const icon = f.type === 'rule' || f.type === 'instruction' ? '\u2295' : f.type === 'skill' ? '\u26A1' : '\u25C8';
+                const iconColor = f.type === 'rule' || f.type === 'instruction' ? 'var(--yellow)' : f.type === 'skill' ? 'var(--accent)' : 'var(--blue)';
+                container.appendChild(el('div', { className: 'file-row' },
+                    el('span', { className: 'file-name' },
+                        el('span', { className: 'file-icon', style: 'color:' + iconColor }, icon),
+                        str(f.name)),
+                    el('span', { className: 'file-read-time' }, f.readAt ? 'read ' + str(f.readAt) : ''),
+                    el('span', { className: 'status-badge loaded' }, 'loaded')));
+            }
+
+            if (loaded.length > 8) {
+                container.appendChild(el('div', { style: 'padding:0.8rem;text-align:center;color:var(--text-dimmer);font-size:1rem;' },
+                    '+ ' + (loaded.length - 8) + ' more files'));
+            }
+        }
+
+        function renderSidebar(projectId) {
+            const files = state.loadedFiles[projectId] || [];
+            const filterText = document.getElementById('sidebar-filter').value.toLowerCase();
+
+            const allRules = files.filter(f => (f.type === 'rule' || f.type === 'instruction') && f.name.toLowerCase().includes(filterText));
+            const loadedRules = allRules.filter(f => f.status === 'loaded');
+            const allSkills = files.filter(f => f.type === 'skill' && f.name.toLowerCase().includes(filterText));
+            const loadedSkills = allSkills.filter(f => f.status === 'loaded');
+            const allAgents = files.filter(f => f.type === 'agent' && f.name.toLowerCase().includes(filterText));
+
+            document.getElementById('rules-count').textContent = loadedRules.length + ' / ' + allRules.length;
+            document.getElementById('skills-count').textContent = loadedSkills.length + ' / ' + allSkills.length;
+            document.getElementById('agents-count').textContent = allAgents.length;
+
+            const rulesList = document.getElementById('rules-list');
+            rulesList.textContent = '';
+            for (const r of allRules) {
+                const isLoaded = r.status === 'loaded';
+                rulesList.appendChild(el('div', { className: 'sidebar-item' + (isLoaded ? ' active' : '') },
+                    el('span', { className: 'sidebar-item-icon', style: 'color:' + (isLoaded ? 'var(--yellow)' : 'var(--text-dimmer)') }, isLoaded ? '\u2295' : '\u2299'),
+                    el('span', { className: 'sidebar-item-name' + (isLoaded ? '' : ' dim') },
+                        str(r.name.replace('instructions/', '').replace('rules/', ''))),
+                    el('span', { className: 'status-badge ' + str(r.status) }, str(r.status))));
+            }
+
+            const skillsList = document.getElementById('skills-list');
+            skillsList.textContent = '';
+            for (const s of allSkills) {
+                const isLoaded = s.status === 'loaded';
+                skillsList.appendChild(el('div', { className: 'sidebar-item' + (isLoaded ? ' active' : '') },
+                    el('span', { className: 'sidebar-item-icon', style: 'color:' + (isLoaded ? 'var(--accent)' : 'var(--text-dimmer)') }, isLoaded ? '\u26A1' : '\u2299'),
+                    el('span', { className: 'sidebar-item-name' + (isLoaded ? '' : ' dim') },
+                        str(s.name.replace('skills/', ''))),
+                    el('span', { className: 'status-badge ' + str(s.status) }, str(s.status))));
+            }
+
+            const agentsList = document.getElementById('agents-list');
+            agentsList.textContent = '';
+            for (const a of allAgents) {
+                agentsList.appendChild(el('div', { className: 'sidebar-item' },
+                    el('span', { className: 'sidebar-item-icon', style: 'color:var(--blue)' }, '\u25C8'),
+                    el('span', { className: 'sidebar-item-name' }, str(a.name.replace('agents/', ''))),
+                    el('span', { className: 'status-badge available' }, 'available')));
+            }
+        }
+
+        function renderLog(projectId) {
+            const entries = state.sessionLog[projectId] || [];
+            const container = document.getElementById('log-stream');
+            const sessionId = projectId + '-' + new Date().toISOString().split('T')[0];
+            document.getElementById('log-session-id').textContent = sessionId;
+            container.textContent = '';
+
+            const filtered = logFilter === 'all' ? entries : entries.filter(e => e.type === logFilter);
+
+            if (!filtered.length) {
+                container.appendChild(el('div', { className: 'empty-state' },
+                    el('div', { className: 'empty-state-title' }, 'No matching log entries'),
+                    logFilter !== 'all' ? 'Try a different filter' : 'Start a task to see the session log'));
+                return;
+            }
+
+            for (const e of filtered) {
+                const entry = el('div', {
+                    className: 'log-entry ' + str(e.type), onClick: function (ev) {
+                        ev.currentTarget.classList.toggle('expanded');
+                    }
+                },
+                    el('span', { className: 'log-time' }, str(e.time)),
+                    el('span', { className: 'log-type ' + str(e.type) }, str(e.type)),
+                    el('span', { className: 'log-message' }, str(e.message)));
+
+                // Add expandable details for read/fail/warn types
+                if (e.type === 'read' || e.type === 'fail' || e.type === 'warn') {
+                    entry.appendChild(el('div', { className: 'log-details' },
+                        e.type === 'read' ? 'File loaded into context for compliance checking'
+                            : e.type === 'fail' ? 'Compliance check failed — review violation details below'
+                                : 'Warning detected — may need attention'));
+                }
+
+                container.appendChild(entry);
+            }
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function renderHistory(projectId) {
+            const history = state.history[projectId] || [];
+            const container = document.getElementById('compliance-chart');
+            container.textContent = '';
+
+            if (!history.length) {
+                container.appendChild(el('div', { className: 'empty-state', style: 'padding:2rem;text-align:center;' },
+                    'No compliance history yet'));
+                return;
+            }
+
+            for (let i = 0; i < history.length; i++) {
+                const val = history[i];
+                const height = Math.max(4, (val / 100) * 100);
+                const cls = val >= 90 ? 'high' : val >= 75 ? 'medium' : 'low';
+                const day = new Date(Date.now() - (history.length - i) * 24 * 60 * 60 * 1000);
+                const label = (day.getMonth() + 1) + '/' + day.getDate();
+
+                const bar = el('div', {
+                    className: 'compliance-bar ' + cls + (selectedHistoryIndex === i ? ' selected' : ''),
+                    style: 'height:' + height + '%',
+                    onClick: (function (idx, v, lbl) {
+                        return function () { selectHistoryBar(idx, v, lbl); };
+                    })(i, val, label),
+                });
+
+                const tooltip = el('div', { className: 'compliance-tooltip' },
+                    label + ': ' + val + '%');
+                bar.appendChild(tooltip);
+
+                container.appendChild(el('div', { className: 'compliance-bar-wrap' }, bar));
+            }
+        }
+
+        function selectHistoryBar(index, value, label) {
+            selectedHistoryIndex = index;
+            document.getElementById('compliance-selected-info').classList.add('visible');
+            document.getElementById('selected-session-date').textContent = 'Session: ' + label;
+            document.getElementById('selected-compliance').textContent = value + '%';
+            document.getElementById('selected-violations').textContent = value >= 90 ? '0' : value >= 75 ? '1-2' : '3+';
+            renderHistory(currentProject);
+        }
+
+        function renderViolations(projectId) {
+            const violations = state.violations[projectId] || [];
+            const container = document.getElementById('violations-list');
+            document.getElementById('violation-count-header').textContent =
+                violations.length + ' violation' + (violations.length !== 1 ? 's' : '') + ' this session';
+            container.textContent = '';
+
+            if (!violations.length) {
+                container.appendChild(el('div', { className: 'empty-state' },
+                    el('div', { className: 'empty-state-title' }, 'No violations this session'),
+                    'Compliance audit found nothing to flag.'));
+                return;
+            }
+
+            for (const v of violations) {
+                const card = el('div', {
+                    className: 'violation-card', onClick: function (e) {
+                        e.currentTarget.classList.toggle('expanded');
+                    }
+                });
+
+                card.appendChild(el('div', { className: 'violation-header' },
+                    el('div', { className: 'violation-header-left' },
+                        el('div', { className: 'violation-title' }, str(v.title)),
+                        el('div', { className: 'violation-rule' }, '\u2295 ' + str(v.rule))),
+                    el('span', { className: 'violation-severity ' + str(v.severity) }, str(v.severity))));
+
+                card.appendChild(el('div', { className: 'violation-body' }, str(v.body)));
+
+                card.appendChild(el('div', { className: 'violation-meta' },
+                    el('span', null, '\u2318 ' + str(v.file)),
+                    el('span', null, '\u25C8 ' + str(v.commit)),
+                    el('span', null, '\u23F1 ' + str(v.timestamp))));
+
+                container.appendChild(card);
+            }
+        }
+
+        // ── Dismiss project ───────────────────────────────────────────────────────
+        async function dismissProject(projectId) {
+            try {
+                await fetch(API_BASE + '/api/projects/' + encodeURIComponent(projectId), { method: 'DELETE' });
+            } catch (e) {
+                console.warn('Dismiss failed:', e);
+            }
+            // Remove from local state immediately for snappy UI
+            state.projects = state.projects.filter(p => p.id !== projectId);
+            if (currentProject === projectId) {
+                currentProject = state.projects[0]?.id || null;
+            }
+            writeHash();
+            renderAll();
+        }
+
+        // ── Main render ───────────────────────────────────────────────────────────────
+        function renderAll() {
+            if (!state || !state.projects.length) {
+                renderEmptyHud();
+                return;
+            }
+
+            const project = state.projects.find(p => p.id === currentProject) || state.projects[0];
+            if (!project) return;
+            currentProject = project.id;
+
+            renderProjectTabs(state.projects, currentProject);
+            renderStats(project);
+            renderContextTags(project);
+            renderLoadedFiles(currentProject);
+            renderSidebar(currentProject);
+            renderLog(currentProject);
+            renderHistory(currentProject);
+            renderViolations(currentProject);
+
+            document.getElementById('last-updated').textContent =
+                'updated ' + state.lastUpdated.toLocaleTimeString();
+        }
+
+        function renderEmptyHud() {
+            const bar = document.getElementById('project-bar');
+            bar.textContent = '';
+            bar.appendChild(el('span', { style: 'padding:0.8rem;font-size:1.1rem;color:var(--text-dimmer);' },
+                'No projects yet — start a task or run a compliance-audit to populate'));
+            document.getElementById('stat-compliance').textContent = '—';
+            document.getElementById('stat-rules').textContent = '—';
+            document.getElementById('stat-contexts').textContent = '—';
+            document.getElementById('stat-violations').textContent = '—';
+            document.getElementById('stat-sessions').textContent = '—';
+            document.getElementById('last-updated').textContent = 'waiting for data\u2026';
+        }
+
+        // ── Event Listeners ──────────────────────────────────────────────────────────
+        document.getElementById('sidebar-filter').addEventListener('input', function () {
+            renderSidebar(currentProject);
+        });
+
+        document.getElementById('global-search').addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                e.target.value = '';
+                e.target.blur();
+            }
+        });
+
+        document.getElementById('global-search').addEventListener('input', function (e) {
+            var q = e.target.value.toLowerCase();
+            if (!q) { renderAll(); return; }
+            // Filter sidebar
+            document.getElementById('sidebar-filter').value = q;
+            renderSidebar(currentProject);
+            // Filter log
+            var logEntries = document.querySelectorAll('.log-entry');
+            logEntries.forEach(function (entry) {
+                var msg = entry.querySelector('.log-message');
+                var match = msg && msg.textContent.toLowerCase().includes(q);
+                entry.style.display = match ? '' : 'none';
+            });
+        });
+
+        document.getElementById('refresh-btn').addEventListener('click', async function () {
+            try {
+                state = await loadHudState();
+                if (!currentProject && state.projects.length) {
+                    currentProject = state.projects[0].id;
+                }
+                renderAll();
+                showToast('HUD refreshed', 'success');
+            } catch (err) {
+                showToast('Refresh failed: ' + err.message, 'error');
+            }
+        });
+
+        // Log filter tabs
+        document.querySelectorAll('.panel-tab[data-filter]').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.panel-tab[data-filter]').forEach(function (t) { t.classList.remove('active'); });
+                tab.classList.add('active');
+                logFilter = tab.dataset.filter;
+                writeHash();
+                renderLog(currentProject);
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function (e) {
+            if (e.target.tagName === 'INPUT') return;
+
+            if (e.key === '/') {
+                e.preventDefault();
+                document.getElementById('global-search').focus();
+            } else if (e.key === 'r' && !e.ctrlKey && !e.metaKey) {
+                document.getElementById('refresh-btn').click();
+            } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && state && state.projects.length) {
+                var idx = state.projects.findIndex(function (p) { return p.id === currentProject; });
+                var newIdx = e.key === 'ArrowLeft'
+                    ? (idx - 1 + state.projects.length) % state.projects.length
+                    : (idx + 1) % state.projects.length;
+                currentProject = state.projects[newIdx].id;
+                selectedHistoryIndex = null;
+                writeHash();
+                renderAll();
+            }
+        });
+
+        // ── Init ──────────────────────────────────────────────────────────────────────
+        let ws = null;
+
+        function connectWebSocket(wsPort) {
+            if (ws) return;
+            try {
+                ws = new WebSocket('ws://localhost:' + wsPort);
+            } catch { return; }
+
+            ws.onopen = () => {
+                const liveDot = document.getElementById('live-dot');
+                const liveStatus = document.getElementById('live-status');
+                liveDot.classList.remove('stale', 'error');
+                liveStatus.textContent = 'live (ws)';
+            };
+
+            ws.onmessage = (evt) => {
+                try {
+                    const msg = JSON.parse(evt.data);
+                    if (msg.type === 'event' && state) {
+                        const pid = msg.projectId;
+                        if (state.sessionLog[pid]) {
+                            const e = msg.event;
+                            state.sessionLog[pid].push({
+                                time: e.time_display || e.time || '',
+                                type: e.type || 'info',
+                                message: e.message || '',
+                            });
+                        }
+                        state.lastUpdated = new Date();
+                        renderAll();
+                    } else if (msg.type === 'heartbeat') {
+                        const liveDot = document.getElementById('live-dot');
+                        liveDot.classList.remove('stale', 'error');
+                    }
+                } catch { /* ignore malformed WS messages */ }
+            };
+
+            ws.onclose = () => {
+                ws = null;
+                const liveDot = document.getElementById('live-dot');
+                const liveStatus = document.getElementById('live-status');
+                liveDot.classList.add('stale');
+                liveStatus.textContent = 'polling';
+            };
+            ws.onerror = () => {
+                ws = null;
+                const liveDot = document.getElementById('live-dot');
+                const liveStatus = document.getElementById('live-status');
+                liveDot.classList.add('stale');
+                liveStatus.textContent = 'polling';
+            };
+        }
+
+        async function init() {
+            try {
+                state = await loadHudState();
+            } catch (err) {
+                console.warn('[hud] initial fetch failed, showing empty state:', err.message);
+                state = emptyState();
+            }
+            restoreFromHash();
+            if (!currentProject && state.projects.length) {
+                currentProject = state.projects[0].id;
+            }
+            writeHash();
+            renderAll();
+
+            // Try WebSocket for real-time updates
+            try {
+                const raw = await (await fetch(API_BASE + '/api/state')).json();
+                if (raw.wsPort) connectWebSocket(raw.wsPort);
+            } catch { /* WebSocket optional */ }
+
+            // HTTP poll as fallback (less frequent when WS is connected)
+            async function poll() {
+                const liveDot = document.getElementById('live-dot');
+                const liveStatus = document.getElementById('live-status');
+                try {
+                    state = await loadHudState();
+                    if (!currentProject && state.projects.length) {
+                        currentProject = state.projects[0].id;
+                    }
+                    renderAll();
+                    liveDot.classList.remove('stale', 'error');
+                    if (!ws) liveStatus.textContent = 'live';
+                } catch {
+                    liveDot.classList.add('stale');
+                    liveStatus.textContent = 'disconnected';
+                }
+                setTimeout(poll, ws ? 15000 : 5000);
+            }
+            setTimeout(poll, ws ? 15000 : 5000);
+        }
+
+        init();
+    </script>
+
+</body>
+
+</html>

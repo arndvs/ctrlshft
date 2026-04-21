@@ -21,6 +21,12 @@ Trigger this approach when asked to:
 
 ## How to Execute
 
+0. **HUD event** — emit a start event so the HUD tracks this exploration:
+   ```bash
+   source ~/dotfiles/bin/write-hud-state.sh
+   write_hud_event "info" "explore: started — $TOPIC"
+   ```
+   Emit again at synthesis (`explore: completed — N sub-agents, M files covered`).
 1. **Decompose** the topic into distinct areas of concern
 2. **Spawn a dedicated sub-agent for each area** using the `explore` keyword in the sub-agent prompt
 3. **Synthesize** the results from all sub-agents into a single cohesive summary

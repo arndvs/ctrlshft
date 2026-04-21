@@ -1,0 +1,19 @@
+{
+  "name": "ctrlshft-hud",
+  "version": "0.2.0",
+  "description": "ctrl+shft HUD daemon",
+  "private": true,
+  "main": "bin/hud-daemon.js",
+  "scripts": {
+    "start":   "node bin/hud-daemon.js",
+    "dev":     "node bin/hud-daemon.js --debug",
+    "stop":    "bash bin/start-hud.sh --stop",
+    "status":  "bash bin/start-hud.sh --status"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

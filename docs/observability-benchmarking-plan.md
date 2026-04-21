@@ -10,10 +10,10 @@ Observability is **partially shipped** — compliance monitoring is live, teleme
 ### Shipped (Slices 6–7)
 
 - ✅ Model variant agents (`researcher-opus`, `researcher-haiku`, `code-reviewer-opus`)
-- ✅ `bin/write-dashboard-state.sh` — event emitter (pipe → HTTP → JSONL fallback)
-- ✅ `bin/dashboard-daemon.js` — zero-dependency Node.js compliance dashboard server
-- ✅ `bin/start-dashboard.sh` — daemon lifecycle manager (start/stop/status/restart/foreground)
-- ✅ `dashboard/index.html` — real-time compliance UI (dark theme, 5s polling)
+- ✅ `bin/write-hud-state.sh` — event emitter (pipe → HTTP → JSONL fallback)
+- ✅ `bin/hud-daemon.js` — zero-dependency Node.js HUD server
+- ✅ `bin/start-hud.sh` — daemon lifecycle manager (start/stop/status/restart/foreground)
+- ✅ `hud/index.html` — real-time compliance UI (dark theme, WebSocket + adaptive polling fallback, project tabs, file inventory sidebar)
 - ✅ `skills/compliance-audit/SKILL.md` — auto-invoked rule compliance check
 - ✅ `skills/stress-test/SKILL.md` — adversarial rule boundary validation
 
@@ -33,7 +33,7 @@ ctrl+shft currently lacks hard telemetry for:
 - token usage
 - cost by model/run
 - accuracy/hallucination trend signals
-- stakeholder-facing dashboard views
+- stakeholder-facing HUD views
 
 This plan defines the vertical slices required to close that gap.
 
@@ -57,14 +57,14 @@ This plan defines the vertical slices required to close that gap.
 
 1. **Enable OTEL + schema discovery** (S)
 2. **Accuracy tracking framework** (M)
-3. **Telemetry dashboard** (L) — compliance portion shipped; telemetry views still planned
+3. **Telemetry HUD** (L) — compliance portion shipped; telemetry views still planned
 4. **Final QA plan** (M)
 
 ## Dependency order
 
 - Start now (parallel-safe): OTEL discovery, telemetry wrapper hardening, model variant validation
 - After wrapper: cost calculator + accuracy framework
-- After cost + accuracy: CI reporting + dashboard
+- After cost + accuracy: CI reporting + HUD
 - Last: integrated QA + stakeholder demo flow
 
 ## Recommended next move
@@ -77,4 +77,4 @@ This plan defines the vertical slices required to close that gap.
 
 - Runtime model injection is still not available for subagents; benchmark via variant agent files.
 - Hallucination scoring needs human-in-the-loop input plus proxy signals.
-- Prefer adding telemetry views into the existing compliance dashboard (`dashboard/index.html`) rather than introducing a second app.
+- Prefer adding telemetry views into the existing HUD (`hud/index.html`) rather than introducing a second app.

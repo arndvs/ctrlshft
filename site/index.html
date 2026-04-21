@@ -1460,6 +1460,172 @@
             }
         }
 
+        /* ── FAQ GRID ── */
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+
+        .faq-item {
+            background: var(--bg);
+            padding: 3.2rem 3.6rem;
+            transition: background 0.2s;
+            position: relative;
+        }
+
+        .faq-item:hover {
+            background: var(--surface);
+        }
+
+        .faq-item::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--border-bright);
+            transition: background 0.2s;
+        }
+
+        .faq-item:hover::before {
+            background: var(--accent);
+        }
+
+        .faq-item.full {
+            grid-column: 1 / -1;
+        }
+
+        .faq-category-tag {
+            font-size: 1rem;
+            letter-spacing: 0.3rem;
+            text-transform: uppercase;
+            color: var(--text-dimmer);
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .faq-category-tag::before {
+            content: '';
+            display: block;
+            width: 1.6rem;
+            height: 1px;
+            background: var(--text-dimmer);
+        }
+
+        .faq-question {
+            font-family: var(--mono);
+            font-size: 1.3rem;
+            color: var(--text);
+            line-height: 1.5;
+            margin-bottom: 1.6rem;
+            letter-spacing: 0.01rem;
+        }
+
+        .faq-question code {
+            font-family: var(--mono);
+            font-size: 1.15rem;
+            color: var(--accent);
+        }
+
+        .faq-answer {
+            font-family: var(--sans);
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            border-left: 1px solid var(--border-bright);
+            padding-left: 1.8rem;
+        }
+
+        .faq-answer p + p { margin-top: 1rem; }
+
+        .faq-answer code {
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            color: var(--accent);
+            background: var(--accent-dim);
+            padding: 0.1rem 0.5rem;
+        }
+
+        .faq-code-block {
+            margin-top: 1.2rem;
+            background: #050505;
+            border: 1px solid var(--border);
+            padding: 1.2rem 1.6rem;
+            font-size: 1.1rem;
+            font-family: var(--mono);
+            color: var(--text-dim);
+            line-height: 2;
+        }
+
+        .faq-code-block .kw  { color: var(--accent); }
+        .faq-code-block .cm  { color: var(--text-dimmer); }
+        .faq-code-block .str { color: var(--green); }
+
+        .faq-tier-list {
+            margin-top: 1.2rem;
+            border: 1px solid var(--border);
+        }
+
+        .faq-tier-row {
+            display: grid;
+            grid-template-columns: 13rem 1fr;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .faq-tier-row:last-child { border-bottom: none; }
+
+        .faq-tier-label {
+            padding: 0.9rem 1.2rem;
+            border-right: 1px solid var(--border);
+            font-family: var(--mono);
+            color: var(--accent);
+            font-size: 1.05rem;
+        }
+
+        .faq-tier-desc {
+            padding: 0.9rem 1.2rem;
+            font-family: var(--sans);
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+            line-height: 1.5;
+        }
+
+        .faq-tier-desc code {
+            font-family: var(--mono);
+            font-size: 1.05rem;
+            color: var(--accent);
+        }
+
+        .faq-callout {
+            margin-top: 1.2rem;
+            padding: 1.1rem 1.4rem;
+            border-left: 2px solid var(--accent);
+            background: var(--accent-dim);
+            font-family: var(--sans);
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .faq-subtitle {
+            max-width: 54rem;
+            color: var(--text-secondary);
+            font-family: var(--sans);
+            font-size: 1.3rem;
+            line-height: 1.8;
+            margin-top: -3rem;
+            margin-bottom: 6rem;
+        }
+
+        @media (max-width: 900px) {
+            .faq-grid { grid-template-columns: 1fr; }
+            .faq-item.full { grid-column: 1; }
+        }
+
         /* RESPONSIVE */
         @media (max-width: 1024px) {
             .hero {
@@ -1580,6 +1746,19 @@
                 min-width: 100%;
                 flex: 1 1 100%;
             }
+
+            .faq-item {
+                padding: 2.4rem 2rem;
+            }
+
+            .faq-tier-row {
+                grid-template-columns: 1fr;
+            }
+
+            .faq-tier-label {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
         }
     </style>
 </head>
@@ -1593,7 +1772,9 @@
             <ul class="nav-links">
                 <li><a href="#how">how it works</a></li>
                 <li><a href="#skills">skills</a></li>
+                <li><a href="#hud">hud</a></li>
                 <li><a href="#shft">shft</a></li>
+                <li><a href="#faq">faq</a></li>
                 <li><a href="#contributors">contributors</a></li>
                 <li><a href="#install">install</a></li>
                 <li><a href="https://github.com/arndvs/ctrlshft" class="nav-cta sheen-cta">GitHub</a></li>
@@ -1912,6 +2093,17 @@
                     <div class="skill-desc">Schema design, GROQ, TypeGen, Visual Editing, Portable Text, integrations.
                     </div>
                 </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>compliance-audit</code></div>
+                    <div class="skill-desc">Auto-invoked after do-work/tdd/debugging. Rule-by-rule review, violation
+                        flagging.</div>
+                    <div class="skill-auto">⚡ auto-invoke</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name"><code>stress-test</code></div>
+                    <div class="skill-desc">Adversarial 19-scenario protocol. Validates rule compliance boundaries.
+                    </div>
+                </div>
             </div>
 
             <div
@@ -2166,10 +2358,63 @@
         </div>
     </section>
 
+    <!-- HUD -->
+    <section class="section fade-in" id="hud">
+        <div class="container">
+            <div class="section-num">09 — HUD</div>
+            <h2 class="section-title">See what your<br>agent <em>actually does</em></h2>
+
+            <p style="max-width: 56rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                The HUD is a real-time HUD that shows which rules loaded, which skills fired, which projects
+                are being touched, and whether compliance checks pass or fail. It runs locally and updates
+                instantly via WebSocket.
+            </p>
+
+            <div style="margin: 3rem 0; border: 1px solid var(--border-bright); border-radius: 4px; overflow: hidden;">
+                <img src="assets/hud-screenshot.png"
+                     alt="ctrl+shft HUD — real-time HUD showing project tabs, loaded rules and skills, session log, and compliance history"
+                     style="width: 100%; display: block;" loading="lazy" />
+            </div>
+
+            <div class="agents-grid" style="grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));">
+                <div class="agent-card">
+                    <div class="agent-name">Multi-project tracking</div>
+                    <div class="agent-focus">Every project the agent touches gets its own tab — dotfiles, client projects, anything. Cross-project reads detected automatically via git root.</div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">Live compliance rate</div>
+                    <div class="agent-focus">Rolling compliance percentage across sessions with trend sparkline, violation count, and per-day history chart.</div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">Context & file inventory</div>
+                    <div class="agent-focus">Which stack contexts are active, which instructions/skills/rules/agents loaded, with read timestamps and loaded/available badges.</div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">Session event log</div>
+                    <div class="agent-focus">Chronological stream of every event — context changes, task bookends, file reads, compliance results. Filterable by type.</div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">Zero-dependency daemon</div>
+                    <div class="agent-focus">Node.js daemon with no required npm packages. Named pipe transport (&lt;1ms latency), HTTP POST fallback, optional SQLite persistence.</div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-name">WebSocket + HTTP</div>
+                    <div class="agent-focus">Real-time updates via <code>ws://localhost:7822</code>. Falls back to HTTP polling. Single-file frontend — no build step.</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
+                <strong style="color: var(--text); font-family: var(--mono); letter-spacing: 0.08rem;">Start it:</strong>
+                <code style="color: var(--accent);">bash ~/dotfiles/bin/start-hud.sh</code> — then visit
+                <code style="color: var(--accent);">localhost:7823</code>. Hooks emit events automatically. No configuration required.
+            </div>
+        </div>
+    </section>
+
     <!-- SHFT -->
     <section class="section fade-in" id="shft">
         <div class="container">
-            <div class="section-num">09 — SHFT</div>
+            <div class="section-num">10 — SHFT</div>
             <h2 class="section-title">ctrl defines the rules.<br><em>shft</em> executes them.</h2>
 
             <p style="max-width: 54rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
@@ -2202,10 +2447,219 @@
         </div>
     </section>
 
+    <!-- FAQ -->
+    <section class="section fade-in" id="faq">
+        <div class="container">
+            <div class="section-num">11 — FAQ</div>
+            <h2 class="section-title">Due<br><em>diligence</em></h2>
+            <p class="faq-subtitle">You shouldn't adopt anything that touches your global config without knowing exactly what it does, what it writes, and how to get out. Here's everything.</p>
+
+            <div class="faq-grid">
+
+                <!-- 1 -->
+                <div class="faq-item full">
+                    <div class="faq-category-tag">Dotfiles</div>
+                    <div class="faq-question">What are dotfiles, and why does ctrl+shft live there?</div>
+                    <div class="faq-answer">
+                        <p>Dotfiles are configuration files in your home directory — named with a leading dot (<code>.bashrc</code>, <code>.gitconfig</code>) so they're hidden by default. Developers store them in a git repo and symlink them into place, so their entire environment syncs across every machine with a <code>git pull</code>.</p>
+                        <p>Claude Code follows the same convention: it looks for <code>CLAUDE.md</code> and <code>.claude/</code> in your home directory for global instructions, skills, and agents that apply to every project. That makes <code>~/dotfiles</code> the natural home — bootstrap symlinks everything into place so your agent gets the same context on your laptop, VPS, or a fresh machine.</p>
+                    </div>
+                </div>
+
+                <!-- 2 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Removal</div>
+                    <div class="faq-question">Can I remove it without it tanking my setup?</div>
+                    <div class="faq-answer">
+                        <p>Yes. Run the uninstall script:</p>
+                        <div class="faq-code-block"><span class="kw">bash</span> ~/dotfiles/bin/uninstall.sh</div>
+                        <p style="margin-top:1rem;">It removes only the symlinks and shell integration that bootstrap created — nothing in your project repos, nothing else in <code>~/dotfiles</code>. If you had dotfiles there before installing ctrl+shft, they're untouched.</p>
+                    </div>
+                </div>
+
+                <!-- 3 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Removal</div>
+                    <div class="faq-question">What if the project goes stale — am I stuck with it?</div>
+                    <div class="faq-answer">
+                        <p>No. Since you fork before cloning, your fork is your source of truth. Stop pulling upstream whenever you want. The tool keeps working exactly as-is — no upstream dependency, no breaking changes you didn't ask for. And if you want out entirely, <code>uninstall.sh</code> cleans it up in one command.</p>
+                    </div>
+                </div>
+
+                <!-- 4 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Setup</div>
+                    <div class="faq-question">Does it require sudo or admin to install?</div>
+                    <div class="faq-answer">
+                        <p>No. Everything installs into your home directory — <code>~/dotfiles</code>, <code>~/.claude/</code>, <code>~/.bashrc</code>. No system-level writes, no elevated permissions required.</p>
+                    </div>
+                </div>
+
+                <!-- 5 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Setup</div>
+                    <div class="faq-question">I already have a <code>CLAUDE.md</code> — will this overwrite it?</div>
+                    <div class="faq-answer">
+                        <p>Depends where it lives. A <code>CLAUDE.md</code> in a project repo is untouched — project-level config always takes precedence over global. If you already have <code>~/.claude/CLAUDE.md</code>, bootstrap will warn you before replacing it. Back it up first and fold your content into <code>CLAUDE.base.md</code>.</p>
+                    </div>
+                </div>
+
+                <!-- 6 -->
+                <div class="faq-item full">
+                    <div class="faq-category-tag">Setup</div>
+                    <div class="faq-question">What exactly does it write to my machine?</div>
+                    <div class="faq-answer">
+                        <p>Full footprint from bootstrap:</p>
+                        <div class="faq-code-block">
+                            <span class="cm"># symlinks</span><br>
+                            <span class="str">~/.claude/CLAUDE.md</span><br>
+                            <span class="str">~/.claude/skills &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br>
+                            <span class="str">~/.claude/agents &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br>
+                            <span class="str">~/.claude/rules &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br>
+                            <br>
+                            <span class="cm"># files created</span><br>
+                            <span class="str">~/dotfiles/secrets/.env.agent &nbsp;&nbsp;</span><br>
+                            <span class="str">~/dotfiles/secrets/.env.secrets</span><br>
+                            <span class="str">~/dotfiles/secrets/.venv &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br>
+                            <br>
+                            <span class="cm"># shell appends (~/.bashrc and ~/.zshrc)</span><br>
+                            <span class="str">load-secrets snippet</span><br>
+                            <span class="str">context-detection on cd</span><br>
+                            <br>
+                            <span class="cm"># supply chain hardening</span><br>
+                            <span class="str">~/.npmrc &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="cm"># min-release-age=7</span><br>
+                            <span class="str">~/.config/uv/uv.toml &nbsp;</span><span class="cm"># exclude-newer</span>
+                        </div>
+                        <p style="margin-top:1rem;"><code>uninstall.sh</code> reverses all of it.</p>
+                    </div>
+                </div>
+
+                <!-- 7 -->
+                <div class="faq-item full">
+                    <div class="faq-category-tag">Security</div>
+                    <div class="faq-question">Why does it need a GitHub App? Can I use a PAT instead?</div>
+                    <div class="faq-answer">
+                        <p>A PAT works for HITL mode. AFK mode structurally blocks the PAT path — the validator enforces this at startup, so it's not just discouraged, it's unavailable.</p>
+                        <p>The reason: static credentials create long-lived compromise windows across runs. Instead, a three-tier model keeps secrets out of agent context entirely:</p>
+                        <div class="faq-tier-list">
+                            <div class="faq-tier-row">
+                                <div class="faq-tier-label">.env.agent</div>
+                                <div class="faq-tier-desc">Agent-visible config only — usernames, hosts, IDs</div>
+                            </div>
+                            <div class="faq-tier-row">
+                                <div class="faq-tier-label">.env.secrets</div>
+                                <div class="faq-tier-desc">Process-scoped credentials injected via <code>run-with-secrets.sh</code> — never exported to shell</div>
+                            </div>
+                            <div class="faq-tier-row">
+                                <div class="faq-tier-label">AFK token</div>
+                                <div class="faq-tier-desc">Minted fresh per Docker run, 1-hour TTL, never persisted</div>
+                            </div>
+                        </div>
+                        <div class="faq-callout">Before each AFK loop, a Python helper signs a JWT using the GitHub App private key and injects the resulting short-lived token into that container's runtime context only. If minting fails, the iteration aborts — no fallback to static credentials.</div>
+                    </div>
+                </div>
+
+                <!-- 8 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Security</div>
+                    <div class="faq-question">What does the agent actually have permission to do in AFK mode?</div>
+                    <div class="faq-answer">
+                        <p>It runs inside a Docker sandbox with the minimum GitHub App permissions you configure: Contents, Issues, and Pull Requests (read/write). It cannot access other repos, org settings, or anything outside that scope.</p>
+                        <p>Deny rules block it from reading secrets or env vars — even ones technically in scope. <code>env</code>, <code>printenv</code>, <code>cat secrets/*</code>, and <code>echo $*KEY*</code> are all blocked at the agent level.</p>
+                    </div>
+                </div>
+
+                <!-- 9 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Security</div>
+                    <div class="faq-question">How do I audit what rules and skills are loaded at any given time?</div>
+                    <div class="faq-answer">
+                        <p>Run <code>detect-context.sh</code> manually in any directory — it prints the active contexts and which rule files are loaded. Skills are only invoked explicitly; nothing loads silently in the background.</p>
+                        <div class="faq-code-block">
+                            <span class="kw">bash</span> ~/dotfiles/bin/detect-context.sh<br>
+                            <span class="cm"># → ACTIVE_CONTEXTS=general,nextjs,node,ts</span><br>
+                            <span class="cm"># → loaded: instructions/nextjs.md</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 10 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Rules</div>
+                    <div class="faq-question">Does it work well alongside existing rules?</div>
+                    <div class="faq-answer">
+                        <p>Yes. <code>detect-context.sh</code> only loads rules matching your current stack — it doesn't clobber existing config. If you already have a <code>CLAUDE.md</code> in a project repo, that takes precedence. It stays out of your way.</p>
+                    </div>
+                </div>
+
+                <!-- 11 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Rules</div>
+                    <div class="faq-question">Can I use this with the Claude API directly, or only Claude Code?</div>
+                    <div class="faq-answer">
+                        <p>Currently optimized for Claude Code — that's where <code>CLAUDE.md</code>, skills, and agents are natively picked up. The rules and principles are plain markdown, so nothing stops you referencing them in your own API prompts, but the automatic loading and context detection are Claude Code features.</p>
+                    </div>
+                </div>
+
+                <!-- 12 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Cost</div>
+                    <div class="faq-question">Does this require Claude Max, or does it work on Pro?</div>
+                    <div class="faq-answer">
+                        <p>HITL mode works on any Claude plan. AFK mode — autonomous loops running potentially hundreds of turns overnight — is designed for Claude Max where usage limits won't interrupt a run mid-task. Pro limits will likely cut a long AFK session short.</p>
+                    </div>
+                </div>
+
+                <!-- 13 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Cost</div>
+                    <div class="faq-question">Does it significantly increase token burn?</div>
+                    <div class="faq-answer">
+                        <p>For normal HITL use, minimal — skills only load when invoked, not on every prompt. For AFK loops, burn scales with backlog size and task complexity. A well-scoped issue on a mid-size codebase typically runs 20–50k tokens. A backlog of 10 issues could be 200–500k tokens overnight.</p>
+                        <p>Monitor your first few runs to baseline before going wide.</p>
+                    </div>
+                </div>
+
+                <!-- 14 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Ongoing Use</div>
+                    <div class="faq-question">How do I pull upstream updates without clobbering my personal config?</div>
+                    <div class="faq-answer">
+                        <p>Your personal config lives in gitignored files: <code>secrets/.env.agent</code>, <code>secrets/.env.secrets</code>, <code>skills/_local/</code>, and <code>instructions/_local/</code>. None are tracked, so <code>git pull upstream main</code> never touches them.</p>
+                        <div class="faq-code-block">
+                            <span class="kw">git</span> pull upstream main<br>
+                            <span class="kw">bash</span> ~/dotfiles/bin/bootstrap.sh <span class="cm"># regenerates CLAUDE.md</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 15 -->
+                <div class="faq-item">
+                    <div class="faq-category-tag">Ongoing Use</div>
+                    <div class="faq-question">What breaks if I don't re-run bootstrap after a <code>git pull</code>?</div>
+                    <div class="faq-answer">
+                        <p>Symlinks survive pulls — your Claude setup keeps working. The main thing that goes stale is <code>CLAUDE.md</code> if <code>CLAUDE.base.md</code> changed upstream. Bootstrap regenerates it. It's idempotent, so re-running is always safe.</p>
+                    </div>
+                </div>
+
+                <!-- 16 -->
+                <div class="faq-item full">
+                    <div class="faq-category-tag">Compliance</div>
+                    <div class="faq-question">How do I know the agent is actually following the rules, not just loading them?</div>
+                    <div class="faq-answer">
+                        <p>"Read X" confirms a rule was loaded into context — not that it was followed. The <code>compliance-audit</code> skill closes the gap: after each task it reviews the diff against every active rule, logs pass/fail/warn to <code>working/compliance-log.md</code>, and the HUD surfaces compliance rates across sessions in real time.</p>
+                        <p>Run <code>/stress-test</code> for adversarial verification before deploying in a team environment. Current compliance on well-formed tasks: ~85–90%, with known failure modes documented and actively tracked.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
     <!-- CONTRIBUTORS -->
     <section class="section fade-in" id="contributors">
         <div class="container">
-            <div class="section-num">10 — CONTRIBUTORS</div>
+            <div class="section-num">12 — CONTRIBUTORS</div>
             <h2 class="section-title">Built in<br><em>the open</em></h2>
 
             <div class="contributors-grid" id="contributors-grid">
@@ -2229,7 +2683,7 @@
     <!-- INSTALL -->
     <section class="section fade-in" id="install">
         <div class="container">
-            <div class="section-num">11 — INSTALLATION</div>
+            <div class="section-num">13 — INSTALLATION</div>
             <h2 class="section-title">Running in<br><em>minutes</em></h2>
 
             <div class="install-block">

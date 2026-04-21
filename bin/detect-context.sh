@@ -81,8 +81,31 @@ fi
 export ACTIVE_CONTEXTS="$contexts"
 echo "$contexts"
 
-# Non-blocking dashboard context event (best-effort).
-if [[ -x "${DOTFILES:-$HOME/dotfiles}/bin/write-dashboard-state.sh" ]]; then
-    "${DOTFILES:-$HOME/dotfiles}/bin/write-dashboard-state.sh" \
-        context "Active contexts: $contexts" >/dev/null 2>&1 || true
-fi
+# ── HUD context event (inline, non-blocking, never fails) ───────────────
+# Pushes a context-change event to the HUD daemon on every cd().
+# Inline push avoids subprocess overhead — this runs on every directory change.
+{
+    _dc_dotfiles="${DOTFILES:-$HOME/dotfiles}"
+    _dc_pipe="$_dc_dotfiles/working/hud.pipe"
+    _dc_ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
+    _dc_td=$(date +"%H:%M:%S" 2>/dev/null || echo "")
+    _dc_proj=$(basename "$(pwd)" 2>/dev/null || echo "unknown")
+
+    # Detect IDE from environment
+    _dc_ide="terminal"
+    if [[ -n "${VSCODE_PID:-}" ]] || [[ -n "${VSCODE_IPC_HOOK:-}" ]]; then
+        _dc_ide="vscode"
+    elif [[ -n "${CURSOR_SESSION_ID:-}" ]]; then
+        _dc_ide="cursor"
+    fi
+
+    _dc_payload=$(printf '{"type":"context","project":"%s","projectPath":"%s","contexts":"%s","ide":"%s","message":"Active contexts: %s","timestamp":"%s","time":"%s"}' \
+        "$_dc_proj" "${PWD/$HOME/~}" "$contexts" "$_dc_ide" "$contexts" "$_dc_ts" "$_dc_td")
+
+    if [[ -p "$_dc_pipe" ]]; then
+        ( printf '%s\n' "$_dc_payload" > "$_dc_pipe" ) 2>/dev/null &
+    else
+        printf '%s\n' "$_dc_payload" >> "$_dc_dotfiles/working/events.jsonl" 2>/dev/null &
+    fi
+    unset _dc_dotfiles _dc_pipe _dc_ts _dc_td _dc_proj _dc_ide _dc_payload
+} 2>/dev/null || true

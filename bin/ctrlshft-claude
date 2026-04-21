@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# ctrlshft-claude — Drop-in terminal wrapper for `claude`
+#
+# Feeds "Read X" and compliance outputs to the HUD daemon.
+# Fully transparent — output is identical to running `claude` directly.
+#
+# Setup (add to ~/.bashrc or ~/.zshrc after sourcing write-hud-state.sh):
+#   alias claude='~/dotfiles/bin/ctrlshft-claude'
+#
+# Or use directly:
+#   ctrlshft-claude --print "implement the auth feature"
+
+DOTFILES="${DOTFILES:-$HOME/dotfiles}"
+PIPE_PATH="$DOTFILES/working/hud.pipe"
+HTTP_PORT="${HUD_PORT:-7823}"
+PROJECT_ID=$(basename "$(pwd)" 2>/dev/null || echo "unknown")
+PROJECT_PATH="${PWD/$HOME/~}"
+CONTEXTS="${ACTIVE_CONTEXTS:-general}"
+
+# ── Event push (inline — no source dependency) ────────────────────────────────
+_push() {
+    local _type="$1" _msg="$2"
+    local _ts _td
+    _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
+    _td=$(date +"%H:%M:%S" 2>/dev/null || echo "")
+    local _safe
+    _safe=$(printf '%s' "$_msg" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    local _p
+    _p=$(printf '{"type":"%s","project":"%s","projectPath":"%s","contexts":"%s","message":"%s","timestamp":"%s","time":"%s"}' \
+        "$_type" "$PROJECT_ID" "$PROJECT_PATH" "$CONTEXTS" "$_safe" "$_ts" "$_td")
+
+    if [[ -p "$PIPE_PATH" ]]; then
+        ( printf '%s\n' "$_p" > "$PIPE_PATH" ) 2>/dev/null &
+    elif command -v curl &>/dev/null && curl -sf --max-time 0.3 \
+            "http://localhost:$HTTP_PORT/api/event" \
+            -X POST -H "Content-Type: application/json" \
+            -d "$_p" > /dev/null 2>&1; then
+        : # HTTP succeeded
+    else
+        mkdir -p "$DOTFILES/working" 2>/dev/null || true
+        printf '%s\n' "$_p" >> "$DOTFILES/working/events.jsonl" 2>/dev/null || true
+    fi
+}
+
+# ── Line parser ───────────────────────────────────────────────────────────────
+_parse_line() {
+    local _line="$1"
+
+    # "Read path/to/file" — skill/rule/instruction loaded into context
+    if [[ "$_line" =~ ^Read\ (.+)$ ]]; then
+        _push "read" "$_line"; return
+    fi
+
+    # Compliance audit rule check outputs
+    if [[ "$_line" =~ ^\[RULE\] ]]; then
+        _push "info" "$_line"; return
+    fi
+    if [[ "$_line" =~ ^\[STATUS\].*✓\ PASS ]]; then
+        _push "pass" "${_line#\[STATUS\] }"; return
+    fi
+    if [[ "$_line" =~ ^\[STATUS\].*✗\ VIOLATION ]]; then
+        _push "fail" "${_line#\[STATUS\] }"; return
+    fi
+    if [[ "$_line" =~ ^\[STATUS\].*⚠ ]]; then
+        _push "warn" "${_line#\[STATUS\] }"; return
+    fi
+
+    # Compliance summary
+    if [[ "$_line" =~ ^Overall:\ (PASS|FAIL|PARTIAL) ]]; then
+        _push "info" "$_line"; return
+    fi
+
+    # ACTIVE_CONTEXTS announcement
+    if [[ "$_line" =~ ACTIVE_CONTEXTS= ]]; then
+        _push "context" "Active contexts: ${_line#*=}"; return
+    fi
+}
+
+# ── Check claude exists ───────────────────────────────────────────────────────
+if ! command -v claude &>/dev/null; then
+    echo "ctrlshft-claude: 'claude' not found" >&2
+    echo "Install: https://docs.anthropic.com/en/docs/claude-code" >&2
+    exit 1
+fi
+
+# ── Ensure session-end fires on exit/interrupt ────────────────────────────────
+trap '_push "info" "Session ended: $PROJECT_ID"' EXIT
+
+# ── Session start event ───────────────────────────────────────────────────────
+_push "context" "Active contexts: $CONTEXTS"
+_push "info" "Session started: $PROJECT_ID"
+
+# ── Run claude with output parsing ────────────────────────────────────────────
+# Strategy: run claude normally, pipe its stdout through a co-process that
+# parses lines and re-emits them. Uses `tee` + process substitution.
+#
+# Important: We must preserve the TTY for interactive mode.
+# For --print / non-interactive mode, stdout pipe works fine.
+# For interactive mode, we use a PTY via `script` if available.
+
+if [[ "$*" =~ --print ]] || [[ ! -t 0 ]]; then
+    # Non-interactive / --print mode — simple pipe works
+    claude "$@" 2>&1 | while IFS= read -r _line; do
+        _parse_line "$_line"
+        printf '%s\n' "$_line"
+    done
+    _exit_code=${PIPESTATUS[0]}
+else
+    # Interactive mode — use `script` to capture output while preserving TTY
+    # script -q /dev/null runs the command with a pseudo-TTY
+    if command -v script &>/dev/null; then
+        # macOS / Linux compatible
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            script -q /dev/null claude "$@" 2>&1 | while IFS= read -r _line; do
+                _parse_line "$_line"
+                # Don't re-print — script already outputs to TTY
+            done
+            _exit_code=${PIPESTATUS[0]}
+        else
+            script -q -e -c "claude $*" /dev/null | while IFS= read -r _line; do
+                _parse_line "$_line"
+            done
+            _exit_code=${PIPESTATUS[0]}
+        fi
+    else
+        # No script — run claude directly, lose parsing in interactive mode
+        _push "warn" "script(1) not available — interactive mode output not parsed"
+        claude "$@"
+        _exit_code=$?
+    fi
+fi
+
+exit "${_exit_code:-0}"

@@ -1,0 +1,36 @@
+# ctrlshft-hud.service
+# systemd user service — starts the HUD daemon on login (Linux)
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user/
+#   cp ~/dotfiles/bin/ctrlshft-hud.service ~/.config/systemd/user/
+#   systemctl --user enable ctrlshft-hud.service
+#   systemctl --user start ctrlshft-hud.service
+#
+# Check status:
+#   systemctl --user status ctrlshft-hud.service
+#   journalctl --user -u ctrlshft-hud.service -f
+#
+# Disable:
+#   systemctl --user stop ctrlshft-hud.service
+#   systemctl --user disable ctrlshft-hud.service
+
+[Unit]
+Description=ctrl+shft HUD daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node %h/dotfiles/bin/hud-daemon.js --port 7823 --ws-port 7822
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:%h/dotfiles/working/hud-daemon.log
+StandardError=append:%h/dotfiles/working/hud-daemon.log
+
+Environment=DOTFILES=%h/dotfiles
+Environment=NODE_ENV=production
+
+WorkingDirectory=%h/dotfiles
+
+[Install]
+WantedBy=default.target

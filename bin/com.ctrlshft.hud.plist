@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.ctrlshft.hud.plist
+  macOS launchd agent — starts the HUD daemon on login
+
+  Install:
+    cp ~/dotfiles/bin/com.ctrlshft.hud.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.ctrlshft.hud.plist
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.ctrlshft.hud.plist
+    rm ~/Library/LaunchAgents/com.ctrlshft.hud.plist
+
+  Check status:
+    launchctl list | grep ctrlshft
+    tail -f ~/dotfiles/working/hud-daemon.log
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ctrlshft.hud</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>/Users/REPLACE_USERNAME/dotfiles/bin/hud-daemon.js</string>
+        <string>--port</string>
+        <string>7823</string>
+        <string>--ws-port</string>
+        <string>7822</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/REPLACE_USERNAME/dotfiles/working/hud-daemon.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/REPLACE_USERNAME/dotfiles/working/hud-daemon.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>DOTFILES</key>
+        <string>/Users/REPLACE_USERNAME/dotfiles</string>
+        <key>HOME</key>
+        <string>/Users/REPLACE_USERNAME</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/REPLACE_USERNAME/dotfiles</string>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>

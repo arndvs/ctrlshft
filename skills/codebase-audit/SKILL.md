@@ -46,6 +46,17 @@ Report in this exact format, grouped by severity:
 
 - [file:line] vs [file:line] — which convention to pick and why
 
+## HUD Events
+
+Emit bookend events so the HUD tracks this audit:
+```bash
+source ~/dotfiles/bin/write-hud-state.sh
+# At start
+write_hud_event "info" "codebase-audit: started"
+# At end — report findings count
+write_hud_event "info" "codebase-audit: completed — N findings"
+```
+
 ## Rules
 
 - Do NOT report missing comments, missing types, or missing docs

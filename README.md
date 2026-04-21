@@ -411,6 +411,7 @@ docker sandbox run claude .
 ├── CHANGELOG.md                     ← release history
 ├── CONTRIBUTING.md                  ← contribution guide
 ├── global.instructions.md           ← universal rules, always loaded
+├── package.json                     ← optional deps (better-sqlite3 for HUD persistence)
 ├── settings.json                    ← managed VS Code settings
 ├── .env.agent.example               ← template for non-sensitive config
 ├── .env.citation.example            ← template for citation skill config
@@ -502,10 +503,11 @@ docker sandbox run claude .
 │   ├── validate-symlinks.sh         verify bootstrap symlinks
 │   ├── mint_github_app_token.py     AFK token minting
 │   ├── verify-github-app-token.sh   safe token verification
-│   ├── dashboard-daemon.js          compliance dashboard HTTP server
-│   ├── start-dashboard.sh           daemon lifecycle (start/stop/status/restart)
-│   └── write-dashboard-state.sh     non-blocking compliance event emitter
-├── dashboard/                       ← compliance dashboard UI
+│   ├── hud-daemon.js          HUD HTTP server
+│   ├── start-hud.sh           daemon lifecycle (start/stop/status/restart)
+│   └── write-hud-state.sh     non-blocking compliance event emitter
+├── hud/                       ← HUD UI
+│   ├── README.md                    HUD architecture + API reference
 │   └── index.html
 ├── site/                            ← landing page (ctrlshft.dev)
 │   ├── index.html
@@ -740,24 +742,71 @@ Project contributors: [arndvs/ctrlshft/graphs/contributors](https://github.com/a
 
 ---
 
+## HUD — real-time agent observability
+
+<p align="center">
+  <img src="site/assets/hud-screenshot.png" alt="ctrl+shft HUD — real-time HUD showing project tabs, loaded rules and skills, session log, and compliance history" style="width: 100%; max-width: 1200px; height: auto; border: 1px solid #1e1e1e;" />
+</p>
+
+The HUD is a live HUD that shows what your agent is actually doing — which rules loaded, which skills fired, which projects are being touched, and whether compliance checks pass or fail. It runs locally at `localhost:7823` and updates in real-time via WebSocket.
+
+```bash
+bash ~/dotfiles/bin/start-hud.sh
+# Visit http://localhost:7823
+```
+
+### What it tracks
+
+| Panel | What it shows |
+|-------|---------------|
+| **Project tabs** | Every project the agent touches — dotfiles, client projects, anything. Cross-project reads detected automatically via git root |
+| **Compliance rate** | Rolling compliance percentage across sessions with trend sparkline |
+| **Rules loaded** | Count of rules active in the current session, with active context count |
+| **Violations** | Real-time violation count this session |
+| **Sessions audited** | Total sessions processed by the compliance-audit skill |
+| **Active context** | Which stack contexts are active (nextjs, sanity, node, etc.) — detected by `detect-context.sh` |
+| **Loaded files** | Which instructions, skills, rules, and agents are loaded, with read timestamps and status badges |
+| **Session log** | Chronological event stream — context changes, task bookends, reads, compliance results |
+| **Compliance history** | Per-day compliance trend chart |
+| **Violations panel** | Recent violations with severity, rule reference, file location, and timestamp |
+| **Sidebar inventory** | Full inventory of all rules, skills, and agents with loaded/available status |
+
+### Architecture
+
+The HUD has three layers:
+
+1. **Event producers** — hooks (`hud-reads.sh`, `hud-session.sh`), `detect-context.sh`, `compliance-audit` skill, and `write-hud-state.sh` (sourceable shell functions)
+2. **Daemon** — `bin/hud-daemon.js` (~880 lines, zero required npm dependencies). Listens on named pipe (< 1ms), HTTP POST, and JSONL file watcher. Optional SQLite persistence via `better-sqlite3`
+3. **Frontend** — `hud/index.html` (single-file). Connects via WebSocket (`ws://localhost:7822`) for real-time updates, falls back to HTTP polling
+
+Cross-project tracking works automatically. When the agent reads files outside `~/dotfiles/`, the reads hook walks up the directory tree to find the `.git` root, extracts the project name, and routes events to the correct project tab.
+
+### Lifecycle commands
+
+| Command | What it does |
+|---------|-------------|
+| `bash ~/dotfiles/bin/start-hud.sh` | Start daemon (background) |
+| `bash ~/dotfiles/bin/start-hud.sh stop` | Stop daemon |
+| `bash ~/dotfiles/bin/start-hud.sh status` | Check if running |
+| `bash ~/dotfiles/bin/start-hud.sh restart` | Stop + start |
+
+Port defaults to `7823`. Override with `HUD_PORT=8080`.
+
+### Optional: persistent history
+
+```bash
+cd ~/dotfiles && npm install better-sqlite3
+```
+
+Without it, the daemon uses in-memory buffers + JSONL fallback. History resets on restart.
+
+See [`hud/README.md`](hud/README.md) for the full API reference, event types, auto-start configuration (launchd/systemd), and data persistence details.
+
+---
+
 ## Observability & Benchmarking (Roadmap)
 
-> Status: **partially shipped** — see [docs/observability-benchmarking-plan.md](docs/observability-benchmarking-plan.md) for the tracked implementation plan.
-
-ctrl+shft now has compliance observability — a live dashboard showing which rules and skills are loaded, active contexts, and compliance audit results. Token tracking, cost data, and accuracy metrics are still planned.
-
-### What's available today
-
-| Capability              | Status              | Notes                                                                          |
-| ----------------------- | ------------------- | ------------------------------------------------------------------------------ |
-| Compliance dashboard    | **Shipped**         | `dashboard/index.html` + `bin/dashboard-daemon.js` at localhost:7823           |
-| Compliance events       | **Shipped**         | `write-dashboard-state.sh` emits events via pipe/HTTP/JSONL fallback           |
-| Compliance audit skill  | **Shipped**         | Auto-invoked after do-work/tdd/debugging — rule-by-rule review                 |
-| OpenTelemetry (VS Code) | Available, disabled | `otel.enabled` and `otel.captureContent` in settings.json — 2 settings to flip |
-| Agent debug logs        | Enabled             | `agentDebugLog.fileLogging.enabled: true` — raw Copilot agent logs to disk     |
-| Model attribution       | Static only         | Agent files declare `model:` in frontmatter. No runtime tracking               |
-| Token/cost tracking     | Not built           | shft deletes raw Claude output after each iteration                            |
-| Accuracy tracking       | Not built           | No scoring, no proxy signals, no trend data                                    |
+> Status: **HUD shipped** — see [docs/observability-benchmarking-plan.md](docs/observability-benchmarking-plan.md) for the tracked implementation plan.
 
 ### What's planned
 
@@ -769,13 +818,116 @@ ctrl+shft now has compliance observability — a live dashboard showing which ru
 | CI Telemetry Reports   | AFK      | GitHub Actions daily reports + README badge for cost and accuracy                                                                   |
 | Enable OTEL            | HITL     | Turn on VS Code's built-in OpenTelemetry, document what it actually emits                                                           |
 | Accuracy Framework     | HITL     | Human scoring UX + automated proxy signals (test pass/fail, reverts, re-opened issues)                                              |
-| Telemetry Dashboard    | HITL     | Full telemetry dashboard — cost, tokens, model distribution, accuracy, hallucination rate (extends existing compliance dashboard)    |
+| Telemetry HUD    | HITL     | Full telemetry HUD — cost, tokens, model distribution, accuracy, hallucination rate (extends existing HUD)    |
 
 ### Key constraints
 
 - **Sub-agent model injection is not possible at runtime.** Neither `search_subagent` nor `runSubagent` accepts a model parameter. Workaround: model-variant agent files.
 - **Hallucination detection requires human scoring.** Automated proxy signals (test failures, reverts) augment but cannot replace human judgment.
 - **OTEL schema is undocumented.** Need to enable it and inspect raw spans before building on it.
+
+---
+
+## FAQ
+
+<details>
+<summary>Dotfiles & Removal</summary>
+
+**What are dotfiles, and why does ctrl+shft live there?**
+
+Dotfiles are configuration files in your home directory (`.bashrc`, `.gitconfig`) stored in a git repo and symlinked into place. Claude Code follows the same convention — it looks for `CLAUDE.md` and `.claude/` in your home directory for global instructions. `~/dotfiles` is the natural home; bootstrap symlinks everything so your agent gets the same context on every machine.
+
+**Can I remove it without it tanking my setup?**
+
+Yes. Run `bash ~/dotfiles/bin/uninstall.sh` — it removes only the symlinks and shell integration that bootstrap created. Nothing in your project repos is touched.
+
+**What if the project goes stale — am I stuck with it?**
+
+No. You fork before cloning, so your fork is your source of truth. Stop pulling upstream whenever you want. `uninstall.sh` cleans everything up in one command.
+
+</details>
+
+<details>
+<summary>Setup</summary>
+
+**Does it require sudo or admin to install?**
+
+No. Everything installs into your home directory — `~/dotfiles`, `~/.claude/`, `~/.bashrc`. No system-level writes, no elevated permissions.
+
+**I already have a `CLAUDE.md` — will this overwrite it?**
+
+A `CLAUDE.md` in a project repo is untouched — project-level config takes precedence. If you already have `~/.claude/CLAUDE.md`, bootstrap warns you before replacing it. Back it up first and fold your content into `CLAUDE.base.md`.
+
+**What exactly does it write to my machine?**
+
+Symlinks: `~/.claude/CLAUDE.md`, `~/.claude/skills`, `~/.claude/agents`, `~/.claude/rules`. Files: `secrets/.env.agent`, `secrets/.env.secrets`, `secrets/.venv`. Shell appends: load-secrets snippet, context-detection on cd. Supply chain hardening: `~/.npmrc`, `~/.config/uv/uv.toml`. `uninstall.sh` reverses all of it.
+
+</details>
+
+<details>
+<summary>Security</summary>
+
+**Why does it need a GitHub App? Can I use a PAT instead?**
+
+A PAT works for HITL mode. AFK mode structurally blocks the PAT path — the validator enforces this at startup. Static credentials create long-lived compromise windows. Instead, a three-tier model (`.env.agent` for config, `.env.secrets` for process-scoped credentials, AFK tokens minted fresh per Docker run with 1-hour TTL) keeps secrets out of agent context entirely.
+
+**What does the agent actually have permission to do in AFK mode?**
+
+It runs inside a Docker sandbox with minimum GitHub App permissions: Contents, Issues, and Pull Requests (read/write). Deny rules block reading secrets or env vars — `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` are all blocked at the agent level.
+
+**How do I audit what rules and skills are loaded at any given time?**
+
+Run `bash ~/dotfiles/bin/detect-context.sh` in any directory — it prints active contexts and loaded rule files. Skills are only invoked explicitly; nothing loads silently.
+
+</details>
+
+<details>
+<summary>Rules & Compatibility</summary>
+
+**Does it work well alongside existing rules?**
+
+Yes. `detect-context.sh` only loads rules matching your current stack. If you already have a `CLAUDE.md` in a project repo, that takes precedence.
+
+**Can I use this with the Claude API directly, or only Claude Code?**
+
+Currently optimized for Claude Code — that's where `CLAUDE.md`, skills, and agents are natively picked up. The rules are plain markdown, so nothing stops you referencing them in API prompts, but automatic loading and context detection are Claude Code features.
+
+</details>
+
+<details>
+<summary>Cost</summary>
+
+**Does this require Claude Max, or does it work on Pro?**
+
+HITL mode works on any Claude plan. AFK mode is designed for Claude Max where usage limits won't interrupt a run mid-task. Pro limits will likely cut a long AFK session short.
+
+**Does it significantly increase token burn?**
+
+For HITL use, minimal — skills only load when invoked. For AFK loops, burn scales with backlog size. A well-scoped issue typically runs 20–50k tokens. A backlog of 10 issues could be 200–500k tokens overnight. Monitor your first few runs to baseline.
+
+</details>
+
+<details>
+<summary>Ongoing Use</summary>
+
+**How do I pull upstream updates without clobbering my personal config?**
+
+Personal config lives in gitignored files: `secrets/.env.agent`, `secrets/.env.secrets`, `skills/_local/`, and `instructions/_local/`. `git pull upstream main` never touches them. Re-run `bash ~/dotfiles/bin/bootstrap.sh` after pulling to regenerate `CLAUDE.md`.
+
+**What breaks if I don't re-run bootstrap after a `git pull`?**
+
+Symlinks survive pulls — your setup keeps working. The main thing that goes stale is `CLAUDE.md` if `CLAUDE.base.md` changed upstream. Bootstrap regenerates it. It's idempotent, so re-running is always safe.
+
+</details>
+
+<details>
+<summary>Compliance</summary>
+
+**How do I know the agent is actually following the rules, not just loading them?**
+
+"Read X" confirms a rule was loaded into context — not that it was followed. The `compliance-audit` skill closes the gap: after each task it reviews the diff against every active rule, logs pass/fail/warn to `working/compliance-log.md`, and the HUD surfaces compliance rates in real time. Run `/stress-test` for adversarial verification. Current compliance on well-formed tasks: ~85–90%, with known failure modes documented and actively tracked.
+
+</details>
 
 ---
 

@@ -16,6 +16,29 @@ VENV_DIR="$CTRL_DIR/secrets/.venv"
 
 source "$CTRL_DIR/bin/_lib.sh"
 
+# ── HUD event helper (inline — works without sourcing write-hud-state.sh) ─
+WORKING_DIR="$CTRL_DIR/working"
+mkdir -p "$WORKING_DIR"
+
+_push_afk_event() {
+    local _type="$1" _msg="$2"
+    local _ts _td _pipe _proj _path _ctx
+    _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
+    _td=$(date +"%H:%M:%S" 2>/dev/null || echo "")
+    _pipe="$WORKING_DIR/hud.pipe"
+    _proj=$(basename "$(pwd)" 2>/dev/null || echo "unknown")
+    _path="${PWD/$HOME/~}"
+    _ctx="${ACTIVE_CONTEXTS:-general}"
+    local _payload
+    _payload=$(printf '{"type":"%s","project":"%s","projectPath":"%s","contexts":"%s","message":"%s","timestamp":"%s","time":"%s","source":"afk"}' \
+        "$_type" "$_proj" "$_path" "$_ctx" "$_msg" "$_ts" "$_td")
+    if [[ -p "$_pipe" ]]; then
+        ( printf '%s\n' "$_payload" > "$_pipe" ) 2>/dev/null &
+    else
+        printf '%s\n' "$_payload" >> "$WORKING_DIR/events.jsonl" 2>/dev/null || true
+    fi
+}
+
 # Concurrency guard — mkdir is atomic and portable (no flock on macOS)
 if ! mkdir "$LOCKDIR" 2>/dev/null; then
     echo "shft already running" >&2
@@ -46,6 +69,7 @@ fi
 
 for i in $(seq 1 "$MAX_ITERATIONS"); do
     echo "=== shft iteration $i of $MAX_ITERATIONS ==="
+    _push_afk_event "info" "AFK iteration $i of $MAX_ITERATIONS started"
 
     mint_json=$("$RUN_WITH_SECRETS" "$PYTHON_BIN" "$MINT_SCRIPT") || {
         echo "ERROR: failed to mint GitHub App token for iteration $i" >&2
@@ -87,9 +111,12 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
     rm -f "$raw_output" "$PROMPT_FILE"
 
     if echo "$result" | grep -q '<promise>NO MORE TASKS</promise>'; then
+        _push_afk_event "info" "AFK complete after $i iterations — no more tasks"
         echo "shft complete after $i iterations"
         exit 0
     fi
+
+    _push_afk_event "info" "AFK iteration $i of $MAX_ITERATIONS complete"
 done
 
 echo "shft reached max iterations ($MAX_ITERATIONS)"

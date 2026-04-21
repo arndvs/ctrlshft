@@ -8,7 +8,45 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-_Nothing yet._
+Slice 7.1: HUD event producers, daemon upgrade, compliance polish.
+
+### Added
+- `bin/ctrlshft-claude` — event-producing wrapper that parses Claude stdout for compliance/context events
+- WebSocket server (ws://localhost:7822) for real-time HUD event broadcasts
+- SQLite persistence via optional `better-sqlite3` (falls back to in-memory + JSONL)
+- Server-side file inventory scan (skills, agents, rules, instructions, hooks)
+- `package.json` + `package-lock.json` for optional `better-sqlite3` dependency
+- `cspell.json` — initial cSpell configuration
+
+### Changed
+- `bin/hud-daemon.js` upgraded from HTTP polling to WebSocket + adaptive polling fallback
+- `hud/index.html` upgraded with project tabs, file inventory sidebar, session management
+- `bin/detect-context.sh` now emits context events to HUD pipeline on every `cd()`
+- `bin/write-hud-state.sh` architecture diagram and API table corrected
+
+### Fixed
+- `ctrlshft-claude` wrapper: JSONL fallback when pipe unavailable, EXIT trap for cleanup, exit code preservation
+- 5 event-producer bugs from 7.1a audit (timestamp format, payload shape, error handling)
+- HUD: renamed `esc`→`str` helper, removed dead CSS class, replaced `setInterval` with `setTimeout`
+
+---
+
+## [0.7.0] - 2026-04-21
+
+Slice 7: HUD UI + compliance skills (#48).
+
+### Added
+- `hud/index.html` — HUD UI (single-file, dark theme, WebSocket + adaptive polling)
+- `skills/compliance-audit/SKILL.md` — auto-invoked rule compliance check after do-work/tdd/debugging
+- `skills/stress-test/SKILL.md` — adversarial 19-scenario protocol for rule boundary validation
+
+### Changed
+- `bin/hud-daemon.js` serves HUD from `hud/index.html` (moved from `working/`)
+- README: rebuilt directory tree (added 8 bin/ scripts, hooks/, clients/, hud/, docs files)
+- README: skills table updated from 16 → 18 entries
+- README: observability section updated to reflect shipped HUD
+- README: added Hooks section documenting 6 lifecycle hooks
+- `docs/observability-benchmarking-plan.md` updated with shipped status markers
 
 ---
 
@@ -33,17 +71,17 @@ Slice 7: compliance dashboard UI + compliance skills (#48).
 
 ## [0.6.0] - 2026-04-21
 
-Slices 4–6: migration toolchain, client scope, dashboard backend (#46).
+Slices 4–6: migration toolchain, client scope, HUD backend (#46).
 
 ### Added
 - `bin/migrate.sh`, `bin/uninstall.sh`, `bin/_adopt.sh` — migration and adopt toolchain
 - `bootstrap.sh` modes: `--adopt`, `--minimal`, `--check`, `--force`
 - `bin/detect-client.sh`, `bin/new-client.sh` — per-client instruction isolation
 - `clients/` directory with `_template/` scaffolding for project-scoped instructions
-- `bin/write-dashboard-state.sh` — non-blocking event emitter (pipe → HTTP → JSONL fallback)
-- `bin/dashboard-daemon.js` — Node.js HTTP server (`/api/state`, `/healthz`, `POST /api/event`)
-- `bin/start-dashboard.sh` — daemon lifecycle manager (start/stop/status/restart)
-- `bin/detect-context.sh` hook to emit context events to dashboard pipeline
+- `bin/write-hud-state.sh` — non-blocking event emitter (pipe → HTTP → JSONL fallback)
+- `bin/hud-daemon.js` — Node.js HTTP server (`/api/state`, `/healthz`, `POST /api/event`)
+- `bin/start-hud.sh` — daemon lifecycle manager (start/stop/status/restart)
+- `bin/detect-context.sh` hook to emit context events to HUD pipeline
 - `docs/observability-benchmarking-plan.md` — tracked observability plan
 - `docs/readme-site-deep-audit.md` — audit findings report
 - `.gitattributes` enforcing LF line endings for all text files
