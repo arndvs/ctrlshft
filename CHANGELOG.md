@@ -12,6 +12,25 @@ _Nothing yet._
 
 ---
 
+## [0.7.0] - 2026-04-21
+
+Slice 7: compliance dashboard UI + compliance skills (#48).
+
+### Added
+- `dashboard/index.html` — compliance dashboard UI (single-file, dark theme, 5s polling)
+- `skills/compliance-audit/SKILL.md` — auto-invoked rule compliance check after do-work/tdd/debugging
+- `skills/stress-test/SKILL.md` — adversarial 19-scenario protocol for rule boundary validation
+
+### Changed
+- `bin/dashboard-daemon.js` serves dashboard from `dashboard/index.html` (moved from `working/`)
+- README: rebuilt directory tree (added 8 bin/ scripts, hooks/, clients/, dashboard/, docs files)
+- README: skills table updated from 16 → 18 entries
+- README: observability section updated to reflect shipped compliance dashboard
+- README: added Hooks section documenting 6 lifecycle hooks
+- `docs/observability-benchmarking-plan.md` updated with shipped status markers
+
+---
+
 ## [0.6.0] - 2026-04-21
 
 Slices 4–6: migration toolchain, client scope, dashboard backend (#46).

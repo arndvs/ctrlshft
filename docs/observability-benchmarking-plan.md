@@ -5,10 +5,26 @@ Source: `working/planning/observability-benchmarking-plan.md` (working draft)
 
 ## Current status
 
-Observability is still **planned/in progress**, with one dependency already landed:
+Observability is **partially shipped** — compliance monitoring is live, telemetry/benchmarking is still planned.
 
-- ✅ Model variant agents (`researcher-opus`, `researcher-haiku`, `code-reviewer-opus`) are present.
-- ⏳ Telemetry wrapper, cost reports, accuracy scoring, CI reports, and dashboard are not yet implemented end-to-end.
+### Shipped (Slices 6–7)
+
+- ✅ Model variant agents (`researcher-opus`, `researcher-haiku`, `code-reviewer-opus`)
+- ✅ `bin/write-dashboard-state.sh` — event emitter (pipe → HTTP → JSONL fallback)
+- ✅ `bin/dashboard-daemon.js` — zero-dependency Node.js compliance dashboard server
+- ✅ `bin/start-dashboard.sh` — daemon lifecycle manager (start/stop/status/restart/foreground)
+- ✅ `dashboard/index.html` — real-time compliance UI (dark theme, 5s polling)
+- ✅ `skills/compliance-audit/SKILL.md` — auto-invoked rule compliance check
+- ✅ `skills/stress-test/SKILL.md` — adversarial rule boundary validation
+
+### Still planned
+
+- ⏳ Telemetry wrapper (JSONL events per shft run, token/model metadata)
+- ⏳ Cost calculator (model/run/day costs from telemetry)
+- ⏳ CI telemetry reports (daily markdown + badge)
+- ⏳ OTEL schema discovery
+- ⏳ Accuracy tracking framework
+- ⏳ Final QA plan
 
 ## Why this matters
 
@@ -41,7 +57,7 @@ This plan defines the vertical slices required to close that gap.
 
 1. **Enable OTEL + schema discovery** (S)
 2. **Accuracy tracking framework** (M)
-3. **Telemetry dashboard** (L)
+3. **Telemetry dashboard** (L) — compliance portion shipped; telemetry views still planned
 4. **Final QA plan** (M)
 
 ## Dependency order
@@ -61,4 +77,4 @@ This plan defines the vertical slices required to close that gap.
 
 - Runtime model injection is still not available for subagents; benchmark via variant agent files.
 - Hallucination scoring needs human-in-the-loop input plus proxy signals.
-- Prefer adding telemetry into existing `docs/` app surface rather than introducing a second dashboard app.
+- Prefer adding telemetry views into the existing compliance dashboard (`dashboard/index.html`) rather than introducing a second app.

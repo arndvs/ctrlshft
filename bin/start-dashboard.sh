@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
-# start-dashboard.sh — start/stop/status wrapper for dashboard-daemon.js
+# start-dashboard.sh — lifecycle manager for dashboard-daemon.js
+#
+# Usage:  bash bin/start-dashboard.sh [command]
+#
+# Commands:
+#   start       (default) Start daemon in background, write PID file
+#   stop        Stop running daemon, remove PID file
+#   status      Check if daemon is running, show PID and URL
+#   restart     Stop + start
+#   foreground  Run daemon in foreground (no daemonization)
+#
+# Environment:
+#   DASHBOARD_PORT  HTTP port (default: 7823)
 
 set -euo pipefail
 

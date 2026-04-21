@@ -245,6 +245,8 @@ The benefit: ⚡ skills act as passive guardrails. You don't remember to say "us
 | `atomic-commits` ⚡       | Branch-isolated atomic commits. Survey diff, group by seam, commit or ship (push + PR).               |
 | `code-review`             | Focused review of staged or recent changes. Edge cases, logic errors, integration risks.              |
 | `document`                | Write, update, or audit documentation. Accurate, minimal, audience-appropriate.                       |
+| `compliance-audit` ⚡     | Auto-invoked after do-work/tdd/debugging. Rule-by-rule review, violation flagging, skill gap detection.|
+| `stress-test`             | Adversarial 19-scenario protocol across 6 categories. Validates rule compliance boundaries.           |
 | `sanity-best-practices`   | Sanity schema design, GROQ, TypeGen, Visual Editing, Portable Text, framework integrations.           |
 
 Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored.
@@ -340,6 +342,23 @@ These principles are working if you see:
 
 ---
 
+## Hooks
+
+Claude Code lifecycle hooks — shell scripts that fire on tool use and session events. Bootstrap symlinks `hooks/` → `~/.claude/hooks/` and merges configuration from `settings-hooks.json` into `~/.claude/settings.json`.
+
+| Hook | Event | What it does |
+|------|-------|-------------|
+| `secret-guard.sh` | PreToolUse | Blocks commands that expose credentials (`echo $TOKEN`, bare `env`/`printenv`, `cat secrets/`) |
+| `migration-guard.sh` | PreToolUse | Blocks database migration commands targeting non-test databases |
+| `compaction-guard.sh` | PreCompact | Blocks auto-compaction at ~95% context; directs agent to follow handoff protocol |
+| `format-check.sh` | Stop | Detects Biome/Prettier/ESLint and formats modified files (non-blocking) |
+| `typecheck.sh` | Stop | Runs `tsc --noEmit` on TypeScript projects; blocks stop until types pass |
+| `context-warning.sh` | UserPromptSubmit | Stub: graduated warnings at 40/70% context (pending statusLine experiment) |
+
+Hooks communicate via exit codes: **0** = allow, **2** = block. See `hooks/README.md` for full documentation, customization, and the `experiments/` directory for in-progress prototypes.
+
+---
+
 ## shft: autonomous agent loop
 
 > `ctrl` is the structure — instructions, skills, rules, secrets, context. `shft` is the autonomous loop — it picks issues, implements, commits, repeats. **ctrl+shft** — you define the rules, shft executes them.
@@ -389,11 +408,14 @@ docker sandbox run claude .
 ~/dotfiles/
 ├── CLAUDE.base.md                   ← edit this — bootstrap generates CLAUDE.md from it
 ├── CLAUDE.md                        ← GENERATED (gitignored)
+├── CHANGELOG.md                     ← release history
+├── CONTRIBUTING.md                  ← contribution guide
 ├── global.instructions.md           ← universal rules, always loaded
 ├── settings.json                    ← managed VS Code settings
 ├── .env.agent.example               ← template for non-sensitive config
 ├── .env.citation.example            ← template for citation skill config
 ├── .env.secrets.example             ← template for API keys and tokens
+├── .gitattributes                   ← LF line ending enforcement
 ├── instructions/
 │   ├── nextjs.instructions.md
 │   ├── php.instructions.md
@@ -425,6 +447,16 @@ docker sandbox run claude .
 │   ├── migration-safety.md          scoped to **/migrations/**
 │   ├── env-security.md              scoped to **/.env*, **/secrets/**
 │   └── terminal-workarounds.md      scoped to terminal sessions
+├── hooks/
+│   ├── README.md                    hook documentation
+│   ├── settings-hooks.json          hook configuration for Claude Code
+│   ├── compaction-guard.sh          blocks auto-compaction, enforces handoff
+│   ├── context-warning.sh           graduated warnings at 40/70% context
+│   ├── format-check.sh             auto-formats modified files on stop
+│   ├── migration-guard.sh           blocks unsafe migration commands
+│   ├── secret-guard.sh              blocks credential exposure in agent output
+│   ├── typecheck.sh                 runs tsc --noEmit before stop
+│   └── experiments/                 experimental hook prototypes
 ├── skills/
 │   ├── do-work/
 │   ├── grill-me/
@@ -441,8 +473,13 @@ docker sandbox run claude .
 │   ├── atomic-commits/
 │   ├── code-review/
 │   ├── document/
+│   ├── compliance-audit/
+│   ├── stress-test/
 │   ├── sanity-best-practices/
 │   └── _local/                      ← GITIGNORED — your private skills
+├── clients/
+│   ├── README.md                    per-client instruction isolation guide
+│   └── _template/                   scaffolding for new client projects
 ├── shft/
 │   ├── afk.sh                       AFK autonomous loop
 │   ├── once.sh                      HITL single-run
@@ -450,22 +487,34 @@ docker sandbox run claude .
 │   └── prompt.md                    shared agent prompt
 ├── bin/
 │   ├── _lib.sh                      shared shell library
+│   ├── _adopt.sh                    bootstrap --adopt migration helper
 │   ├── bootstrap.sh                 one-command setup, idempotent
 │   ├── agent-shell.sh               secrets-free shell for agent sessions
 │   ├── sync-settings.sh             deep-merge VS Code settings
 │   ├── load-secrets.sh              sources .env.agent into shell
 │   ├── run-with-secrets.sh          process-scoped secret injection
 │   ├── detect-context.sh            exports ACTIVE_CONTEXTS
+│   ├── detect-client.sh             per-client context detection
+│   ├── new-client.sh                scaffold new client instruction set
+│   ├── migrate.sh                   safe migration from manual setup
+│   ├── uninstall.sh                 clean removal of all symlinks + shell integration
 │   ├── validate-env.sh              env + hardening validation
 │   ├── validate-symlinks.sh         verify bootstrap symlinks
 │   ├── mint_github_app_token.py     AFK token minting
-│   └── verify-github-app-token.sh   safe token verification
+│   ├── verify-github-app-token.sh   safe token verification
+│   ├── dashboard-daemon.js          compliance dashboard HTTP server
+│   ├── start-dashboard.sh           daemon lifecycle (start/stop/status/restart)
+│   └── write-dashboard-state.sh     non-blocking compliance event emitter
+├── dashboard/                       ← compliance dashboard UI
+│   └── index.html
 ├── site/                            ← landing page (ctrlshft.dev)
 │   ├── index.html
 │   ├── CNAME
 │   └── assets/
-├── docs/                            ← architecture decision records
-│   └── adr/
+├── docs/
+│   ├── adr/                         architecture decision records
+│   ├── observability-benchmarking-plan.md
+│   └── readme-site-deep-audit.md
 ├── working/                         ← GITIGNORED — cross-conversation plans
 └── secrets/                         ← GITIGNORED
     ├── .env.agent
@@ -693,20 +742,22 @@ Project contributors: [arndvs/ctrlshft/graphs/contributors](https://github.com/a
 
 ## Observability & Benchmarking (Roadmap)
 
-> Status: **planned** — see [docs/observability-benchmarking-plan.md](docs/observability-benchmarking-plan.md) for the tracked implementation plan.
+> Status: **partially shipped** — see [docs/observability-benchmarking-plan.md](docs/observability-benchmarking-plan.md) for the tracked implementation plan.
 
-ctrl+shft currently operates blind — no token tracking, no cost data, no accuracy metrics. To prove the system as a proof of concept, stakeholders need hard numbers. This roadmap addresses the full observability gap.
+ctrl+shft now has compliance observability — a live dashboard showing which rules and skills are loaded, active contexts, and compliance audit results. Token tracking, cost data, and accuracy metrics are still planned.
 
 ### What's available today
 
 | Capability              | Status              | Notes                                                                          |
 | ----------------------- | ------------------- | ------------------------------------------------------------------------------ |
+| Compliance dashboard    | **Shipped**         | `dashboard/index.html` + `bin/dashboard-daemon.js` at localhost:7823           |
+| Compliance events       | **Shipped**         | `write-dashboard-state.sh` emits events via pipe/HTTP/JSONL fallback           |
+| Compliance audit skill  | **Shipped**         | Auto-invoked after do-work/tdd/debugging — rule-by-rule review                 |
 | OpenTelemetry (VS Code) | Available, disabled | `otel.enabled` and `otel.captureContent` in settings.json — 2 settings to flip |
 | Agent debug logs        | Enabled             | `agentDebugLog.fileLogging.enabled: true` — raw Copilot agent logs to disk     |
 | Model attribution       | Static only         | Agent files declare `model:` in frontmatter. No runtime tracking               |
 | Token/cost tracking     | Not built           | shft deletes raw Claude output after each iteration                            |
 | Accuracy tracking       | Not built           | No scoring, no proxy signals, no trend data                                    |
-| Dashboard               | Not built           | docs/ has Next.js scaffolding ready for a `/telemetry` route                   |
 
 ### What's planned
 
@@ -718,7 +769,7 @@ ctrl+shft currently operates blind — no token tracking, no cost data, no accur
 | CI Telemetry Reports   | AFK      | GitHub Actions daily reports + README badge for cost and accuracy                                                                   |
 | Enable OTEL            | HITL     | Turn on VS Code's built-in OpenTelemetry, document what it actually emits                                                           |
 | Accuracy Framework     | HITL     | Human scoring UX + automated proxy signals (test pass/fail, reverts, re-opened issues)                                              |
-| Telemetry Dashboard    | HITL     | Next.js dashboard in docs/ — cost, tokens, model distribution, accuracy, hallucination rate                                         |
+| Telemetry Dashboard    | HITL     | Full telemetry dashboard — cost, tokens, model distribution, accuracy, hallucination rate (extends existing compliance dashboard)    |
 
 ### Key constraints
 

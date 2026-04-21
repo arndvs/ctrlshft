@@ -1,4 +1,20 @@
 #!/usr/bin/env node
+// dashboard-daemon.js — compliance dashboard HTTP server (zero dependencies)
+//
+// Usage:  node bin/dashboard-daemon.js [--port PORT]
+//
+// API endpoints:
+//   GET  /            — serves dashboard/index.html
+//   GET  /api/state   — returns current compliance state JSON
+//   POST /api/event   — receives compliance events (JSON body)
+//   GET  /healthz     — health check
+//
+// Data persistence (all in working/, gitignored):
+//   events.jsonl          — append-only event log
+//   dashboard-state.json  — current aggregated state
+//
+// Typically started via bin/start-dashboard.sh, not directly.
+
 'use strict';
 
 const fs = require('fs');
@@ -11,6 +27,7 @@ const WORKING = path.join(DOTFILES, 'working');
 const PIPE_PATH = path.join(WORKING, 'dashboard.pipe');
 const JSONL_PATH = path.join(WORKING, 'events.jsonl');
 const STATE_PATH = path.join(WORKING, 'dashboard-state.json');
+const DASHBOARD_HTML = path.join(DOTFILES, 'dashboard', 'index.html');
 
 const args = process.argv.slice(2);
 const argValue = (flag, fallback) => {
@@ -23,11 +40,15 @@ const MAX_EVENTS = 500;
 
 fs.mkdirSync(WORKING, { recursive: true });
 
+const MAX_HISTORY = 30;
+let jsonlLastSize = 0;
+
 const state = {
   startedAt: new Date().toISOString(),
   eventCount: 0,
   events: [],
-  projects: {}
+  projects: {},
+  compliance: {}
 };
 
 const parseJsonLine = (line) => {
@@ -59,7 +80,7 @@ const ingestEvent = (event, source) => {
   const normalized = {
     type: event.type || 'info',
     project,
-    projectPath: event.projectPath || project,
+    projectPath: event.projectPath || '',
     contexts: event.contexts || 'general',
     message: event.message || '',
     timestamp: event.timestamp || new Date().toISOString(),
@@ -73,14 +94,52 @@ const ingestEvent = (event, source) => {
     state.events.shift();
   }
 
+  const existing = state.projects[project] || {};
   state.projects[project] = {
+    ...existing,
     project,
-    projectPath: normalized.projectPath,
-    contexts: normalized.contexts,
+    projectPath: normalized.projectPath || existing.projectPath || project,
+    contexts: (normalized.contexts && normalized.contexts !== 'general') ? normalized.contexts : (existing.contexts || normalized.contexts),
     lastEventType: normalized.type,
     lastMessage: normalized.message,
     lastTimestamp: normalized.timestamp
   };
+
+  if (normalized.type === 'compliance-result') {
+    const passCount = Number(event.passCount) || 0;
+    const failCount = Number(event.failCount) || 0;
+    const warnCount = Number(event.warnCount) || 0;
+    const total = passCount + failCount + warnCount;
+    const rate = total > 0 ? Math.round((passCount / total) * 100) : 0;
+
+    if (!state.compliance[project]) {
+      state.compliance[project] = { latestRate: 0, latestVerdict: '', violations: [], history: [] };
+    }
+    const comp = state.compliance[project];
+    comp.latestRate = rate;
+    comp.latestVerdict = event.verdict || (failCount > 0 ? 'FAIL' : warnCount > 0 ? 'PARTIAL' : 'PASS');
+    comp.history.push(rate);
+    if (comp.history.length > MAX_HISTORY) {
+      comp.history.shift();
+    }
+
+    let violations = [];
+    if (event.violations) {
+      try {
+        violations = typeof event.violations === 'string' ? JSON.parse(event.violations) : event.violations;
+      } catch {
+        violations = [];
+      }
+    }
+    comp.violations = Array.isArray(violations) ? violations.map((v) => ({
+      title: String(v.title || ''),
+      rule: String(v.rule || ''),
+      severity: String(v.severity || 'medium'),
+      file: String(v.file || ''),
+      body: String(v.body || ''),
+      timestamp: normalized.timestamp
+    })) : [];
+  }
 
   persistState();
 };
@@ -99,11 +158,10 @@ const bootstrapFromJsonl = () => {
 };
 
 const watchJsonl = () => {
-  let lastSize = 0;
   try {
-    lastSize = fs.statSync(JSONL_PATH).size;
+    jsonlLastSize = fs.statSync(JSONL_PATH).size;
   } catch {
-    lastSize = 0;
+    jsonlLastSize = 0;
   }
 
   setInterval(() => {
@@ -114,16 +172,16 @@ const watchJsonl = () => {
       return;
     }
 
-    if (stat.size <= lastSize) {
+    if (stat.size <= jsonlLastSize) {
       return;
     }
 
-    const readLength = stat.size - lastSize;
+    const readLength = stat.size - jsonlLastSize;
     const fd = fs.openSync(JSONL_PATH, 'r');
     const buf = Buffer.alloc(readLength);
-    fs.readSync(fd, buf, 0, readLength, lastSize);
+    fs.readSync(fd, buf, 0, readLength, jsonlLastSize);
     fs.closeSync(fd);
-    lastSize = stat.size;
+    jsonlLastSize = stat.size;
 
     buf
       .toString('utf8')
@@ -146,6 +204,18 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/dashboard')) {
+    try {
+      const html = fs.readFileSync(DASHBOARD_HTML, 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+      res.end(html);
+    } catch {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('dashboard.html not found — place it at working/dashboard.html');
+    }
+    return;
+  }
+
   if (req.method === 'GET' && (url.pathname === '/healthz' || url.pathname === '/api/healthz')) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, uptime: process.uptime() }));
@@ -158,7 +228,8 @@ const server = http.createServer((req, res) => {
       startedAt: state.startedAt,
       eventCount: state.eventCount,
       projects: Object.values(state.projects),
-      events: state.events.slice(-100)
+      events: state.events.slice(-100),
+      compliance: state.compliance
     }));
     return;
   }
@@ -177,7 +248,9 @@ const server = http.createServer((req, res) => {
       ingestEvent(event, 'http');
 
       try {
-        fs.appendFileSync(JSONL_PATH, `${JSON.stringify(event)}\n`);
+        const line = `${JSON.stringify(event)}\n`;
+        fs.appendFileSync(JSONL_PATH, line);
+        jsonlLastSize += Buffer.byteLength(line);
       } catch {
         // Non-fatal append failure.
       }
