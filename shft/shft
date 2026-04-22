@@ -145,7 +145,8 @@ _validate_afk() {
     green "Validating AFK environment..."
     echo ""
     if [[ -f "$DOTFILES/bin/validate-env.sh" ]]; then
-        bash "$DOTFILES/bin/validate-env.sh" --afk || {
+        bash "$DOTFILES/bin/run-with-secrets.sh" \
+            bash "$DOTFILES/bin/validate-env.sh" --afk || {
             echo ""
             red "AFK validation failed. Fix the above before running shft afk."
             red "Run 'shft mint' to test GitHub App token minting."
@@ -609,6 +610,11 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
         echo "  shft validate          run AFK pre-flight checks"
         echo "  shft mint              test-mint a GitHub App token"
         echo "  shft prompt            show shft/prompt.md"
+        echo ""
+        echo "  Other"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  shft version            show version"
+        echo "  shft help               show this message"
         echo ""
         echo "  Typical workflow:"
         echo "    shft validate        verify credentials work"

@@ -79,7 +79,7 @@ Users who cloned before this ADR was written may have `skills/_vendor/` populate
 
 1. `rm -rf ~/dotfiles/skills/_vendor/` — remove the vendored directory from dotfiles
 2. Skills that were previously in `_vendor/` can be moved to `~/dotfiles/skills/_local/vendor/` to preserve access without polluting the tracked tree
-3. Run `bash ~/dotfiles/bin/bootstrap.sh` — this will re-sync consumer directories from the updated source
+3. Run `ctrl bootstrap` (or `bash ~/dotfiles/bin/bootstrap.sh`) — this will re-sync consumer directories from the updated source
 
 `bootstrap.sh` will be updated to print a migration notice if `skills/_vendor/` is detected on an existing clone.
 

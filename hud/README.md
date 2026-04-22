@@ -5,7 +5,7 @@ Real-time compliance visibility for ctrl+shft agent sessions — which rules loa
 ## Quick Start
 
 ```bash
-ctrl dashboard
+ctrl hud
 # Visit http://localhost:7823
 ```
 
@@ -15,20 +15,20 @@ Alternatively: `bash ~/dotfiles/bin/start-hud.sh`
 
 | Command                                             | What it does                         |
 | --------------------------------------------------- | ------------------------------------ |
-| `ctrl dashboard`                                    | Start daemon (default, background)   |
-| `ctrl dashboard stop`                               | Stop daemon                          |
-| `ctrl dashboard status`                             | Check if running, show PID and URL   |
-| `ctrl dashboard restart`                            | Stop + start                         |
-| `ctrl dashboard logs [-f]`                          | Show daemon log (add `-f` to follow) |
-| `ctrl dashboard events`                             | Recent events for current project    |
-| `ctrl dashboard violations`                         | Violations for current project       |
-| `ctrl dashboard state`                              | Full debug state dump (JSON)         |
-| `ctrl dashboard clear`                              | Clear events for a project           |
-| `ctrl dashboard open`                               | Open HUD in browser                  |
-| `ctrl dashboard url`                                | Print the HUD URL                    |
-| `bash ~/dotfiles/bin/start-hud.sh foreground`       | Run in foreground (no daemonization) |
+| `ctrl hud`                                          | Start daemon (default, background)   |
+| `ctrl hud stop`                                     | Stop daemon                          |
+| `ctrl hud status`                                   | Check if running, show PID and URL   |
+| `ctrl hud restart`                                  | Stop + start                         |
+| `ctrl hud logs [-f]`                                | Show daemon log (add `-f` to follow) |
+| `ctrl hud events`                                   | Recent events for current project    |
+| `ctrl hud violations`                               | Violations for current project       |
+| `ctrl hud state`                                    | Full debug state dump (JSON)         |
+| `ctrl hud clear`                                    | Clear events for a project           |
+| `ctrl hud open`                                     | Open HUD in browser                  |
+| `ctrl hud url`                                      | Print the HUD URL                    |
+| `ctrl hud --fg`                                     | Run in foreground (debug mode)       |
 
-Port defaults to `7823`. Override with `HUD_PORT=8080 ctrl dashboard`.
+Port defaults to `7823`. Override with `HUD_PORT=8080 ctrl hud`.
 
 ## Architecture
 

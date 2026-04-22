@@ -48,6 +48,6 @@ Edit the scripts in `~/dotfiles/hooks/` (source of truth). Changes propagate via
 
 1. Create `hooks/your-hook.sh` (receives JSON on stdin, exits 0 or 2)
 2. Add the hook entry to `hooks/settings-hooks.json`
-3. Re-run `bash ~/dotfiles/bin/bootstrap.sh` to merge the updated config
+3. Re-run `ctrl bootstrap` (or `bash ~/dotfiles/bin/bootstrap.sh`) to merge the updated config
 
 To disable a hook, remove its entry from `~/.claude/settings.json` (or from `settings-hooks.json` and re-run bootstrap with a fresh `~/.claude/settings.json`).

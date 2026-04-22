@@ -184,11 +184,11 @@ After clone + bootstrap, this is the exact secure AFK setup path:
    - `GITHUB_APP_ID`
    - `GITHUB_APP_INSTALLATION_ID`
    - `GITHUB_APP_PRIVATE_KEY_B64`
-7. Run `bash ~/dotfiles/bin/run-with-secrets.sh bash ~/dotfiles/bin/validate-env.sh --afk` and fix any hard-fail messages.
+7. Run `ctrl check --afk` and fix any hard-fail messages.
 8. Run token-safe mint verification (prints status/expiry/length, not the raw token):
 
    ```bash
-   bash ~/dotfiles/bin/verify-github-app-token.sh
+   ctrl verify-token
    ```
 
    Expected shape:
@@ -416,34 +416,38 @@ shft help     # autonomous execution commands
 | Command                 | What it does                                      |
 | ----------------------- | ------------------------------------------------- |
 | `ctrl check`            | Validate symlinks + environment                   |
+| `ctrl check --afk`      | AFK mode validation (jq, srt, GitHub App creds)   |
 | `ctrl bootstrap [opts]` | Run bootstrap (`--adopt`, `--minimal`)            |
 | `ctrl sync`             | `git pull` + bootstrap + reload shell             |
-| `ctrl status`           | Show contexts, client, symlinks, dashboard status |
+| `ctrl sync-settings`    | Merge managed VS Code settings (`--dry-run`, `--stable`) |
+| `ctrl status`           | Show contexts, client, symlinks, HUD status       |
 | `ctrl context`          | Detect and display active contexts                |
 
-#### ctrl dashboard (HUD)
+#### ctrl hud
 
-| Command                     | What it does                           |
+| Command                 | What it does                           |
 | --------------------------- | -------------------------------------- |
-| `ctrl dashboard`            | Start the compliance HUD               |
-| `ctrl dashboard stop`       | Stop the HUD daemon                    |
-| `ctrl dashboard status`     | Check if running                       |
-| `ctrl dashboard restart`    | Stop + start                           |
-| `ctrl dashboard logs [-f]`  | Show daemon log (add `-f` to follow)   |
-| `ctrl dashboard events`     | Show recent events for current project |
-| `ctrl dashboard violations` | Show violations for current project    |
-| `ctrl dashboard state`      | Full debug state dump (JSON)           |
-| `ctrl dashboard clear`      | Clear events for a project             |
-| `ctrl dashboard open`       | Open HUD in browser                    |
-| `ctrl dashboard url`        | Print the HUD URL                      |
+| `ctrl hud`              | Start the compliance HUD               |
+| `ctrl hud stop`         | Stop the HUD daemon                    |
+| `ctrl hud status`       | Check if running                       |
+| `ctrl hud restart`      | Stop + start                           |
+| `ctrl hud logs [-f]`    | Show daemon log (add `-f` to follow)   |
+| `ctrl hud events`       | Show recent events for current project |
+| `ctrl hud violations`   | Show violations for current project    |
+| `ctrl hud state`        | Full debug state dump (JSON)           |
+| `ctrl hud clear`        | Clear events for a project             |
+| `ctrl hud open`         | Open HUD in browser                    |
+| `ctrl hud url`          | Print the HUD URL                      |
+| `ctrl hud --fg`         | Run HUD in foreground (debug mode)     |
 
-#### ctrl client management
+#### ctrl client management & credentials
 
-| Command           | What it does                                             |
-| ----------------- | -------------------------------------------------------- |
-| `ctrl new-client` | Onboard a new client                                     |
-| `ctrl migrate`    | Read-only diagnostic for existing setups                 |
-| `ctrl uninstall`  | Safely remove all ctrl+shft symlinks + shell integration |
+| Command              | What it does                                             |
+| -------------------- | -------------------------------------------------------- |
+| `ctrl new-client`    | Onboard a new client                                     |
+| `ctrl migrate`       | Read-only diagnostic for existing setups                 |
+| `ctrl uninstall`     | Safely remove all ctrl+shft symlinks + shell integration |
+| `ctrl verify-token`  | Test-mint a GitHub App token                             |
 
 #### ctrl session analysis (requires [sheal](https://github.com/liwala/sheal))
 
@@ -454,6 +458,8 @@ shft help     # autonomous execution commands
 | `ctrl cost`           | Token cost dashboard                                    |
 | `ctrl ask "question"` | Search across session transcripts                       |
 | `ctrl learn`          | Manage session learnings                                |
+| `ctrl version`        | Show version                                            |
+| `ctrl help`           | Show all commands                                       |
 
 ### shft — autonomous execution
 
@@ -474,6 +480,8 @@ shft help     # autonomous execution commands
 | `shft validate`   | Run AFK pre-flight checks                       |
 | `shft mint`       | Test-mint a GitHub App token                    |
 | `shft prompt`     | Show `shft/prompt.md`                           |
+| `shft version`    | Show version                                    |
+| `shft help`       | Show all commands                               |
 
 ---
 
@@ -677,7 +685,7 @@ After bootstrap:
 ```bash
 $EDITOR ~/dotfiles/secrets/.env.agent       # non-sensitive config
 $EDITOR ~/dotfiles/secrets/.env.secrets     # API keys and tokens
-bash ~/dotfiles/bin/sync-settings.sh        # merge VS Code settings
+ctrl sync-settings                          # merge VS Code settings
 source ~/.bashrc
 ```
 
@@ -728,7 +736,7 @@ cd() { builtin cd "$@" && _load_context; }
 _load_context
 
 # 5. VS Code settings
-bash ~/dotfiles/bin/sync-settings.sh
+ctrl sync-settings
 ```
 
 </details>
@@ -779,7 +787,7 @@ bash ~/dotfiles/bin/sync-settings.sh
 ```bash
 cd ~/dotfiles && git pull
 ctrl bootstrap                        # re-validates, fixes stale symlinks
-bash ~/dotfiles/bin/sync-settings.sh  # optional: merge local VS Code/settings state
+ctrl sync-settings                    # optional: merge VS Code settings
 source ~/.bashrc
 ```
 
@@ -823,13 +831,13 @@ Project contributors: [arndvs/ctrlshft/graphs/contributors](https://github.com/a
 ## HUD — real-time agent observability
 
 <p align="center">
-  <img src="site/assets/hud-screenshot.png" alt="ctrl+shft HUD — real-time HUD showing project tabs, loaded rules and skills, session log, and compliance history" style="width: 100%; max-width: 1200px; height: auto; border: 1px solid #1e1e1e;" />
+  <img src="site/assets/ctrl-shft-hud.png" alt="ctrl+shft HUD — real-time HUD showing project tabs, loaded rules and skills, session log, and compliance history" style="width: 100%; max-width: 1200px; height: auto; border: 1px solid #1e1e1e;" />
 </p>
 
-The HUD is a live HUD that shows what your agent is actually doing — which rules loaded, which skills fired, which projects are being touched, and whether compliance checks pass or fail. It runs locally at `localhost:7823` and updates in real-time via WebSocket.
+The HUD is a live display that shows what your agent is actually doing — which rules loaded, which skills fired, which projects are being touched, and whether compliance checks pass or fail. It runs locally at `localhost:7823` and updates in real-time via WebSocket.
 
 ```bash
-ctrl dashboard
+ctrl hud
 # Visit http://localhost:7823
 ```
 
@@ -863,12 +871,12 @@ Cross-project tracking works automatically. When the agent reads files outside `
 
 ### Lifecycle commands
 
-| Command                  | What it does              |
+| Command                | What it does              |
 | ------------------------ | ------------------------- |
-| `ctrl dashboard`         | Start daemon (background) |
-| `ctrl dashboard stop`    | Stop daemon               |
-| `ctrl dashboard status`  | Check if running          |
-| `ctrl dashboard restart` | Stop + start              |
+| `ctrl hud`             | Start daemon (background) |
+| `ctrl hud stop`        | Stop daemon               |
+| `ctrl hud status`      | Check if running          |
+| `ctrl hud restart`     | Stop + start              |
 
 Port defaults to `7823`. Override with `HUD_PORT=8080`.
 
@@ -1056,7 +1064,7 @@ Symlinks survive pulls — your setup keeps working. The main thing that goes st
   - Re-run token-safe verification:
 
     ```bash
-    bash ~/dotfiles/bin/verify-github-app-token.sh
+    ctrl verify-token
     ```
 
 </details>

@@ -46,8 +46,8 @@ _require_sheal() {
     fi
 }
 
-# Check if HUD dashboard is running
-_dashboard_running() {
+# Check if HUD is running
+_hud_running() {
     local _pid_file="$DOTFILES/working/hud-daemon.pid"
     [[ -f "$_pid_file" ]] && kill -0 "$(cat "$_pid_file")" 2>/dev/null
 }
@@ -170,12 +170,12 @@ case "$CMD" in
             yellow "  Symlinks:  validate-symlinks.sh not found"
         fi
 
-        # Dashboard status (no `local` — we're at case scope, not in a function)
+        # HUD status (no `local` — we're at case scope, not in a function)
         _pid_file="$DOTFILES/working/hud-daemon.pid"
         if [[ -f "$_pid_file" ]] && kill -0 "$(cat "$_pid_file")" 2>/dev/null; then
-            green "  Dashboard: running — http://localhost:${DASHBOARD_PORT:-7823}"
+            green "  HUD: running — http://localhost:${HUD_PORT:-7823}"
         else
-            echo "  Dashboard: not running  (ctrl dashboard to start)"
+            echo "  HUD: not running  (ctrl hud to start)"
         fi
 
         # sheal presence
@@ -188,8 +188,8 @@ case "$CMD" in
         echo ""
         ;;
 
-    # ── dashboard ──────────────────────────────────────────────────────────────
-    dashboard|dash)
+    # ── hud ────────────────────────────────────────────────────────────────────
+    hud|dashboard|dash)
         if [[ ! -f "$DOTFILES/bin/start-hud.sh" ]]; then
             red "start-hud.sh not found. Run: ctrl bootstrap"
             exit 1
@@ -204,6 +204,7 @@ case "$CMD" in
             stop)       bash "$DOTFILES/bin/start-hud.sh" --stop "$@" ;;
             status)     bash "$DOTFILES/bin/start-hud.sh" --status "$@" ;;
             restart)    bash "$DOTFILES/bin/start-hud.sh" --restart "$@" ;;
+            --fg|foreground) bash "$DOTFILES/bin/start-hud.sh" --fg "$@" ;;
             log|logs)
                 _log="$DOTFILES/working/hud-daemon.log"
                 if [[ ! -f "$_log" ]]; then
@@ -215,7 +216,7 @@ case "$CMD" in
                 else
                     tail -50 "$_log"
                     echo ""
-                    dim "  Run 'ctrl dashboard logs -f' to follow"
+                    dim "  Run 'ctrl hud logs -f' to follow"
                 fi
                 ;;
             events)
@@ -224,7 +225,7 @@ case "$CMD" in
                 green "Recent events for project: $_project"
                 echo ""
                 # Prefer API when daemon is running, fall back to JSONL grep
-                if _dashboard_running && command -v curl &>/dev/null; then
+                if _hud_running && command -v curl &>/dev/null; then
                     curl -s "http://localhost:$_port/api/events/$_project?limit=20" 2>/dev/null \
                         | python3 -c "
 import json, sys
@@ -240,7 +241,7 @@ try:
         print(f'  {ts}  [{etype:5}]  {msg}')
 except:
     print('  Could not parse API response.')
-" 2>/dev/null || echo "  API query failed — try: ctrl dashboard logs"
+" 2>/dev/null || echo "  API query failed — try: ctrl hud logs"
                 else
                     _events_file="$DOTFILES/working/events.jsonl"
                     if [[ ! -f "$_events_file" ]]; then
@@ -262,7 +263,7 @@ except:
                         green "Events cleared for $_project."
                     fi
                     # Also dismiss from running daemon if active
-                    if _dashboard_running && command -v curl &>/dev/null; then
+                    if _hud_running && command -v curl &>/dev/null; then
                         _port="${HUD_PORT:-7823}"
                         curl -sX DELETE "http://localhost:$_port/api/projects/$_project" >/dev/null 2>&1 || true
                     fi
@@ -273,8 +274,8 @@ except:
             violations)
                 _project="${1:-${ACTIVE_PROJECT:-default}}"
                 _port="${HUD_PORT:-7823}"
-                if ! _dashboard_running; then
-                    yellow "Dashboard not running. Start it first: ctrl dashboard"
+                if ! _hud_running; then
+                    yellow "HUD not running. Start it first: ctrl hud"
                     exit 1
                 fi
                 green "Violations for project: $_project"
@@ -298,8 +299,8 @@ except:
                 ;;
             state)
                 _port="${HUD_PORT:-7823}"
-                if ! _dashboard_running; then
-                    yellow "Dashboard not running. Start it first: ctrl dashboard"
+                if ! _hud_running; then
+                    yellow "HUD not running. Start it first: ctrl hud"
                     exit 1
                 fi
                 curl -s "http://localhost:$_port/api/state" 2>/dev/null \
@@ -307,23 +308,45 @@ except:
                     || echo "  Could not fetch state."
                 ;;
             open)
-                _port="${DASHBOARD_PORT:-7823}"
+                _port="${HUD_PORT:-7823}"
                 _url="http://localhost:$_port"
-                if _dashboard_running; then
+                if _hud_running; then
                     _open_browser "$_url"
                 else
-                    yellow "Dashboard not running. Start it first: ctrl dashboard"
+                    yellow "HUD not running. Start it first: ctrl hud"
                 fi
                 ;;
             url)
-                echo "http://localhost:${DASHBOARD_PORT:-7823}"
+                echo "http://localhost:${HUD_PORT:-7823}"
                 ;;
             *)
-                red "Unknown dashboard subcommand: $_dash_cmd"
-                echo "  Usage: ctrl dashboard [start|stop|status|restart|logs|events|clear|violations|state|open|url]"
+                red "Unknown hud subcommand: $_dash_cmd"
+                echo "  Usage: ctrl hud [start|stop|status|restart|logs|events|clear|violations|state|open|url]"
                 exit 1
                 ;;
         esac
+        ;;
+
+    # ── sync-settings ──────────────────────────────────────────────────────────
+    sync-settings)
+        if [[ ! -f "$DOTFILES/bin/sync-settings.sh" ]]; then
+            red "sync-settings.sh not found."
+            exit 1
+        fi
+        green "ctrl sync-settings — merging managed VS Code settings"
+        echo ""
+        bash "$DOTFILES/bin/sync-settings.sh" "$@"
+        ;;
+
+    # ── verify-token ───────────────────────────────────────────────────────────
+    verify-token)
+        if [[ ! -f "$DOTFILES/bin/verify-github-app-token.sh" ]]; then
+            red "verify-github-app-token.sh not found."
+            exit 1
+        fi
+        green "ctrl verify-token — testing GitHub App token mint"
+        echo ""
+        bash "$DOTFILES/bin/verify-github-app-token.sh" "$@"
         ;;
 
     # ── migrate ────────────────────────────────────────────────────────────────
@@ -441,22 +464,28 @@ except:
         echo "  ctrl check              validate symlinks + env"
         echo "  ctrl bootstrap [opts]   run bootstrap.sh [--adopt] [--minimal]"
         echo "  ctrl sync               git pull + bootstrap + reload"
-        echo "  ctrl status             contexts, client, symlinks, dashboard"
+        echo "  ctrl status             contexts, client, symlinks, HUD"
         echo "  ctrl context            detect & show active contexts"
         echo ""
-        echo "  Dashboard (HUD)"
+        echo "  HUD"
         echo "  ──────────────────────────────────────────────────────────────"
-        echo "  ctrl dashboard          start the compliance dashboard"
-        echo "  ctrl dashboard stop     stop the dashboard"
-        echo "  ctrl dashboard status   check if running"
-        echo "  ctrl dashboard restart  restart the dashboard"
-        echo "  ctrl dashboard logs     show dashboard log (add -f to follow)"
-        echo "  ctrl dashboard events   show recent events for current project"
-        echo "  ctrl dashboard clear    clear events for a project"
-        echo "  ctrl dashboard violations  show violations for a project"
-        echo "  ctrl dashboard state    full debug state dump (JSON)"
-        echo "  ctrl dashboard open     open dashboard in browser"
-        echo "  ctrl dashboard url      print the dashboard URL"
+        echo "  ctrl hud               start the HUD"
+        echo "  ctrl hud stop          stop the HUD"
+        echo "  ctrl hud status        check if running"
+        echo "  ctrl hud restart       restart the HUD"
+        echo "  ctrl hud logs          show HUD log (add -f to follow)"
+        echo "  ctrl hud events        show recent events for current project"
+        echo "  ctrl hud clear         clear events for a project"
+        echo "  ctrl hud violations    show violations for a project"
+        echo "  ctrl hud state         full debug state dump (JSON)"
+        echo "  ctrl hud --fg          run HUD in foreground (debug mode)"
+        echo "  ctrl hud open          open HUD in browser"
+        echo "  ctrl hud url           print the HUD URL"
+        echo ""
+        echo "  Settings"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl sync-settings      merge managed VS Code settings"
+        echo "                          (--dry-run, --stable)"
         echo ""
         echo "  Client management"
         echo "  ──────────────────────────────────────────────────────────────"
@@ -464,11 +493,15 @@ except:
         echo "  ctrl migrate            read-only diagnostic for existing setups"
         echo "  ctrl uninstall          safely remove ctrl+shft"
         echo ""
+        echo "  Credentials"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl verify-token       test-mint a GitHub App token"
+        echo ""
         echo "  Session analysis (requires sheal)"
         echo "  ──────────────────────────────────────────────────────────────"
         echo "  ctrl retro              session retrospective → dotfiles"
         echo "  ctrl digest [opts]      categorized prompt digest"
-        echo "  ctrl cost [opts]        token cost dashboard"
+        echo "  ctrl cost [opts]        token cost report"
         echo "  ctrl ask \"question\"     search across session transcripts"
         echo "  ctrl learn [opts]       manage session learnings"
         echo ""
@@ -480,7 +513,7 @@ except:
         echo "  Options pass through to the underlying script."
         echo "  Example: ctrl bootstrap --adopt"
         echo "           ctrl check --ci"
-        echo "           ctrl dashboard logs -f"
+        echo "           ctrl hud logs -f"
         echo ""
         ;;
 

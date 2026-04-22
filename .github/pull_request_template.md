@@ -17,7 +17,7 @@
 - [ ] Skill files have valid front matter (`name` and `description`)
 - [ ] New skills are in their own folder under `skills/`
 - [ ] No sensitive data included (API keys, tokens, personal info)
-- [ ] `bash ~/dotfiles/bin/bootstrap.sh` runs cleanly after these changes
+- [ ] `ctrl bootstrap` (or `bash ~/dotfiles/bin/bootstrap.sh`) runs cleanly after these changes
 - [ ] PR description explains what changed and why
 
 ## For new skills — answer these

@@ -24,7 +24,7 @@ body:
       label: Steps to reproduce
       placeholder: |
         1. Clone repo to ~/dotfiles
-        2. Run bash ~/dotfiles/bin/bootstrap.sh
+        2. Run `ctrl bootstrap` (or `bash ~/dotfiles/bin/bootstrap.sh`)
         3. See error at step [3/9]
     validations:
       required: true
