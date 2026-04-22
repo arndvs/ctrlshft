@@ -3469,6 +3469,24 @@ source ~/.zshrc    # zsh</pre>
             });
         });
 
+        // TODO: uncomment when CLI ref copy buttons are tested
+        // document.querySelectorAll('.cli-ref-row').forEach(row => {
+        //     const code = row.querySelector('code');
+        //     if (!code) return;
+        //     const cmd = code.textContent;
+        //     const btn = document.createElement('button');
+        //     btn.className = 'cli-ref-copy';
+        //     btn.setAttribute('aria-label', 'Copy ' + cmd);
+        //     btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>';
+        //     btn.addEventListener('click', () => {
+        //         navigator.clipboard.writeText(cmd).then(() => {
+        //             btn.classList.add('copied');
+        //             setTimeout(() => btn.classList.remove('copied'), 1500);
+        //         });
+        //     });
+        //     row.appendChild(btn);
+        // });
+
         // Install accordion
         document.querySelectorAll('.install-step .step-header').forEach(header => {
             header.addEventListener('click', () => {
