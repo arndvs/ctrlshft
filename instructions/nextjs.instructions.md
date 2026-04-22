@@ -1,3 +1,6 @@
+---
+description: "Next.js conventions — App Router, Server Components, data fetching, proxy.ts, and breaking changes from v16+."
+---
 Output "Read NextJS instructions." to chat to acknowledge you read this file.
 
 # This is NOT the Next.js you know

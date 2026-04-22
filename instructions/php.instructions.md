@@ -1,3 +1,6 @@
+---
+description: "PHP and Laravel conventions — PHP 8.4+ syntax, OOP patterns, and strongly typed code."
+---
 Output "Read PHP instructions." to chat to acknowledge you read this file.
 
 <php>

@@ -1,3 +1,6 @@
+---
+description: "Universal agent rules — source of truth, coding standards, error handling, and safety constraints. Always relevant."
+---
 <!-- global.instructions.md — Universal agent rules loaded for every workspace.
      Referenced by CLAUDE.md via @~/dotfiles/global.instructions.md.
      Always loaded regardless of ACTIVE_CONTEXTS. -->

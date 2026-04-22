@@ -1,4 +1,5 @@
 ---
+description: "Safety rules for database migrations — backwards compatibility, rollback paths, and data preservation."
 paths:
   - "**/migrations/**"
   - "**/prisma/migrations/**"

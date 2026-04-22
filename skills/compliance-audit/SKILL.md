@@ -16,6 +16,7 @@ This skill exists because "Read X" confirms a rule was loaded into context — n
 ## When to invoke
 
 Auto-invoke after:
+
 - `/do-work` completes and produces a commit
 - `/tdd` completes a red-green-refactor cycle
 - `systematic-debugging` produces a fix
@@ -42,6 +43,7 @@ ls ~/dotfiles/rules/
 ```
 
 Produce a list:
+
 - Active instruction files (from `$ACTIVE_CONTEXTS`)
 - Rules files loaded (from `rules/` matching active contexts)
 - Skills explicitly invoked during the session
@@ -83,6 +85,7 @@ For each active rule and instruction file:
 ```
 
 Severity levels:
+
 - **Critical** — security, data integrity, or architectural violation
 - **High** — rule broken in a way that will cause bugs or rework
 - **Medium** — rule broken but consequence is quality/consistency, not correctness
@@ -118,6 +121,7 @@ Overall: PASS / FAIL / PARTIAL
 If a violation reveals that the active skill or rule doesn't clearly prohibit the behavior, update the skill inline.
 
 **Decision rule:**
+
 - Violation occurred AND the rule/skill was ambiguous → update the skill
 - Violation occurred AND the rule/skill was clear → flag as agent non-compliance, no skill update needed
 - No violation but rule was ambiguous → clarify the rule anyway
@@ -173,6 +177,7 @@ This log becomes the stress test baseline and the honest answer to "has this bee
 ## Output
 
 The audit produces:
+
 1. A rule-by-rule compliance report in the session transcript
 2. Any skill/rule updates applied inline
 3. A log entry in `working/compliance-log.md`

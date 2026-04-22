@@ -1,4 +1,5 @@
 ---
+description: "Workarounds for VS Code terminal limitations — heredoc corruption, long scripts, and background server processes."
 paths:
   - "**/bin/**"
   - "**/*.sh"

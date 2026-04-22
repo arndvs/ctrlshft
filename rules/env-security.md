@@ -1,4 +1,5 @@
 ---
+description: "Security rules for secrets, API keys, credentials, and .env files. Prevents hardcoding secrets in source code."
 paths:
   - "**/.env*"
   - "**/secrets/**"

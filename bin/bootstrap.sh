@@ -324,6 +324,48 @@ green "[9/13] Agent framework skills directory"
 mkdir -p "$AGENTS_DIR"
 ensure_symlink "$DOTFILES/skills" "$AGENTS_DIR/skills" "~/.agents/skills"
 
+# ── 9.5. CLI entry points (ctrl + shft) ──────────────────────────────────────
+echo
+green "[9.5/13] CLI entry points (ctrl + shft)"
+
+LOCAL_BIN="$HOME/.local/bin"
+mkdir -p "$LOCAL_BIN"
+
+# Make scripts executable
+chmod +x "$DOTFILES/bin/ctrl" 2>/dev/null || true
+chmod +x "$DOTFILES/shft/shft" 2>/dev/null || true
+
+_install_cli() {
+    local source="$1" target="$2" label="$3"
+    local _os="${OS:-$(detect_os)}"
+
+    if [[ ! -f "$source" ]]; then
+        yellow "  $label source not found at $source — skipping"
+        return
+    fi
+
+    if [[ -L "$target" ]]; then
+        local _current
+        _current=$(readlink "$target")
+        if [[ "$_current" == "$source" ]]; then
+            yellow "  $label already symlinked correctly — skipping"
+            return
+        fi
+    fi
+
+    if [[ "$_os" == "windows" ]]; then
+        cp "$source" "$target"
+        chmod +x "$target" 2>/dev/null || true
+        green "  Installed $label (Windows copy)"
+    else
+        ln -sf "$source" "$target"
+        green "  Symlinked $label"
+    fi
+}
+
+_install_cli "$DOTFILES/bin/ctrl" "$LOCAL_BIN/ctrl" "ctrl → ~/.local/bin/ctrl"
+_install_cli "$DOTFILES/shft/shft" "$LOCAL_BIN/shft" "shft → ~/.local/bin/shft"
+
 # ── 10. Wire up shell ─────────────────────────────────────────────────────────
 echo
 green "[10/13] Shell integration"
@@ -332,6 +374,9 @@ _SHELL_SNIPPET=$(cat << 'SHELLEOF'
 
 # ── dotfiles/load-secrets ──
 [[ -f ~/dotfiles/bin/load-secrets.sh ]] && source ~/dotfiles/bin/load-secrets.sh
+
+# ── dotfiles/cli (ctrl + shft) ──
+[[ -d "$HOME/.local/bin" ]] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH"
 
 # ── dotfiles/hud ──
 [[ -f ~/dotfiles/bin/write-hud-state.sh ]] && source ~/dotfiles/bin/write-hud-state.sh
@@ -486,5 +531,7 @@ else
 fi
 ((_step++))
 echo "  $_step. Verify:          echo \$GITHUB_USERNAME"
+((_step++))
+echo "  $_step. Try:             ctrl help, shft help"
 
 exit $_fail

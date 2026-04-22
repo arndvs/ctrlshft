@@ -13,7 +13,8 @@ This doc covers everything you need to contribute cleanly.
 git clone https://github.com/<you>/ctrlshft.git ~/dotfiles
 
 # 2. Bootstrap your local environment
-bash ~/dotfiles/bin/bootstrap.sh
+ctrl bootstrap
+# or: bash ~/dotfiles/bin/bootstrap.sh
 
 # 3. Create a branch
 git checkout -b skill/your-skill-name

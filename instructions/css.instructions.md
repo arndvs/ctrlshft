@@ -1,3 +1,6 @@
+---
+description: "CSS and styling conventions — Tailwind, design tokens, responsive patterns, and frontend UI rules."
+---
 Output "Read CSS instructions." to chat to acknowledge you read this file.
 
 <css>

@@ -1,0 +1,635 @@
+#!/usr/bin/env bash
+# shft — command-line interface for ctrl+shft autonomous execution
+#
+# Usage:
+#   shft <command> [options]
+#
+# Run 'shft help' for available commands.
+#
+# The worker side of ctrl+shft.
+#   ctrl = manage your environment (rules, config, symlinks)
+#   shft = manage your work queue (issues, loops, plan state)
+#
+# Installation:
+#   bootstrap.sh symlinks this to ~/.local/bin/shft automatically.
+#   Manual: ln -sf ~/dotfiles/shft/shft ~/.local/bin/shft
+#
+# Conventions:
+#   - Sources _lib.sh for green/yellow/red/detect_os
+#   - Uses mkdir lock (same pattern as afk.sh)
+#   - Works on macOS, Linux, WSL, Git Bash
+
+set -euo pipefail
+
+# ── Self-location ─────────────────────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)"
+DOTFILES="${DOTFILES:-$HOME/dotfiles}"
+SHFT_DIR="$DOTFILES/shft"
+
+if [[ ! -f "$DOTFILES/bin/_lib.sh" ]]; then
+    echo "  shft: cannot find $DOTFILES/bin/_lib.sh"
+    echo "  Run: bash ~/dotfiles/bin/bootstrap.sh"
+    exit 1
+fi
+
+source "$DOTFILES/bin/_lib.sh"
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+# dim is not in _lib.sh — define locally
+dim() { printf '\033[2m%s\033[0m\n' "$*"; }
+
+# ── Constants ─────────────────────────────────────────────────────────────────
+LOCK_DIR="/tmp/shft-afk.lock"
+WORKING_DIR="$DOTFILES/working"
+LOG_FILE="$WORKING_DIR/shft.log"
+STATE_FILE="$WORKING_DIR/shft-state.json"
+PLAN_FILE="$WORKING_DIR/plan.md"
+
+# ── Helper functions ──────────────────────────────────────────────────────────
+
+# Check if an AFK loop is currently running
+_shft_running() {
+    [[ -d "$LOCK_DIR" ]] && return 0 || return 1
+}
+
+# Get current shft state from state file
+_shft_state() {
+    local field="$1"
+    if [[ -f "$STATE_FILE" ]]; then
+        if command -v python3 &>/dev/null; then
+            python3 -c "
+import json, sys
+try:
+    d = json.load(open('$STATE_FILE'))
+    print(d.get('$field', ''))
+except: pass
+" 2>/dev/null
+        else
+            grep -o "\"$field\":[^,}]*" "$STATE_FILE" 2>/dev/null | cut -d: -f2 | tr -d ' "' || true
+        fi
+    fi
+}
+
+# Write a field to state file
+_shft_state_set() {
+    local field="$1" value="$2"
+    mkdir -p "$WORKING_DIR"
+    local ts
+    ts="$(date -u +%Y-%m-%dT%H:%M:%S)Z"
+    if command -v python3 &>/dev/null; then
+        python3 - "$STATE_FILE" "$field" "$value" <<'PYEOF'
+import json, os, sys, datetime
+path, field, value = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    d = json.load(open(path)) if os.path.exists(path) else {}
+except Exception:
+    d = {}
+d[field] = value
+d['updated_at'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+json.dump(d, open(path, 'w'), indent=2)
+PYEOF
+        true  # ignore python failures
+    elif command -v jq &>/dev/null && [[ -f "$STATE_FILE" ]]; then
+        jq --arg f "$field" --arg v "$value" --arg t "$ts" \
+            '.[$f] = $v | .updated_at = $t' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+            && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+    elif command -v jq &>/dev/null; then
+        jq -n --arg f "$field" --arg v "$value" --arg t "$ts" \
+            '{($f): $v, updated_at: $t}' > "$STATE_FILE"
+    else
+        # Minimal bash fallback — append-only JSON
+        printf '{"%%s": "%%s", "updated_at": "%%s"}\n' "$field" "$value" "$ts" > "$STATE_FILE"
+    fi
+}
+
+# Require gh CLI
+_require_gh() {
+    if ! command -v gh &>/dev/null; then
+        red "GitHub CLI (gh) not found."
+        echo "  Install: https://cli.github.com"
+        exit 1
+    fi
+    if ! gh auth status &>/dev/null; then
+        red "GitHub CLI not authenticated."
+        echo "  Run: gh auth login"
+        exit 1
+    fi
+}
+
+# Require srt CLI (for AFK)
+_require_srt() {
+    if ! command -v srt &>/dev/null; then
+        red "srt (Anthropic sandbox runtime) not found."
+        echo "  Required for AFK mode."
+        echo "  See: https://docs.anthropic.com/en/docs/claude-code"
+        exit 1
+    fi
+}
+
+# Require docker (for AFK)
+_require_docker() {
+    if ! command -v docker &>/dev/null; then
+        red "Docker not found. Required for AFK mode."
+        echo "  Install: https://docs.docker.com/get-docker/"
+        exit 1
+    fi
+    if ! docker info &>/dev/null; then
+        red "Docker daemon is not running."
+        echo "  Start Docker Desktop and try again."
+        exit 1
+    fi
+}
+
+# Validate AFK environment before running
+_validate_afk() {
+    green "Validating AFK environment..."
+    echo ""
+    if [[ -f "$DOTFILES/bin/validate-env.sh" ]]; then
+        bash "$DOTFILES/bin/validate-env.sh" --afk || {
+            echo ""
+            red "AFK validation failed. Fix the above before running shft afk."
+            red "Run 'shft mint' to test GitHub App token minting."
+            exit 1
+        }
+    else
+        yellow "validate-env.sh not found — skipping validation"
+        yellow "Run 'ctrl bootstrap' to install validation scripts"
+    fi
+    echo ""
+}
+
+# ── Subcommand routing ────────────────────────────────────────────────────────
+CMD="${1:-help}"
+shift 2>/dev/null || true
+
+case "$CMD" in
+
+    # ── run (HITL) ─────────────────────────────────────────────────────────────
+    run|hitl|once)
+        if [[ ! -f "$SHFT_DIR/once.sh" ]]; then
+            red "shft/once.sh not found at $SHFT_DIR/once.sh"
+            exit 1
+        fi
+
+        if ! command -v claude &>/dev/null; then
+            red "Claude Code CLI not found. Install it first."
+            exit 1
+        fi
+
+        _require_gh
+
+        green "shft run — HITL mode (you watch, you approve)"
+        echo ""
+        echo "  Claude will propose changes with --permission-mode accept-edits."
+        echo "  You review and approve each edit in real time."
+        echo ""
+
+        _shft_state_set "mode" "hitl"
+        _shft_state_set "started_at" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+        bash "$SHFT_DIR/once.sh" "$@"
+        ;;
+
+    # ── afk ────────────────────────────────────────────────────────────────────
+    afk)
+        if [[ ! -f "$SHFT_DIR/afk.sh" ]]; then
+            red "shft/afk.sh not found at $SHFT_DIR/afk.sh"
+            exit 1
+        fi
+
+        # Check already running
+        if _shft_running; then
+            red "An AFK loop is already running."
+            echo ""
+            echo "  Check status:  shft status"
+            echo "  Stop it:       shft stop"
+            exit 1
+        fi
+
+        # Parse iteration count (first non-flag arg, or default)
+        _iterations=5
+        _force=false
+        for _arg in "$@"; do
+            case "$_arg" in
+                --force|-f) _force=true ;;
+                [0-9]*)     _iterations="$_arg" ;;
+            esac
+        done
+
+        _require_gh
+        _require_srt
+        _require_docker
+
+        # Validate unless --force
+        if [[ "$_force" == false ]]; then
+            _validate_afk
+        else
+            yellow "Skipping validation (--force)"
+            echo ""
+        fi
+
+        green "shft afk — AFK mode ($_iterations iterations max)"
+        echo ""
+        echo "  Claude runs in a Docker sandbox."
+        echo "  Picks issues, implements, commits, closes, repeats."
+        echo "  Exits when backlog is empty or $_iterations iterations reached."
+        echo ""
+        echo "  Monitor:  shft status"
+        echo "  Stop:     shft stop"
+        echo "  Log:      shft log"
+        echo ""
+
+        _shft_state_set "mode" "afk"
+        _shft_state_set "max_iterations" "$_iterations"
+        _shft_state_set "started_at" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+        bash "$SHFT_DIR/afk.sh" "$_iterations"
+        ;;
+
+    # ── status ─────────────────────────────────────────────────────────────────
+    status)
+        echo ""
+        echo "  shft status"
+        echo "  ─────────────────────────────────────────────────────────"
+        echo ""
+
+        # No `local` here — we're at case scope, not inside a function
+        if _shft_running; then
+            green "  Loop:      running (AFK)"
+            echo "  Lock:      $LOCK_DIR"
+
+            _started=$(_shft_state "started_at")
+            [[ -n "$_started" ]] && echo "  Started:   $_started"
+
+            _max=$(_shft_state "max_iterations")
+            [[ -n "$_max" ]] && echo "  Max iters: $_max"
+        else
+            echo "  Loop:      not running"
+        fi
+
+        echo ""
+
+        # Current open issues
+        if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
+            _open=$(gh issue list --state open --json number --jq 'length' 2>/dev/null || echo "?")
+            echo "  Open issues:  $_open"
+
+            _assigned=$(gh issue list --state open --assignee @me --json number --jq 'length' 2>/dev/null || echo "?")
+            echo "  In progress:  $_assigned (assigned to you)"
+        else
+            yellow "  gh not authenticated — run: gh auth login"
+        fi
+
+        echo ""
+
+        # Recent log tail
+        if [[ -f "$LOG_FILE" ]]; then
+            echo "  Last log entry:"
+            tail -3 "$LOG_FILE" | sed 's/^/    /'
+            echo ""
+        fi
+
+        # Plan state
+        if [[ -f "$PLAN_FILE" ]]; then
+            _total=$(grep -c '^\- \[' "$PLAN_FILE" 2>/dev/null || echo 0)
+            _done=$(grep -c '^\- \[x\]' "$PLAN_FILE" 2>/dev/null || echo 0)
+            echo "  Plan:      $_done/$_total items complete"
+            echo "             (shft plan to view)"
+        fi
+
+        echo ""
+        ;;
+
+    # ── stop ───────────────────────────────────────────────────────────────────
+    stop)
+        if ! _shft_running; then
+            yellow "No AFK loop is currently running."
+            exit 0
+        fi
+
+        yellow "Stopping AFK loop..."
+        echo ""
+        echo "  The current iteration will complete before stopping."
+        echo "  The loop checks for the lock on each iteration boundary."
+        echo ""
+
+        rmdir "$LOCK_DIR" 2>/dev/null && green "Lock removed — loop will stop after current iteration." \
+            || red "Could not remove lock at $LOCK_DIR — may need manual cleanup."
+        ;;
+
+    # ── log ────────────────────────────────────────────────────────────────────
+    log|logs)
+        if [[ ! -f "$LOG_FILE" ]]; then
+            yellow "No log file found at $LOG_FILE"
+            echo "  Logs appear after the first shft run."
+            exit 0
+        fi
+
+        if [[ "${1:-}" == "-f" ]] || [[ "${1:-}" == "--follow" ]]; then
+            green "Following shft log (Ctrl+C to stop):"
+            echo ""
+            tail -f "$LOG_FILE"
+        else
+            green "shft log (last 50 lines):"
+            echo ""
+            tail -50 "$LOG_FILE"
+            echo ""
+            dim "  Run 'shft log -f' to follow in real time"
+        fi
+        ;;
+
+    # ── issues ─────────────────────────────────────────────────────────────────
+    issues|queue)
+        _require_gh
+
+        green "shft queue — open issues in priority order"
+        echo ""
+        echo "  Priority: bugs → infra → tracer bullets → polish → refactors"
+        echo ""
+
+        gh issue list \
+            --state open \
+            --json number,title,labels,assignees,milestone \
+            --limit 50 \
+            2>/dev/null | python3 -c "
+import json, sys
+
+issues = json.load(sys.stdin)
+if not issues:
+    print('  No open issues.')
+    sys.exit(0)
+
+def priority(issue):
+    labels = [l['name'].lower() for l in issue.get('labels', [])]
+    if any('bug' in l or 'critical' in l for l in labels): return 0
+    if any('infra' in l or 'infrastructure' in l or 'dx' in l for l in labels): return 1
+    if any('tracer' in l or 'slice' in l for l in labels): return 2
+    if any('polish' in l or 'quick' in l for l in labels): return 3
+    if any('refactor' in l for l in labels): return 4
+    return 5
+
+priority_labels = ['bug/critical', 'infra', 'tracer bullet', 'polish', 'refactor', 'unlabeled']
+sorted_issues = sorted(issues, key=priority)
+current_priority = -1
+for issue in sorted_issues:
+    p = priority(issue)
+    if p != current_priority:
+        current_priority = p
+        label = priority_labels[min(p, 5)]
+        print(f'  ── {label} ──')
+    assignees = issue.get('assignees', [])
+    assigned = ' [assigned]' if assignees else ''
+    afk_label = ''
+    for l in issue.get('labels', []):
+        if 'afk' in l['name'].lower(): afk_label = ' [AFK]'
+        if 'hitl' in l['name'].lower(): afk_label = ' [HITL]'
+    print(f\"  #{issue['number']:4}  {issue['title'][:60]}{afk_label}{assigned}\")
+" 2>/dev/null || {
+            gh issue list --state open --limit 20
+        }
+
+        echo ""
+        ;;
+
+    # ── next ───────────────────────────────────────────────────────────────────
+    next)
+        _require_gh
+
+        green "shft next — the issue shft would pick up first"
+        echo ""
+
+        gh issue list \
+            --state open \
+            --json number,title,labels,body \
+            --limit 20 \
+            2>/dev/null | python3 -c "
+import json, sys
+
+issues = json.load(sys.stdin)
+if not issues:
+    print('  No open issues.')
+    sys.exit(0)
+
+def priority(issue):
+    labels = [l['name'].lower() for l in issue.get('labels', [])]
+    if any('bug' in l or 'critical' in l for l in labels): return 0
+    if any('infra' in l for l in labels): return 1
+    if any('tracer' in l for l in labels): return 2
+    if any('polish' in l for l in labels): return 3
+    if any('refactor' in l for l in labels): return 4
+    return 5
+
+issue = sorted(issues, key=priority)[0]
+labels = [l['name'] for l in issue.get('labels', [])]
+body_preview = (issue.get('body') or '')[:200].replace('\n', ' ')
+
+print(f\"  #{issue['number']} — {issue['title']}\")
+print(f\"  Labels: {', '.join(labels) if labels else 'none'}\")
+print()
+if body_preview:
+    print(f\"  {body_preview}...\")
+    print()
+print(f\"  View: gh issue view {issue['number']}\")
+" 2>/dev/null || {
+            gh issue list --state open --limit 1
+        }
+
+        echo ""
+        ;;
+
+    # ── done ───────────────────────────────────────────────────────────────────
+    done|recent)
+        _require_gh
+
+        _limit="${1:-10}"
+
+        green "shft done — recently closed issues"
+        echo ""
+
+        gh issue list \
+            --state closed \
+            --limit "$_limit" \
+            --json number,title,closedAt,labels \
+            2>/dev/null | python3 -c "
+import json, sys
+
+issues = json.load(sys.stdin)
+if not issues:
+    print('  No closed issues.')
+    sys.exit(0)
+
+for issue in issues:
+    closed = issue.get('closedAt', '')[:10]
+    labels = [l['name'] for l in issue.get('labels', [])]
+    label_str = f\" [{', '.join(labels)}]\" if labels else ''
+    print(f\"  {closed}  #{issue['number']:4}  {issue['title'][:55]}{label_str}\")
+" 2>/dev/null || {
+            gh issue list --state closed --limit "$_limit"
+        }
+
+        echo ""
+        ;;
+
+    # ── plan ───────────────────────────────────────────────────────────────────
+    plan)
+        _sub="${1:-view}"
+        shift 2>/dev/null || true
+
+        case "$_sub" in
+            view|show|"")
+                if [[ ! -f "$PLAN_FILE" ]]; then
+                    yellow "No plan file found at $PLAN_FILE"
+                    echo ""
+                    echo "  Create one: shft plan edit"
+                    echo "  Or save the working plan from your last session."
+                    exit 0
+                fi
+                echo ""
+                cat "$PLAN_FILE"
+                echo ""
+                ;;
+            edit|update)
+                mkdir -p "$WORKING_DIR"
+                "${EDITOR:-vi}" "$PLAN_FILE"
+                ;;
+            clear)
+                if [[ -f "$PLAN_FILE" ]]; then
+                    read -rp "  Clear working/plan.md? [y/N]: " _confirm
+                    [[ "$_confirm" =~ ^[Yy]$ ]] && rm "$PLAN_FILE" && green "Plan cleared." || echo "Cancelled."
+                else
+                    yellow "No plan file to clear."
+                fi
+                ;;
+            *)
+                red "Unknown plan subcommand: $_sub"
+                echo "  Usage: shft plan [view|edit|clear]"
+                exit 1
+                ;;
+        esac
+        ;;
+
+    # ── prompt ─────────────────────────────────────────────────────────────────
+    prompt)
+        if [[ ! -f "$SHFT_DIR/prompt.md" ]]; then
+            red "shft/prompt.md not found at $SHFT_DIR/prompt.md"
+            exit 1
+        fi
+        echo ""
+        cat "$SHFT_DIR/prompt.md"
+        echo ""
+        ;;
+
+    # ── validate ───────────────────────────────────────────────────────────────
+    validate|check)
+        _validate_afk
+        green "AFK environment validated. Ready to run: shft afk"
+        ;;
+
+    # ── mint ───────────────────────────────────────────────────────────────────
+    mint)
+        if [[ ! -f "$DOTFILES/bin/verify-github-app-token.sh" ]]; then
+            red "verify-github-app-token.sh not found."
+            echo "  Run: ctrl bootstrap"
+            exit 1
+        fi
+
+        green "shft mint — testing GitHub App token minting"
+        echo ""
+        bash "$DOTFILES/bin/run-with-secrets.sh" \
+            bash "$DOTFILES/bin/verify-github-app-token.sh"
+        ;;
+
+    # ── context ────────────────────────────────────────────────────────────────
+    context|ctx)
+        _require_gh
+
+        green "shft context — what the agent will see"
+        echo ""
+
+        echo "  Active contexts:  ${ACTIVE_CONTEXTS:-none}"
+        echo "  Working dir:      $(pwd)"
+        echo ""
+
+        echo "  ── Open issues (what shft will pick from) ──"
+        gh issue list --state open --limit 5 --json number,title \
+            2>/dev/null | python3 -c "
+import json, sys
+issues = json.load(sys.stdin)
+for i in issues: print(f\"  #{i['number']}  {i['title']}\")
+print(f'  ... ({len(issues)} shown, use shft issues for full list)')
+" 2>/dev/null || gh issue list --state open --limit 5
+
+        echo ""
+        echo "  ── Last 5 commits ──"
+        git log --oneline -5 2>/dev/null | sed 's/^/  /' || echo "  (not a git repo)"
+
+        echo ""
+        echo "  ── Prompt ──"
+        echo "  shft/prompt.md (shft prompt to view)"
+        echo ""
+        ;;
+
+    # ── help ───────────────────────────────────────────────────────────────────
+    help|--help|-h)
+        echo ""
+        echo "  shft — ctrl+shft autonomous execution"
+        echo "  ctrlshft.dev · github.com/arndvs/ctrlshft"
+        echo ""
+        echo "  Usage: shft <command> [options]"
+        echo ""
+        echo "  Running"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  shft run               HITL — runs once while you watch"
+        echo "  shft afk               AFK  — autonomous loop (default 5 iterations)"
+        echo "  shft afk <n>           AFK  — specify iteration count"
+        echo "  shft afk --force       AFK  — skip pre-flight validation"
+        echo ""
+        echo "  Monitoring"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  shft status            is a loop running? how many issues open?"
+        echo "  shft stop              stop a running AFK loop after current iteration"
+        echo "  shft log               show last 50 lines of shft log"
+        echo "  shft log -f            follow log in real time"
+        echo ""
+        echo "  Work queue"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  shft issues            list open issues in priority order"
+        echo "  shft next              show the single next issue shft would pick"
+        echo "  shft done [n]          show last n closed issues (default 10)"
+        echo "  shft context           show what the agent will see when it starts"
+        echo ""
+        echo "  Plan"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  shft plan              view working/plan.md"
+        echo "  shft plan edit         open plan in \$EDITOR"
+        echo "  shft plan clear        clear the plan file"
+        echo ""
+        echo "  Credentials & config"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  shft validate          run AFK pre-flight checks"
+        echo "  shft mint              test-mint a GitHub App token"
+        echo "  shft prompt            show shft/prompt.md"
+        echo ""
+        echo "  Typical workflow:"
+        echo "    shft validate        verify credentials work"
+        echo "    shft issues          review the backlog"
+        echo "    shft run             test with HITL first"
+        echo "    shft afk 1           one AFK iteration, verify output"
+        echo "    shft afk 5           run the full loop"
+        echo ""
+        ;;
+
+    # ── version ────────────────────────────────────────────────────────────────
+    version|--version|-v)
+        echo "shft v0.1.0 (ctrl+shft)"
+        ;;
+
+    # ── unknown ────────────────────────────────────────────────────────────────
+    *)
+        red "Unknown command: $CMD"
+        echo ""
+        echo "  Run 'shft help' for available commands."
+        exit 1
+        ;;
+
+esac

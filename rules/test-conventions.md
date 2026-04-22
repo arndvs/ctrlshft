@@ -1,4 +1,5 @@
 ---
+description: "Test conventions — describe/it structure, assertion patterns, mock boundaries, and async testing rules."
 paths:
   - "**/*.test.{ts,tsx,js,jsx}"
   - "**/*.spec.{ts,tsx,js,jsx}"

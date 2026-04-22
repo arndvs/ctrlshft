@@ -9,8 +9,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 Slice 7.1: HUD event producers, daemon upgrade, compliance polish.
+Slice 7.2: CLI entry points (`ctrl` & `shft`).
 
 ### Added
+- `bin/ctrl` — CLI entry point for infrastructure management (`ctrl check`, `ctrl bootstrap`, `ctrl dashboard`, `ctrl status`, etc.)
+- `shft/shft` — CLI entry point for autonomous execution (`shft run`, `shft afk`, `shft issues`, `shft plan`, etc.)
+- `ctrl dashboard violations` — show violations via HUD API
+- `ctrl dashboard state` — full debug state dump via HUD API
+- `ctrl dashboard events` now queries HUD API when daemon is running (JSONL fallback when not)
+- `ctrl dashboard clear` now dismisses project from running daemon in addition to JSONL cleanup
+- Bootstrap step [9.5/13]: symlinks `ctrl` and `shft` to `~/.local/bin/`, adds PATH integration
 - `bin/ctrlshft-claude` — event-producing wrapper that parses Claude stdout for compliance/context events
 - WebSocket server (ws://localhost:7822) for real-time HUD event broadcasts
 - SQLite persistence via optional `better-sqlite3` (falls back to in-memory + JSONL)
@@ -19,6 +27,13 @@ Slice 7.1: HUD event producers, daemon upgrade, compliance polish.
 - `cspell.json` — initial cSpell configuration
 
 ### Changed
+- `bin/bootstrap.sh` step [9.5/13]: symlinks both CLIs to `~/.local/bin/` with PATH integration
+- `bin/validate-symlinks.sh` now checks `~/.local/bin/ctrl` and `~/.local/bin/shft`
+- `bin/uninstall.sh` removes CLI symlinks alongside other cleanup
+- README: added CLI reference section with full command tables for `ctrl` and `shft`
+- README: updated all user-facing `bash ~/dotfiles/bin/...` invocations to show `ctrl`/`shft` first
+- README: updated HUD lifecycle commands table, FAQ, Troubleshooting to use CLI syntax
+- CHANGELOG: added CLI entries
 - `bin/hud-daemon.js` upgraded from HTTP polling to WebSocket + adaptive polling fallback
 - `hud/index.html` upgraded with project tabs, file inventory sidebar, session management
 - `bin/detect-context.sh` now emits context events to HUD pipeline on every `cd()`

@@ -1,3 +1,6 @@
+---
+description: "Sanity CMS conventions — v5 schema design, GROQ queries, TypeGen, Visual Editing, and Studio configuration."
+---
 Output "Read Sanity instructions." to chat to acknowledge you read this file.
 
 ## Sanity v5 Version Awareness

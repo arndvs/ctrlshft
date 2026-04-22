@@ -1,0 +1,495 @@
+#!/usr/bin/env bash
+# ctrl — command-line interface for ctrl+shft
+#
+# Usage:
+#   ctrl <command> [options]
+#
+# Run 'ctrl help' for available commands.
+#
+# Installation:
+#   bootstrap.sh symlinks this to ~/.local/bin/ctrl automatically.
+#   Manual: ln -sf ~/dotfiles/bin/ctrl ~/.local/bin/ctrl
+#
+# Follows repo conventions:
+#   - Sources _lib.sh for green/yellow/red/detect_os
+#   - set -euo pipefail
+#   - Works on macOS, Linux, WSL, Git Bash
+
+set -euo pipefail
+
+# ── Bootstrap self-location ───────────────────────────────────────────────────
+# Works whether invoked as a symlink from ~/.local/bin/ctrl or directly
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)"
+DOTFILES="${DOTFILES:-$HOME/dotfiles}"
+
+# Verify we can find _lib.sh — if not, the install is broken
+if [[ ! -f "$DOTFILES/bin/_lib.sh" ]]; then
+    echo "  ctrl: cannot find $DOTFILES/bin/_lib.sh"
+    echo "  Is ~/dotfiles set up correctly? Run: bash ~/dotfiles/bin/bootstrap.sh"
+    exit 1
+fi
+
+source "$DOTFILES/bin/_lib.sh"
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+# dim is not in _lib.sh — define locally
+dim() { printf '\033[2m%s\033[0m\n' "$*"; }
+
+# Graceful degradation when sheal is not installed
+_require_sheal() {
+    if ! command -v sheal &>/dev/null; then
+        red "sheal is not installed."
+        echo ""
+        echo "  Install: npm install -g @liwala/sheal"
+        echo "  Then:    ctrl $CMD"
+        exit 1
+    fi
+}
+
+# Check if HUD dashboard is running
+_dashboard_running() {
+    local _pid_file="$DOTFILES/working/hud-daemon.pid"
+    [[ -f "$_pid_file" ]] && kill -0 "$(cat "$_pid_file")" 2>/dev/null
+}
+
+# Open URL in browser (cross-platform)
+_open_browser() {
+    local url="$1"
+    case "$(detect_os)" in
+        macos)   open "$url" ;;
+        windows) start "$url" 2>/dev/null || cmd.exe /c start "$url" 2>/dev/null ;;
+        *)       xdg-open "$url" 2>/dev/null || echo "  Open: $url" ;;
+    esac
+}
+
+# ── Version ───────────────────────────────────────────────────────────────────
+CTRL_VERSION="0.1.0"
+
+# ── Subcommand routing ────────────────────────────────────────────────────────
+CMD="${1:-help}"
+shift 2>/dev/null || true
+
+case "$CMD" in
+
+    # ── check ──────────────────────────────────────────────────────────────────
+    check)
+        green "ctrl check — validating ctrl+shft installation"
+        echo ""
+
+        _fail=0
+
+        # Symlink integrity
+        if [[ -f "$DOTFILES/bin/validate-symlinks.sh" ]]; then
+            bash "$DOTFILES/bin/validate-symlinks.sh" "$@" || _fail=1
+        else
+            yellow "  validate-symlinks.sh not found — run: ctrl bootstrap"
+            _fail=1
+        fi
+
+        echo ""
+
+        # Env validation
+        if [[ -f "$DOTFILES/bin/validate-env.sh" ]]; then
+            bash "$DOTFILES/bin/validate-env.sh" "$@" || _fail=1
+        else
+            yellow "  validate-env.sh not found"
+        fi
+
+        echo ""
+        if [[ "$_fail" -eq 0 ]]; then
+            green "All checks passed."
+        else
+            red "Some checks failed. See above for details."
+            exit 1
+        fi
+        ;;
+
+    # ── bootstrap ──────────────────────────────────────────────────────────────
+    bootstrap|boot)
+        green "ctrl bootstrap — running bootstrap.sh $*"
+        echo ""
+        bash "$DOTFILES/bin/bootstrap.sh" "$@"
+        ;;
+
+    # ── sync ───────────────────────────────────────────────────────────────────
+    sync)
+        green "ctrl sync — pulling latest + re-bootstrapping"
+        echo ""
+
+        # Pull dotfiles
+        cd "$DOTFILES"
+        if git rev-parse --git-dir > /dev/null 2>&1; then
+            green "Pulling ~/dotfiles..."
+            git pull
+        else
+            yellow "~/dotfiles is not a git repo — skipping pull"
+        fi
+
+        echo ""
+
+        # Re-bootstrap
+        green "Re-bootstrapping..."
+        bash "$DOTFILES/bin/bootstrap.sh"
+
+        echo ""
+
+        # Reload shell
+        green "Done. Reload your shell to pick up any changes:"
+        echo ""
+        echo "  source ~/.bashrc   # bash"
+        echo "  source ~/.zshrc    # zsh"
+        ;;
+
+    # ── status ─────────────────────────────────────────────────────────────────
+    status)
+        echo ""
+        echo "  ctrl+shft status"
+        echo "  ─────────────────────────────────────────────────────────"
+        echo ""
+
+        # Version
+        echo "  Version:   $CTRL_VERSION"
+        echo "  Dotfiles:  $DOTFILES"
+        echo ""
+
+        # Active context
+        echo "  Contexts:  ${ACTIVE_CONTEXTS:-none}"
+        echo "  Client:    ${ACTIVE_CLIENT:-none}"
+        echo "  Project:   ${ACTIVE_PROJECT:-none}"
+        echo "  IDE:       ${VSCODE_IPC_HOOK:+vscode}${CURSOR_SESSION_ID:+cursor}${VSCODE_IPC_HOOK:-${CURSOR_SESSION_ID:-terminal}}"
+        echo ""
+
+        # Quick symlink check (silent, just show result)
+        if [[ -f "$DOTFILES/bin/validate-symlinks.sh" ]]; then
+            if bash "$DOTFILES/bin/validate-symlinks.sh" --ci > /dev/null 2>&1; then
+                green "  Symlinks:  all correct"
+            else
+                red   "  Symlinks:  issues detected — run: ctrl check"
+            fi
+        else
+            yellow "  Symlinks:  validate-symlinks.sh not found"
+        fi
+
+        # Dashboard status (no `local` — we're at case scope, not in a function)
+        _pid_file="$DOTFILES/working/hud-daemon.pid"
+        if [[ -f "$_pid_file" ]] && kill -0 "$(cat "$_pid_file")" 2>/dev/null; then
+            green "  Dashboard: running — http://localhost:${DASHBOARD_PORT:-7823}"
+        else
+            echo "  Dashboard: not running  (ctrl dashboard to start)"
+        fi
+
+        # sheal presence
+        if command -v sheal &>/dev/null; then
+            green "  sheal:     installed $(sheal --version 2>/dev/null || echo '')"
+        else
+            yellow "  sheal:     not installed  (npm install -g @liwala/sheal)"
+        fi
+
+        echo ""
+        ;;
+
+    # ── dashboard ──────────────────────────────────────────────────────────────
+    dashboard|dash)
+        if [[ ! -f "$DOTFILES/bin/start-hud.sh" ]]; then
+            red "start-hud.sh not found. Run: ctrl bootstrap"
+            exit 1
+        fi
+
+        # Route sub-subcommands
+        _dash_cmd="${1:-start}"
+        shift 2>/dev/null || true
+
+        case "$_dash_cmd" in
+            start|"")   bash "$DOTFILES/bin/start-hud.sh" "$@" ;;
+            stop)       bash "$DOTFILES/bin/start-hud.sh" --stop "$@" ;;
+            status)     bash "$DOTFILES/bin/start-hud.sh" --status "$@" ;;
+            restart)    bash "$DOTFILES/bin/start-hud.sh" --restart "$@" ;;
+            log|logs)
+                _log="$DOTFILES/working/hud-daemon.log"
+                if [[ ! -f "$_log" ]]; then
+                    yellow "No log file found at $_log"
+                    exit 0
+                fi
+                if [[ "${1:-}" == "-f" ]] || [[ "${1:-}" == "--follow" ]]; then
+                    tail -f "$_log"
+                else
+                    tail -50 "$_log"
+                    echo ""
+                    dim "  Run 'ctrl dashboard logs -f' to follow"
+                fi
+                ;;
+            events)
+                _project="${1:-${ACTIVE_PROJECT:-default}}"
+                _port="${HUD_PORT:-7823}"
+                green "Recent events for project: $_project"
+                echo ""
+                # Prefer API when daemon is running, fall back to JSONL grep
+                if _dashboard_running && command -v curl &>/dev/null; then
+                    curl -s "http://localhost:$_port/api/events/$_project?limit=20" 2>/dev/null \
+                        | python3 -c "
+import json, sys
+try:
+    events = json.load(sys.stdin)
+    if not events:
+        print('  No events for this project.')
+        sys.exit(0)
+    for e in events:
+        ts = e.get('time', e.get('timestamp', '')[:19])
+        etype = e.get('type', '?')
+        msg = e.get('message', '')
+        print(f'  {ts}  [{etype:5}]  {msg}')
+except:
+    print('  Could not parse API response.')
+" 2>/dev/null || echo "  API query failed — try: ctrl dashboard logs"
+                else
+                    _events_file="$DOTFILES/working/events.jsonl"
+                    if [[ ! -f "$_events_file" ]]; then
+                        yellow "No events file found."
+                        exit 0
+                    fi
+                    grep "\"project\":\"$_project\"" "$_events_file" 2>/dev/null | tail -20 || echo "  No events for $_project"
+                fi
+                echo ""
+                ;;
+            clear)
+                _project="${1:-${ACTIVE_PROJECT:-default}}"
+                read -rp "  Clear events for '$_project'? [y/N]: " _confirm
+                if [[ "$_confirm" =~ ^[Yy]$ ]]; then
+                    _events_file="$DOTFILES/working/events.jsonl"
+                    if [[ -f "$_events_file" ]]; then
+                        grep -v "\"project\":\"$_project\"" "$_events_file" > "$_events_file.tmp" 2>/dev/null || true
+                        mv "$_events_file.tmp" "$_events_file"
+                        green "Events cleared for $_project."
+                    fi
+                    # Also dismiss from running daemon if active
+                    if _dashboard_running && command -v curl &>/dev/null; then
+                        _port="${HUD_PORT:-7823}"
+                        curl -sX DELETE "http://localhost:$_port/api/projects/$_project" >/dev/null 2>&1 || true
+                    fi
+                else
+                    echo "  Cancelled."
+                fi
+                ;;
+            violations)
+                _project="${1:-${ACTIVE_PROJECT:-default}}"
+                _port="${HUD_PORT:-7823}"
+                if ! _dashboard_running; then
+                    yellow "Dashboard not running. Start it first: ctrl dashboard"
+                    exit 1
+                fi
+                green "Violations for project: $_project"
+                echo ""
+                curl -s "http://localhost:$_port/api/violations/$_project" 2>/dev/null \
+                    | python3 -c "
+import json, sys
+try:
+    violations = json.load(sys.stdin)
+    if not violations:
+        print('  No violations recorded.')
+        sys.exit(0)
+    for v in violations:
+        ts = v.get('time', v.get('timestamp', '')[:19])
+        msg = v.get('message', '')
+        print(f'  {ts}  {msg}')
+except:
+    print('  Could not parse API response.')
+" 2>/dev/null || echo "  API query failed."
+                echo ""
+                ;;
+            state)
+                _port="${HUD_PORT:-7823}"
+                if ! _dashboard_running; then
+                    yellow "Dashboard not running. Start it first: ctrl dashboard"
+                    exit 1
+                fi
+                curl -s "http://localhost:$_port/api/state" 2>/dev/null \
+                    | python3 -m json.tool 2>/dev/null \
+                    || echo "  Could not fetch state."
+                ;;
+            open)
+                _port="${DASHBOARD_PORT:-7823}"
+                _url="http://localhost:$_port"
+                if _dashboard_running; then
+                    _open_browser "$_url"
+                else
+                    yellow "Dashboard not running. Start it first: ctrl dashboard"
+                fi
+                ;;
+            url)
+                echo "http://localhost:${DASHBOARD_PORT:-7823}"
+                ;;
+            *)
+                red "Unknown dashboard subcommand: $_dash_cmd"
+                echo "  Usage: ctrl dashboard [start|stop|status|restart|logs|events|clear|violations|state|open|url]"
+                exit 1
+                ;;
+        esac
+        ;;
+
+    # ── migrate ────────────────────────────────────────────────────────────────
+    migrate)
+        if [[ ! -f "$DOTFILES/bin/migrate.sh" ]]; then
+            red "migrate.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/migrate.sh" "$@"
+        ;;
+
+    # ── uninstall ──────────────────────────────────────────────────────────────
+    uninstall)
+        if [[ ! -f "$DOTFILES/bin/uninstall.sh" ]]; then
+            red "uninstall.sh not found."
+            exit 1
+        fi
+
+        echo ""
+        yellow "This will remove ctrl+shft symlinks and shell integration."
+        yellow "Your ~/dotfiles folder will not be touched."
+        echo ""
+        read -rp "  Continue? [y/N]: " _confirm
+        if [[ "$_confirm" =~ ^[Yy]$ ]]; then
+            bash "$DOTFILES/bin/uninstall.sh" "$@"
+        else
+            echo "  Cancelled."
+        fi
+        ;;
+
+    # ── new-client ─────────────────────────────────────────────────────────────
+    new-client|client)
+        if [[ ! -f "$DOTFILES/bin/new-client.sh" ]]; then
+            red "new-client.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/new-client.sh" "$@"
+        ;;
+
+    # ── retro ──────────────────────────────────────────────────────────────────
+    retro)
+        _require_sheal
+
+        green "ctrl retro — running sheal session retrospective"
+        echo ""
+        dim "  Tip: accepted learnings will be saved to:"
+        dim "  ~/dotfiles/instructions/_local/sheal-learnings.instructions.md"
+        echo ""
+
+        sheal retro --enrich "$@"
+
+        echo ""
+        green "Review complete. To commit accepted learnings to dotfiles:"
+        echo ""
+        echo "  cd ~/dotfiles"
+        echo "  git add instructions/_local/ skills/_local/"
+        echo "  git commit -m \"learn: [brief description]\""
+        echo "  git push"
+        ;;
+
+    # ── digest ─────────────────────────────────────────────────────────────────
+    digest)
+        _require_sheal
+        sheal digest "$@"
+        ;;
+
+    # ── cost ───────────────────────────────────────────────────────────────────
+    cost)
+        _require_sheal
+        sheal cost "$@"
+        ;;
+
+    # ── ask ────────────────────────────────────────────────────────────────────
+    ask)
+        _require_sheal
+        sheal ask "$@"
+        ;;
+
+    # ── learn ──────────────────────────────────────────────────────────────────
+    learn)
+        _require_sheal
+        sheal learn "$@"
+        ;;
+
+    # ── context ────────────────────────────────────────────────────────────────
+    context|ctx)
+        green "Detecting context for: $(pwd)"
+        echo ""
+        if [[ -f "$DOTFILES/bin/detect-context.sh" ]]; then
+            source "$DOTFILES/bin/detect-context.sh"
+            echo "  ACTIVE_CONTEXTS=$ACTIVE_CONTEXTS"
+        fi
+        if [[ -f "$DOTFILES/bin/detect-client.sh" ]]; then
+            source "$DOTFILES/bin/detect-client.sh"
+            [[ -n "${ACTIVE_CLIENT:-}" ]] && echo "  ACTIVE_CLIENT=$ACTIVE_CLIENT"
+            [[ -n "${ACTIVE_PROJECT:-}" ]] && echo "  ACTIVE_PROJECT=$ACTIVE_PROJECT"
+        fi
+        ;;
+
+    # ── version ────────────────────────────────────────────────────────────────
+    version|--version|-v)
+        echo "ctrl+shft v$CTRL_VERSION"
+        ;;
+
+    # ── help ───────────────────────────────────────────────────────────────────
+    help|--help|-h)
+        echo ""
+        echo "  ctrl — ctrl+shft configuration & infrastructure"
+        echo "  ctrlshft.dev · github.com/arndvs/ctrlshft"
+        echo ""
+        echo "  Usage: ctrl <command> [options]"
+        echo ""
+        echo "  Infrastructure"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl check              validate symlinks + env"
+        echo "  ctrl bootstrap [opts]   run bootstrap.sh [--adopt] [--minimal]"
+        echo "  ctrl sync               git pull + bootstrap + reload"
+        echo "  ctrl status             contexts, client, symlinks, dashboard"
+        echo "  ctrl context            detect & show active contexts"
+        echo ""
+        echo "  Dashboard (HUD)"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl dashboard          start the compliance dashboard"
+        echo "  ctrl dashboard stop     stop the dashboard"
+        echo "  ctrl dashboard status   check if running"
+        echo "  ctrl dashboard restart  restart the dashboard"
+        echo "  ctrl dashboard logs     show dashboard log (add -f to follow)"
+        echo "  ctrl dashboard events   show recent events for current project"
+        echo "  ctrl dashboard clear    clear events for a project"
+        echo "  ctrl dashboard violations  show violations for a project"
+        echo "  ctrl dashboard state    full debug state dump (JSON)"
+        echo "  ctrl dashboard open     open dashboard in browser"
+        echo "  ctrl dashboard url      print the dashboard URL"
+        echo ""
+        echo "  Client management"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl new-client         onboard a new client"
+        echo "  ctrl migrate            read-only diagnostic for existing setups"
+        echo "  ctrl uninstall          safely remove ctrl+shft"
+        echo ""
+        echo "  Session analysis (requires sheal)"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl retro              session retrospective → dotfiles"
+        echo "  ctrl digest [opts]      categorized prompt digest"
+        echo "  ctrl cost [opts]        token cost dashboard"
+        echo "  ctrl ask \"question\"     search across session transcripts"
+        echo "  ctrl learn [opts]       manage session learnings"
+        echo ""
+        echo "  Other"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl version            show version"
+        echo "  ctrl help               show this message"
+        echo ""
+        echo "  Options pass through to the underlying script."
+        echo "  Example: ctrl bootstrap --adopt"
+        echo "           ctrl check --ci"
+        echo "           ctrl dashboard logs -f"
+        echo ""
+        ;;
+
+    # ── unknown ────────────────────────────────────────────────────────────────
+    *)
+        red "Unknown command: $CMD"
+        echo ""
+        echo "  Run 'ctrl help' for available commands."
+        exit 1
+        ;;
+
+esac

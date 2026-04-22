@@ -1,3 +1,6 @@
+---
+description: "Session handoff protocol — cross-conversation persistence, context transfer, and session continuity."
+---
 <!-- handoff.instructions.md — Always loaded via CLAUDE.base.md @-reference.
      Defines the standard handoff protocol for cross-conversation persistence. -->
 

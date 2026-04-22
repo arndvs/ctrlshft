@@ -184,6 +184,88 @@
             color: var(--accent);
         }
 
+        .header-btn--danger {
+            color: var(--text-dimmer);
+        }
+
+        .header-btn--danger:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* ── SHUTDOWN OVERLAY ── */
+        .shutdown-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .shutdown-overlay.visible {
+            display: flex;
+        }
+
+        .shutdown-dialog {
+            background: var(--surface-2);
+            border: 1px solid var(--border-bright);
+            padding: 3.2rem;
+            max-width: 36rem;
+            text-align: center;
+        }
+
+        .shutdown-dialog h3 {
+            font-family: var(--display);
+            font-size: 2.4rem;
+            letter-spacing: 0.1rem;
+            color: var(--red);
+            margin-bottom: 1.2rem;
+        }
+
+        .shutdown-dialog p {
+            color: var(--text-dim);
+            margin-bottom: 2.4rem;
+            line-height: 1.8;
+        }
+
+        .shutdown-actions {
+            display: flex;
+            gap: 1.2rem;
+            justify-content: center;
+        }
+
+        .shutdown-actions button {
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            padding: 0.8rem 2rem;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            transition: all 0.15s;
+        }
+
+        .btn-cancel {
+            background: none;
+            color: var(--text-dim);
+        }
+
+        .btn-cancel:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-confirm-kill {
+            background: var(--red-dim);
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+        .btn-confirm-kill:hover {
+            background: var(--red);
+            color: #000;
+        }
+
         .live-indicator {
             display: flex;
             align-items: center;
@@ -1269,6 +1351,7 @@
         </div>
         <div class="header-right">
             <button class="header-btn" id="refresh-btn">&#8635; Refresh</button>
+            <button class="header-btn header-btn--danger" id="kill-btn" title="Stop HUD daemon (q)">&#9724; Kill</button>
             <div class="live-indicator">
                 <div class="live-dot" id="live-dot"></div>
                 <span id="live-status">live</span>
@@ -1464,6 +1547,19 @@
         <div class="kbd-hint"><kbd>/</kbd> Search</div>
         <div class="kbd-hint"><kbd>&#8592;</kbd><kbd>&#8594;</kbd> Switch project</div>
         <div class="kbd-hint"><kbd>r</kbd> Refresh</div>
+        <div class="kbd-hint"><kbd>q</kbd> Kill daemon</div>
+    </div>
+
+    <!-- SHUTDOWN CONFIRM -->
+    <div class="shutdown-overlay" id="shutdown-overlay" role="dialog" aria-modal="true" aria-labelledby="kill-dialog-title" aria-describedby="kill-dialog-desc">
+        <div class="shutdown-dialog">
+            <h3 id="kill-dialog-title">Kill HUD Daemon?</h3>
+            <p id="kill-dialog-desc">This will stop the daemon process.<br>Restart with <code style="color:var(--accent)">ctrl dashboard</code> <span style="color:var(--text-dim)">or</span> <code style="color:var(--accent)">bash ~/dotfiles/bin/start-hud.sh</code></p>
+            <div class="shutdown-actions">
+                <button class="btn-cancel" id="kill-cancel">Cancel <kbd style="opacity:0.5;margin-left:0.4rem">Esc</kbd></button>
+                <button class="btn-confirm-kill" id="kill-confirm">Kill Daemon</button>
+            </div>
+        </div>
     </div>
 
     <!-- TOAST CONTAINER -->
@@ -2048,6 +2144,60 @@
             }
         });
 
+        // ── Kill daemon ───────────────────────────────────────────────────────────
+        var shutdownOverlay = document.getElementById('shutdown-overlay');
+
+        var _killTrigger = null;
+
+        function showKillDialog() {
+            _killTrigger = document.activeElement;
+            shutdownOverlay.classList.add('visible');
+            document.getElementById('kill-cancel').focus();
+            shutdownOverlay.addEventListener('keydown', _trapFocus);
+        }
+
+        function hideKillDialog() {
+            shutdownOverlay.removeEventListener('keydown', _trapFocus);
+            shutdownOverlay.classList.remove('visible');
+            if (_killTrigger) _killTrigger.focus();
+        }
+
+        function _trapFocus(e) {
+            if (e.key !== 'Tab') return;
+            var focusable = shutdownOverlay.querySelectorAll('button');
+            var first = focusable[0];
+            var last = focusable[focusable.length - 1];
+            if (e.shiftKey) {
+                if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+            } else {
+                if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+            }
+        }
+
+        async function killDaemon() {
+            hideKillDialog();
+            showToast('Shutting down daemon...', 'info');
+            try {
+                var response = await fetch('/api/shutdown', { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error('Shutdown failed (' + response.status + ' ' + response.statusText + ')');
+                }
+                document.getElementById('live-dot').style.background = 'var(--red)';
+                document.getElementById('live-status').textContent = 'stopped';
+                showToast('Daemon stopped', 'success');
+            } catch (err) {
+                showToast('Kill failed: ' + err.message, 'error');
+            }
+        }
+
+        document.getElementById('kill-btn').addEventListener('click', showKillDialog);
+        document.getElementById('kill-cancel').addEventListener('click', hideKillDialog);
+        document.getElementById('kill-confirm').addEventListener('click', killDaemon);
+
+        shutdownOverlay.addEventListener('click', function (e) {
+            if (e.target === shutdownOverlay) hideKillDialog();
+        });
+
         // Log filter tabs
         document.querySelectorAll('.panel-tab[data-filter]').forEach(function (tab) {
             tab.addEventListener('click', function () {
@@ -2066,6 +2216,12 @@
             if (e.key === '/') {
                 e.preventDefault();
                 document.getElementById('global-search').focus();
+            } else if (e.key === 'q' && !e.ctrlKey && !e.metaKey) {
+                if (shutdownOverlay.classList.contains('visible')) return;
+                showKillDialog();
+            } else if (e.key === 'Escape' && shutdownOverlay.classList.contains('visible')) {
+                e.preventDefault();
+                hideKillDialog();
             } else if (e.key === 'r' && !e.ctrlKey && !e.metaKey) {
                 document.getElementById('refresh-btn').click();
             } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && state && state.projects.length) {

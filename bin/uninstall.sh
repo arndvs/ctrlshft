@@ -45,6 +45,8 @@ _remove_symlink "$CLAUDE_DIR/commands" "~/.claude/commands"
 _remove_symlink "$CLAUDE_DIR/hooks" "~/.claude/hooks"
 _remove_symlink "$COPILOT_DIR/skills" "~/.copilot/skills"
 _remove_symlink "$AGENTS_DIR/skills" "~/.agents/skills"
+_remove_symlink "$HOME/.local/bin/ctrl" "~/.local/bin/ctrl"
+_remove_symlink "$HOME/.local/bin/shft" "~/.local/bin/shft"
 
 echo
 green "[2/4] Removing shell integration"

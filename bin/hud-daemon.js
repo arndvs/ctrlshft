@@ -45,6 +45,10 @@ const LOG_PATH    = path.join(WORKING, 'compliance-log.md');
 const DB_PATH     = path.join(WORKING, 'hud.db');
 const LOCK_DIR    = path.join(WORKING, '.hud.lock');
 const DISMISSED_PATH = path.join(WORKING, '.hud-dismissed.json');
+const PID_FILE       = path.join(WORKING, 'hud-daemon.pid');
+
+let httpServer = null;
+let wsServerRef = null;
 
 const args = process.argv.slice(2);
 const getArg = (flag, def) => {
@@ -594,7 +598,8 @@ function reconcileStateFile(state) {
 
 // ── WebSocket (minimal, no external dep) ─────────────────────────────────────
 function startWsServer() {
-    const server = http.createServer();
+    wsServerRef = http.createServer();
+    const server = wsServerRef;
 
     server.on('upgrade', (req, socket) => {
         const key = req.headers['sec-websocket-key'];
@@ -708,7 +713,7 @@ function scanFileInventory() {
 function startHttpServer() {
     const HUD_HTML = path.join(__dirname, '..', 'hud', 'index.html');
 
-    const server = http.createServer((req, res) => {
+    httpServer = http.createServer((req, res) => {
         const url = new URL(req.url, `http://localhost:${HTTP_PORT}`);
         res.setHeader('Access-Control-Allow-Origin', 'http://localhost:' + HTTP_PORT);
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -848,12 +853,21 @@ function startHttpServer() {
             return;
         }
 
+        // POST /api/shutdown — graceful daemon shutdown from HUD UI
+        if (req.method === 'POST' && url.pathname === '/api/shutdown') {
+            log('Shutdown requested via API');
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end('{"ok":true,"message":"Shutting down"}');
+            setTimeout(() => shutdown('API'), 500);
+            return;
+        }
+
         res.writeHead(404);
         res.end('Not found');
     });
 
-    server.listen(HTTP_PORT, '127.0.0.1', () => log('HUD: http://localhost:' + HTTP_PORT));
-    server.on('error', e => e.code === 'EADDRINUSE'
+    httpServer.listen(HTTP_PORT, '127.0.0.1', () => log('HUD: http://localhost:' + HTTP_PORT));
+    httpServer.on('error', e => e.code === 'EADDRINUSE'
         ? warn(`Port ${HTTP_PORT} in use — is the HUD already running?`)
         : warn('HTTP error:', e.message));
 }
@@ -888,7 +902,10 @@ function shutdown(sig) {
         db.close();
     }
     wsClients.forEach(s => s.destroy());
+    if (httpServer)  try { httpServer.close(); } catch { }
+    if (wsServerRef) try { wsServerRef.close(); } catch { }
     try { fs.rmdirSync(LOCK_DIR); } catch { }
+    try { fs.unlinkSync(PID_FILE); } catch { }
     process.exit(0);
 }
 

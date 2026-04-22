@@ -1,3 +1,6 @@
+---
+description: "Sentry error monitoring — MCP server setup, issue investigation, and error tracking integration."
+---
 Output "Read Sentry instructions." to chat to acknowledge you read this file.
 
 ## MCP Server Setup

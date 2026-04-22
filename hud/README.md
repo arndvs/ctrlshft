@@ -5,21 +5,30 @@ Real-time compliance visibility for ctrl+shft agent sessions — which rules loa
 ## Quick Start
 
 ```bash
-bash ~/dotfiles/bin/start-hud.sh
+ctrl dashboard
 # Visit http://localhost:7823
 ```
+
+Alternatively: `bash ~/dotfiles/bin/start-hud.sh`
 
 ## Lifecycle Commands
 
 | Command                                             | What it does                         |
 | --------------------------------------------------- | ------------------------------------ |
-| `bash ~/dotfiles/bin/start-hud.sh`            | Start daemon (default, background)   |
-| `bash ~/dotfiles/bin/start-hud.sh stop`       | Stop daemon                          |
-| `bash ~/dotfiles/bin/start-hud.sh status`     | Check if running, show PID and URL   |
-| `bash ~/dotfiles/bin/start-hud.sh restart`    | Stop + start                         |
-| `bash ~/dotfiles/bin/start-hud.sh foreground` | Run in foreground (no daemonization) |
+| `ctrl dashboard`                                    | Start daemon (default, background)   |
+| `ctrl dashboard stop`                               | Stop daemon                          |
+| `ctrl dashboard status`                             | Check if running, show PID and URL   |
+| `ctrl dashboard restart`                            | Stop + start                         |
+| `ctrl dashboard logs [-f]`                          | Show daemon log (add `-f` to follow) |
+| `ctrl dashboard events`                             | Recent events for current project    |
+| `ctrl dashboard violations`                         | Violations for current project       |
+| `ctrl dashboard state`                              | Full debug state dump (JSON)         |
+| `ctrl dashboard clear`                              | Clear events for a project           |
+| `ctrl dashboard open`                               | Open HUD in browser                  |
+| `ctrl dashboard url`                                | Print the HUD URL                    |
+| `bash ~/dotfiles/bin/start-hud.sh foreground`       | Run in foreground (no daemonization) |
 
-Port defaults to `7823`. Override with `HUD_PORT=8080 bash ~/dotfiles/bin/start-hud.sh`.
+Port defaults to `7823`. Override with `HUD_PORT=8080 ctrl dashboard`.
 
 ## Architecture
 

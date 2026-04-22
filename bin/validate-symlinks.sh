@@ -119,6 +119,10 @@ else
     check_link_or_windows_copy "$DOTFILES/rules" "$CLAUDE_DIR/rules" "~/.claude/rules"
     check_link_or_windows_copy "$DOTFILES/skills" "$COPILOT_DIR/skills" "~/.copilot/skills"
     check_link_or_windows_copy "$DOTFILES/skills" "$AGENTS_DIR/skills" "~/.agents/skills"
+
+    # CLI entry points
+    check_link_or_windows_copy "$DOTFILES/bin/ctrl" "$HOME/.local/bin/ctrl" "~/.local/bin/ctrl"
+    check_link_or_windows_copy "$DOTFILES/shft/shft" "$HOME/.local/bin/shft" "~/.local/bin/shft"
 fi
 
 echo "Static Policy Checks:"

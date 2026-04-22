@@ -14,7 +14,7 @@ a shared template + loading mechanism.
 
 Run:
 
-- `bash ~/dotfiles/bin/new-client.sh`
+- `ctrl new-client` (or `bash ~/dotfiles/bin/new-client.sh`)
 
 Then map one or more project directories in `clients/<client-slug>/.projects`.
 

@@ -1665,6 +1665,105 @@
             }
         }
 
+        /* MOBILE NAV */
+        .nav-hamburger {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.6rem;
+            z-index: 110;
+        }
+
+        .hamburger-line {
+            display: block;
+            width: 2rem;
+            height: 2px;
+            background: var(--text);
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        .hamburger-line+.hamburger-line {
+            margin-top: 5px;
+        }
+
+        .nav-hamburger[aria-expanded="true"] .hamburger-line:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .nav-hamburger[aria-expanded="true"] .hamburger-line:nth-child(2) {
+            opacity: 0;
+        }
+
+        .nav-hamburger[aria-expanded="true"] .hamburger-line:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        .mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 98;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .mobile-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mobile-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: min(28rem, 85vw);
+            background: var(--bg);
+            border-left: 1px solid var(--border);
+            z-index: 99;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            padding: 7rem 2.4rem 3rem;
+        }
+
+        .mobile-drawer.open {
+            transform: translateX(0);
+        }
+
+        .mobile-drawer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .mobile-drawer-links li {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mobile-drawer-links a {
+            display: block;
+            padding: 1.4rem 0;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 1.2rem;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .mobile-drawer-links a:hover {
+            color: var(--accent);
+        }
+
+        .mobile-drawer-links .nav-cta {
+            display: inline-block;
+            margin-top: 0.8rem;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding-left: 2rem;
@@ -1673,6 +1772,10 @@
 
             .nav-links {
                 display: none;
+            }
+
+            .nav-hamburger {
+                display: block;
             }
 
             .hero {
@@ -1794,12 +1897,31 @@
                 <li><a href="#hud">hud</a></li>
                 <li><a href="#shft">shft</a></li>
                 <li><a href="#faq">faq</a></li>
-                <li><a href="#contributors">contributors</a></li>
+                <li><a href="#contributors-grid">contributors</a></li>
                 <li><a href="#install">install</a></li>
                 <li><a href="https://github.com/arndvs/ctrlshft" class="nav-cta sheen-cta">GitHub</a></li>
             </ul>
+            <button class="nav-hamburger" aria-label="Open menu" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
         </div>
     </nav>
+
+    <div class="mobile-overlay" aria-hidden="true"></div>
+    <aside class="mobile-drawer" aria-hidden="true">
+        <ul class="mobile-drawer-links">
+            <li><a href="#how">how it works</a></li>
+            <li><a href="#skills">skills</a></li>
+            <li><a href="#hud">hud</a></li>
+            <li><a href="#shft">shft</a></li>
+            <li><a href="#faq">faq</a></li>
+            <li><a href="#contributors-grid">contributors</a></li>
+            <li><a href="#install">install</a></li>
+            <li><a href="https://github.com/arndvs/ctrlshft" class="nav-cta sheen-cta">GitHub</a></li>
+        </ul>
+    </aside>
 
     <!-- HERO -->
     <section class="hero">
@@ -1856,8 +1978,13 @@
                             <div class="t-green">✓ rules/ → ~/.claude/rules/</div>
                             <div class="t-green">✓ secrets/ created from templates</div>
                             <div class="t-green">✓ shell integration wired</div>
+                            <div class="t-green">✓ ctrl &amp; shft CLI → ~/.local/bin/</div>
                             <div class="t-green">✓ Python .venv deps installed (incl. PyJWT)</div>
                             <div class="t-green">✓ supply chain hardened</div>
+                            <div>&nbsp;</div>
+                            <div class="t-dim"># try it</div>
+                            <div class="t-prompt">ctrl help</div>
+                            <div class="t-prompt">shft help</div>
                             <div>&nbsp;</div>
                             <div class="t-dim"># ready <span class="cursor"></span></div>
                         </div>
@@ -2390,7 +2517,7 @@
             </p>
 
             <div style="margin: 3rem 0; border: 1px solid var(--border-bright); border-radius: 4px; overflow: hidden;">
-                <img src="assets/ctrlshft-hud.png"
+                <img src="assets/ctrl-shft-hud.png"
                     alt="ctrl+shft HUD — real-time HUD showing project tabs, loaded rules and skills, session log, and compliance history"
                     style="width: 100%; display: block;" loading="lazy" />
             </div>
@@ -2432,7 +2559,8 @@
                 style="margin-top: 2rem; padding: 1.4rem 2rem; border: 1px solid var(--border); font-size: 1.2rem; color: var(--text-secondary); font-family: var(--sans); line-height: 1.7;">
                 <strong style="color: var(--text); font-family: var(--mono); letter-spacing: 0.08rem;">Start
                     it:</strong>
-                <code style="color: var(--accent);">bash ~/dotfiles/bin/start-hud.sh</code> — then visit
+                <code style="color: var(--accent);">ctrl dashboard</code> (or <code
+                    style="color: var(--accent);">bash ~/dotfiles/bin/start-hud.sh</code>) — then visit
                 <code style="color: var(--accent);">localhost:7823</code>. Hooks emit events automatically. No
                 configuration required.
             </div>
@@ -2498,7 +2626,8 @@
                             <code>.claude/</code> in your home directory for global instructions, skills, and agents
                             that apply to every project. That makes <code>~/dotfiles</code> the natural home — bootstrap
                             symlinks everything into place so your agent gets the same context on your laptop, VPS, or a
-                            fresh machine.</p>
+                            fresh machine.
+                        </p>
                     </div>
                 </div>
 
@@ -2507,8 +2636,10 @@
                     <div class="faq-category-tag">Removal</div>
                     <div class="faq-question">Can I remove it without it tanking my setup?</div>
                     <div class="faq-answer">
-                        <p>Yes. Run the uninstall script:</p>
-                        <div class="faq-code-block"><span class="kw">bash</span> ~/dotfiles/bin/uninstall.sh</div>
+                        <p>Yes. Run the uninstall command:</p>
+                        <div class="faq-code-block"><span class="kw">ctrl</span> uninstall</div>
+                        <p style="margin-top:0.6rem;font-size:0.95em;color:var(--text-secondary);">Or directly:
+                            <code>bash ~/dotfiles/bin/uninstall.sh</code></p>
                         <p style="margin-top:1rem;">It removes only the symlinks and shell integration that bootstrap
                             created — nothing in your project repos, nothing else in <code>~/dotfiles</code>. If you had
                             dotfiles there before installing ctrl+shft, they're untouched.</p>
@@ -2522,7 +2653,8 @@
                     <div class="faq-answer">
                         <p>No. Since you fork before cloning, your fork is your source of truth. Stop pulling upstream
                             whenever you want. The tool keeps working exactly as-is — no upstream dependency, no
-                            breaking changes you didn't ask for. And if you want out entirely, <code>uninstall.sh</code>
+                            breaking changes you didn't ask for. And if you want out entirely,
+                            <code>ctrl uninstall</code>
                             cleans it up in one command.</p>
                     </div>
                 </div>
@@ -2534,7 +2666,8 @@
                     <div class="faq-answer">
                         <p>No. Everything installs into your home directory — <code>~/dotfiles</code>,
                             <code>~/.claude/</code>, <code>~/.bashrc</code>. No system-level writes, no elevated
-                            permissions required.</p>
+                            permissions required.
+                        </p>
                     </div>
                 </div>
 
@@ -2546,7 +2679,8 @@
                         <p>Depends where it lives. A <code>CLAUDE.md</code> in a project repo is untouched —
                             project-level config always takes precedence over global. If you already have
                             <code>~/.claude/CLAUDE.md</code>, bootstrap will warn you before replacing it. Back it up
-                            first and fold your content into <code>CLAUDE.base.md</code>.</p>
+                            first and fold your content into <code>CLAUDE.base.md</code>.
+                        </p>
                     </div>
                 </div>
 
@@ -2599,7 +2733,8 @@
                             <div class="faq-tier-row">
                                 <div class="faq-tier-label">.env.secrets</div>
                                 <div class="faq-tier-desc">Process-scoped credentials injected via
-                                    <code>run-with-secrets.sh</code> — never exported to shell</div>
+                                    <code>run-with-secrets.sh</code> — never exported to shell
+                                </div>
                             </div>
                             <div class="faq-tier-row">
                                 <div class="faq-tier-label">AFK token</div>
@@ -2624,7 +2759,8 @@
                             settings, or anything outside that scope.</p>
                         <p>Deny rules block it from reading secrets or env vars — even ones technically in scope.
                             <code>env</code>, <code>printenv</code>, <code>cat secrets/*</code>, and
-                            <code>echo $*KEY*</code> are all blocked at the agent level.</p>
+                            <code>echo $*KEY*</code> are all blocked at the agent level.
+                        </p>
                     </div>
                 </div>
 
@@ -2633,11 +2769,11 @@
                     <div class="faq-category-tag">Security</div>
                     <div class="faq-question">How do I audit what rules and skills are loaded at any given time?</div>
                     <div class="faq-answer">
-                        <p>Run <code>detect-context.sh</code> manually in any directory — it prints the active contexts
+                        <p>Run <code>ctrl context</code> in any directory — it prints the active contexts
                             and which rule files are loaded. Skills are only invoked explicitly; nothing loads silently
                             in the background.</p>
                         <div class="faq-code-block">
-                            <span class="kw">bash</span> ~/dotfiles/bin/detect-context.sh<br>
+                            <span class="kw">ctrl</span> context<br>
                             <span class="cm"># → ACTIVE_CONTEXTS=general,nextjs,node,ts</span><br>
                             <span class="cm"># → loaded: instructions/nextjs.md</span>
                         </div>
@@ -2700,7 +2836,8 @@
                         <p>Your personal config lives in gitignored files: <code>secrets/.env.agent</code>,
                             <code>secrets/.env.secrets</code>, <code>skills/_local/</code>, and
                             <code>instructions/_local/</code>. None are tracked, so <code>git pull upstream main</code>
-                            never touches them.</p>
+                            never touches them.
+                        </p>
                         <div class="faq-code-block">
                             <span class="kw">git</span> pull upstream main<br>
                             <span class="kw">bash</span> ~/dotfiles/bin/bootstrap.sh <span class="cm"># regenerates
@@ -2717,7 +2854,8 @@
                     <div class="faq-answer">
                         <p>Symlinks survive pulls — your Claude setup keeps working. The main thing that goes stale is
                             <code>CLAUDE.md</code> if <code>CLAUDE.base.md</code> changed upstream. Bootstrap
-                            regenerates it. It's idempotent, so re-running is always safe.</p>
+                            regenerates it. It's idempotent, so re-running is always safe.
+                        </p>
                     </div>
                 </div>
 
@@ -2730,7 +2868,8 @@
                         <p>"Read X" confirms a rule was loaded into context — not that it was followed. The
                             <code>compliance-audit</code> skill closes the gap: after each task it reviews the diff
                             against every active rule, logs pass/fail/warn to <code>working/compliance-log.md</code>,
-                            and the HUD surfaces compliance rates across sessions in real time.</p>
+                            and the HUD surfaces compliance rates across sessions in real time.
+                        </p>
                         <p>Run <code>/stress-test</code> for adversarial verification before deploying in a team
                             environment. Current compliance on well-formed tasks: ~85–90%, with known failure modes
                             documented and actively tracked.</p>
@@ -2835,9 +2974,9 @@
                     <div class="step-body">
                         <div class="step-body-inner">
                             <div class="step-code-wrap">
-                                <pre class="step-code">bash ~/dotfiles/bin/bootstrap.sh</pre>
-                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/bootstrap.sh"
-                                    aria-label="Copy command">
+                                <pre class="step-code">ctrl bootstrap
+# or: bash ~/dotfiles/bin/bootstrap.sh</pre>
+                                <button class="copy-btn" data-copy="ctrl bootstrap" aria-label="Copy command">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                                         <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
@@ -2971,7 +3110,7 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                                     Store, AFK scripts use <code>secrets/.venv</code> Python first. Re-run bootstrap.sh
                                     if venv is missing.</div>
                                 <div class="step-note">If token minting reports missing <code>PyJWT</code> or
-                                    <code>requests</code>, re-run <code>bash ~/dotfiles/bin/bootstrap.sh</code>.
+                                    <code>requests</code>, re-run <code>ctrl bootstrap</code>.
                                 </div>
                                 <div class="step-note">If minting fails with status=404, recheck installation ID, app
                                     install target, and key/app pairing.</div>
@@ -3010,8 +3149,7 @@ bash ~/dotfiles/bin/verify-github-app-token.sh</pre>
                         <div class="step-body-inner">
                             <div class="step-code-wrap">
                                 <pre class="step-code">bash ~/dotfiles/bin/sync-settings.sh</pre>
-                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh"
-                                    aria-label="Copy command">
+                                <button class="copy-btn" data-copy="bash ~/dotfiles/bin/sync-settings.sh" aria-label="Copy command">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                                         <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
@@ -3409,6 +3547,47 @@ source ~/.zshrc    # zsh</pre>
         }
 
         loadContributorsWhenVisible();
+    </script>
+
+    <script>
+        (function () {
+            const btn = document.querySelector('.nav-hamburger');
+            const drawer = document.querySelector('.mobile-drawer');
+            const overlay = document.querySelector('.mobile-overlay');
+            const links = drawer.querySelectorAll('a');
+
+            function open() {
+                btn.setAttribute('aria-expanded', 'true');
+                drawer.classList.add('open');
+                drawer.setAttribute('aria-hidden', 'false');
+                overlay.classList.add('open');
+                overlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function close() {
+                btn.setAttribute('aria-expanded', 'false');
+                drawer.classList.remove('open');
+                drawer.setAttribute('aria-hidden', 'true');
+                overlay.classList.remove('open');
+                overlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            btn.addEventListener('click', function () {
+                btn.getAttribute('aria-expanded') === 'true' ? close() : open();
+            });
+
+            overlay.addEventListener('click', close);
+
+            links.forEach(function (link) {
+                link.addEventListener('click', close);
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') close();
+            });
+        })();
     </script>
 </body>
 

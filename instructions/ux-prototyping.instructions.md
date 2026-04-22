@@ -1,3 +1,6 @@
+---
+description: "UX/UI prototyping guidelines — component design, CMS-replaceable static data, and graceful degradation."
+---
 Output "Read UX Prototyping instructions." to chat to acknowledge you read this file.
 
 # UX/UI Prototyping Guidelines
