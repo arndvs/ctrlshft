@@ -41,6 +41,7 @@ _require_sheal() {
         red "sheal is not installed."
         echo ""
         echo "  Install: npm install -g @liwala/sheal"
+        echo "     — or: pnpm install -g @liwala/sheal  (requires pnpm setup first)"
         echo "  Then:    ctrl $CMD"
         exit 1
     fi

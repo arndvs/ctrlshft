@@ -34,9 +34,25 @@ fi
 
 source "$DOTFILES/bin/_lib.sh"
 
+# ── Python discovery ──────────────────────────────────────────────────────────
+# Resolve Python once at startup (venv-aware).
+# find_python() from _lib.sh prefers $VENV_DIR/Scripts/python.exe (or bin/python),
+# falling back to system python3/python. When no Python is found, SHFT_PYTHON
+# stays empty and _py() returns non-zero so callers hit their || fallback.
+VENV_DIR="$DOTFILES/secrets/.venv"
+if find_python 2>/dev/null; then
+    SHFT_PYTHON="$PYTHON"
+else
+    SHFT_PYTHON=""
+fi
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 # dim is not in _lib.sh — define locally
 dim() { printf '\033[2m%s\033[0m\n' "$*"; }
+
+# Run Python from venv or fail (triggers || fallback). Never invokes bare python3
+# which may resolve to the Windows Store stub.
+_py() { [[ -n "$SHFT_PYTHON" ]] && "$SHFT_PYTHON" "$@"; }
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 LOCK_DIR="/tmp/shft-afk.lock"
@@ -56,8 +72,8 @@ _shft_running() {
 _shft_state() {
     local field="$1"
     if [[ -f "$STATE_FILE" ]]; then
-        if command -v python3 &>/dev/null; then
-            python3 -c "
+        if [[ -n "$SHFT_PYTHON" ]]; then
+            "$SHFT_PYTHON" -c "
 import json, sys
 try:
     d = json.load(open('$STATE_FILE'))
@@ -76,8 +92,8 @@ _shft_state_set() {
     mkdir -p "$WORKING_DIR"
     local ts
     ts="$(date -u +%Y-%m-%dT%H:%M:%S)Z"
-    if command -v python3 &>/dev/null; then
-        python3 - "$STATE_FILE" "$field" "$value" <<'PYEOF'
+    if [[ -n "$SHFT_PYTHON" ]]; then
+        "$SHFT_PYTHON" - "$STATE_FILE" "$field" "$value" <<'PYEOF'
 import json, os, sys, datetime
 path, field, value = sys.argv[1], sys.argv[2], sys.argv[3]
 try:
@@ -98,7 +114,7 @@ PYEOF
             '{($f): $v, updated_at: $t}' > "$STATE_FILE"
     else
         # Minimal bash fallback — append-only JSON
-        printf '{"%%s": "%%s", "updated_at": "%%s"}\n' "$field" "$value" "$ts" > "$STATE_FILE"
+        printf '{"%s": "%s", "updated_at": "%s"}\n' "$field" "$value" "$ts" > "$STATE_FILE"
     fi
 }
 
@@ -181,7 +197,7 @@ case "$CMD" in
 
         green "shft run — HITL mode (you watch, you approve)"
         echo ""
-        echo "  Claude will propose changes with --permission-mode accept-edits."
+        echo "  Claude will propose changes with --permission-mode acceptEdits."
         echo "  You review and approve each edit in real time."
         echo ""
 
@@ -352,7 +368,7 @@ case "$CMD" in
             --state open \
             --json number,title,labels,assignees,milestone \
             --limit 50 \
-            2>/dev/null | python3 -c "
+            2>/dev/null | _py -c "
 import json, sys
 
 issues = json.load(sys.stdin)
@@ -403,7 +419,7 @@ for issue in sorted_issues:
             --state open \
             --json number,title,labels,body \
             --limit 20 \
-            2>/dev/null | python3 -c "
+            2>/dev/null | _py -c "
 import json, sys
 
 issues = json.load(sys.stdin)
@@ -451,7 +467,7 @@ print(f\"  View: gh issue view {issue['number']}\")
             --state closed \
             --limit "$_limit" \
             --json number,title,closedAt,labels \
-            2>/dev/null | python3 -c "
+            2>/dev/null | _py -c "
 import json, sys
 
 issues = json.load(sys.stdin)
@@ -553,7 +569,7 @@ for issue in issues:
 
         echo "  ── Open issues (what shft will pick from) ──"
         gh issue list --state open --limit 5 --json number,title \
-            2>/dev/null | python3 -c "
+            2>/dev/null | _py -c "
 import json, sys
 issues = json.load(sys.stdin)
 for i in issues: print(f\"  #{i['number']}  {i['title']}\")

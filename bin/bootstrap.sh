@@ -372,6 +372,8 @@ green "[10/13] Shell integration"
 
 _SHELL_SNIPPET=$(cat << 'SHELLEOF'
 
+## BEGIN ctrlshft
+
 # ── dotfiles/load-secrets ──
 [[ -f ~/dotfiles/bin/load-secrets.sh ]] && source ~/dotfiles/bin/load-secrets.sh
 
@@ -391,18 +393,61 @@ _load_context() {
 }
 cd() { builtin cd "$@" && _load_context; }
 _load_context
-# ── dotfiles/load-secrets:end ──
+
+## END ctrlshft
 SHELLEOF
 )
 
 _wire_shell_rc() {
     local rc_file="$1"
     local rc_name="$2"
-    if [[ -f "$rc_file" ]] && grep -qF "load-secrets.sh" "$rc_file"; then
-        yellow "  $rc_name already sources load-secrets — skipping"
+
+    if [[ -f "$rc_file" ]] && grep -qF "## BEGIN ctrlshft" "$rc_file"; then
+        # Managed snippet exists — check if update needed
+        local _existing
+        _existing=$(sed -n '/^## BEGIN ctrlshft$/,/^## END ctrlshft$/p' "$rc_file")
+        local _new
+        _new=$(printf '%s\n' "$_SHELL_SNIPPET" | sed -n '/^## BEGIN ctrlshft$/,/^## END ctrlshft$/p')
+        if [[ "$_existing" == "$_new" ]]; then
+            yellow "  $rc_name shell snippet is up to date — skipping"
+        else
+            cp "$rc_file" "${rc_file}.bak.$(date +%s)"
+            # Replace the managed block in-place
+            local _tmp="${rc_file}.tmp.$$"
+            awk '
+                /^## BEGIN ctrlshft$/ { skip=1; next }
+                /^## END ctrlshft$/   { skip=0; next }
+                !skip { print }
+            ' "$rc_file" > "$_tmp"
+            # Re-insert the new snippet at the top
+            printf '%s\n' "$_SHELL_SNIPPET" > "$rc_file"
+            cat "$_tmp" >> "$rc_file"
+            rm -f "$_tmp"
+            green "  Updated managed shell snippet in $rc_name"
+        fi
+    elif [[ -f "$rc_file" ]] && grep -qF "load-secrets.sh" "$rc_file"; then
+        # Legacy snippet (pre-markers) — migrate
+        cp "$rc_file" "${rc_file}.bak.$(date +%s)"
+        yellow "  Detected legacy shell snippet in $rc_name — migrating"
+        # Remove the legacy managed block (secrets + context-detection)
+        local _tmp="${rc_file}.tmp.$$"
+        awk '
+            # Start of legacy block
+            /^# ── Secrets ──/ || /^# ── dotfiles\/load-secrets ──/ { skip=1 }
+            # End of legacy block: standalone _load_context call
+            skip && /^_load_context[[:space:]]*$/ { skip=0; next }
+            # Also skip the end marker if present
+            skip && /^# ── dotfiles\/load-secrets:end ──/ { skip=0; next }
+            !skip { print }
+        ' "$rc_file" > "$_tmp"
+        # Prepend managed snippet, then append remaining user content
+        printf '%s\n' "$_SHELL_SNIPPET" > "$rc_file"
+        cat "$_tmp" >> "$rc_file"
+        rm -f "$_tmp"
+        green "  Migrated $rc_name to managed shell snippet with markers"
     else
         printf '%s\n' "$_SHELL_SNIPPET" >> "$rc_file"
-        green "  Appended load-secrets and context-detection to $rc_name"
+        green "  Appended shell snippet to $rc_name"
     fi
 }
 

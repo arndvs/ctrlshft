@@ -907,7 +907,8 @@
 
         .cli-ref-row {
             display: grid;
-            grid-template-columns: 18rem 1fr;
+            grid-template-columns: 18rem 1fr auto;
+            align-items: center;
             border-bottom: 1px solid rgba(30, 30, 30, 0.5);
             transition: background 0.15s;
         }
@@ -918,6 +919,38 @@
 
         .cli-ref-row:hover {
             background: var(--surface);
+        }
+
+        .cli-ref-copy {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.3rem 0.4rem;
+            cursor: pointer;
+            color: var(--text-dimmer);
+            opacity: 0;
+            transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .cli-ref-row:hover .cli-ref-copy {
+            opacity: 1;
+        }
+
+        .cli-ref-copy:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .cli-ref-copy.copied {
+            color: var(--accent);
+            border-color: var(--accent);
+            opacity: 1;
+        }
+
+        .cli-ref-copy svg {
+            width: 14px;
+            height: 14px;
+            display: block;
         }
 
         .cli-ref-cmd {
@@ -947,9 +980,15 @@
                 grid-template-columns: 1fr;
                 gap: 3rem;
             }
+
             .cli-ref-row {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr auto;
             }
+
+            .cli-ref-copy {
+                opacity: 1;
+            }
+
             .cli-ref-desc {
                 padding-top: 0;
                 padding-bottom: 1rem;
@@ -2697,51 +2736,144 @@
 
                     <div class="cli-ref-category">
                         <div class="cli-ref-category-label">Infrastructure</div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl check</code></div><div class="cli-ref-desc">Validate symlinks + environment</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl check --afk</code></div><div class="cli-ref-desc">AFK mode validation (jq, srt, GitHub App creds)</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl bootstrap</code></div><div class="cli-ref-desc">Run bootstrap <span class="cli-ref-alias">alias: boot</span></div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl sync</code></div><div class="cli-ref-desc">Git pull + bootstrap + reload shell</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl sync-settings</code></div><div class="cli-ref-desc">Merge managed VS Code settings</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl status</code></div><div class="cli-ref-desc">Contexts, client, symlinks, HUD</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl context</code></div><div class="cli-ref-desc">Detect and display active contexts <span class="cli-ref-alias">alias: ctx</span></div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl check</code></div>
+                            <div class="cli-ref-desc">Validate symlinks + environment</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl check --afk</code></div>
+                            <div class="cli-ref-desc">AFK mode validation (jq, srt, GitHub App creds)</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl bootstrap</code></div>
+                            <div class="cli-ref-desc">Run bootstrap <span class="cli-ref-alias">alias: boot</span></div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl sync</code></div>
+                            <div class="cli-ref-desc">Git pull + bootstrap + reload shell</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl sync-settings</code></div>
+                            <div class="cli-ref-desc">Merge managed VS Code settings</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl status</code></div>
+                            <div class="cli-ref-desc">Contexts, client, symlinks, HUD</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl context</code></div>
+                            <div class="cli-ref-desc">Detect and display active contexts <span
+                                    class="cli-ref-alias">alias: ctx</span></div>
+                        </div>
                     </div>
 
                     <div class="cli-ref-category">
                         <div class="cli-ref-category-label">HUD</div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud</code></div><div class="cli-ref-desc">Start the compliance HUD</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud stop</code></div><div class="cli-ref-desc">Stop the HUD daemon</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud status</code></div><div class="cli-ref-desc">Check if running</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud restart</code></div><div class="cli-ref-desc">Stop + start</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud logs [-f]</code></div><div class="cli-ref-desc">Show daemon log (-f to follow)</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud events</code></div><div class="cli-ref-desc">Recent events for current project</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud violations</code></div><div class="cli-ref-desc">Violations for current project</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud state</code></div><div class="cli-ref-desc">Full debug state dump (JSON)</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud clear</code></div><div class="cli-ref-desc">Clear events for a project</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud open</code></div><div class="cli-ref-desc">Open HUD in browser</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud url</code></div><div class="cli-ref-desc">Print the HUD URL</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl hud --fg</code></div><div class="cli-ref-desc">Run in foreground (debug mode)</div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud</code></div>
+                            <div class="cli-ref-desc">Start the compliance HUD</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud stop</code></div>
+                            <div class="cli-ref-desc">Stop the HUD daemon</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud status</code></div>
+                            <div class="cli-ref-desc">Check if running</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud restart</code></div>
+                            <div class="cli-ref-desc">Stop + start</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud logs [-f]</code></div>
+                            <div class="cli-ref-desc">Show daemon log (-f to follow)</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud events</code></div>
+                            <div class="cli-ref-desc">Recent events for current project</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud violations</code></div>
+                            <div class="cli-ref-desc">Violations for current project</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud state</code></div>
+                            <div class="cli-ref-desc">Full debug state dump (JSON)</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud clear</code></div>
+                            <div class="cli-ref-desc">Clear events for a project</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud open</code></div>
+                            <div class="cli-ref-desc">Open HUD in browser</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud url</code></div>
+                            <div class="cli-ref-desc">Print the HUD URL</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl hud --fg</code></div>
+                            <div class="cli-ref-desc">Run in foreground (debug mode)</div>
+                        </div>
                     </div>
 
                     <div class="cli-ref-category">
                         <div class="cli-ref-category-label">Client management &amp; credentials</div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl new-client</code></div><div class="cli-ref-desc">Onboard a new client <span class="cli-ref-alias">alias: client</span></div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl migrate</code></div><div class="cli-ref-desc">Read-only diagnostic for existing setups</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl uninstall</code></div><div class="cli-ref-desc">Safely remove ctrl+shft</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl verify-token</code></div><div class="cli-ref-desc">Test-mint a GitHub App token</div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl new-client</code></div>
+                            <div class="cli-ref-desc">Onboard a new client <span class="cli-ref-alias">alias:
+                                    client</span></div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl migrate</code></div>
+                            <div class="cli-ref-desc">Read-only diagnostic for existing setups</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl uninstall</code></div>
+                            <div class="cli-ref-desc">Safely remove ctrl+shft</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl verify-token</code></div>
+                            <div class="cli-ref-desc">Test-mint a GitHub App token</div>
+                        </div>
                     </div>
 
                     <div class="cli-ref-category">
-                        <div class="cli-ref-category-label">Session analysis <span class="cli-ref-alias">(requires sheal)</span></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl retro</code></div><div class="cli-ref-desc">Session retrospective → dotfiles</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl digest</code></div><div class="cli-ref-desc">Categorized prompt digest</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl cost</code></div><div class="cli-ref-desc">Token cost dashboard</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl ask "question"</code></div><div class="cli-ref-desc">Search across session transcripts</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl learn</code></div><div class="cli-ref-desc">Manage session learnings</div></div>
+                        <div class="cli-ref-category-label">Session analysis <span class="cli-ref-alias">(requires
+                                sheal)</span></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl retro</code></div>
+                            <div class="cli-ref-desc">Session retrospective → dotfiles</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl digest</code></div>
+                            <div class="cli-ref-desc">Categorized prompt digest</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl cost</code></div>
+                            <div class="cli-ref-desc">Token cost dashboard</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl ask "question"</code></div>
+                            <div class="cli-ref-desc">Search across session transcripts</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl learn</code></div>
+                            <div class="cli-ref-desc">Manage session learnings</div>
+                        </div>
                     </div>
 
                     <div class="cli-ref-category">
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl version</code></div><div class="cli-ref-desc">Show version</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>ctrl help</code></div><div class="cli-ref-desc">Show all commands</div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl version</code></div>
+                            <div class="cli-ref-desc">Show version</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>ctrl help</code></div>
+                            <div class="cli-ref-desc">Show all commands</div>
+                        </div>
                     </div>
                 </div>
 
@@ -2751,43 +2883,103 @@
 
                     <div class="cli-ref-category">
                         <div class="cli-ref-category-label">Running</div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft run</code></div><div class="cli-ref-desc">HITL — run once while you watch <span class="cli-ref-alias">alias: hitl, once</span></div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft afk [n]</code></div><div class="cli-ref-desc">AFK — autonomous loop (default 5)</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft afk --force</code></div><div class="cli-ref-desc">Skip pre-flight validation</div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft run</code></div>
+                            <div class="cli-ref-desc">HITL — run once while you watch <span class="cli-ref-alias">alias:
+                                    hitl, once</span></div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft afk [n]</code></div>
+                            <div class="cli-ref-desc">AFK — autonomous loop (default 5)</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft afk --force</code></div>
+                            <div class="cli-ref-desc">Skip pre-flight validation</div>
+                        </div>
                     </div>
 
                     <div class="cli-ref-category">
                         <div class="cli-ref-category-label">Monitoring</div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft status</code></div><div class="cli-ref-desc">Is a loop running? How many issues open?</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft stop</code></div><div class="cli-ref-desc">Stop AFK loop after current iteration</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft log [-f]</code></div><div class="cli-ref-desc">Show shft log (-f to follow) <span class="cli-ref-alias">alias: logs</span></div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft status</code></div>
+                            <div class="cli-ref-desc">Is a loop running? How many issues open?</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft stop</code></div>
+                            <div class="cli-ref-desc">Stop AFK loop after current iteration</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft log [-f]</code></div>
+                            <div class="cli-ref-desc">Show shft log (-f to follow) <span class="cli-ref-alias">alias:
+                                    logs</span></div>
+                        </div>
                     </div>
 
                     <div class="cli-ref-category">
                         <div class="cli-ref-category-label">Work queue</div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft issues</code></div><div class="cli-ref-desc">List open issues in priority order <span class="cli-ref-alias">alias: queue</span></div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft next</code></div><div class="cli-ref-desc">Show the next issue shft would pick</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft done [n]</code></div><div class="cli-ref-desc">Show last n closed issues <span class="cli-ref-alias">alias: recent</span></div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft context</code></div><div class="cli-ref-desc">Show what the agent sees at start <span class="cli-ref-alias">alias: ctx</span></div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft issues</code></div>
+                            <div class="cli-ref-desc">List open issues in priority order <span
+                                    class="cli-ref-alias">alias: queue</span></div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft next</code></div>
+                            <div class="cli-ref-desc">Show the next issue shft would pick</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft done [n]</code></div>
+                            <div class="cli-ref-desc">Show last n closed issues <span class="cli-ref-alias">alias:
+                                    recent</span></div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft context</code></div>
+                            <div class="cli-ref-desc">Show what the agent sees at start <span
+                                    class="cli-ref-alias">alias: ctx</span></div>
+                        </div>
                     </div>
 
                     <div class="cli-ref-category">
                         <div class="cli-ref-category-label">Plan</div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft plan</code></div><div class="cli-ref-desc">View working/plan.md</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft plan edit</code></div><div class="cli-ref-desc">Open plan in $EDITOR</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft plan clear</code></div><div class="cli-ref-desc">Clear the plan file</div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft plan</code></div>
+                            <div class="cli-ref-desc">View working/plan.md</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft plan edit</code></div>
+                            <div class="cli-ref-desc">Open plan in $EDITOR</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft plan clear</code></div>
+                            <div class="cli-ref-desc">Clear the plan file</div>
+                        </div>
                     </div>
 
                     <div class="cli-ref-category">
                         <div class="cli-ref-category-label">Credentials &amp; config</div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft validate</code></div><div class="cli-ref-desc">Run AFK pre-flight checks <span class="cli-ref-alias">alias: check</span></div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft mint</code></div><div class="cli-ref-desc">Test-mint a GitHub App token</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft prompt</code></div><div class="cli-ref-desc">Show shft/prompt.md</div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft validate</code></div>
+                            <div class="cli-ref-desc">Run AFK pre-flight checks <span class="cli-ref-alias">alias:
+                                    check</span></div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft mint</code></div>
+                            <div class="cli-ref-desc">Test-mint a GitHub App token</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft prompt</code></div>
+                            <div class="cli-ref-desc">Show shft/prompt.md</div>
+                        </div>
                     </div>
 
                     <div class="cli-ref-category">
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft version</code></div><div class="cli-ref-desc">Show version</div></div>
-                        <div class="cli-ref-row"><div class="cli-ref-cmd"><code>shft help</code></div><div class="cli-ref-desc">Show all commands</div></div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft version</code></div>
+                            <div class="cli-ref-desc">Show version</div>
+                        </div>
+                        <div class="cli-ref-row">
+                            <div class="cli-ref-cmd"><code>shft help</code></div>
+                            <div class="cli-ref-desc">Show all commands</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2830,7 +3022,8 @@
                         <p>Yes. Run the uninstall command:</p>
                         <div class="faq-code-block"><span class="kw">ctrl</span> uninstall</div>
                         <p style="margin-top:0.6rem;font-size:0.95em;color:var(--text-secondary);">Or directly:
-                            <code>bash ~/dotfiles/bin/uninstall.sh</code></p>
+                            <code>bash ~/dotfiles/bin/uninstall.sh</code>
+                        </p>
                         <p style="margin-top:1rem;">It removes only the symlinks and shell integration that bootstrap
                             created — nothing in your project repos, nothing else in <code>~/dotfiles</code>. If you had
                             dotfiles there before installing ctrl+shft, they're untouched.</p>
@@ -2846,7 +3039,8 @@
                             whenever you want. The tool keeps working exactly as-is — no upstream dependency, no
                             breaking changes you didn't ask for. And if you want out entirely,
                             <code>ctrl uninstall</code>
-                            cleans it up in one command.</p>
+                            cleans it up in one command.
+                        </p>
                     </div>
                 </div>
 
@@ -3265,8 +3459,7 @@ GITHUB_APP_PRIVATE_KEY_B64=...</pre>
                                 <div class="step-code-wrap">
                                     <pre class="step-code">ctrl check --afk
 ctrl verify-token</pre>
-                                    <button class="copy-btn"
-                                        data-copy="ctrl check --afk&#10;ctrl verify-token"
+                                    <button class="copy-btn" data-copy="ctrl check --afk&#10;ctrl verify-token"
                                         aria-label="Copy command">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
@@ -3469,23 +3662,28 @@ source ~/.zshrc    # zsh</pre>
             });
         });
 
-        // TODO: uncomment when CLI ref copy buttons are tested
-        // document.querySelectorAll('.cli-ref-row').forEach(row => {
-        //     const code = row.querySelector('code');
-        //     if (!code) return;
-        //     const cmd = code.textContent;
-        //     const btn = document.createElement('button');
-        //     btn.className = 'cli-ref-copy';
-        //     btn.setAttribute('aria-label', 'Copy ' + cmd);
-        //     btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>';
-        //     btn.addEventListener('click', () => {
-        //         navigator.clipboard.writeText(cmd).then(() => {
-        //             btn.classList.add('copied');
-        //             setTimeout(() => btn.classList.remove('copied'), 1500);
-        //         });
-        //     });
-        //     row.appendChild(btn);
-        // });
+        // CLI ref copy-on-click
+        document.querySelectorAll('.cli-ref-row').forEach(row => {
+            const code = row.querySelector('code');
+            if (!code) return;
+            const cmd = code.textContent;
+            const btn = document.createElement('button');
+            btn.className = 'cli-ref-copy';
+            btn.setAttribute('aria-label', 'Copy ' + cmd);
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>';
+            const doCopy = () => {
+                if (!navigator.clipboard?.writeText) return;
+                navigator.clipboard.writeText(cmd).then(() => {
+                    btn.classList.add('copied');
+                    setTimeout(() => btn.classList.remove('copied'), 1500);
+                }).catch(() => { /* permission denied */ });
+            };
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                doCopy();
+            });
+            row.appendChild(btn);
+        });
 
         // Install accordion
         document.querySelectorAll('.install-step .step-header').forEach(header => {

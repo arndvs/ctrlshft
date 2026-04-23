@@ -3,6 +3,11 @@
 *.bash      text eol=lf
 *.py        text eol=lf
 
+# Extensionless shell scripts — not matched by *.sh, must be listed explicitly
+bin/ctrl            text eol=lf
+bin/ctrlshft-claude text eol=lf
+shft/shft           text eol=lf
+
 # Text files — normalize to LF in repo and force LF on checkout
 *.md        text eol=lf
 *.txt       text eol=lf

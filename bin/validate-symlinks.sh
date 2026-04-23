@@ -22,9 +22,8 @@ _warn=0
 
 for arg in "$@"; do
     case "$arg" in
-        --ci)
-            _ci_mode=1
-            ;;
+        --ci)  _ci_mode=1 ;;
+        --afk) ;;  # accepted by validate-env.sh; ignore here
         *)
             red "Unknown option: $arg"
             red "Usage: bash ~/dotfiles/bin/validate-symlinks.sh [--ci]"
