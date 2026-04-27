@@ -32,19 +32,7 @@ Skip this step if a plan or PRD already exists.
 
 ### 3. Implement
 
-Read a sample existing file of the same type before creating new ones — follow the conventions already established in the codebase.
-
-**For backend code**: use red/green/refactor, one test at a time in a tracer-bullet style.
-
-1. Write a single failing test for the smallest vertical slice of behaviour
-2. Run the test — confirm it fails (red)
-3. Write the minimum code to make it pass (green)
-4. Repeat from step 1 for the next slice
-5. Refactor if needed while keeping tests green
-
-Do not write all tests upfront — write one, make it pass, then move to the next.
-
-**For frontend code**: implement directly without TDD.
+Write the code. Follow the conventions already established in the codebase — read a sample existing file of the same type before creating new ones.
 
 ### 4. Validate
 
@@ -60,17 +48,9 @@ If no feedback loops are detected, tell the user and ask what validation command
 
 ### 5. Commit
 
-Once validation passes, commit the work using the atomic-commits skill (one logical change per commit, conventional commit message).
+Once validation passes, commit the work using the atomic-commits skill (one logical change per commit, conventional commit message). If this is the final slice and the work is ready for review, use **Ship** mode — push and open a PR.
 
-### 6. Preflight (Ship mode only)
-
-If this is the final slice and the work is ready for review, run the **pr-preflight** skill end-to-end before pushing. Preflight audits `main..HEAD`, so the commit must exist before it can inspect the diff. This catches the class of issues that iterative Copilot reviews find one-at-a-time, so review is one pass instead of many.
-
-Skip this step when using Commit mode for intermediate checkpoints — preflight runs once before the final push, not on every checkpoint.
-
-After preflight passes, use the atomic-commits skill in **Ship** mode — push and open a PR.
-
-### 7. Context Check
+### 6. Context Check
 
 If this is one phase of a multi-phase plan, or if context usage is over 40%, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — commit all work, persist the remaining plan to `working/`, and provide the pickup command.
 

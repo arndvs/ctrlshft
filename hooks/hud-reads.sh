@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# FAIL_MODE: open
 # hud-reads.sh — Emit "read" events to the HUD daemon.
 #
 # Handles two Claude Code hook events:
@@ -10,8 +9,7 @@
 #   1. Dotfiles reads  → tracks which instructions/skills/rules/agents loaded
 #   2. Project reads   → tracks file reads in external projects (for cross-project visibility)
 
-set -Eeuo pipefail
-trap 'exit 0' ERR  # fail-open: any error → allow
+set -euo pipefail
 
 INPUT=$(cat)
 

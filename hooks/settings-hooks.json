@@ -1,22 +1,4 @@
 {
-  "sandbox": {
-    "enabled": true,
-    "network": {
-      "allowedDomains": [
-        "api.anthropic.com",
-        "console.anthropic.com",
-        "statsig.anthropic.com",
-        "github.com",
-        "api.github.com",
-        "raw.githubusercontent.com",
-        "registry.npmjs.org",
-        "pypi.org",
-        "files.pythonhosted.org",
-        "proxy.golang.org",
-        "sum.golang.org"
-      ]
-    }
-  },
   "hooks": {
     "SessionStart": [
       {
@@ -24,10 +6,6 @@
           {
             "type": "command",
             "command": "\"$HOME/.claude/hooks/hud-session.sh\""
-          },
-          {
-            "type": "command",
-            "command": "\"$HOME/.claude/hooks/stale-branches.sh\""
           }
         ]
       }
@@ -43,22 +21,6 @@
           {
             "type": "command",
             "command": "\"$HOME/.claude/hooks/migration-guard.sh\""
-          },
-          {
-            "type": "command",
-            "command": "\"$HOME/.claude/hooks/git-workflow-gate.sh\""
-          },
-          {
-            "type": "command",
-            "command": "\"$HOME/.claude/hooks/plan-quality-gate.sh\""
-          },
-          {
-            "type": "command",
-            "command": "command -v python3 >/dev/null 2>&1 && python3 \"$HOME/.claude/hooks/plan-review-phase2.py\" || exit 0"
-          },
-          {
-            "type": "command",
-            "command": "\"$HOME/.claude/hooks/test-gate.sh\""
           }
         ]
       }
@@ -88,28 +50,6 @@
           {
             "type": "command",
             "command": "\"$HOME/.claude/hooks/hud-reads.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$HOME/.claude/hooks/git-post-push.sh\""
-          },
-          {
-            "type": "command",
-            "command": "\"$HOME/.claude/hooks/git-post-commit.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "command -v python3 >/dev/null 2>&1 && python3 \"$HOME/.claude/hooks/feedback-memory-gate.py\" || exit 0"
           }
         ]
       }

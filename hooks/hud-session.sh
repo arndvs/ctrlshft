@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# FAIL_MODE: open
 # hud-session.sh — SessionStart / Stop hook: emit HUD events.
 #
 # Receives Claude Code hook JSON on stdin containing session lifecycle data.
@@ -11,7 +10,6 @@
 #   Stop         → {session_id, transcript_path}
 
 set -euo pipefail
-trap 'exit 0' ERR  # fail-open: any error → allow
 
 DOTFILES="${DOTFILES:-$HOME/dotfiles}"
 

@@ -1,1 +1,0 @@
-"""Copilot Review Bridge package."""

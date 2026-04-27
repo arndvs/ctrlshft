@@ -14,10 +14,7 @@ __pycache__/
 *.pyc
 
 # Secrets — NEVER commit
-secrets/*
-!secrets/README.md
-!secrets/.env.agent.example
-!secrets/.env.bridge.example
+secrets/
 .env
 .env.*
 !.env.agent.example
@@ -26,7 +23,11 @@ secrets/*
 *.vault
 credentials.*
 
-# Working/scratch — runtime state, active plans, never tracked
+# Working/scratch
+working/research/
+working/artifacts/
+working/planning/
+working/active-client.md
 working/
 
 # Artifact source files (promoted to bin/ when shipped)
@@ -49,17 +50,8 @@ dotfiles.code-workspace
 global.instructions.md.bak
 *.bak
 
-# Skill/doc reference materials (large, not needed in repo)
-**/references/
-**/reference/
-# Exception: skill-bundled references (progressive disclosure pattern)
-!skills/*/references/
-!skills/*/references/**
-
 # Client scope (keep templates/docs tracked, ignore real client data)
 clients/*
 !clients/README.md
 !clients/_template/
 !clients/_template/**
-mechanisms/
-shft/research/

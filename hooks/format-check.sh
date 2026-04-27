@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# FAIL_MODE: open
 # format-check.sh — Stop hook: run project formatter on modified files.
 #
 # Receives Claude Code Stop JSON on stdin.
@@ -7,7 +6,6 @@
 # Non-blocking — always exits 0. Formatting errors surface in output only.
 
 set -euo pipefail
-trap 'exit 0' ERR  # fail-open: any error → allow
 
 if ! command -v jq &>/dev/null; then
     exit 0

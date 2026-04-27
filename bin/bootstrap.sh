@@ -172,16 +172,9 @@ mkdir -p "$DOTFILES/instructions/_local"
 } > "$DOTFILES/CLAUDE.md"
 
 _local_instructions=()
-_local_conditional=()
 if [[ -d "$DOTFILES/instructions/_local" ]]; then
     for f in "$DOTFILES/instructions/_local/"*.instructions.md; do
-        [[ -f "$f" ]] || continue
-        # Files with `auto-load: false` in frontmatter are task-triggered, not auto-loaded
-        if head -20 "$f" | grep -qE '^auto-load:\s*false'; then
-            _local_conditional+=("$f")
-        else
-            _local_instructions+=("$f")
-        fi
+        [[ -f "$f" ]] && _local_instructions+=("$f")
     done
 fi
 if [[ ${#_local_instructions[@]} -gt 0 ]]; then
@@ -193,17 +186,6 @@ if [[ ${#_local_instructions[@]} -gt 0 ]]; then
     green "  Generated CLAUDE.md with ${#_local_instructions[@]} local instruction(s)"
 else
     green "  Generated CLAUDE.md (no local instructions found)"
-fi
-if [[ ${#_local_conditional[@]} -gt 0 ]]; then
-    printf '\n## Task-Triggered Local Instructions\n\n' >> "$DOTFILES/CLAUDE.md"
-    printf 'Read these only when the task matches their description:\n\n' >> "$DOTFILES/CLAUDE.md"
-    for f in "${_local_conditional[@]}"; do
-        _fname=$(basename "$f")
-        # Extract description from frontmatter
-        _desc=$(awk '/^description:/{sub(/^description:[[:space:]]*"?/,""); sub(/"?[[:space:]]*$/,""); print; exit}' "$f")
-        printf -- '- %s — @~/dotfiles/instructions/_local/%s\n' "${_desc:-no description}" "$_fname" >> "$DOTFILES/CLAUDE.md"
-    done
-    green "  Registered ${#_local_conditional[@]} task-triggered local instruction(s)"
 fi
 
 # Link or copy to ~/.claude/
@@ -312,67 +294,22 @@ for f in "$DOTFILES/hooks/"*.sh; do
 done
 green "  Hook scripts found: $_hooks"
 
-# Deploy settings.json from dotfiles (source of truth)
-if [[ -f "$DOTFILES/.claude/settings.json" ]]; then
-    cp "$DOTFILES/.claude/settings.json" "$CLAUDE_DIR/settings.json"
-    green "  Deployed ~/.claude/settings.json from dotfiles"
-else
-    red "  Missing $DOTFILES/.claude/settings.json — cannot deploy settings"
-    _fail=1
-fi
-
-# ── 7.5. Gemini CLI safety defaults ──────────────────────────────────────────
-echo
-green "[7.5/13] Gemini CLI safety defaults"
-GEMINI_DIR="$HOME/.gemini"
-GEMINI_SAFETY="$DOTFILES/agents/gemini-safety.json"
-
-if [[ -f "$GEMINI_SAFETY" ]]; then
-    mkdir -p "$GEMINI_DIR"
-    if [[ -f "$GEMINI_DIR/settings.json" ]]; then
+# Merge hook configuration into ~/.claude/settings.json
+if [[ -f "$DOTFILES/hooks/settings-hooks.json" ]]; then
+    if [[ -f "$CLAUDE_DIR/settings.json" ]]; then
         if command -v jq &>/dev/null; then
-            jq -s '.[0] * .[1]' "$GEMINI_DIR/settings.json" "$GEMINI_SAFETY" > "$GEMINI_DIR/settings.json.tmp"
-            mv "$GEMINI_DIR/settings.json.tmp" "$GEMINI_DIR/settings.json"
-            green "  Merged Gemini safety defaults into ~/.gemini/settings.json"
+            # Always merge — settings-hooks.json is source of truth for hooks
+            jq -s '.[0] * .[1]' "$CLAUDE_DIR/settings.json" "$DOTFILES/hooks/settings-hooks.json" > "$CLAUDE_DIR/settings.json.tmp"
+            mv "$CLAUDE_DIR/settings.json.tmp" "$CLAUDE_DIR/settings.json"
+            green "  Merged hook config into ~/.claude/settings.json"
         else
-            yellow "  jq not found — cannot merge Gemini safety defaults"
+            yellow "  jq not found — cannot merge hooks into settings.json"
+            yellow "  Install jq and re-run, or manually merge hooks/settings-hooks.json"
         fi
     else
-        cp "$GEMINI_SAFETY" "$GEMINI_DIR/settings.json"
-        green "  Created ~/.gemini/settings.json with safety defaults"
+        cp "$DOTFILES/hooks/settings-hooks.json" "$CLAUDE_DIR/settings.json"
+        green "  Created ~/.claude/settings.json with hook configuration"
     fi
-fi
-
-# ── 7.6. Codex CLI safety defaults ───────────────────────────────────────────
-echo
-green "[7.6/13] Codex CLI safety defaults"
-CODEX_DIR="${CODEX_HOME:-$HOME/.codex}"
-
-if [[ -d "$CODEX_DIR" ]] || command -v codex &>/dev/null; then
-    mkdir -p "$CODEX_DIR"
-
-    # Ensure [features] codex_hooks = true in config.toml
-    if [[ -f "$CODEX_DIR/config.toml" ]]; then
-        if ! grep -qF "codex_hooks" "$CODEX_DIR/config.toml"; then
-            printf '\n[features]\ncodex_hooks = true\n' >> "$CODEX_DIR/config.toml"
-            green "  Added [features] codex_hooks = true to ~/.codex/config.toml"
-        else
-            yellow "  codex_hooks feature flag already set — skipping"
-        fi
-    fi
-
-    # Codex hooks require sandshell's hook scripts — suggest if not installed
-    if [[ ! -f "$CODEX_DIR/hooks.json" ]]; then
-        if command -v sandshell &>/dev/null; then
-            yellow "  Run 'sandshell apply codex' to install Codex Pre/PostToolUse hooks"
-        else
-            yellow "  Install sandshell and run 'sandshell apply codex' for Codex hooks"
-        fi
-    else
-        yellow "  ~/.codex/hooks.json already exists — skipping"
-    fi
-else
-    yellow "  Codex not detected — skipping"
 fi
 
 # ── 8. Symlink ~/.copilot/skills/ ────────────────────────────────────────────
@@ -596,27 +533,6 @@ else
         mkdir -p "$UV_CONFIG_DIR"
         echo "exclude-newer = \"$UV_DATE\"" >> "$UV_CONFIG"
         green "  Added exclude-newer = \"$UV_DATE\" to ~/.config/uv/uv.toml"
-    fi
-fi
-
-# ── 12.5. Global git hooks ────────────────────────────────────────────────────
-echo
-green "[12.5/13] Global git hooks (pre-commit dispatcher)"
-if [[ "$MINIMAL_MODE" == true ]]; then
-    yellow "  Skipping global git hooks (--minimal mode)"
-else
-    GIT_HOOKS_DIR="$DOTFILES/git-hooks"
-    if [[ -d "$GIT_HOOKS_DIR" ]]; then
-        chmod +x "$GIT_HOOKS_DIR/"* 2>/dev/null || true
-        _current_hooks_path=$(git config --global core.hooksPath 2>/dev/null || echo "")
-        if [[ "$_current_hooks_path" == "$GIT_HOOKS_DIR" ]] || [[ "$_current_hooks_path" == "$HOME/dotfiles/git-hooks" ]]; then
-            yellow "  core.hooksPath already set — skipping"
-        else
-            git config --global core.hooksPath "$GIT_HOOKS_DIR"
-            green "  Set git config --global core.hooksPath $GIT_HOOKS_DIR"
-        fi
-    else
-        yellow "  git-hooks/ directory not found — skipping"
     fi
 fi
 

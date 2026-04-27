@@ -1,15 +1,11 @@
 ---
 name: atomic-commits
-description: "Atomic commits on a feature branch with conventional messages — Commit mode for checkpoints, Ship mode for PR. Use when committing, checkpointing, shipping, pushing, or creating a PR."
+description: "Use this skill whenever work has been completed and needs to be committed or shipped. Enforces atomic commits — one logical change per commit with a conventional commit message — on a feature branch, merged via PR. Two modes: Commit (branch + stage + commit) for checkpoints, Ship (+ rebase + push + PR) when ready for review. Trigger any time the user asks to 'commit', 'save progress', 'checkpoint my work', 'ship', 'push', 'create a PR', or has just finished implementing a feature, fix, or refactor."
 ---
 
 # Atomic Commits
 
 Output "Read Atomic Commits skill." to chat to acknowledge you read this file.
-
-## When to use
-
-Use this skill whenever work has been completed and needs to be committed or shipped. Enforces atomic commits — one logical change per commit with a conventional commit message — on a feature branch, merged via PR. Two modes: **Commit** (branch + stage + commit) for checkpoints, **Ship** (+ rebase + push + PR) when ready for review. Trigger any time the user asks to 'commit', 'save progress', 'checkpoint my work', 'ship', 'push', 'create a PR', or has just finished implementing a feature, fix, or refactor.
 
 ## Core Principles
 
@@ -28,7 +24,7 @@ This skill operates in two modes depending on the user's intent:
 | Mode       | When                                                                  | Steps    |
 | ---------- | --------------------------------------------------------------------- | -------- |
 | **Commit** | Default. User says "commit", "save progress", "checkpoint my work"    | 0 → 1 → 2 → 3 |
-| **Ship**   | User says "ship", "push", "PR", "create a pull request", "open a PR" | 0 → 1 → 2 → 3 → 4 → 5 → 6 |
+| **Ship**   | User says "ship", "push", "PR", "create a pull request", "open a PR" | 0 → 1 → 2 → 3 → 4 → 5 |
 
 During multi-slice work, use **Commit** mode at each slice. Use **Ship** mode only when all slices are done and the work is ready for review.
 
@@ -153,18 +149,6 @@ fi
 The PR title should summarize the full feature branch, not individual commits. Use the conventional commit format.
 
 **After creating the PR:** report the PR URL to the user. Do not merge — the PR exists for review.
-
-### 6. Request Copilot review (Ship mode only)
-
-After the PR is created (or already exists), request a Copilot review automatically by calling the MCP tool:
-
-```
-mcp_github_request_copilot_review  owner=<owner>  repo=<repo>  pullNumber=<N>
-```
-
-This is an **agent tool invocation** (MCP), not a shell command — do not run it in a terminal. If the MCP tool is not loaded, use `tool_search` for "request copilot review" first. If no tool is available, surface the PR URL and ask the user to request review manually.
-
-This ensures every PR gets at least one Copilot review pass before human review.
 
 ---
 

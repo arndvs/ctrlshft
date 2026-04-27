@@ -15,7 +15,7 @@ Every developer using Claude Code or Copilot hits the same walls. Context degrad
 
 ctrl+shft fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and AFK iteration tokens (short-lived GitHub App installation tokens) minted per loop. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
-**Source of truth:** `~/dotfiles/` is canonical. `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Make all edits in `~/dotfiles/` only. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the internal system map.
+**Source of truth:** `~/dotfiles/` is canonical. `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Make all edits in `~/dotfiles/` only.
 
 ```bash
 # Fork at github.com/arndvs/ctrlshft/fork, then:
@@ -123,36 +123,14 @@ All agents use read-only tools (Read, Grep, Glob, Bash) and `memory: user` for p
 
 `rules/` contains convention-enforcement files that load only when the agent touches matching files. Each rule uses `paths:` YAML frontmatter to scope itself.
 
-| Rule                          | Scoped to                                       |
-| ----------------------------- | ----------------------------------------------- |
-| `test-conventions`            | `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`, `**/*Service.{ts,tsx}`, `**/services/**/*.{ts,tsx}` |
-| `migration-safety`            | `**/migrations/**`, `**/prisma/migrations/**`   |
-| `env-security`                | `**/.env*`, `**/secrets/**`, `**/credentials*`  |
-| `terminal-workarounds`        | Terminal sessions                               |
-| `git-conventions`             | source files (`**/*.{ts,tsx,js,jsx,py,rb,go,...}`) |
-| `typescript-conventions`      | `**/*.{ts,tsx}`                                 |
-| `javascript-modern`           | `**/*.{ts,tsx,js,jsx,mjs,cjs}`                  |
-| `frontend-conventions`        | `**/*.{ts,tsx,js,jsx,css,scss,html,svelte,vue}` |
-| `dark-mode`                   | `**/*.{tsx,jsx,css,scss}`                       |
-| `tailwind-shadcn`             | `**/*.{tsx,jsx}`                                |
-| `framer-motion`               | `**/*.{tsx,jsx}`                                |
-| `server-vs-client-components` | `**/app/**/*.{tsx,jsx}`                         |
+| Rule                   | Scoped to                                       |
+| ---------------------- | ----------------------------------------------- |
+| `test-conventions`     | `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**` |
+| `migration-safety`     | `**/migrations/**`, `**/prisma/migrations/**`   |
+| `env-security`         | `**/.env*`, `**/secrets/**`, `**/credentials*`  |
+| `terminal-workarounds` | Terminal sessions                               |
 
-Rules without `paths:` load every session. Add your own: `rules/your-rule.md` — auto-discovered. See [rules/README.md](rules/README.md) for the full inventory.
-
-### Four-tier disclosure model
-
-Instructions are organized so the always-on payload stays small and conditional knowledge only loads when needed:
-
-| Tier | Loaded when | Where |
-| ---- | ----------- | ----- |
-| **T1 always-on** | every session | `global.instructions.md`, `instructions/handoff.instructions.md` |
-| **T2 context-gated** | `ACTIVE_CONTEXTS` matches | `instructions/{nextjs,sanity,php,...}.instructions.md` |
-| **T2 service/task-triggered** | task or service mentioned | `instructions/{css,sentry,google-docs,hud,...}.instructions.md` |
-| **T3 path-gated** | edited file matches `paths:` glob | `rules/*.md` |
-| **T4 skill-triggered** | task description matches | `skills/*/SKILL.md` |
-
-Re-shelve aggressively: if a rule applies only to `.tsx` files, it belongs in `rules/`, not `global.instructions.md`. See [instructions/README.md](instructions/README.md) for the full instruction inventory and loading conditions.
+Rules without `paths:` load every session. Add your own: `rules/your-rule.md` — auto-discovered.
 
 ### Hardened secrets
 
@@ -164,7 +142,7 @@ Three tiers. Agents see config, never credentials — and AFK loops use AFK iter
 | `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords  |
 | AFK iteration token    | No        | No             | Minted per loop, expires ~1h |
 
-`run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see. See [secrets/README.md](secrets/README.md) for the full tier model.
+`run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see.
 
 ### AFK Docker credential rotation (strong defense)
 
@@ -271,10 +249,8 @@ The benefit: ⚡ skills act as passive guardrails. You don't remember to say "us
 | `compliance-audit` ⚡     | Auto-invoked after do-work/tdd/debugging. Rule-by-rule review, violation flagging, skill gap detection. |
 | `stress-test`             | Adversarial 19-scenario protocol across 6 categories. Validates rule compliance boundaries.             |
 | `sanity-best-practices`   | Sanity schema design, GROQ, TypeGen, Visual Editing, Portable Text, framework integrations.             |
-| `session-close`           | Pre-flight checklist — quality gates before ending a coding session.                                    |
-| `error-audit`             | Analyze cross-session error patterns to surface systemic issues worth automating.                        |
 
-Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored. See [skills/README.md](skills/README.md) for the full catalog with trigger phrases.
+Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored.
 
 ---
 
@@ -291,10 +267,8 @@ Thin launchers in `commands/` that load a skill with your arguments. Type the co
 | `/explore`  | `explore`        | Decompose a topic, spawn parallel sub-agents, synthesize.            |
 | `/test`     | `tdd`            | Red-green refactor. Failing test → implement → refactor.             |
 | `/document` | `document`       | Write, update, or audit documentation.                               |
-| `/check`    | `session-close`  | Pre-flight checklist — quality gates before session end.             |
-| `/address-review` | `review-pr-copilot` | Fetch and address Copilot review comments on active PR.     |
 
-Add your own: `commands/your-command.md` — auto-discovered. Each file is a prompt template with `$ARGUMENTS` passthrough. See [commands/README.md](commands/README.md) for the full command reference.
+Add your own: `commands/your-command.md` — auto-discovered. Each file is a prompt template with `$ARGUMENTS` passthrough.
 
 ---
 
@@ -382,7 +356,7 @@ Claude Code lifecycle hooks — shell scripts that fire on tool use and session 
 | `typecheck.sh`        | Stop             | Runs `tsc --noEmit` on TypeScript projects; blocks stop until types pass                       |
 | `context-warning.sh`  | UserPromptSubmit | Stub: graduated warnings at 40/70% context (pending statusLine experiment)                     |
 
-Hooks communicate via exit codes: **0** = allow, **2** = block. See [hooks/README.md](hooks/README.md) for full documentation, customization, and the `experiments/` directory for in-progress prototypes.
+Hooks communicate via exit codes: **0** = allow, **2** = block. See `hooks/README.md` for full documentation, customization, and the `experiments/` directory for in-progress prototypes.
 
 ---
 
@@ -390,7 +364,7 @@ Hooks communicate via exit codes: **0** = allow, **2** = block. See [hooks/READM
 
 > `ctrl` is the structure — instructions, skills, rules, secrets, context. `shft` is the autonomous loop — it picks issues, implements, commits, repeats. **ctrl+shft** — you define the rules, shft executes them.
 
-shft is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL). See [shft/README.md](shft/README.md) for the full command reference.
+shft is not a framework. It's a bash loop that runs Claude against your GitHub issues backlog — sandboxed in Docker for Away From Keyboard (AFK) mode, direct on host for Human In The Loop (HITL).
 
 ### Two modes
 
@@ -434,7 +408,7 @@ srt claude .
 
 ## CLI — `ctrl` & `shft`
 
-After bootstrap, two commands are available system-wide. `ctrl` manages your environment, `shft` manages your work queue. Both are symlinked to `~/.local/bin/` by bootstrap. See [bin/README.md](bin/README.md) for the full script inventory.
+After bootstrap, two commands are available system-wide. `ctrl` manages your environment, `shft` manages your work queue. Both are symlinked to `~/.local/bin/` by bootstrap.
 
 ```bash
 ctrl help     # infrastructure commands
@@ -443,41 +417,41 @@ shft help     # autonomous execution commands
 
 ### ctrl — infrastructure management
 
-| Command                 | What it does                                             |
-| ----------------------- | -------------------------------------------------------- |
-| `ctrl check`            | Validate symlinks + environment                          |
-| `ctrl check --afk`      | AFK mode validation (jq, srt, GitHub App creds)          |
-| `ctrl bootstrap [opts]` | Run bootstrap (`--adopt`, `--minimal`)                   |
-| `ctrl sync`             | `git pull` + bootstrap + reload shell                    |
+| Command                 | What it does                                      |
+| ----------------------- | ------------------------------------------------- |
+| `ctrl check`            | Validate symlinks + environment                   |
+| `ctrl check --afk`      | AFK mode validation (jq, srt, GitHub App creds)   |
+| `ctrl bootstrap [opts]` | Run bootstrap (`--adopt`, `--minimal`)            |
+| `ctrl sync`             | `git pull` + bootstrap + reload shell             |
 | `ctrl sync-settings`    | Merge managed VS Code settings (`--dry-run`, `--stable`) |
-| `ctrl status`           | Show contexts, client, symlinks, HUD status              |
-| `ctrl context`          | Detect and display active contexts                       |
+| `ctrl status`           | Show contexts, client, symlinks, HUD status       |
+| `ctrl context`          | Detect and display active contexts                |
 
 #### ctrl hud
 
-| Command               | What it does                           |
-| --------------------- | -------------------------------------- |
-| `ctrl hud`            | Start the compliance HUD               |
-| `ctrl hud stop`       | Stop the HUD daemon                    |
-| `ctrl hud status`     | Check if running                       |
-| `ctrl hud restart`    | Stop + start                           |
-| `ctrl hud logs [-f]`  | Show daemon log (add `-f` to follow)   |
-| `ctrl hud events`     | Show recent events for current project |
-| `ctrl hud violations` | Show violations for current project    |
-| `ctrl hud state`      | Full debug state dump (JSON)           |
-| `ctrl hud clear`      | Clear events for a project             |
-| `ctrl hud open`       | Open HUD in browser                    |
-| `ctrl hud url`        | Print the HUD URL                      |
-| `ctrl hud --fg`       | Run HUD in foreground (debug mode)     |
+| Command                 | What it does                           |
+| --------------------------- | -------------------------------------- |
+| `ctrl hud`              | Start the compliance HUD               |
+| `ctrl hud stop`         | Stop the HUD daemon                    |
+| `ctrl hud status`       | Check if running                       |
+| `ctrl hud restart`      | Stop + start                           |
+| `ctrl hud logs [-f]`    | Show daemon log (add `-f` to follow)   |
+| `ctrl hud events`       | Show recent events for current project |
+| `ctrl hud violations`   | Show violations for current project    |
+| `ctrl hud state`        | Full debug state dump (JSON)           |
+| `ctrl hud clear`        | Clear events for a project             |
+| `ctrl hud open`         | Open HUD in browser                    |
+| `ctrl hud url`          | Print the HUD URL                      |
+| `ctrl hud --fg`         | Run HUD in foreground (debug mode)     |
 
 #### ctrl client management & credentials
 
-| Command             | What it does                                             |
-| ------------------- | -------------------------------------------------------- |
-| `ctrl new-client`   | Onboard a new client                                     |
-| `ctrl migrate`      | Read-only diagnostic for existing setups                 |
-| `ctrl uninstall`    | Safely remove all ctrl+shft symlinks + shell integration |
-| `ctrl verify-token` | Test-mint a GitHub App token                             |
+| Command              | What it does                                             |
+| -------------------- | -------------------------------------------------------- |
+| `ctrl new-client`    | Onboard a new client                                     |
+| `ctrl migrate`       | Read-only diagnostic for existing setups                 |
+| `ctrl uninstall`     | Safely remove all ctrl+shft symlinks + shell integration |
+| `ctrl verify-token`  | Test-mint a GitHub App token                             |
 
 #### ctrl session analysis (requires [sheal](https://github.com/liwala/sheal))
 
@@ -537,6 +511,7 @@ shft help     # autonomous execution commands
 │   ├── sentry.instructions.md
 │   ├── google-docs.instructions.md
 │   ├── css.instructions.md
+│   ├── ux-prototyping.instructions.md
 │   ├── handoff.instructions.md      ← cross-conversation persistence protocol
 │   └── _local/                      ← GITIGNORED — your private instructions
 ├── commands/
@@ -556,7 +531,7 @@ shft help     # autonomous execution commands
 │   ├── researcher-haiku.md          subagent: fast bulk scanning (haiku)
 │   └── security-auditor.md          subagent: OWASP, secrets, config (sonnet)
 ├── rules/
-│   ├── test-conventions.md          scoped to tests and service code
+│   ├── test-conventions.md          scoped to **/*.test.*, **/*.spec.*
 │   ├── migration-safety.md          scoped to **/migrations/**
 │   ├── env-security.md              scoped to **/.env*, **/secrets/**
 │   └── terminal-workarounds.md      scoped to terminal sessions
@@ -777,26 +752,26 @@ ctrl sync-settings
 
 > Bootstrap is mostly idempotent. Here's everything it modifies:
 
-| File                       | Change                                                                              |
-| -------------------------- | ----------------------------------------------------------------------------------- |
-| `~/.claude/CLAUDE.md`      | Symlinked → `~/dotfiles/CLAUDE.md` (or copied on Windows without admin)             |
-| `~/.claude/skills/`        | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
-| `~/.claude/agents/`        | Linked to `~/dotfiles/agents/` (or replaced with verified fallback copy on Windows) |
-| `~/.claude/rules/`         | Linked to `~/dotfiles/rules/` (or replaced with verified fallback copy on Windows)  |
-| `~/.copilot/skills/`       | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
-| `~/.agents/skills/`        | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
-| `~/.bashrc` / `~/.zshrc`   | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent)            |
-| `~/.npmrc`                 | Appends `min-release-age=7` (supply chain protection)                               |
-| `~/.config/uv/uv.toml`     | Adds `exclude-newer` date (supply chain protection)                                 |
-| `secrets/.env.agent`       | Created from `.env.agent.example` if missing                                        |
-| `secrets/.env.secrets`     | Created from `.env.secrets.example` if missing                                      |
-| `secrets/.venv/`           | Python venv created for local skill packages                                        |
-| `~/.claude/commands/`      | Linked to `~/dotfiles/commands/`                                                    |
-| `~/.claude/hooks/`         | Linked to `~/dotfiles/hooks/`                                                       |
-| `~/.claude/settings.json`  | Hook config merged into existing settings                                           |
-| `~/.local/bin/ctrl`        | CLI installed (symlink or copy)                                                     |
-| `~/.local/bin/shft`        | CLI installed (symlink or copy)                                                     |
-| `working/active-client.md` | Created from template if missing                                                    |
+| File                     | Change                                                                              |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `~/.claude/CLAUDE.md`    | Symlinked → `~/dotfiles/CLAUDE.md` (or copied on Windows without admin)             |
+| `~/.claude/skills/`      | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
+| `~/.claude/agents/`      | Linked to `~/dotfiles/agents/` (or replaced with verified fallback copy on Windows) |
+| `~/.claude/rules/`       | Linked to `~/dotfiles/rules/` (or replaced with verified fallback copy on Windows)  |
+| `~/.copilot/skills/`     | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
+| `~/.agents/skills/`      | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
+| `~/.bashrc` / `~/.zshrc` | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent)            |
+| `~/.npmrc`               | Appends `min-release-age=7` (supply chain protection)                               |
+| `~/.config/uv/uv.toml`   | Adds `exclude-newer` date (supply chain protection)                                 |
+| `secrets/.env.agent`     | Created from `.env.agent.example` if missing                                        |
+| `secrets/.env.secrets`   | Created from `.env.secrets.example` if missing                                      |
+| `secrets/.venv/`         | Python venv created for local skill packages                                        |
+| `~/.claude/commands/`    | Linked to `~/dotfiles/commands/`                                                    |
+| `~/.claude/hooks/`       | Linked to `~/dotfiles/hooks/`                                                       |
+| `~/.claude/settings.json`| Hook config merged into existing settings                                           |
+| `~/.local/bin/ctrl`      | CLI installed (symlink or copy)                                                     |
+| `~/.local/bin/shft`      | CLI installed (symlink or copy)                                                     |
+| `working/active-client.md`| Created from template if missing                                                   |
 
 **Not run by bootstrap:** `sync-settings.sh` (VS Code settings merge) is manual. Run with `--dry-run` first.
 
@@ -908,12 +883,12 @@ Cross-project tracking works automatically. When the agent reads files outside `
 
 ### Lifecycle commands
 
-| Command            | What it does              |
-| ------------------ | ------------------------- |
-| `ctrl hud`         | Start daemon (background) |
-| `ctrl hud stop`    | Stop daemon               |
-| `ctrl hud status`  | Check if running          |
-| `ctrl hud restart` | Stop + start              |
+| Command                | What it does              |
+| ------------------------ | ------------------------- |
+| `ctrl hud`             | Start daemon (background) |
+| `ctrl hud stop`        | Stop daemon               |
+| `ctrl hud status`      | Check if running          |
+| `ctrl hud restart`     | Stop + start              |
 
 Port defaults to `7823`. Override with `HUD_PORT=8080`.
 

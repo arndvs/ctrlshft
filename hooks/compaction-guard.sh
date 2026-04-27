@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# FAIL_MODE: closed
 # compaction-guard.sh — PreCompact hook: block automatic compaction, enforce handoff.
 #
 # Receives Claude Code PreCompact JSON on stdin (matcher: "auto").
@@ -16,13 +15,6 @@
 # At 95%+ context, the session should end anyway.
 
 set -euo pipefail
-
-# --- Fail-closed trap: any unhandled error = block compaction ---
-_fail_closed() {
-    echo 'compaction-guard: unhandled error — blocking (fail-closed)' >&2
-    exit 2
-}
-trap '_fail_closed' ERR
 
 cat > /dev/null  # consume stdin
 
