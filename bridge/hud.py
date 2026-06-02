@@ -8,13 +8,52 @@ from __future__ import annotations
 import json
 import logging
 import os
+import queue
 import subprocess
+import threading
 from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 _SAFE_ENV_VARS = ("HOME", "PATH", "TERM", "LANG", "USER")
+_EMIT_QUEUE_MAX = 128
+
+_emit_queue: "queue.Queue[tuple[str, str, dict]]" = queue.Queue(maxsize=_EMIT_QUEUE_MAX)
+_emit_worker_started = False
+_emit_worker_lock = threading.Lock()
+
+
+def _emit_worker() -> None:
+    while True:
+        hud_script, payload_json, safe_env = _emit_queue.get()
+        try:
+            _run_emit(hud_script, payload_json, safe_env)
+        finally:
+            _emit_queue.task_done()
+
+
+def _ensure_emit_worker() -> None:
+    global _emit_worker_started
+    with _emit_worker_lock:
+        if _emit_worker_started:
+            return
+        threading.Thread(target=_emit_worker, name="hud-emit-worker", daemon=True).start()
+        _emit_worker_started = True
+
+
+def _run_emit(hud_script: str, payload_json: str, safe_env: dict) -> None:
+    try:
+        subprocess.run(
+            ["bash", hud_script, "bridge-event"],
+            input=payload_json,
+            text=True,
+            check=False,
+            timeout=2,
+            env=safe_env,
+        )
+    except Exception as e:
+        logger.debug("HUD emit failed (non-fatal): %s", e)
 
 
 def emit(
@@ -47,14 +86,9 @@ def emit(
     # Scrub environment — HUD emitter only needs basic shell vars,
     # not secrets from the worker's EnvironmentFile.
     safe_env = {k: os.environ[k] for k in _SAFE_ENV_VARS if k in os.environ}
+    payload_json = json.dumps(payload)
+    _ensure_emit_worker()
     try:
-        subprocess.run(
-            ["bash", str(hud_script), "bridge-event"],
-            input=json.dumps(payload),
-            text=True,
-            check=False,  # never fail the job on HUD issues
-            timeout=2,
-            env=safe_env,
-        )
-    except Exception as e:
-        logger.debug("HUD emit failed (non-fatal): %s", e)
+        _emit_queue.put_nowait((str(hud_script), payload_json, safe_env))
+    except queue.Full:
+        logger.debug("HUD emit queue full; dropping event (non-fatal)")
