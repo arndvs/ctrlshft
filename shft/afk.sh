@@ -9,7 +9,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CTRL_DIR="$(dirname "$SCRIPT_DIR")"
 MAX_ITERATIONS="${1:-5}"
-LOCKDIR="/tmp/shft-afk.lock"
+LOCKDIR="${SHFT_LOCK_DIR:-${TMPDIR:-/tmp}/shft-afk.lock}"
 MINT_SCRIPT="$CTRL_DIR/bin/mint_github_app_token.py"
 RUN_WITH_SECRETS="$CTRL_DIR/bin/run-with-secrets.sh"
 VENV_DIR="$CTRL_DIR/secrets/.venv"
