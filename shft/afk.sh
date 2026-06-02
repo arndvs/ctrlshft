@@ -19,9 +19,9 @@ else
         _lock_id=$(printf '%s' "$_repo_root" | sha256sum | cut -c1-12)
     elif command -v shasum &>/dev/null; then
         _lock_id=$(printf '%s' "$_repo_root" | shasum -a 256 | cut -c1-12)
-    elif command -v python3 &>/dev/null; then
+    elif command -v python3 &>/dev/null && python3 --version &>/dev/null; then
         _lock_id=$(python3 -c "import hashlib,sys;print(hashlib.sha256(sys.argv[1].encode('utf-8')).hexdigest()[:12])" "$_repo_root")
-    elif command -v python &>/dev/null; then
+    elif command -v python &>/dev/null && python --version &>/dev/null; then
         _lock_id=$(python -c "import hashlib,sys;print(hashlib.sha256(sys.argv[1].encode('utf-8')).hexdigest()[:12])" "$_repo_root")
     else
         _lock_id=$(cksum <<<"$_repo_root" | awk '{print $1}' | cut -c1-12)
