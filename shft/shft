@@ -91,7 +91,7 @@ _SHFT_REPO_ROOT="$(_shft_repo_root)"
 _SHFT_LOCK_ID="$(_shft_hash_path "$_SHFT_REPO_ROOT" | tr -d '\r\n' | cut -c1-12)"
 LOCK_BASE_DIR="${TMPDIR:-/tmp}"
 LOCK_DIR="$LOCK_BASE_DIR/shft-afk-${_SHFT_LOCK_ID}.lock"
-LEGACY_LOCK_DIR="$LOCK_BASE_DIR/shft-afk.lock"
+LEGACY_LOCK_DIR="/tmp/shft-afk.lock"
 WORKING_DIR="$DOTFILES/working"
 LOG_FILE="$WORKING_DIR/shft.log"
 STATE_FILE="$WORKING_DIR/shft-state.json"
@@ -121,7 +121,7 @@ _shft_warn_legacy_lock() {
     if [[ "$LEGACY_LOCK_DIR" != "$LOCK_DIR" ]] && [[ -d "$LEGACY_LOCK_DIR" ]]; then
         yellow "Legacy AFK lock detected: $LEGACY_LOCK_DIR"
         yellow "  Current scoped lock: $LOCK_DIR"
-        yellow "  If no old loop is running, remove it: rmdir $LEGACY_LOCK_DIR"
+        yellow "  If no old loop is running, remove it: rmdir \"$LEGACY_LOCK_DIR\""
         echo ""
     fi
 }
