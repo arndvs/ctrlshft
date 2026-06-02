@@ -102,12 +102,13 @@ if [[ "${SHFT_ENGINE:-bash}" == "ts" ]]; then
 
     _engine_env+=("GITHUB_TOKEN=$afk_token")
 
-    "${_engine_env[@]}" npx tsx "$SCRIPT_DIR/engine/main.ts" \
-        --repo "$(pwd)" \
+    _repo_root="$(pwd)"
+    ( cd "$SCRIPT_DIR/engine" && "${_engine_env[@]}" npx tsx main.ts \
+        --repo "$_repo_root" \
         --workflow parallel \
         --max-iterations "$MAX_ITERATIONS" \
         --max-issues "${MAX_ISSUES:-5}" \
-        --max-parallel "${MAX_PARALLEL:-4}" || {
+        --max-parallel "${MAX_PARALLEL:-4}" ) || {
         echo "ERROR: TypeScript engine failed" >&2
         _push_afk_event "info" "Engine parallel run failed"
         exit 1
