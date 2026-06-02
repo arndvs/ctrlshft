@@ -14,7 +14,7 @@ MAX_ITERATIONS="${1:-5}"
 if [[ -n "${SHFT_LOCK_DIR:-}" ]]; then
     LOCKDIR="$SHFT_LOCK_DIR"
 else
-    _repo_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    _repo_root=$(command -v git &>/dev/null && git rev-parse --show-toplevel 2>/dev/null || pwd)
     if command -v sha256sum &>/dev/null; then
         _lock_id=$(printf '%s' "$_repo_root" | sha256sum | cut -c1-12)
     elif command -v shasum &>/dev/null; then
