@@ -462,7 +462,6 @@ case "$CMD" in
         SHFT_ENGINE="$_engine" \
         SHFT_TARGET_ISSUE="$_target_issue" \
         SHFT_LOCK_DIR="$LOCK_DIR" \
-        SHFT_LEGACY_LOCK_DIR="$LEGACY_LOCK_DIR" \
         bash "$SHFT_DIR/afk.sh" "$_iterations"
         ;;
 
@@ -555,7 +554,7 @@ case "$CMD" in
             if [[ "$LEGACY_LOCK_DIR" != "$LOCK_DIR" ]] && [[ -d "$LEGACY_LOCK_DIR" ]]; then
                 echo ""
                 yellow "Legacy lock still exists: $LEGACY_LOCK_DIR"
-                yellow "Remove it if stale: rmdir $LEGACY_LOCK_DIR"
+                yellow "Remove it if stale: rmdir \"$LEGACY_LOCK_DIR\""
             fi
             exit 0
         fi

@@ -7,7 +7,7 @@
 
 _proxy_default_host() {
     local _host
-    _host=$( (ip route 2>/dev/null || true) | awk '/default/{print $3; exit}')
+    _host=$( (command -v ip &>/dev/null && ip route 2>/dev/null || true) | awk '/default/{print $3; exit}')
     printf '%s' "${_host:-localhost}"
 }
 
