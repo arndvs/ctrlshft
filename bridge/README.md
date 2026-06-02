@@ -71,7 +71,7 @@ Never sourced into interactive shells.
 
 These are known limitations of the MVP, documented and accepted:
 
-1. **Global lockfile** — `/tmp/shft-afk.lock` limits to one concurrent `shft` invocation across all bridge + manual runs. Phase 2: per-workspace locks.
+1. **Repo-scoped lockfile** — `${TMPDIR:-/tmp}/shft-afk-<repo-hash>.lock` limits to one concurrent `shft` invocation per repository. Legacy `/tmp/shft-afk.lock` may still appear and is treated as stale-warning compatibility.
 
 2. **Global working directory** — `~/dotfiles/working/` is shared. HUD events don't distinguish bridge vs manual sessions. Phase 2: per-workspace isolation (ADR pending).
 
