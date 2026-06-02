@@ -310,12 +310,17 @@ echo "curl timeouts — _proxy_running has --max-time + --connect-timeout"
 echo "────────────────────────────────────────────────"
 
 _running_fn=$(sed -n '/^_proxy_running()/,/^}/p' shft/shft)
-assert_contains "has --max-time" "--max-time" "$_running_fn"
-assert_contains "has --connect-timeout" "--connect-timeout" "$_running_fn"
+assert_contains "running fn delegates to _proxy_health_ok" "_proxy_health_ok" "$_running_fn"
 
-# Same in _proxy_env.sh daemon check
+_running_health_helper=$(sed -n '/^_proxy_health_ok()/,/^}/p' shft/shft)
+assert_contains "health helper has --max-time" "--max-time" "$_running_health_helper"
+assert_contains "health helper has --connect-timeout" "--connect-timeout" "$_running_health_helper"
+
+# Same in _proxy_env.sh via _proxy_health_ok helper
 _env_daemon_check=$(sed -n '/Verify daemon is running/,/^fi$/p' shft/_proxy_env.sh)
-assert_contains "env.sh daemon check has --max-time" "--max-time" "$_env_daemon_check"
+assert_contains "env.sh daemon check uses _proxy_health_ok" "_proxy_health_ok" "$_env_daemon_check"
+_env_health_helper=$(sed -n '/^_proxy_health_ok()/,/^}/p' shft/_proxy_env.sh)
+assert_contains "env.sh health helper has --max-time" "--max-time" "$_env_health_helper"
 
 # ══════════════════════════════════════════════════════════════════════════════
 echo
