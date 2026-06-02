@@ -2,12 +2,14 @@
 # Shared proxy health helpers for shft runtime scripts.
 #
 # Intended to be sourced by shft/shft and shft/_proxy_env.sh.
-# Relies on curl and shell builtins. Uses ip+awk opportunistically to discover
+# Relies on curl (and shell builtins). Uses ip+awk opportunistically to discover
 # a host route, then falls back to localhost.
 
 _proxy_default_host() {
     local _host
-    _host=$( (command -v ip &>/dev/null && ip route 2>/dev/null || true) | awk '/default/{print $3; exit}')
+    if command -v awk &>/dev/null; then
+        _host=$( (command -v ip &>/dev/null && ip route 2>/dev/null || true) | awk '/default/{print $3; exit}')
+    fi
     printf '%s' "${_host:-localhost}"
 }
 
