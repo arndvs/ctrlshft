@@ -342,6 +342,20 @@ assert_contains "comment says PID" "PID" "$_running_comment"
 assert_not_contains "no misleading PID-based" "PID-based)" "$_running_comment"
 
 # ══════════════════════════════════════════════════════════════════════════════
+echo
+echo "AFK lock scoping — repo-specific lock path (no global static lock)"
+echo "────────────────────────────────────────────────"
+
+_shft_lock_constants=$(sed -n '/^# ── Constants/,/^# ── Helper functions/p' shft/shft)
+assert_contains "shft defines LOCK_BASE_DIR" "LOCK_BASE_DIR" "$_shft_lock_constants"
+assert_contains "shft lock path includes hash id" "shft-afk-" "$_shft_lock_constants"
+assert_not_contains "shft has no static /tmp lock constant" "LOCK_DIR=\"/tmp/shft-afk.lock\"" "$_shft_lock_constants"
+
+_afk_lock_decl=$(grep -n '^LOCKDIR=' shft/afk.sh || true)
+assert_contains "afk lockdir consumes SHFT_LOCK_DIR" "SHFT_LOCK_DIR" "$_afk_lock_decl"
+assert_not_contains "afk lockdir is not static /tmp" 'LOCKDIR="/tmp/shft-afk.lock"' "$_afk_lock_decl"
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Summary
 echo
 echo "════════════════════════════════════════════════"
