@@ -102,6 +102,13 @@ PROXY_STATE_DIR="$HOME/.shft"
 PROXY_STATE_FILE="$PROXY_STATE_DIR/proxy.json"
 PROXY_LOG_FILE="$PROXY_STATE_DIR/proxy.log"
 PROXY_DEFAULT_PORT=4000
+SHFT_PROXY_DEFAULT_PORT="$PROXY_DEFAULT_PORT"
+
+if [[ ! -f "$SHFT_DIR/_proxy_health.sh" ]]; then
+    red "Missing proxy helper: $SHFT_DIR/_proxy_health.sh"
+    exit 1
+fi
+source "$SHFT_DIR/_proxy_health.sh"
 
 # ── Helper functions ──────────────────────────────────────────────────────────
 
@@ -234,32 +241,6 @@ _proxy_running() {
     # Fallback to health endpoint (needed on MINGW64 where kill -0 can't see Windows PIDs)
     local port; port=$(_proxy_get "port"); port=${port:-$PROXY_DEFAULT_PORT}
     _proxy_health_ok "$port"
-}
-
-# Check proxy health endpoint (gateway host first, localhost fallback)
-_proxy_health_ok() {
-    local port="${1:-$PROXY_DEFAULT_PORT}"
-    local _host
-    _host=$( (ip route 2>/dev/null || true) | awk '/default/{print $3; exit}')
-    _host="${_host:-localhost}"
-    curl -sf --max-time 2 --connect-timeout 1 "http://${_host}:${port}/health/readiness" >/dev/null 2>&1 || \
-    curl -sf --max-time 2 --connect-timeout 1 "http://localhost:${port}/health/readiness" >/dev/null 2>&1
-}
-
-# Wait for proxy health endpoint
-_proxy_wait_healthy() {
-    local port="${1:-$PROXY_DEFAULT_PORT}"
-    local wait_seconds="${2:-60}"
-    local attempts=$((wait_seconds * 2))
-    local i=0
-    while [[ $i -lt $attempts ]]; do
-        if _proxy_health_ok "$port"; then
-            return 0
-        fi
-        sleep 0.5
-        i=$(( i + 1 ))
-    done
-    return 1
 }
 
 # Load LITELLM_MASTER_KEY from proxy dir's .env (without exporting other vars)
