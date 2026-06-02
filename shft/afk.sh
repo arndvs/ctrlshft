@@ -24,7 +24,7 @@ else
     elif command -v python &>/dev/null; then
         _lock_id=$(python -c "import hashlib,sys;print(hashlib.sha256(sys.argv[1].encode('utf-8')).hexdigest()[:12])" "$_repo_root")
     else
-        _lock_id=$(cksum <<<"$_repo_root" | awk '{print $1}')
+        _lock_id=$(cksum <<<"$_repo_root" | awk '{print $1}' | cut -c1-12)
     fi
     LOCKDIR="${TMPDIR:-/tmp}/shft-afk-${_lock_id}.lock"
     unset _repo_root _lock_id
