@@ -28,16 +28,14 @@ _proxy_wait_healthy() {
     # passes a non-numeric SHFT_PROXY_HEALTH_WAIT_SECONDS value.
     _wait_seconds="${_wait_seconds%%[!0-9]*}"
     _wait_seconds="${_wait_seconds:-30}"
-    local _attempts=$((_wait_seconds * 2))
     local _check_host
     _check_host="$(_proxy_default_host)"
-    local _i=0
-    while [[ $_i -lt $_attempts ]]; do
+    local _start=$SECONDS
+    while (( SECONDS - _start < _wait_seconds )); do
         if _proxy_health_ok "$_port" "$_check_host"; then
             return 0
         fi
         sleep 0.5
-        _i=$((_i + 1))
     done
     return 1
 }

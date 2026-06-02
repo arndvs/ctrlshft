@@ -15,6 +15,10 @@ _PROXY_STATE="$HOME/.shft/proxy.json"
 _PROXY_DEFAULT_PORT=4000
 
 _PROXY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ ! -f "$_PROXY_SCRIPT_DIR/_proxy_health.sh" ]]; then
+    echo "ERROR: missing proxy helper: $_PROXY_SCRIPT_DIR/_proxy_health.sh" >&2
+    return 1 2>/dev/null || exit 1
+fi
 source "$_PROXY_SCRIPT_DIR/_proxy_health.sh"
 
 # ── Minimal helpers (no dependency on shft or _lib.sh) ────────────────────────
