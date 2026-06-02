@@ -26,11 +26,7 @@ secrets/*
 *.vault
 credentials.*
 
-# Working/scratch
-working/research/
-working/artifacts/
-working/planning/
-working/active-client.md
+# Working/scratch — runtime state, active plans, never tracked
 working/
 
 # Artifact source files (promoted to bin/ when shipped)
