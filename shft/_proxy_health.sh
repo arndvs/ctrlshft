@@ -16,6 +16,9 @@ _proxy_health_ok() {
 _proxy_wait_healthy() {
     local _port="${1:-${SHFT_PROXY_DEFAULT_PORT:-4000}}"
     local _wait_seconds="${2:-30}"
+    if [[ ! "$_wait_seconds" =~ ^[0-9]+$ ]]; then
+        _wait_seconds=30
+    fi
     local _attempts=$((_wait_seconds * 2))
     local _i=0
     while [[ $_i -lt $_attempts ]]; do
