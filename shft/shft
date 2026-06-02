@@ -67,7 +67,7 @@ dim() { printf '\033[2m%s\033[0m\n' "$*"; }
 _py() { [[ -n "$SHFT_PYTHON" ]] && "$SHFT_PYTHON" "$@"; }
 
 _shft_repo_root() {
-    git rev-parse --show-toplevel 2>/dev/null || pwd
+    command -v git &>/dev/null && git rev-parse --show-toplevel 2>/dev/null || pwd
 }
 
 _shft_hash_path() {
