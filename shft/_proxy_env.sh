@@ -131,5 +131,5 @@ echo "  Routing: Copilot proxy (${_proxy_host}:${_proxy_port})"
 unset _PROXY_MODE _PROXY_STATE _PROXY_DEFAULT_PORT
 unset _PROXY_SCRIPT_DIR
 unset _proxy_enabled _proxy_pid _proxy_dir _proxy_port
-unset _proxy_env_file _proxy_key _proxy_host _proxy_check_host
+unset _proxy_env_file _proxy_key _proxy_host
 unset _proxy_health_wait_seconds

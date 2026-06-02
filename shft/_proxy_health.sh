@@ -24,6 +24,10 @@ _proxy_health_ok() {
 _proxy_wait_healthy() {
     local _port="${1:-${SHFT_PROXY_DEFAULT_PORT:-4000}}"
     local _wait_seconds="${2:-30}"
+    # Coerce to integer — prevents arithmetic errors under set -e if caller
+    # passes a non-numeric SHFT_PROXY_HEALTH_WAIT_SECONDS value.
+    _wait_seconds="${_wait_seconds%%[!0-9]*}"
+    _wait_seconds="${_wait_seconds:-30}"
     local _attempts=$((_wait_seconds * 2))
     local _check_host
     _check_host="$(_proxy_default_host)"
