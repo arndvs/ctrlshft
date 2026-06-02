@@ -13,6 +13,10 @@
 _PROXY_MODE="${1:-hitl}"
 _PROXY_STATE="$HOME/.shft/proxy.json"
 _PROXY_DEFAULT_PORT=4000
+SHFT_PROXY_DEFAULT_PORT="$_PROXY_DEFAULT_PORT"
+
+_PROXY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_PROXY_SCRIPT_DIR/_proxy_health.sh"
 
 # ── Minimal helpers (no dependency on shft or _lib.sh) ────────────────────────
 
@@ -43,30 +47,6 @@ PYEOF
     fi
 }
 
-_proxy_health_ok() {
-    local _port="$1"
-    local _check_host
-    _check_host=$( (ip route 2>/dev/null || true) | awk '/default/{print $3; exit}')
-    _check_host="${_check_host:-localhost}"
-    curl -sf --max-time 2 --connect-timeout 1 "http://${_check_host}:${_port}/health/readiness" >/dev/null 2>&1 \
-      || curl -sf --max-time 2 --connect-timeout 1 "http://localhost:${_port}/health/readiness" >/dev/null 2>&1
-}
-
-_proxy_wait_until_healthy() {
-    local _port="$1"
-    local _wait_seconds="${2:-30}"
-    local _attempts=$((_wait_seconds * 2))
-    local _i=0
-    while [[ $_i -lt $_attempts ]]; do
-        if _proxy_health_ok "$_port"; then
-            return 0
-        fi
-        sleep 0.5
-        _i=$((_i + 1))
-    done
-    return 1
-}
-
 # ── Check if proxy is enabled ─────────────────────────────────────────────────
 
 _proxy_enabled=$(_proxy_env_get "enabled")
@@ -95,7 +75,7 @@ fi
 
 # Health check
 _proxy_health_wait_seconds="${SHFT_PROXY_HEALTH_WAIT_SECONDS:-30}"
-if ! _proxy_wait_until_healthy "$_proxy_port" "$_proxy_health_wait_seconds"; then
+if ! _proxy_wait_healthy "$_proxy_port" "$_proxy_health_wait_seconds"; then
     echo "  ERROR: Proxy daemon running but health check failed." >&2
     echo "  Restart: shft proxy stop && shft proxy start" >&2
     echo "  Logs:    tail -20 ~/.shft/proxy.log" >&2
@@ -150,6 +130,8 @@ echo "  Routing: Copilot proxy (${_proxy_host}:${_proxy_port})"
 
 # Clean up locals
 unset _PROXY_MODE _PROXY_STATE _PROXY_DEFAULT_PORT
+unset SHFT_PROXY_DEFAULT_PORT
+unset _PROXY_SCRIPT_DIR
 unset _proxy_enabled _proxy_pid _proxy_dir _proxy_port
 unset _proxy_env_file _proxy_key _proxy_host _proxy_check_host
 unset _proxy_health_wait_seconds
