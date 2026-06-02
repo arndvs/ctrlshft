@@ -92,6 +92,13 @@ source "$SCRIPT_DIR/_proxy_env.sh" "afk"
 # ── TypeScript engine delegation ─────────────────────────────────────────────
 if [[ "${SHFT_ENGINE:-bash}" == "ts" ]]; then
     echo "=== shft engine: TypeScript (sandcastle) ==="
+
+    # Preflight: ensure engine deps are installed
+    if [[ ! -d "$SCRIPT_DIR/engine/node_modules" ]]; then
+        echo "ERROR: engine dependencies not installed. Run: cd $SCRIPT_DIR/engine && npm install" >&2
+        exit 1
+    fi
+
     _push_afk_event "info" "AFK delegating to TypeScript engine (parallel, max-parallel=${MAX_PARALLEL:-4})"
 
     _engine_env=(env)

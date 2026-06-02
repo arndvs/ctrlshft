@@ -56,7 +56,7 @@ _proxy_enabled=$(_proxy_env_get "enabled")
 
 if [[ "$_proxy_enabled" != "true" ]]; then
     # Not enabled — nothing to do
-    return 0 2>/dev/null || true
+    return 0 2>/dev/null || exit 0
 fi
 
 # ── Proxy is enabled — verify daemon is running ──────────────────────────────
