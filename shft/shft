@@ -112,14 +112,15 @@ _shft_state_set() {
     ts="$(date -u +%Y-%m-%dT%H:%M:%S)Z"
     if [[ -n "$SHFT_PYTHON" ]]; then
         "$SHFT_PYTHON" - "$STATE_FILE" "$field" "$value" <<'PYEOF'
-import json, os, sys, datetime
+import json, os, sys
+from datetime import datetime, UTC
 path, field, value = sys.argv[1], sys.argv[2], sys.argv[3]
 try:
     d = json.load(open(path)) if os.path.exists(path) else {}
 except Exception:
     d = {}
 d[field] = value
-d['updated_at'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+d['updated_at'] = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 json.dump(d, open(path, 'w'), indent=2)
 PYEOF
         true  # ignore python failures
@@ -199,20 +200,31 @@ _proxy_running() {
     fi
     # Fallback to health endpoint (needed on MINGW64 where kill -0 can't see Windows PIDs)
     local port; port=$(_proxy_get "port"); port=${port:-$PROXY_DEFAULT_PORT}
-    local _host; _host=$( (ip route 2>/dev/null || true) | awk '/default/{print $3; exit}'); _host="${_host:-localhost}"
+    _proxy_health_ok "$port"
+}
+
+# Check proxy health endpoint (gateway host first, localhost fallback)
+_proxy_health_ok() {
+    local port="${1:-$PROXY_DEFAULT_PORT}"
+    local _host
+    _host=$( (ip route 2>/dev/null || true) | awk '/default/{print $3; exit}')
+    _host="${_host:-localhost}"
     curl -sf --max-time 2 --connect-timeout 1 "http://${_host}:${port}/health/readiness" >/dev/null 2>&1 || \
     curl -sf --max-time 2 --connect-timeout 1 "http://localhost:${port}/health/readiness" >/dev/null 2>&1
 }
 
 # Wait for proxy health endpoint
 _proxy_wait_healthy() {
-    local port="${1:-$PROXY_DEFAULT_PORT}" attempts=0
-    while [[ $attempts -lt 30 ]]; do
-        if curl -sf --max-time 1 "http://localhost:$port/health/readiness" > /dev/null 2>&1; then
+    local port="${1:-$PROXY_DEFAULT_PORT}"
+    local wait_seconds="${2:-60}"
+    local attempts=$((wait_seconds * 2))
+    local i=0
+    while [[ $i -lt $attempts ]]; do
+        if _proxy_health_ok "$port"; then
             return 0
         fi
         sleep 0.5
-        attempts=$(( attempts + 1 ))
+        i=$(( i + 1 ))
     done
     return 1
 }
@@ -912,7 +924,8 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
                 _pid=$!
                 _proxy_set "pid" "$_pid"
 
-                if _proxy_wait_healthy "$_port"; then
+                _health_wait_seconds="${SHFT_PROXY_HEALTH_WAIT_SECONDS:-60}"
+                if _proxy_wait_healthy "$_port" "$_health_wait_seconds"; then
                     green "Proxy running (PID $_pid)"
                     echo "  Health: http://localhost:$_port/health/readiness"
                 else
