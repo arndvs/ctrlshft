@@ -153,14 +153,14 @@ _shft_state_set() {
     if [[ -n "$SHFT_PYTHON" ]]; then
         "$SHFT_PYTHON" - "$STATE_FILE" "$field" "$value" <<'PYEOF'
 import json, os, sys
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 path, field, value = sys.argv[1], sys.argv[2], sys.argv[3]
 try:
     d = json.load(open(path)) if os.path.exists(path) else {}
 except Exception:
     d = {}
 d[field] = value
-d['updated_at'] = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+d['updated_at'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 json.dump(d, open(path, 'w'), indent=2)
 PYEOF
         true  # ignore python failures
