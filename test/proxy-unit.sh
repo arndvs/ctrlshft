@@ -361,7 +361,7 @@ assert_contains "shft lock path includes hash id" "shft-afk-" "$_shft_lock_const
 _shft_main_lock=$(echo "$_shft_lock_constants" | grep '^LOCK_DIR=' || true)
 assert_not_contains "shft has no static /tmp lock constant" "/tmp/shft-afk.lock" "$_shft_main_lock"
 
-_afk_lock_decl=$(grep -n '^LOCKDIR=' shft/afk.sh || true)
+_afk_lock_decl=$(grep -n 'LOCKDIR=' shft/afk.sh || true)
 assert_contains "afk lockdir consumes SHFT_LOCK_DIR" "SHFT_LOCK_DIR" "$_afk_lock_decl"
 assert_not_contains "afk lockdir is not static /tmp" 'LOCKDIR="/tmp/shft-afk.lock"' "$_afk_lock_decl"
 

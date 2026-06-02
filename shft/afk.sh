@@ -9,7 +9,22 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CTRL_DIR="$(dirname "$SCRIPT_DIR")"
 MAX_ITERATIONS="${1:-5}"
-LOCKDIR="${SHFT_LOCK_DIR:-${TMPDIR:-/tmp}/shft-afk.lock}"
+
+# Derive repo-scoped lock when SHFT_LOCK_DIR is not provided (matches shft behavior)
+if [[ -n "${SHFT_LOCK_DIR:-}" ]]; then
+    LOCKDIR="$SHFT_LOCK_DIR"
+else
+    _repo_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    if command -v sha256sum &>/dev/null; then
+        _lock_id=$(printf '%s' "$_repo_root" | sha256sum | cut -c1-12)
+    elif command -v shasum &>/dev/null; then
+        _lock_id=$(printf '%s' "$_repo_root" | shasum -a 256 | cut -c1-12)
+    else
+        _lock_id=$(cksum <<<"$_repo_root" | awk '{print $1}')
+    fi
+    LOCKDIR="${TMPDIR:-/tmp}/shft-afk-${_lock_id}.lock"
+    unset _repo_root _lock_id
+fi
 MINT_SCRIPT="$CTRL_DIR/bin/mint_github_app_token.py"
 RUN_WITH_SECRETS="$CTRL_DIR/bin/run-with-secrets.sh"
 VENV_DIR="$CTRL_DIR/secrets/.venv"
