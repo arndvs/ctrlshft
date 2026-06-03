@@ -1,0 +1,50 @@
+import type { CliArgs } from "./parse-cli-args.js";
+
+export type WorkflowRunner = (opts: { args: CliArgs; repoDir: string; templatesDir: string }) => Promise<void>;
+
+const workflows: Record<string, WorkflowRunner> = {
+  "review-issue": async ({ args, repoDir, templatesDir }) => {
+    if (!args.issue) throw new Error("review-issue requires --issue <number>");
+    const { runReview } = await import("../workflows/review.js");
+    await runReview({ prNumber: args.issue, repoDir, templatesDir });
+  },
+
+  "plan-issue": async ({ args, repoDir, templatesDir }) => {
+    if (!args.issue) throw new Error("plan-issue requires --issue <number>");
+    const { runToIssuesPrd } = await import("../workflows/to-issues-prd.js");
+    await runToIssuesPrd({ issueNumber: args.issue, repoDir, templatesDir, dryRun: args.dryRun });
+  },
+
+  "implement-issue": async ({ args, repoDir, templatesDir }) => {
+    if (!args.issue) throw new Error("implement-issue requires --issue <number>");
+    const { runImplementPr } = await import("../workflows/implement-pr.js");
+    await runImplementPr({ prNumber: args.issue, repoDir, templatesDir });
+  },
+
+  "fix-pr-feedback": async ({ args, repoDir }) => {
+    if (!args.pr) throw new Error("fix-pr-feedback requires --pr <number>");
+    const { runAddressReview } = await import("../workflows/address-review.js");
+    await runAddressReview({ prNumber: args.pr, repoDir, round: 1, maxRounds: 3 });
+  },
+
+  "merge-pr": async ({ args, repoDir }) => {
+    if (!args.pr) throw new Error("merge-pr requires --pr <number>");
+    const { execFileSync } = await import("node:child_process");
+    const repo = process.env["GITHUB_REPOSITORY"];
+    if (!repo) throw new Error("GITHUB_REPOSITORY environment variable is required");
+    execFileSync("gh", ["pr", "merge", args.pr, "--squash", "--delete-branch", "-R", repo], { cwd: repoDir, stdio: "inherit" });
+  },
+
+  "check-stale-prs": async ({ repoDir }) => {
+    const { execFileSync } = await import("node:child_process");
+    const repo = process.env["GITHUB_REPOSITORY"];
+    if (!repo) throw new Error("GITHUB_REPOSITORY environment variable is required");
+    execFileSync("gh", ["pr", "list", "--state", "open", "--json", "number,title,updatedAt", "-R", repo], { cwd: repoDir, stdio: "inherit" });
+  },
+};
+
+export const WORKFLOW_NAMES = Object.keys(workflows);
+
+export function resolveWorkflow(name: string): WorkflowRunner | undefined {
+  return workflows[name];
+}
