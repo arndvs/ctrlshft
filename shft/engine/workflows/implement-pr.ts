@@ -7,15 +7,16 @@ import { ImplementPrOutput } from "../schemas/implement-pr-output.js";
 import { fetchPrComments } from "../lib/fetch-pr-comments.js";
 import { parseDiffLines } from "../lib/parse-diff-lines.js";
 import { loadConfig } from "../lib/config.js";
+import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultPromptsDir = path.resolve(__dirname, "..", "prompts");
+const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
 
-export async function runImplementPr(opts: { prNumber: string; repoDir: string; model?: string; promptsDir?: string }): Promise<void> {
+export async function runImplementPr(opts: { prNumber: string; repoDir: string; model?: string; templatesDir?: string }): Promise<void> {
   const config = await loadConfig({ cwd: opts.repoDir });
   const { prNumber, repoDir } = opts;
   const model = opts.model ?? config.model;
-  const promptsDir = opts.promptsDir ?? defaultPromptsDir;
+  const templatesDir = opts.templatesDir ?? defaultTemplatesDir;
 
   console.log(`[implement-pr] Fetching PR #${prNumber} data...`);
   const prContext = fetchPrComments({ prNumber, cwd: repoDir });
@@ -35,12 +36,15 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
   console.log(`[implement-pr] Unresolved threads: ${prContext.comments.review_threads.length}`);
 
   try {
+    const promptFile = await resolvePrompt({ name: "implement-pr", config, repoDir, templatesDir });
+
     const result = await run({
       agent: claudeCode(model),
       sandbox: noSandbox(),
       cwd: repoDir,
-      promptFile: path.join(promptsDir, "implement-pr.md"),
+      promptFile,
       promptArgs: {
+        ...configPromptArgs(config),
         PR_NUMBER: prNumber,
         BRANCH: branch,
         ISSUE_NUMBER: issueNumber,

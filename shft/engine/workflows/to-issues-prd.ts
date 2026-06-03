@@ -5,15 +5,16 @@ import { run, Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcas
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { PrdSlicesOutput } from "../schemas/prd-slices-output.js";
 import { loadConfig } from "../lib/config.js";
+import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultPromptsDir = path.resolve(__dirname, "..", "prompts");
+const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
 
-export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: string; model?: string; promptsDir?: string; dryRun: boolean }): Promise<void> {
+export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: string; model?: string; templatesDir?: string; dryRun: boolean }): Promise<void> {
   const config = await loadConfig({ cwd: opts.repoDir });
   const { issueNumber, repoDir, dryRun } = opts;
   const model = opts.model ?? config.model;
-  const promptsDir = opts.promptsDir ?? defaultPromptsDir;
+  const templatesDir = opts.templatesDir ?? defaultTemplatesDir;
 
   console.log(`[to-issues-prd] Reading PRD from issue #${issueNumber}...`);
 
@@ -27,12 +28,15 @@ export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: strin
   console.log(`[to-issues-prd] PRD: ${prd.title}`);
 
   try {
+    const promptFile = await resolvePrompt({ name: "to-issues-prd", config, repoDir, templatesDir });
+
     const result = await run({
       agent: claudeCode(model),
       sandbox: noSandbox(),
       cwd: repoDir,
-      promptFile: path.join(promptsDir, "to-issues-prd.md"),
+      promptFile,
       promptArgs: {
+        ...configPromptArgs(config),
         ISSUE_NUMBER: issueNumber,
       },
       output: Output.object({ tag: "output", schema: PrdSlicesOutput }),
