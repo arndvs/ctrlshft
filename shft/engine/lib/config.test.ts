@@ -6,13 +6,26 @@ import { loadConfig, SandcastleConfig } from "./config.js";
 
 describe("loadConfig", () => {
   let tempDir: string;
+  const savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), "sandcastle-config-"));
+    // Isolate env vars that loadConfig reads
+    for (const key of ["SANDCASTLE_MODEL", "SANDCASTLE_BASE_BRANCH", "SANDCASTLE_SANDBOX", "SANDCASTLE_PACKAGE_MANAGER", "ANTHROPIC_MODEL"]) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
   });
 
   afterEach(() => {
     rmSync(tempDir, { recursive: true, force: true });
+    for (const [key, value] of Object.entries(savedEnv)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
   });
 
   it("returns all defaults when config file is missing", async () => {
@@ -75,11 +88,20 @@ describe("loadConfig", () => {
 
   it("respects environment variable overrides", async () => {
     process.env["SANDCASTLE_MODEL"] = "claude-haiku";
-    try {
-      const config = await loadConfig({ cwd: tempDir });
-      expect(config.model).toBe("claude-haiku");
-    } finally {
-      delete process.env["SANDCASTLE_MODEL"];
-    }
+    const config = await loadConfig({ cwd: tempDir });
+    expect(config.model).toBe("claude-haiku");
+  });
+
+  it("falls back to ANTHROPIC_MODEL when SANDCASTLE_MODEL is not set", async () => {
+    process.env["ANTHROPIC_MODEL"] = "claude-opus-4-6";
+    const config = await loadConfig({ cwd: tempDir });
+    expect(config.model).toBe("claude-opus-4-6");
+  });
+
+  it("prefers SANDCASTLE_MODEL over ANTHROPIC_MODEL", async () => {
+    process.env["SANDCASTLE_MODEL"] = "claude-haiku";
+    process.env["ANTHROPIC_MODEL"] = "claude-opus-4-6";
+    const config = await loadConfig({ cwd: tempDir });
+    expect(config.model).toBe("claude-haiku");
   });
 });

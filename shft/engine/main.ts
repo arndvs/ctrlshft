@@ -9,10 +9,9 @@ import { runImplementPr } from "./workflows/implement-pr.js";
 import { runReview } from "./workflows/review.js";
 import { runToIssuesPrd } from "./workflows/to-issues-prd.js";
 import { Semaphore } from "./lib/semaphore.js";
+import { loadConfig } from "./lib/config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const MODEL = process.env["ANTHROPIC_MODEL"] ?? "claude-sonnet-4-20250514";
 
 const { values } = parseArgs({
   options: {
@@ -34,6 +33,8 @@ if (!values.repo) {
 }
 
 const repoDir = path.resolve(values.repo);
+const config = await loadConfig({ cwd: repoDir });
+const MODEL = process.env["ANTHROPIC_MODEL"] ?? config.model;
 const maxIterations = parseInt(values["max-iterations"] ?? "1", 10);
 const maxParallel = parseInt(values["max-parallel"] ?? "4", 10);
 
