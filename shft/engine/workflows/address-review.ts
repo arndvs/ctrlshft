@@ -10,10 +10,11 @@ import { resolveThreads } from "../lib/resolve-threads.js";
 import { postRoundSummary } from "../lib/round-summary.js";
 import { requestCopilotReview } from "../lib/request-review.js";
 import { loadConfig } from "../lib/config.js";
+import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 import type { ScoredComment, Tier } from "../lib/types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultPromptsDir = path.resolve(__dirname, "..", "prompts");
+const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
 
 interface AddressReviewOpts {
   prNumber: string;
@@ -21,7 +22,7 @@ interface AddressReviewOpts {
   maxRounds: number;
   repoDir: string;
   model?: string;
-  promptsDir?: string;
+  templatesDir?: string;
 }
 
 interface AddressReviewResult {
@@ -41,7 +42,7 @@ export async function runAddressReview(opts: AddressReviewOpts): Promise<Address
   const config = await loadConfig({ cwd: opts.repoDir });
   const { prNumber, round, maxRounds, repoDir } = opts;
   const model = opts.model ?? config.model;
-  const promptsDir = opts.promptsDir ?? defaultPromptsDir;
+  const templatesDir = opts.templatesDir ?? defaultTemplatesDir;
   const { owner, repo } = getOwnerRepo({ cwd: repoDir });
 
   console.log(`\n[address-review] Round ${round}/${maxRounds} — PR #${prNumber}`);
@@ -95,12 +96,15 @@ export async function runAddressReview(opts: AddressReviewOpts): Promise<Address
     }));
 
     try {
+      const promptFile = await resolvePrompt({ name: "address-review", config, repoDir, templatesDir });
+
       await run({
         agent: claudeCode(model),
         sandbox: noSandbox(),
         cwd: repoDir,
-        promptFile: path.join(promptsDir, "address-review.md"),
+        promptFile,
         promptArgs: {
+          ...configPromptArgs(config),
           PR_NUMBER: prNumber,
           BRANCH: getBranch({ prNumber, cwd: repoDir }),
           COMMENTS_JSON: JSON.stringify(commentsPayload, null, 2),
