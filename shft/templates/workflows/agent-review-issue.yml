@@ -1,0 +1,47 @@
+name: "Agent: Review Issue"
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  review:
+    if: github.event.label.name == 'Sandcastle'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install engine dependencies
+        run: cd .sandcastle/engine && npm install
+
+      - name: Run review
+        env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npx tsx .sandcastle/run.ts review-issue \
+            --issue ${{ github.event.issue.number }}
+
+      - name: Transition label
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --remove-label "Sandcastle" \
+            --add-label "agent:review" \
+            -R ${{ github.repository }}
