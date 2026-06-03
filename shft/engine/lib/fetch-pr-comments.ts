@@ -1,5 +1,6 @@
-import { execSync, execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { z } from "zod";
+import { sh, safeSh } from "./shell-helpers.js";
 
 const PrView = z.object({
   title: z.string(),
@@ -93,24 +94,8 @@ query($owner:String!,$repo:String!,$number:Int!) {
   }
 }`;
 
-function sh(cmd: string, cwd?: string): string {
-  return execSync(cmd, { encoding: "utf8", cwd, stdio: ["ignore", "pipe", "pipe"] });
-}
-
-function safeSh(cmd: string, cwd?: string): string {
-  try {
-    return sh(cmd, cwd);
-  } catch {
-    return "";
-  }
-}
-
 export function getOwnerRepo(opts: { cwd: string }): { owner: string; repo: string } {
-  const remoteUrl = execSync("gh repo view --json nameWithOwner --jq .nameWithOwner", {
-    encoding: "utf8",
-    cwd: opts.cwd,
-    stdio: ["ignore", "pipe", "pipe"],
-  }).trim();
+  const remoteUrl = sh("gh repo view --json nameWithOwner --jq .nameWithOwner", opts.cwd).trim();
 
   const parts = remoteUrl.split("/");
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
