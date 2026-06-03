@@ -526,6 +526,15 @@ except:
         fi
         ;;
 
+    # ── init-sandcastle ───────────────────────────────────────────────────────
+    init-sandcastle)
+        if [[ ! -f "$DOTFILES/bin/init-sandcastle.sh" ]]; then
+            red "init-sandcastle.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/init-sandcastle.sh" "$@"
+        ;;
+
     # ── new-client ─────────────────────────────────────────────────────────────
     new-client|client)
         if [[ ! -f "$DOTFILES/bin/new-client.sh" ]]; then
@@ -661,6 +670,12 @@ except:
         echo "  Credentials"
         echo "  ──────────────────────────────────────────────────────────────"
         echo "  ctrl verify-token       test-mint a GitHub App token"
+        echo ""
+        echo "  Sandcastle"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl init-sandcastle    scaffold Sandcastle in a repo"
+        echo "                          [--branch main] [--model claude-opus-4-6]"
+        echo "                          [--pm npm] [--force]"
         echo ""
         echo "  Session analysis (requires sheal)"
         echo "  ──────────────────────────────────────────────────────────────"
