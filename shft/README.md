@@ -23,7 +23,7 @@ The autonomous execution side of ctrl+shft. `ctrl` manages your environment; `sh
 | `shft done` | Mark current issue as complete |
 | `shft plan` | View/edit the working plan |
 | `shft engine on\|off\|status` | Switch between bash and TypeScript engines |
-| `shft proxy start\|stop\|status` | Manage the LiteLLM/Copilot proxy daemon |
+| `shft proxy on\|off\|start\|stop\|status` | Toggle routing and manage the LiteLLM/Copilot proxy daemon |
 | `shft validate` | Run AFK environment validation |
 | `shft mint` | Test GitHub App token minting |
 | `shft context` | Show current context detection results |
