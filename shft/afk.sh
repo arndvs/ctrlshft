@@ -106,8 +106,7 @@ if [[ "${SHFT_ENGINE:-bash}" == "ts" ]]; then
     ( cd "$SCRIPT_DIR/engine" && "${_engine_env[@]}" npx tsx main.ts \
         --repo "$_repo_root" \
         --workflow parallel \
-        --max-iterations "$MAX_ITERATIONS" \
-        --max-issues "${MAX_ISSUES:-5}" \
+        --max-issues "$MAX_ITERATIONS" \
         --max-parallel "${MAX_PARALLEL:-4}" ) || {
         echo "ERROR: TypeScript engine failed" >&2
         _push_afk_event "info" "Engine parallel run failed"
