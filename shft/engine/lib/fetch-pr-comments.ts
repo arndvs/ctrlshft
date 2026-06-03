@@ -105,7 +105,7 @@ function safeSh(cmd: string, cwd?: string): string {
   }
 }
 
-function getOwnerRepo(opts: { cwd: string }): { owner: string; repo: string } {
+export function getOwnerRepo(opts: { cwd: string }): { owner: string; repo: string } {
   const remoteUrl = execSync("gh repo view --json nameWithOwner --jq .nameWithOwner", {
     encoding: "utf8",
     cwd: opts.cwd,

@@ -8,6 +8,7 @@ import { MergeOutput } from "./schemas/merge-output.js";
 import { runImplementPr } from "./workflows/implement-pr.js";
 import { runReview } from "./workflows/review.js";
 import { runToIssuesPrd } from "./workflows/to-issues-prd.js";
+import { runAddressReview } from "./workflows/address-review.js";
 import { Semaphore } from "./lib/semaphore.js";
 import { loadConfig } from "./lib/config.js";
 
@@ -21,6 +22,8 @@ const { values } = parseArgs({
     issue: { type: "string" },
     branch: { type: "string" },
     pr: { type: "string" },
+    round: { type: "string", default: "1" },
+    "max-rounds": { type: "string", default: "3" },
     "max-issues": { type: "string", default: "5" },
     "max-parallel": { type: "string", default: "4" },
     "dry-run": { type: "boolean", default: false },
@@ -248,6 +251,28 @@ if (workflow === "plan") {
     promptsDir,
     dryRun: values["dry-run"] ?? false,
   });
+} else if (workflow === "address-review") {
+  if (!values.pr) {
+    throw new Error("--pr is required for address-review workflow");
+  }
+  const round = parseInt(values.round ?? "1", 10);
+  const maxRounds = parseInt(values["max-rounds"] ?? "3", 10);
+  if (Number.isNaN(round) || round < 1) {
+    throw new Error(`--round must be a positive integer, got: ${values.round}`);
+  }
+  if (Number.isNaN(maxRounds) || maxRounds < 1) {
+    throw new Error(`--max-rounds must be a positive integer, got: ${values["max-rounds"]}`);
+  }
+  const result = await runAddressReview({
+    prNumber: values.pr,
+    round,
+    maxRounds,
+    repoDir,
+    model: MODEL,
+    promptsDir,
+  });
+  console.log(`\n[shft-engine] address-review result (JSON):`);
+  console.log(JSON.stringify(result, null, 2));
 } else {
   const result = await run({
     agent: claudeCode(MODEL),
