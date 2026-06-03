@@ -14,6 +14,13 @@ _PROXY_MODE="${1:-hitl}"
 _PROXY_STATE="$HOME/.shft/proxy.json"
 _PROXY_DEFAULT_PORT=4000
 
+_PROXY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ ! -f "$_PROXY_SCRIPT_DIR/_proxy_health.sh" ]]; then
+    echo "ERROR: missing proxy helper: $_PROXY_SCRIPT_DIR/_proxy_health.sh" >&2
+    return 1 2>/dev/null || exit 1
+fi
+source "$_PROXY_SCRIPT_DIR/_proxy_health.sh"
+
 # ── Minimal helpers (no dependency on shft or _lib.sh) ────────────────────────
 
 _proxy_env_get() {
@@ -49,7 +56,7 @@ _proxy_enabled=$(_proxy_env_get "enabled")
 
 if [[ "$_proxy_enabled" != "true" ]]; then
     # Not enabled — nothing to do
-    return 0 2>/dev/null || true
+    return 0 2>/dev/null || exit 0
 fi
 
 # ── Proxy is enabled — verify daemon is running ──────────────────────────────
@@ -61,7 +68,7 @@ _proxy_port="${_proxy_port:-$_PROXY_DEFAULT_PORT}"
 
 # Verify daemon is running — PID check first, health endpoint fallback (MINGW64 kill -0 can't see Windows PIDs)
 if [[ -z "$_proxy_pid" ]] || ! kill -0 "$_proxy_pid" 2>/dev/null; then
-    if ! curl -sf --max-time 2 "http://localhost:${_proxy_port}/health/readiness" >/dev/null 2>&1; then
+    if ! _proxy_health_ok "$_proxy_port"; then
         echo "  ERROR: Proxy enabled but daemon not running." >&2
         echo "  Start it:  shft proxy start" >&2
         echo "  Or disable: shft proxy off" >&2
@@ -70,12 +77,12 @@ if [[ -z "$_proxy_pid" ]] || ! kill -0 "$_proxy_pid" 2>/dev/null; then
 fi
 
 # Health check
-_proxy_check_host=$( (ip route 2>/dev/null || true) | awk '/default/{print $3; exit}'); _proxy_check_host="${_proxy_check_host:-localhost}"
-if ! curl -sf --max-time 2 "http://${_proxy_check_host}:${_proxy_port}/health/readiness" > /dev/null 2>&1 \
-  && ! curl -sf --max-time 2 "http://localhost:${_proxy_port}/health/readiness" > /dev/null 2>&1; then
+_proxy_health_wait_seconds="${SHFT_PROXY_HEALTH_WAIT_SECONDS:-30}"
+if ! _proxy_wait_healthy "$_proxy_port" "$_proxy_health_wait_seconds"; then
     echo "  ERROR: Proxy daemon running but health check failed." >&2
     echo "  Restart: shft proxy stop && shft proxy start" >&2
     echo "  Logs:    tail -20 ~/.shft/proxy.log" >&2
+    echo "  Tip:     Increase wait with SHFT_PROXY_HEALTH_WAIT_SECONDS=60" >&2
     return 1 2>/dev/null || exit 1
 fi
 
@@ -126,5 +133,7 @@ echo "  Routing: Copilot proxy (${_proxy_host}:${_proxy_port})"
 
 # Clean up locals
 unset _PROXY_MODE _PROXY_STATE _PROXY_DEFAULT_PORT
+unset _PROXY_SCRIPT_DIR
 unset _proxy_enabled _proxy_pid _proxy_dir _proxy_port
-unset _proxy_env_file _proxy_key _proxy_host _proxy_check_host
+unset _proxy_env_file _proxy_key _proxy_host
+unset _proxy_health_wait_seconds

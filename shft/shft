@@ -66,8 +66,32 @@ dim() { printf '\033[2m%s\033[0m\n' "$*"; }
 # which may resolve to the Windows Store stub.
 _py() { [[ -n "$SHFT_PYTHON" ]] && "$SHFT_PYTHON" "$@"; }
 
+_shft_repo_root() {
+    command -v git &>/dev/null && git rev-parse --show-toplevel 2>/dev/null || pwd
+}
+
+_shft_hash_path() {
+    local _path="$1"
+    if command -v sha256sum &>/dev/null; then
+        printf '%s' "$_path" | sha256sum | awk '{print $1}'
+    elif command -v shasum &>/dev/null; then
+        printf '%s' "$_path" | shasum -a 256 | awk '{print $1}'
+    elif [[ -n "$SHFT_PYTHON" ]]; then
+        "$SHFT_PYTHON" - "$_path" <<'PYEOF'
+import hashlib, sys
+print(hashlib.sha256(sys.argv[1].encode('utf-8')).hexdigest())
+PYEOF
+    else
+        cksum <<<"$_path" | awk '{print $1}'
+    fi
+}
+
 # ── Constants ─────────────────────────────────────────────────────────────────
-LOCK_DIR="/tmp/shft-afk.lock"
+_SHFT_REPO_ROOT="$(_shft_repo_root)"
+_SHFT_LOCK_ID="$(_shft_hash_path "$_SHFT_REPO_ROOT" | tr -d '\r\n' | cut -c1-12)"
+LOCK_BASE_DIR="${TMPDIR:-/tmp}"
+LOCK_DIR="$LOCK_BASE_DIR/shft-afk-${_SHFT_LOCK_ID}.lock"
+LEGACY_LOCK_DIR="/tmp/shft-afk.lock"
 WORKING_DIR="$DOTFILES/working"
 LOG_FILE="$WORKING_DIR/shft.log"
 STATE_FILE="$WORKING_DIR/shft-state.json"
@@ -78,12 +102,28 @@ PROXY_STATE_DIR="$HOME/.shft"
 PROXY_STATE_FILE="$PROXY_STATE_DIR/proxy.json"
 PROXY_LOG_FILE="$PROXY_STATE_DIR/proxy.log"
 PROXY_DEFAULT_PORT=4000
+SHFT_PROXY_DEFAULT_PORT="$PROXY_DEFAULT_PORT"
+
+if [[ ! -f "$SHFT_DIR/_proxy_health.sh" ]]; then
+    red "Missing proxy helper: $SHFT_DIR/_proxy_health.sh"
+    exit 1
+fi
+source "$SHFT_DIR/_proxy_health.sh"
 
 # ── Helper functions ──────────────────────────────────────────────────────────
 
 # Check if an AFK loop is currently running
 _shft_running() {
     [[ -d "$LOCK_DIR" ]] && return 0 || return 1
+}
+
+_shft_warn_legacy_lock() {
+    if [[ "$LEGACY_LOCK_DIR" != "$LOCK_DIR" ]] && [[ -d "$LEGACY_LOCK_DIR" ]]; then
+        yellow "Legacy AFK lock detected: $LEGACY_LOCK_DIR"
+        yellow "  Current scoped lock: $LOCK_DIR"
+        yellow "  If no old loop is running, remove it: rmdir \"$LEGACY_LOCK_DIR\""
+        echo ""
+    fi
 }
 
 # Get current shft state from state file
@@ -112,14 +152,15 @@ _shft_state_set() {
     ts="$(date -u +%Y-%m-%dT%H:%M:%S)Z"
     if [[ -n "$SHFT_PYTHON" ]]; then
         "$SHFT_PYTHON" - "$STATE_FILE" "$field" "$value" <<'PYEOF'
-import json, os, sys, datetime
+import json, os, sys
+from datetime import datetime, timezone
 path, field, value = sys.argv[1], sys.argv[2], sys.argv[3]
 try:
     d = json.load(open(path)) if os.path.exists(path) else {}
 except Exception:
     d = {}
 d[field] = value
-d['updated_at'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+d['updated_at'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 json.dump(d, open(path, 'w'), indent=2)
 PYEOF
         true  # ignore python failures
@@ -199,22 +240,7 @@ _proxy_running() {
     fi
     # Fallback to health endpoint (needed on MINGW64 where kill -0 can't see Windows PIDs)
     local port; port=$(_proxy_get "port"); port=${port:-$PROXY_DEFAULT_PORT}
-    local _host; _host=$( (ip route 2>/dev/null || true) | awk '/default/{print $3; exit}'); _host="${_host:-localhost}"
-    curl -sf --max-time 2 --connect-timeout 1 "http://${_host}:${port}/health/readiness" >/dev/null 2>&1 || \
-    curl -sf --max-time 2 --connect-timeout 1 "http://localhost:${port}/health/readiness" >/dev/null 2>&1
-}
-
-# Wait for proxy health endpoint
-_proxy_wait_healthy() {
-    local port="${1:-$PROXY_DEFAULT_PORT}" attempts=0
-    while [[ $attempts -lt 30 ]]; do
-        if curl -sf --max-time 1 "http://localhost:$port/health/readiness" > /dev/null 2>&1; then
-            return 0
-        fi
-        sleep 0.5
-        attempts=$(( attempts + 1 ))
-    done
-    return 1
+    _proxy_health_ok "$port"
 }
 
 # Load LITELLM_MASTER_KEY from proxy dir's .env (without exporting other vars)
@@ -225,7 +251,13 @@ _proxy_load_key() {
         red "Proxy .env not found at $env_file"
         return 1
     fi
-    grep '^LITELLM_MASTER_KEY=' "$env_file" | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^["'\'']*//; s/["'\'']*$//'
+    local _key
+    _key=$(grep '^LITELLM_MASTER_KEY=' "$env_file" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^["'\'']*//; s/["'\'']*$//') || true
+    if [[ -z "$_key" ]]; then
+        red "LITELLM_MASTER_KEY not found or empty in $env_file"
+        return 1
+    fi
+    printf '%s' "$_key"
 }
 
 # Require gh CLI
@@ -346,6 +378,8 @@ case "$CMD" in
             exit 1
         fi
 
+        _shft_warn_legacy_lock
+
         # Check already running
         if _shft_running; then
             red "An AFK loop is already running."
@@ -431,7 +465,10 @@ case "$CMD" in
         _engine="${SHFT_ENGINE:-$(_shft_state "engine")}"
         _engine="${_engine:-bash}"
 
-        SHFT_ENGINE="$_engine" SHFT_TARGET_ISSUE="$_target_issue" bash "$SHFT_DIR/afk.sh" "$_iterations"
+        SHFT_ENGINE="$_engine" \
+        SHFT_TARGET_ISSUE="$_target_issue" \
+        SHFT_LOCK_DIR="$LOCK_DIR" \
+        bash "$SHFT_DIR/afk.sh" "$_iterations"
         ;;
 
     # ── status ─────────────────────────────────────────────────────────────────
@@ -453,6 +490,9 @@ case "$CMD" in
             [[ -n "$_max" ]] && echo "  Max iters: $_max"
         else
             echo "  Loop:      not running"
+            if [[ "$LEGACY_LOCK_DIR" != "$LOCK_DIR" ]] && [[ -d "$LEGACY_LOCK_DIR" ]]; then
+                yellow "  Legacy lock detected: $LEGACY_LOCK_DIR"
+            fi
         fi
 
         echo ""
@@ -517,6 +557,11 @@ case "$CMD" in
     stop)
         if ! _shft_running; then
             yellow "No AFK loop is currently running."
+            if [[ "$LEGACY_LOCK_DIR" != "$LOCK_DIR" ]] && [[ -d "$LEGACY_LOCK_DIR" ]]; then
+                echo ""
+                yellow "Legacy lock still exists: $LEGACY_LOCK_DIR"
+                yellow "Remove it if stale: rmdir \"$LEGACY_LOCK_DIR\""
+            fi
             exit 0
         fi
 
@@ -912,7 +957,8 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
                 _pid=$!
                 _proxy_set "pid" "$_pid"
 
-                if _proxy_wait_healthy "$_port"; then
+                _health_wait_seconds="${SHFT_PROXY_HEALTH_WAIT_SECONDS:-60}"
+                if _proxy_wait_healthy "$_port" "$_health_wait_seconds"; then
                     green "Proxy running (PID $_pid)"
                     echo "  Health: http://localhost:$_port/health/readiness"
                 else

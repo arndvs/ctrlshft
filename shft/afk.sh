@@ -9,7 +9,26 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CTRL_DIR="$(dirname "$SCRIPT_DIR")"
 MAX_ITERATIONS="${1:-5}"
-LOCKDIR="/tmp/shft-afk.lock"
+
+# Derive repo-scoped lock when SHFT_LOCK_DIR is not provided (matches shft behavior)
+if [[ -n "${SHFT_LOCK_DIR:-}" ]]; then
+    LOCKDIR="$SHFT_LOCK_DIR"
+else
+    _repo_root=$(command -v git &>/dev/null && git rev-parse --show-toplevel 2>/dev/null || pwd)
+    if command -v sha256sum &>/dev/null; then
+        _lock_id=$(printf '%s' "$_repo_root" | sha256sum | cut -c1-12)
+    elif command -v shasum &>/dev/null; then
+        _lock_id=$(printf '%s' "$_repo_root" | shasum -a 256 | cut -c1-12)
+    elif command -v python3 &>/dev/null && python3 --version &>/dev/null; then
+        _lock_id=$(python3 -c "import hashlib,sys;print(hashlib.sha256(sys.argv[1].encode('utf-8')).hexdigest()[:12])" "$_repo_root")
+    elif command -v python &>/dev/null && python --version &>/dev/null; then
+        _lock_id=$(python -c "import hashlib,sys;print(hashlib.sha256(sys.argv[1].encode('utf-8')).hexdigest()[:12])" "$_repo_root")
+    else
+        _lock_id=$(cksum <<<"$_repo_root" | awk '{print $1}' | cut -c1-12)
+    fi
+    LOCKDIR="${TMPDIR:-/tmp}/shft-afk-${_lock_id}.lock"
+    unset _repo_root _lock_id
+fi
 MINT_SCRIPT="$CTRL_DIR/bin/mint_github_app_token.py"
 RUN_WITH_SECRETS="$CTRL_DIR/bin/run-with-secrets.sh"
 VENV_DIR="$CTRL_DIR/secrets/.venv"
@@ -73,6 +92,13 @@ source "$SCRIPT_DIR/_proxy_env.sh" "afk"
 # ── TypeScript engine delegation ─────────────────────────────────────────────
 if [[ "${SHFT_ENGINE:-bash}" == "ts" ]]; then
     echo "=== shft engine: TypeScript (sandcastle) ==="
+
+    # Preflight: ensure engine deps are installed
+    if [[ ! -d "$SCRIPT_DIR/engine/node_modules" ]]; then
+        echo "ERROR: engine dependencies not installed. Run: cd $SCRIPT_DIR/engine && npm install" >&2
+        exit 1
+    fi
+
     _push_afk_event "info" "AFK delegating to TypeScript engine (parallel, max-parallel=${MAX_PARALLEL:-4})"
 
     _engine_env=(env)
@@ -98,8 +124,7 @@ if [[ "${SHFT_ENGINE:-bash}" == "ts" ]]; then
     "${_engine_env[@]}" npx tsx "$SCRIPT_DIR/engine/main.ts" \
         --repo "$(pwd)" \
         --workflow parallel \
-        --max-iterations "$MAX_ITERATIONS" \
-        --max-issues "${MAX_ISSUES:-5}" \
+        --max-issues "$MAX_ITERATIONS" \
         --max-parallel "${MAX_PARALLEL:-4}" || {
         echo "ERROR: TypeScript engine failed" >&2
         _push_afk_event "info" "Engine parallel run failed"

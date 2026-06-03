@@ -76,6 +76,9 @@ echo "════════════════════════�
 # We can't source the whole script (it runs main), so extract the functions.
 # Strategy: define the functions inline by sourcing just the function block.
 
+# Shared proxy health helpers are now in a dedicated module.
+source shft/_proxy_health.sh
+
 # _proxy_get / _proxy_set / _proxy_running / _proxy_load_key
 # These are defined in shft between "# ── Proxy state helpers" and "# Require gh CLI"
 eval "$(sed -n '/^# ── Proxy state helpers/,/^# Require gh CLI/{ /^# Require gh CLI/d; p; }' shft/shft)"
@@ -310,12 +313,23 @@ echo "curl timeouts — _proxy_running has --max-time + --connect-timeout"
 echo "────────────────────────────────────────────────"
 
 _running_fn=$(sed -n '/^_proxy_running()/,/^}/p' shft/shft)
-assert_contains "has --max-time" "--max-time" "$_running_fn"
-assert_contains "has --connect-timeout" "--connect-timeout" "$_running_fn"
+assert_contains "running fn delegates to _proxy_health_ok" "_proxy_health_ok" "$_running_fn"
 
-# Same in _proxy_env.sh daemon check
+_running_health_helper=$(sed -n '/^_proxy_health_ok()/,/^}/p' shft/_proxy_health.sh)
+assert_contains "health helper has --max-time" "--max-time" "$_running_health_helper"
+assert_contains "health helper has --connect-timeout" "--connect-timeout" "$_running_health_helper"
+
+_shft_sources_helper=$(grep -n '_proxy_health.sh' shft/shft || true)
+assert_contains "shft sources shared proxy helper" "_proxy_health.sh" "$_shft_sources_helper"
+
+# Same in _proxy_env.sh via _proxy_health_ok helper
 _env_daemon_check=$(sed -n '/Verify daemon is running/,/^fi$/p' shft/_proxy_env.sh)
-assert_contains "env.sh daemon check has --max-time" "--max-time" "$_env_daemon_check"
+assert_contains "env.sh daemon check uses _proxy_health_ok" "_proxy_health_ok" "$_env_daemon_check"
+_env_health_helper=$(sed -n '/^_proxy_health_ok()/,/^}/p' shft/_proxy_health.sh)
+assert_contains "env.sh health helper has --max-time" "--max-time" "$_env_health_helper"
+
+_env_sources_helper=$(grep -n '_proxy_health.sh' shft/_proxy_env.sh || true)
+assert_contains "env.sh sources shared proxy helper" "_proxy_health.sh" "$_env_sources_helper"
 
 # ══════════════════════════════════════════════════════════════════════════════
 echo
@@ -335,6 +349,21 @@ echo "────────────────────────�
 _running_comment=$(grep -B1 '_proxy_running()' shft/shft | head -1)
 assert_contains "comment says PID" "PID" "$_running_comment"
 assert_not_contains "no misleading PID-based" "PID-based)" "$_running_comment"
+
+# ══════════════════════════════════════════════════════════════════════════════
+echo
+echo "AFK lock scoping — repo-specific lock path (no global static lock)"
+echo "────────────────────────────────────────────────"
+
+_shft_lock_constants=$(sed -n '/^# ── Constants/,/^# ── Helper functions/p' shft/shft)
+assert_contains "shft defines LOCK_BASE_DIR" "LOCK_BASE_DIR" "$_shft_lock_constants"
+assert_contains "shft lock path includes hash id" "shft-afk-" "$_shft_lock_constants"
+_shft_main_lock=$(echo "$_shft_lock_constants" | grep '^LOCK_DIR=' || true)
+assert_not_contains "shft has no static /tmp lock constant" "/tmp/shft-afk.lock" "$_shft_main_lock"
+
+_afk_lock_decl=$(grep -n 'LOCKDIR=' shft/afk.sh || true)
+assert_contains "afk lockdir consumes SHFT_LOCK_DIR" "SHFT_LOCK_DIR" "$_afk_lock_decl"
+assert_not_contains "afk lockdir is not static /tmp" 'LOCKDIR="/tmp/shft-afk.lock"' "$_afk_lock_decl"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Summary
