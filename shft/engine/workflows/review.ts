@@ -1,13 +1,21 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { run, Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { ReviewOutput } from "../schemas/review-output.js";
 import { fetchPrComments } from "../lib/fetch-pr-comments.js";
 import { parseDiffLines } from "../lib/parse-diff-lines.js";
+import { loadConfig } from "../lib/config.js";
 
-export async function runReview(opts: { prNumber: string; repoDir: string; model: string; promptsDir: string }): Promise<void> {
-  const { prNumber, repoDir, model, promptsDir } = opts;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const defaultPromptsDir = path.resolve(__dirname, "..", "prompts");
+
+export async function runReview(opts: { prNumber: string; repoDir: string; model?: string; promptsDir?: string }): Promise<void> {
+  const config = await loadConfig({ cwd: opts.repoDir });
+  const { prNumber, repoDir } = opts;
+  const model = opts.model ?? config.model;
+  const promptsDir = opts.promptsDir ?? defaultPromptsDir;
 
   console.log(`[review] Fetching PR #${prNumber} data...`);
   const prContext = fetchPrComments({ prNumber, cwd: repoDir });

@@ -31,7 +31,7 @@ export async function loadConfig(opts: { cwd: string }): Promise<SandcastleConfi
   }
 
   // Environment variable overrides take precedence
-  const envModel = process.env["SANDCASTLE_MODEL"];
+  const envModel = process.env["SANDCASTLE_MODEL"] ?? process.env["ANTHROPIC_MODEL"];
   const envBranch = process.env["SANDCASTLE_BASE_BRANCH"];
   const envSandbox = process.env["SANDCASTLE_SANDBOX"];
   const envPm = process.env["SANDCASTLE_PACKAGE_MANAGER"];
