@@ -6,7 +6,7 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "start": "tsx main.ts"
+    "start": "echo 'Use workflow runners via .sandcastle/run.ts dispatcher'"
   },
   "dependencies": {
     "@ai-hero/sandcastle": "^0.5.11",
