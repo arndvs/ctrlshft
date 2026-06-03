@@ -9,7 +9,7 @@ Claude Code hooks are **JSON configuration** in `~/.claude/settings.json`, not s
 - **Exit 0** — allow (tool proceeds / agent stops normally)
 - **Exit 2** — block (tool use rejected / agent continues working)
 
-Bootstrap symlinks `hooks/` → `~/.claude/hooks/` and merges the configuration from `settings-hooks.json` into `~/.claude/settings.json`.
+Bootstrap symlinks `hooks/` → `~/.claude/hooks/`. The hook configuration lives in `dotfiles/.claude/settings.json` (the source of truth), which `ctrl bootstrap` deploys directly to `~/.claude/settings.json`.
 
 ## Hooks
 
@@ -56,10 +56,10 @@ They do **not** fire in Cursor or GitHub Copilot Chat. The scripts themselves ar
 Edit the scripts in `~/dotfiles/hooks/` (source of truth). Changes propagate via the symlink. To add a new hook:
 
 1. Create `hooks/your-hook.sh` (receives JSON on stdin, exits 0 or 2)
-2. Add the hook entry to `hooks/settings-hooks.json`
-3. Re-run `ctrl bootstrap` (or `bash ~/dotfiles/bin/bootstrap.sh`) to merge the updated config
+2. Add the hook entry to `.claude/settings.json`
+3. Re-run `ctrl bootstrap` (or `bash ~/dotfiles/bin/bootstrap.sh`) to deploy the updated config
 
-To disable a hook, remove its entry from `~/.claude/settings.json` (or from `settings-hooks.json` and re-run bootstrap with a fresh `~/.claude/settings.json`).
+To disable a hook, remove its entry from `.claude/settings.json` and re-run `ctrl bootstrap`.
 
 ## Fail Modes
 
