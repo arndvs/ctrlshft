@@ -1,0 +1,47 @@
+name: "Agent: Fix PR Feedback"
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+jobs:
+  fix-feedback:
+    if: github.event.label.name == 'agent:fix'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install engine dependencies
+        run: cd .sandcastle/engine && npm install
+
+      - name: Run fix feedback
+        env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npx tsx .sandcastle/run.ts fix-pr-feedback \
+            --pr ${{ github.event.pull_request.number }}
+
+      - name: Remove fix label
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} \
+            --remove-label "agent:fix" \
+            -R ${{ github.repository }}
