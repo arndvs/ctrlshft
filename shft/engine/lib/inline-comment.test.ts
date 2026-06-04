@@ -41,4 +41,9 @@ describe("InlineCommentSchema", () => {
     const result = InlineCommentSchema.parse({ path: "x.ts", line: "7", body: "coerced" });
     expect(result.line).toBe(7);
   });
+
+  it("preserves LEFT-side comments", () => {
+    const result = InlineCommentSchema.parse({ path: "x.ts", line: 7, side: "LEFT", body: "removed line" });
+    expect(result.side).toBe("LEFT");
+  });
 });
