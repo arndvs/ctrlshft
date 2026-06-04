@@ -1,7 +1,8 @@
 #!/usr/bin/env tsx
 /**
  * Sandcastle dispatcher — single entry point for all workflow runners.
- * Workflow YAMLs call: npx tsx .sandcastle/run.ts <workflow-name> [--issue N] [--pr N]
+ * Workflow YAMLs call: ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts <workflow-name> [flags]
+ * Supported flags are parsed centrally in engine/lib/parse-cli-args.ts.
  */
 
 import path from "node:path";
