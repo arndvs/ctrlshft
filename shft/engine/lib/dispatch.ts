@@ -35,6 +35,29 @@ const workflows: Record<string, WorkflowRunner> = {
     execFileSync("gh", ["pr", "merge", args.pr, "--squash", "--delete-branch", "-R", repo], { cwd: repoDir, stdio: "inherit" });
   },
 
+  "write-pr": async ({ args, repoDir, templatesDir }) => {
+    if (!args.issue) throw new Error("write-pr requires --issue <number>");
+    if (!args.issueTitle) throw new Error("write-pr requires --issue-title <text>");
+    if (!args.branch) throw new Error("write-pr requires --branch <ref>");
+    const { runWritePr } = await import("../workflows/write-pr.js");
+    const result = await runWritePr({ issueNumber: args.issue, issueTitle: args.issueTitle, branch: args.branch, repoDir, templatesDir });
+    const fs = await import("node:fs");
+    const outputDir = process.env["OUTPUT_DIR"] ?? "/tmp";
+    fs.writeFileSync(`${outputDir}/pr_title.txt`, result.prTitle);
+    fs.writeFileSync(`${outputDir}/pr_description.txt`, result.prDescription);
+  },
+
+  "write-prd-pr": async ({ args, repoDir, templatesDir }) => {
+    if (!args.prdNumber) throw new Error("write-prd-pr requires --prd-number <number>");
+    if (!args.prdTitle) throw new Error("write-prd-pr requires --prd-title <text>");
+    const { runWritePr } = await import("../workflows/write-pr.js");
+    const result = await runWritePr({ prdNumber: args.prdNumber, prdTitle: args.prdTitle, repoDir, templatesDir });
+    const fs = await import("node:fs");
+    const outputDir = process.env["OUTPUT_DIR"] ?? "/tmp";
+    fs.writeFileSync(`${outputDir}/pr_title.txt`, result.prTitle);
+    fs.writeFileSync(`${outputDir}/pr_description.txt`, result.prDescription);
+  },
+
   "update-branch": async ({ args, repoDir, templatesDir }) => {
     if (!args.pr) throw new Error("update-branch requires --pr <number>");
     if (!args.branch) throw new Error("update-branch requires --branch <ref>");
