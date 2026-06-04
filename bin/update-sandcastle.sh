@@ -121,6 +121,7 @@ echo "Checking engine/workflows/..."
 for src_file in "$ENGINE/workflows/"*.ts; do
     [[ ! -f "$src_file" ]] && continue
     fname="$(basename "$src_file")"
+    [[ "$fname" == *.test.ts ]] && continue
     check_file "$src_file" ".sandcastle/engine/workflows/$fname" "engine/workflows/$fname"
 done
 
@@ -343,6 +344,7 @@ done
 for src_file in "$ENGINE/workflows/"*.ts; do
     [[ ! -f "$src_file" ]] && continue
     fname="$(basename "$src_file")"
+    [[ "$fname" == *.test.ts ]] && continue
     dst=".sandcastle/engine/workflows/$fname"
     if [[ ! -f "$dst" ]] || ! diff -q "$src_file" "$dst" &>/dev/null; then
         apply_file "$src_file" "$dst" "engine/workflows/$fname"
