@@ -97,21 +97,27 @@ jobs:
             fi
 
             echo "Promote: #$y"
+            if [ -z "$AGENT_PAT" ]; then
+              echo "Refuse: AGENT_PAT is required to add agent:implement because GITHUB_TOKEN-created labels do not trigger workflows."
+              gh issue edit "$y" --remove-label "agent:queued" || true
+              gh issue edit "$y" --add-label "agent:blocked" || true
+              gh issue comment "$y" --body "Refused to promote: \`AGENT_PAT\` is required to add \`agent:implement\` because labels created with \`GITHUB_TOKEN\` do not trigger workflows. Configure \`AGENT_PAT\`, then remove \`agent:blocked\` and apply \`agent:implement\` manually."
+              echo "::endgroup::"
+              continue
+            fi
+
             gh issue edit "$y" --remove-label "agent:queued"
             gh issue comment "$y" --body "Unblocked by #${CLOSED_NUMBER} closing — promoting from \`agent:queued\` to \`agent:implement\`."
 
             set +e
-            if [ -n "$AGENT_PAT" ]; then
-              GH_TOKEN="$AGENT_PAT" gh issue edit "$y" --add-label "agent:implement"
-              status=$?
-              if [ "$status" -ne 0 ]; then
-                echo "AGENT_PAT add-label failed (status $status); falling back to GITHUB_TOKEN."
-                gh issue edit "$y" --add-label "agent:implement"
-              fi
-            else
-              gh issue edit "$y" --add-label "agent:implement"
-            fi
+            GH_TOKEN="$AGENT_PAT" gh issue edit "$y" --add-label "agent:implement"
+            status=$?
             set -e
+            if [ "$status" -ne 0 ]; then
+              echo "AGENT_PAT add-label failed (status $status); marking blocked."
+              gh issue edit "$y" --add-label "agent:blocked" || true
+              gh issue comment "$y" --body "Promotion failed: \`AGENT_PAT\` could not add \`agent:implement\` (status ${status}). Remove \`agent:blocked\` and apply \`agent:implement\` manually after fixing the token."
+            fi
 
             echo "::endgroup::"
           done

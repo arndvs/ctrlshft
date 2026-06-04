@@ -10,8 +10,26 @@ on:
     types: [labeled]
 
 jobs:
+  refuse-fork:
+    if: github.event.label.name == 'agent:update-branch' && github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      GH_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Block unsafe fork execution
+        run: |
+          gh pr edit "$PR_NUMBER" --remove-label "agent:update-branch" -R ${{ github.repository }} || true
+          gh pr edit "$PR_NUMBER" --add-label "agent:blocked" -R ${{ github.repository }} || true
+          gh pr comment "$PR_NUMBER" -R ${{ github.repository }} --body "Refused to run \`agent:update-branch\`: this workflow uses \`pull_request_target\` and cannot safely execute agent code for fork PRs. Recreate the PR from a branch in this repository, or update the branch manually."
+
   update-branch:
-    if: github.event.label.name == 'agent:update-branch'
+    if: github.event.label.name == 'agent:update-branch' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 60
     concurrency:
@@ -21,6 +39,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
 
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
