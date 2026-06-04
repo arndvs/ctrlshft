@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 # block-npx-tsc.sh — Claude Code hook that intercepts bare `npx tsc` commands
 # and redirects to the project's npm script instead.
 #

@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 # check-file-tokens.sh — pre-commit hook that blocks files exceeding a token limit.
 # Prevents oversized files from being committed, encouraging modular code.
 #
