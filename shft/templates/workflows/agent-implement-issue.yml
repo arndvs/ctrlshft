@@ -78,7 +78,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
-          npx tsx .sandcastle/run.ts implement-issue \
+          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts implement-issue \
             --issue "$ISSUE_NUMBER" \
             --issue-title "$ISSUE_TITLE" \
             --branch "$BRANCH"
@@ -98,7 +98,7 @@ jobs:
           OUTPUT_DIR: ${{ runner.temp }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
-          npx tsx .sandcastle/run.ts write-pr \
+          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts write-pr \
             --issue "$ISSUE_NUMBER" \
             --issue-title "$ISSUE_TITLE" \
             --branch "$BRANCH"
