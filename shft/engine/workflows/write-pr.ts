@@ -64,7 +64,7 @@ export async function runWritePr(opts: {
     ...configPromptArgs(config),
     ...(isPrd
       ? { PRD_NUMBER: opts.prdNumber!, PRD_TITLE: opts.prdTitle! }
-      : { ISSUE_NUMBER: opts.issueNumber!, ISSUE_TITLE: opts.issueTitle!, BRANCH: opts.branch! }),
+      : { ISSUE_NUMBER: opts.issueNumber!, ISSUE_TITLE: opts.issueTitle!, BRANCH: opts.branch!, BASE_BRANCH: config.baseBranch }),
   };
 
   const runName = isPrd

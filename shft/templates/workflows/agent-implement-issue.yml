@@ -20,6 +20,7 @@ jobs:
 
     env:
       ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title }}
 
     steps:
       - name: Transition labels
@@ -34,6 +35,33 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: {{DEFAULT_BRANCH}}
+          fetch-depth: 0
+          token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Compute branch name
+        id: branch
+        run: |
+          set -euo pipefail
+          slug=$(echo "$ISSUE_TITLE" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' \
+            | cut -c1-50)
+          branch="agent/issue-${ISSUE_NUMBER}-${slug}"
+          echo "name=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Set up git identity and branch
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          set -euo pipefail
+          git config user.name "claude-code[bot]"
+          git config user.email "claude-code[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -47,9 +75,53 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           npx tsx .sandcastle/run.ts implement-issue \
-            --issue ${{ github.event.issue.number }}
+            --issue "$ISSUE_NUMBER" \
+            --issue-title "$ISSUE_TITLE" \
+            --branch "$BRANCH"
+
+      - name: Push branch
+        if: success()
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: git push origin "$BRANCH"
+
+      - name: Write PR title and description
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          OUTPUT_DIR: ${{ runner.temp }}
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          npx tsx .sandcastle/run.ts write-pr \
+            --issue "$ISSUE_NUMBER" \
+            --issue-title "$ISSUE_TITLE" \
+            --branch "$BRANCH"
+
+      - name: Open draft PR
+        if: success()
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          set -euo pipefail
+          existing_pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing_pr" ]; then
+            echo "PR #${existing_pr} already exists for $BRANCH"
+            exit 0
+          fi
+          PR_TITLE=$(cat "${RUNNER_TEMP}/pr_title.txt")
+          PR_TITLE="${PR_TITLE:0:256}"
+          gh pr create \
+            --draft \
+            --base {{DEFAULT_BRANCH}} \
+            --head "$BRANCH" \
+            --title "$PR_TITLE" \
+            --body-file "${RUNNER_TEMP}/pr_description.txt"
 
       - name: Transition label
         if: success()
