@@ -117,7 +117,12 @@ mkdir -p .sandcastle/engine/schemas
 cp "$ENGINE/schemas/"*.ts .sandcastle/engine/schemas/ 2>/dev/null || true
 
 mkdir -p .sandcastle/engine/workflows
-cp "$ENGINE/workflows/"*.ts .sandcastle/engine/workflows/ 2>/dev/null || true
+for f in "$ENGINE/workflows/"*.ts; do
+    [[ -f "$f" ]] || continue
+    fname="$(basename "$f")"
+    [[ "$fname" == *.test.ts ]] && continue
+    cp "$f" ".sandcastle/engine/workflows/$fname"
+done
 
 echo "    .sandcastle/engine/ (vendored)"
 
