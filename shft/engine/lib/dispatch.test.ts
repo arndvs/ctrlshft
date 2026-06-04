@@ -18,6 +18,7 @@ describe("resolveWorkflow", () => {
     expect(WORKFLOW_NAMES).toContain("implement-issue");
     expect(WORKFLOW_NAMES).toContain("fix-pr-feedback");
     expect(WORKFLOW_NAMES).toContain("merge-pr");
+    expect(WORKFLOW_NAMES).toContain("architecture-review");
     expect(WORKFLOW_NAMES).toContain("check-stale-prs");
   });
 });

@@ -88,6 +88,18 @@ const workflows: Record<string, WorkflowRunner> = {
     });
   },
 
+  "architecture-review": async ({ repoDir, templatesDir }) => {
+    const { runArchitectureReview } = await import("../workflows/architecture-review.js");
+    const result = await runArchitectureReview({ repoDir, templatesDir });
+    const fs = await import("node:fs");
+    const outputDir = process.env["OUTPUT_DIR"] ?? "/tmp";
+    fs.writeFileSync(`${outputDir}/architecture_review_output.json`, JSON.stringify(result, null, 2));
+    if (result.status === "proposed") {
+      fs.writeFileSync(`${outputDir}/prd_title.txt`, result.title);
+      fs.writeFileSync(`${outputDir}/prd_body.md`, result.body);
+    }
+  },
+
   "check-stale-prs": async ({ repoDir }) => {
     const { execFileSync } = await import("node:child_process");
     const repo = process.env["GITHUB_REPOSITORY"];
