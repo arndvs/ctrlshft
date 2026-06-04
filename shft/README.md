@@ -151,6 +151,7 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 | `fix-pr-feedback` | `--pr N` | Address review comments on an open PR |
 | `update-branch` | `--pr N --branch REF --base-ref REF` | Update a PR branch against the base branch |
 | `merge-pr` | `--pr N` | Squash-merge and delete the branch |
+| `architecture-review` | — | Run the scheduled architecture review pass and write PRD output files |
 | `check-stale-prs` | — | List stale open PRs for scheduled maintenance |
 
 ### GitHub Actions templates
@@ -166,6 +167,7 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 | `agent-fix-pr-feedback.yml` | `pull_request_target:labeled` | `agent:fix` |
 | `agent-update-branch.yml` | `pull_request_target:labeled` | `agent:update-branch` |
 | `agent-merge-pr.yml` | `pull_request_target:labeled` | `agent:merge` |
+| `agent-architecture-review.yml` | `schedule`, `workflow_dispatch` | Creates `source:architecture-review` PRD issues |
 | `agent-promote-queued.yml` | `issues:closed` | Promotes unblocked `agent:queued` issues |
 | `agent-check-stale-prs.yml` | `schedule`, `workflow_dispatch` | Scheduled maintenance |
 
@@ -177,6 +179,7 @@ Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is
 
 - Entry/control labels: `Sandcastle`, `agent:review`, `agent:plan`, `agent:implement`, `agent:implement-prd`, `agent:fix`, `agent:update-branch`, `agent:merge`
 - Status labels: `agent:in-progress`, `agent:pr-open`, `agent:queued`, `agent:blocked`
+- Provenance labels: `source:architecture-review`
 
 Required GitHub Actions secrets:
 
