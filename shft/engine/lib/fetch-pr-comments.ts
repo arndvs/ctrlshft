@@ -21,6 +21,10 @@ const ThreadsResponse = z.object({
     repository: z.object({
       pullRequest: z.object({
         reviewThreads: z.object({
+          pageInfo: z.object({
+            hasNextPage: z.boolean(),
+            endCursor: z.string().nullable(),
+          }),
           nodes: z.array(
             z.object({
               id: z.string(),
@@ -70,15 +74,16 @@ export interface PrContext {
 }
 
 const GRAPHQL_QUERY = `
-query($owner:String!,$repo:String!,$number:Int!) {
+query($owner:String!,$repo:String!,$number:Int!,$cursor:String) {
   repository(owner:$owner,name:$repo) {
     pullRequest(number:$number) {
-      reviewThreads(first:100) {
+      reviewThreads(first:100,after:$cursor) {
+        pageInfo { hasNextPage endCursor }
         nodes {
           id
           isResolved
           isOutdated
-          comments(first:50) {
+          comments(first:100) {
             nodes {
               id
               path
@@ -117,18 +122,43 @@ export function fetchPrComments(opts: { prNumber: string; cwd: string }): PrCont
     ? safeSh(`gh issue view ${issueNumber} --json title --jq .title`, opts.cwd).trim()
     : "";
 
-  const reviewsJson = sh(`gh api repos/{owner}/{repo}/pulls/${opts.prNumber}/reviews`, opts.cwd);
-  const reviews = ReviewsResponse.parse(JSON.parse(reviewsJson));
+  const reviewsJson = sh(`gh api --paginate repos/{owner}/{repo}/pulls/${opts.prNumber}/reviews`, opts.cwd);
+  // --paginate concatenates pages: [a,b][c,d] → join into single array
+  const reviews = ReviewsResponse.parse(JSON.parse(reviewsJson.trim().replace(/\]\s*\[/g, ",")));
 
   const { owner, repo } = getOwnerRepo({ cwd: opts.cwd });
-  const threadsJson = execFileSync(
-    "gh",
-    ["api", "graphql", "-F", `owner=${owner}`, "-F", `repo=${repo}`, "-F", `number=${opts.prNumber}`, "-f", `query=${GRAPHQL_QUERY}`],
-    { encoding: "utf8", cwd: opts.cwd },
-  );
-  const threadsParsed = ThreadsResponse.parse(JSON.parse(threadsJson));
 
-  const unresolvedThreads = threadsParsed.data.repository.pullRequest.reviewThreads.nodes.filter((t) => !t.isResolved && !t.isOutdated);
+  // Paginate GraphQL reviewThreads — collect all pages
+  type ThreadNode = z.infer<typeof ThreadsResponse>["data"]["repository"]["pullRequest"]["reviewThreads"]["nodes"][number];
+  const allThreadNodes: ThreadNode[] = [];
+  let cursor: string | null = null;
+
+  for (;;) {
+    const args = [
+      "api", "graphql",
+      "-F", `owner=${owner}`,
+      "-F", `repo=${repo}`,
+      "-F", `number=${opts.prNumber}`,
+      "-f", `query=${GRAPHQL_QUERY}`,
+    ];
+    if (cursor) {
+      args.push("-F", `cursor=${cursor}`);
+    }
+
+    const threadsJson = execFileSync("gh", args, {
+      encoding: "utf8",
+      cwd: opts.cwd,
+    });
+    const page = ThreadsResponse.parse(JSON.parse(threadsJson));
+    const { nodes, pageInfo } = page.data.repository.pullRequest.reviewThreads;
+
+    allThreadNodes.push(...nodes);
+
+    if (!pageInfo.hasNextPage || !pageInfo.endCursor) break;
+    cursor = pageInfo.endCursor;
+  }
+
+  const unresolvedThreads = allThreadNodes.filter((t) => !t.isResolved && !t.isOutdated);
 
   const comments: PrComments = {
     issue_comments: prView.comments.map((c) => ({
