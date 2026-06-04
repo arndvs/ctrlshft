@@ -7,12 +7,14 @@ export interface CliArgs {
   baseRef?: string;
   prdNumber?: string;
   prdTitle?: string;
+  subIssueNumber?: string;
+  subIssueTitle?: string;
   dryRun: boolean;
 }
 
 export function parseCli(argv: string[]): CliArgs {
   if (argv.length === 0) {
-    throw new Error("Missing workflow name. Usage: run.ts <workflow-name> [--issue N] [--issue-title TEXT] [--pr N] [--branch REF] [--base-ref REF] [--prd-number N] [--prd-title TEXT] [--dry-run]");
+    throw new Error("Missing workflow name. Usage: run.ts <workflow-name> [--issue N] [--issue-title TEXT] [--pr N] [--branch REF] [--base-ref REF] [--prd-number N] [--prd-title TEXT] [--sub-issue-number N] [--sub-issue-title TEXT] [--dry-run]");
   }
 
   const workflow = argv[0]!;
@@ -23,6 +25,8 @@ export function parseCli(argv: string[]): CliArgs {
   let baseRef: string | undefined;
   let prdNumber: string | undefined;
   let prdTitle: string | undefined;
+  let subIssueNumber: string | undefined;
+  let subIssueTitle: string | undefined;
   let dryRun = false;
 
   for (let i = 1; i < argv.length; i++) {
@@ -42,10 +46,14 @@ export function parseCli(argv: string[]): CliArgs {
       prdNumber = argv[++i];
     } else if (arg === "--prd-title" && i + 1 < argv.length) {
       prdTitle = argv[++i];
+    } else if (arg === "--sub-issue-number" && i + 1 < argv.length) {
+      subIssueNumber = argv[++i];
+    } else if (arg === "--sub-issue-title" && i + 1 < argv.length) {
+      subIssueTitle = argv[++i];
     } else if (arg === "--dry-run") {
       dryRun = true;
     }
   }
 
-  return { workflow, issue, issueTitle, pr, branch, baseRef, prdNumber, prdTitle, dryRun };
+  return { workflow, issue, issueTitle, pr, branch, baseRef, prdNumber, prdTitle, subIssueNumber, subIssueTitle, dryRun };
 }

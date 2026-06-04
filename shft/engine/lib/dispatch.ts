@@ -70,6 +70,24 @@ const workflows: Record<string, WorkflowRunner> = {
     fs.writeFileSync(`${outputDir}/should_push.txt`, result.shouldPush ? "true" : "false");
   },
 
+  "implement-prd": async ({ args, repoDir, templatesDir }) => {
+    if (!args.prdNumber) throw new Error("implement-prd requires --prd-number <number>");
+    if (!args.prdTitle) throw new Error("implement-prd requires --prd-title <text>");
+    if (!args.subIssueNumber) throw new Error("implement-prd requires --sub-issue-number <number>");
+    if (!args.subIssueTitle) throw new Error("implement-prd requires --sub-issue-title <text>");
+    if (!args.branch) throw new Error("implement-prd requires --branch <ref>");
+    const { runImplementPrd } = await import("../workflows/implement-prd.js");
+    await runImplementPrd({
+      prdNumber: args.prdNumber,
+      prdTitle: args.prdTitle,
+      subIssueNumber: args.subIssueNumber,
+      subIssueTitle: args.subIssueTitle,
+      branch: args.branch,
+      repoDir,
+      templatesDir,
+    });
+  },
+
   "check-stale-prs": async ({ repoDir }) => {
     const { execFileSync } = await import("node:child_process");
     const repo = process.env["GITHUB_REPOSITORY"];
