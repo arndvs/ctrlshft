@@ -17,6 +17,10 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
+if [[ -t 0 ]]; then
+  exit 0
+fi
+
 INPUT=$(cat)
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || true)
 if [[ -z "$COMMAND" ]]; then
