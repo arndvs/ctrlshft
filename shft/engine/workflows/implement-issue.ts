@@ -9,50 +9,43 @@ import { resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
 
-export interface ImplementPrdResult {
+export interface ImplementIssueResult {
   commitCount: number;
 }
 
-export async function runImplementPrd(opts: {
-  prdNumber: string;
-  prdTitle: string;
-  subIssueNumber: string;
-  subIssueTitle: string;
+export async function runImplementIssue(opts: {
+  issueNumber: string;
+  issueTitle: string;
   branch: string;
   repoDir: string;
   model?: string;
   templatesDir?: string;
-}): Promise<ImplementPrdResult> {
+}): Promise<ImplementIssueResult> {
   const config = await loadConfig({ cwd: opts.repoDir });
   const model = opts.model ?? config.model;
   const templatesDir = opts.templatesDir ?? defaultTemplatesDir;
 
-  console.log(`[implement-prd] PRD #${opts.prdNumber} — ${opts.prdTitle}`);
-  console.log(`[implement-prd] Sub-issue #${opts.subIssueNumber} — ${opts.subIssueTitle}`);
-  console.log(`[implement-prd] Branch: ${opts.branch}`);
+  console.log(`[implement-issue] Issue #${opts.issueNumber} — ${opts.issueTitle}`);
+  console.log(`[implement-issue] Branch: ${opts.branch}`);
 
-  const promptFile = await resolvePrompt({ name: "implement-prd", config, repoDir: opts.repoDir, templatesDir });
+  const promptFile = await resolvePrompt({ name: "implement-issue", config, repoDir: opts.repoDir, templatesDir });
 
   const result = await run({
-    name: `implement-prd-#${opts.prdNumber}-sub-#${opts.subIssueNumber}`,
+    name: `implement-issue-#${opts.issueNumber}`,
     agent: claudeCode(model),
     sandbox: noSandbox(),
     cwd: opts.repoDir,
     promptFile,
     promptArgs: {
       ...configPromptArgs(config),
-      PRD_NUMBER: opts.prdNumber,
-      PRD_TITLE: opts.prdTitle,
-      SUB_ISSUE_NUMBER: opts.subIssueNumber,
-      SUB_ISSUE_TITLE: opts.subIssueTitle,
+      ISSUE_NUMBER: opts.issueNumber,
+      ISSUE_TITLE: opts.issueTitle,
       BRANCH: opts.branch,
     },
     logging: { type: "stdout" },
   });
 
-  // Zero commits is a valid outcome — the sub-issue's work may already have
-  // been completed by a previous iteration.
-  console.log(`[implement-prd] Finished sub-issue #${opts.subIssueNumber}. Commits this run: ${result.commits.length}`);
+  console.log(`[implement-issue] Finished issue #${opts.issueNumber}. Commits this run: ${result.commits.length}`);
 
   return { commitCount: result.commits.length };
 }

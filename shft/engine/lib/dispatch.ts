@@ -5,8 +5,8 @@ export type WorkflowRunner = (opts: { args: CliArgs; repoDir: string; templatesD
 const workflows: Record<string, WorkflowRunner> = {
   "review-issue": async ({ args, repoDir, templatesDir }) => {
     if (!args.issue) throw new Error("review-issue requires --issue <number>");
-    const { runReview } = await import("../workflows/review.js");
-    await runReview({ prNumber: args.issue, repoDir, templatesDir });
+    const { runReviewIssue } = await import("../workflows/review-issue.js");
+    runReviewIssue({ issueNumber: args.issue, repoDir });
   },
 
   "plan-issue": async ({ args, repoDir, templatesDir }) => {
@@ -17,8 +17,10 @@ const workflows: Record<string, WorkflowRunner> = {
 
   "implement-issue": async ({ args, repoDir, templatesDir }) => {
     if (!args.issue) throw new Error("implement-issue requires --issue <number>");
-    const { runImplementPr } = await import("../workflows/implement-pr.js");
-    await runImplementPr({ prNumber: args.issue, repoDir, templatesDir });
+    if (!args.issueTitle) throw new Error("implement-issue requires --issue-title <text>");
+    if (!args.branch) throw new Error("implement-issue requires --branch <ref>");
+    const { runImplementIssue } = await import("../workflows/implement-issue.js");
+    await runImplementIssue({ issueNumber: args.issue, issueTitle: args.issueTitle, branch: args.branch, repoDir, templatesDir });
   },
 
   "fix-pr-feedback": async ({ args, repoDir }) => {

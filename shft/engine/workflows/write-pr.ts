@@ -6,9 +6,10 @@ import { runWithRetry } from "../lib/run-with-retry.js";
 import { WritePrOutput } from "../schemas/write-pr-output.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
+import { resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
+const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
 
 export interface WritePrResult {
   prTitle: string;
@@ -64,7 +65,7 @@ export async function runWritePr(opts: {
     ...configPromptArgs(config),
     ...(isPrd
       ? { PRD_NUMBER: opts.prdNumber!, PRD_TITLE: opts.prdTitle! }
-      : { ISSUE_NUMBER: opts.issueNumber!, ISSUE_TITLE: opts.issueTitle!, BRANCH: opts.branch! }),
+      : { ISSUE_NUMBER: opts.issueNumber!, ISSUE_TITLE: opts.issueTitle!, BRANCH: opts.branch!, BASE_BRANCH: config.baseBranch }),
   };
 
   const runName = isPrd

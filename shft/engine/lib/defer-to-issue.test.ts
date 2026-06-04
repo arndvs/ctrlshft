@@ -44,7 +44,7 @@ describe("deferToIssue", () => {
     // Third call: postThreadReply
     mockExecFileSync
       .mockReturnValueOnce(JSON.stringify([]))
-      .mockReturnValueOnce(JSON.stringify({ number: 99, url: "https://github.com/acme/widgets/issues/99" }))
+      .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
       .mockReturnValueOnce("");
 
     const result = deferToIssue({ scored: makeScoredComment(), pr: basePr, threadId: "PRRT_abc", cwd: "/repo" });
@@ -61,7 +61,7 @@ describe("deferToIssue", () => {
   it("resolves the thread after creating the issue", () => {
     mockExecFileSync
       .mockReturnValueOnce(JSON.stringify([]))
-      .mockReturnValueOnce(JSON.stringify({ number: 99, url: "https://github.com/acme/widgets/issues/99" }))
+      .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
       .mockReturnValueOnce("");
 
     deferToIssue({ scored: makeScoredComment(), pr: basePr, threadId: "PRRT_abc", cwd: "/repo" });
@@ -87,7 +87,7 @@ describe("deferToIssue", () => {
   it("includes score breakdown in issue body", () => {
     mockExecFileSync
       .mockReturnValueOnce(JSON.stringify([]))
-      .mockReturnValueOnce(JSON.stringify({ number: 99, url: "https://github.com/acme/widgets/issues/99" }))
+      .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
       .mockReturnValueOnce("");
 
     deferToIssue({ scored: makeScoredComment(), pr: basePr, threadId: "PRRT_abc", cwd: "/repo" });
@@ -102,7 +102,7 @@ describe("deferToIssue", () => {
   it("posts a thread reply linking to the created issue", () => {
     mockExecFileSync
       .mockReturnValueOnce(JSON.stringify([]))
-      .mockReturnValueOnce(JSON.stringify({ number: 99, url: "https://github.com/acme/widgets/issues/99" }))
+      .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
       .mockReturnValueOnce("");
 
     deferToIssue({ scored: makeScoredComment(), pr: basePr, threadId: "PRRT_abc", cwd: "/repo" });

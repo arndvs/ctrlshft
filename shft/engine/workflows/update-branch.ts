@@ -9,10 +9,11 @@ import { UpdateBranchOutput } from "../schemas/update-branch-output.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 import { required, fail, sh } from "../lib/shell-helpers.js";
+import { resolveDefaultExtractionsDir, resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
-const defaultExtractionsDir = path.resolve(__dirname, "..", "..", "templates", "extractions");
+const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
+const defaultExtractionsDir = resolveDefaultExtractionsDir({ workflowDir: __dirname });
 
 export interface UpdateBranchResult {
   comment: string;

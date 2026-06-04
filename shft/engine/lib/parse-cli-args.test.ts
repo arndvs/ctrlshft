@@ -34,4 +34,16 @@ describe("parseCli", () => {
     const result = parseCli(["review-issue", "--issue", "1"]);
     expect(result.dryRun).toBe(false);
   });
+
+  it("throws on unknown flags", () => {
+    expect(() => parseCli(["implement-issue", "--issue-titel", "typo"])).toThrow("Unknown flag: --issue-titel");
+  });
+
+  it("throws when a known flag is missing its value", () => {
+    expect(() => parseCli(["implement-issue", "--issue"])).toThrow("Missing value for --issue");
+  });
+
+  it("throws when a known flag value is another flag", () => {
+    expect(() => parseCli(["implement-issue", "--issue", "--dry-run"])).toThrow("Missing value for --issue");
+  });
 });
