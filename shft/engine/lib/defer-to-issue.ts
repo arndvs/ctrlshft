@@ -54,18 +54,27 @@ export function deferToIssue(opts: { scored: ScoredComment; pr: PrContext; threa
   }
 
   // Create the issue
-  const issueJson = execFileSync(
+  const issueUrl = execFileSync(
     "gh",
-    ["issue", "create", "--repo", `${pr.owner}/${pr.repo}`, "--title", title, "--body", body, "--label", "shft", "--label", "hitl", "--json", "number,url"],
+    ["issue", "create", "--repo", `${pr.owner}/${pr.repo}`, "--title", title, "--body", body, "--label", "shft", "--label", "hitl"],
     { encoding: "utf8", cwd },
-  );
+  ).trim();
 
-  const parsed = JSON.parse(issueJson) as { number: number; url: string };
+  const issueNumber = parseIssueNumber(issueUrl);
 
-  postThreadReply({ threadId, message: `Deferred to #${parsed.number} — score ${score}/100 (HITL tier)`, cwd });
+  postThreadReply({ threadId, message: `Deferred to #${issueNumber} — score ${score}/100 (HITL tier)`, cwd });
   resolveThread({ threadId, cwd });
 
-  return { issueNumber: parsed.number, issueUrl: parsed.url };
+  return { issueNumber, issueUrl };
+}
+
+function parseIssueNumber(issueUrl: string): number {
+  const match = issueUrl.match(/\/(\d+)$/);
+  if (!match) {
+    throw new Error(`Failed to parse issue number from gh issue create output: ${issueUrl}`);
+  }
+
+  return parseInt(match[1]!, 10);
 }
 
 function findExistingIssue(opts: { title: string; owner: string; repo: string; cwd: string }): { number: number; url: string } | null {
