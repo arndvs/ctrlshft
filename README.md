@@ -15,7 +15,7 @@ Every developer using Claude Code or Copilot hits the same walls. Context degrad
 
 ctrl+shft fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and AFK iteration tokens (short-lived GitHub App installation tokens) minted per loop. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
-**Source of truth:** `~/dotfiles/` is canonical. `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Make all edits in `~/dotfiles/` only. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the internal system map.
+**Source of truth:** `~/dotfiles/` is canonical. `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Make all edits in `~/dotfiles/` only. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the internal system map and [REPO_TOPOLOGY.md](REPO_TOPOLOGY.md) for the private/public remote split.
 
 ```bash
 # Fork at github.com/arndvs/ctrlshft/fork, then:
