@@ -1,13 +1,14 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { run, Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
+import { Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { ReviewOutput } from "../schemas/review-output.js";
 import { fetchPrComments } from "../lib/fetch-pr-comments.js";
 import { parseDiffLines } from "../lib/parse-diff-lines.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
+import { runWithRetry } from "../lib/run-with-retry.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
@@ -27,7 +28,7 @@ export async function runReview(opts: { prNumber: string; repoDir: string; model
   try {
     const promptFile = await resolvePrompt({ name: "review", config, repoDir, templatesDir });
 
-    const result = await run({
+    const result = await runWithRetry({
       agent: claudeCode(model),
       sandbox: noSandbox(),
       cwd: repoDir,
