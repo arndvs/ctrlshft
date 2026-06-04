@@ -27,7 +27,7 @@ secrets/*
 credentials.*
 
 # Working/scratch — runtime state, active plans, never tracked
-working/
+# working/
 
 # Artifact source files (promoted to bin/ when shipped)
 artifacts/
