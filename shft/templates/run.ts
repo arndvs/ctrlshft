@@ -11,7 +11,7 @@ import { resolveWorkflow, WORKFLOW_NAMES } from "./engine/lib/dispatch.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoDir = path.resolve(__dirname, "..");
-const templatesDir = path.resolve(__dirname, "engine", "templates", "prompts");
+const templatesDir = path.resolve(__dirname, "templates", "prompts");
 
 const args = parseCli(process.argv.slice(2));
 
