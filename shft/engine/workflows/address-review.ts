@@ -160,11 +160,13 @@ export async function runAddressReview(opts: AddressReviewOpts): Promise<Address
   // 7. Post round summary
   postRoundSummary({ owner, repo, prNumber, round, maxRounds, results, cwd: repoDir });
 
-  // 8. Re-request Copilot review
-  requestCopilotReview({ owner, repo, prNumber, cwd: repoDir });
-
   const remaining = results.filter((r) => r.action === "skipped").length;
   const roundCapped = round >= maxRounds && remaining > 0;
+
+  // 8. Re-request Copilot review (skip if round-capped with unresolved comments)
+  if (!roundCapped) {
+    requestCopilotReview({ owner, repo, prNumber, cwd: repoDir });
+  }
 
   console.log(`\n[address-review] Round ${round} complete`);
   console.log(`  fixed: ${fixedCount}`);
