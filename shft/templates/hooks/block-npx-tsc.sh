@@ -10,6 +10,10 @@ set -euo pipefail
 # Why: `npx tsc` runs from the repo root, ignoring the engine's tsconfig.json
 # path. The npm script ensures tsc runs from the correct directory.
 
+if ! command -v jq &>/dev/null; then
+  exit 0
+fi
+
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 FIRST_WORD=$(echo "$COMMAND" | awk '{print $1}')

@@ -106,6 +106,7 @@ jobs:
       - name: Open draft PR
         if: success()
         env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           set -euo pipefail
