@@ -12,9 +12,10 @@ import { requestCopilotReview } from "../lib/request-review.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 import type { ScoredComment, Tier } from "../lib/types.js";
+import { resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
+const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
 
 interface AddressReviewOpts {
   prNumber: string;
