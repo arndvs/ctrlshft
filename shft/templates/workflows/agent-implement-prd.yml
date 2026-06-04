@@ -261,36 +261,38 @@ jobs:
         if: steps.shape.outputs.mode == 'run' && success() && steps.remaining.outputs.count != '0'
         env:
           AGENT_PAT: ${{ secrets.AGENT_PAT }}
-          GITHUB_TOKEN_FALLBACK: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set +e
-          if [ -n "$AGENT_PAT" ]; then
-            GH_TOKEN="$AGENT_PAT" gh issue edit "$PRD_NUMBER" --add-label "agent:implement-prd"
-            status=$?
-            if [ "$status" -eq 0 ]; then
-              exit 0
-            fi
-            echo "AGENT_PAT label add failed (status $status); falling back to GITHUB_TOKEN."
+          if [ -z "$AGENT_PAT" ]; then
+            echo "AGENT_PAT is required to add agent:implement-prd because GITHUB_TOKEN-created labels do not trigger workflows." > "${RUNNER_TEMP}/failure_reason.txt"
+            gh issue edit "$PRD_NUMBER" --add-label "agent:blocked" || true
+            exit 1
           fi
-          GH_TOKEN="$GITHUB_TOKEN_FALLBACK" gh issue edit "$PRD_NUMBER" --add-label "agent:implement-prd"
+          GH_TOKEN="$AGENT_PAT" gh issue edit "$PRD_NUMBER" --add-label "agent:implement-prd" || {
+            status=$?
+            echo "AGENT_PAT failed to add agent:implement-prd (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
+            gh issue edit "$PRD_NUMBER" --add-label "agent:blocked" || true
+            exit "$status"
+          }
 
       - name: Hand off — request review on the PR
         if: steps.shape.outputs.mode == 'run' && success() && steps.remaining.outputs.count == '0'
         env:
           PR_NUMBER: ${{ steps.open_pr.outputs.pr_number }}
           AGENT_PAT: ${{ secrets.AGENT_PAT }}
-          GITHUB_TOKEN_FALLBACK: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set +e
-          if [ -n "$AGENT_PAT" ]; then
-            GH_TOKEN="$AGENT_PAT" gh pr edit "$PR_NUMBER" --add-label "agent:review"
-            status=$?
-            if [ "$status" -eq 0 ]; then
-              exit 0
-            fi
-            echo "AGENT_PAT label add failed (status $status); falling back to GITHUB_TOKEN."
+          if [ -z "$AGENT_PAT" ]; then
+            echo "AGENT_PAT is required to add agent:review because GITHUB_TOKEN-created labels do not trigger workflows." > "${RUNNER_TEMP}/failure_reason.txt"
+            gh issue edit "$PRD_NUMBER" --add-label "agent:blocked" || true
+            exit 1
           fi
-          GH_TOKEN="$GITHUB_TOKEN_FALLBACK" gh pr edit "$PR_NUMBER" --add-label "agent:review"
+          GH_TOKEN="$AGENT_PAT" gh pr edit "$PR_NUMBER" --add-label "agent:review" || {
+            status=$?
+            echo "AGENT_PAT failed to add agent:review (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
+            gh issue edit "$PRD_NUMBER" --add-label "agent:blocked" || true
+            exit "$status"
+          }
 
       - name: Mark blocked on failure
         if: steps.shape.outputs.mode == 'run' && failure()
