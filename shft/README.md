@@ -48,7 +48,7 @@ Sandcastle is the CI-triggered AFK agent platform extracted under `shft/`. It st
 Run this from the target repository root:
 
 ```bash
-ctrl init-sandcastle --branch main --model claude-opus-4-6 --pm npm
+ctrl init-sandcastle --branch main --model claude-opus-4-6 --pm npm --sandbox none
 ```
 
 `ctrl init-sandcastle` is a stamp-and-own installer. It copies files into the target repo instead of symlinking them, which keeps GitHub Actions independent of `~/dotfiles`:
@@ -61,6 +61,9 @@ ctrl init-sandcastle --branch main --model claude-opus-4-6 --pm npm
 ├── .sandcastle/
 │   ├── engine/                    ← vendored TypeScript runners
 │   ├── prompts/                   ← project-specific prompt overrides
+│   ├── templates/                 ← default prompts + extraction prompts
+│   ├── scripts/                   ← setup and validation helpers
+│   ├── hooks/                     ← optional Claude Code hooks
 │   ├── run.ts                     ← workflow dispatcher
 │   └── CODING_STANDARDS.md
 └── sandcastle.config.json
@@ -80,6 +83,9 @@ ctrl update-sandcastle --dry-run
 
 - `.sandcastle/engine/lib/`, `schemas/`, and `workflows/`
 - `.sandcastle/engine/package.json` and `tsconfig.json`
+- `.sandcastle/templates/prompts/` and `extractions/`
+- `.sandcastle/scripts/` and `hooks/`
+- `.sandcastle/sandbox/` when `sandbox` is `docker` or the directory exists
 - `.github/workflows/agent-*.yml`
 - `.github/copilot-setup-steps.yml`
 
@@ -175,6 +181,7 @@ Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is
 Required GitHub Actions secrets:
 
 - `CLAUDE_CODE_OAUTH_TOKEN` — authenticates Claude Code inside workflows
+- `ANTHROPIC_API_KEY` — authenticates workflows that call the Anthropic API directly
 - `AGENT_PAT` — optional but recommended; label mutations made with `GITHUB_TOKEN` do not trigger downstream workflows, so `AGENT_PAT` is needed for chains such as `agent:implement` → `agent:review` and PRD sub-issue chaining
 
 ### Structured output and validation

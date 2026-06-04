@@ -10,13 +10,16 @@ set -eo pipefail
 #
 # Secrets configured:
 #
-#   1. ANTHROPIC_API_KEY
-#      API key for Claude. Used by the engine to call the
+#   1. CLAUDE_CODE_OAUTH_TOKEN
+#      OAuth token used by Claude Code inside GitHub Actions.
+#
+#   2. ANTHROPIC_API_KEY
+#      API key for Claude. Used by workflows that call the
 #      Anthropic API from GitHub Actions runners.
 #
 #      Get one at: https://console.anthropic.com/settings/keys
 #
-#   2. AGENT_PAT  (optional but recommended)
+#   3. AGENT_PAT  (optional but recommended)
 #      A GitHub Personal Access Token (classic) with repo scope.
 #      Used for label mutations that trigger downstream workflows
 #      (GITHUB_TOKEN cannot trigger other workflow runs).
@@ -65,6 +68,10 @@ set_secret() {
   echo "  Set."
   echo ""
 }
+
+set_secret "CLAUDE_CODE_OAUTH_TOKEN" \
+  "OAuth token for Claude Code in GitHub Actions." \
+  "Use the same token value expected by the Claude Code action."
 
 set_secret "ANTHROPIC_API_KEY" \
   "API key for Claude (Anthropic)." \

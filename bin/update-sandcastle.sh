@@ -6,7 +6,10 @@
 #
 # Checks:
 #   1. .sandcastle/engine/ vs ~/dotfiles/shft/engine/ (excluding tests/node_modules)
-#   2. .github/workflows/agent-*.yml vs ~/dotfiles/shft/templates/workflows/
+#   2. .sandcastle/templates/ vs ~/dotfiles/shft/templates/{prompts,extractions}/
+#   3. .sandcastle/{scripts,hooks}/ vs ~/dotfiles/shft/templates/{scripts,hooks}/
+#   4. .github/workflows/agent-*.yml vs ~/dotfiles/shft/templates/workflows/
+#   5. .github/copilot-setup-steps.yml vs ~/dotfiles/shft/templates/copilot-setup-steps.yml
 #
 # Never touches project-specific files: prompts, config, CODING_STANDARDS.md.
 
@@ -75,6 +78,18 @@ check_file() {
     fi
 }
 
+check_dir_files() {
+    local src_dir="$1" dst_dir="$2" label_prefix="$3"
+
+    [[ -d "$src_dir" ]] || return
+    for src_file in "$src_dir"/*; do
+        [[ -f "$src_file" ]] || continue
+        local fname
+        fname="$(basename "$src_file")"
+        check_file "$src_file" "$dst_dir/$fname" "$label_prefix/$fname"
+    done
+}
+
 # 1. Engine lib files (skip tests)
 echo "Checking engine/lib/..."
 for src_file in "$ENGINE/lib/"*.ts; do
@@ -117,7 +132,33 @@ for cfg in package.json tsconfig.json; do
     fi
 done
 
-# 5. Workflow YAMLs — need to resolve {{DEFAULT_BRANCH}} before comparing
+# 5. Runtime prompt and extraction templates
+echo "Checking runtime templates..."
+check_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
+check_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
+
+# 6. Helper scripts and hooks
+echo "Checking helper scripts and hooks..."
+check_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
+check_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
+
+# 7. Optional sandbox template
+SANDBOX="none"
+if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
+    SANDBOX=$(node -e "
+        try {
+            const c = JSON.parse(require('fs').readFileSync('sandcastle.config.json','utf8'));
+            console.log(c.sandbox || 'none');
+        } catch { console.log('none'); }
+    " 2>/dev/null || echo "none")
+fi
+
+if [[ "$SANDBOX" == "docker" || -d ".sandcastle/sandbox" ]]; then
+    echo "Checking sandbox template..."
+    check_dir_files "$TEMPLATES/sandbox" ".sandcastle/sandbox" "sandbox"
+fi
+
+# 8. Workflow YAMLs — need to resolve {{DEFAULT_BRANCH}} before comparing
 echo "Checking workflow YAMLs..."
 
 # Read baseBranch from config (default: main)
@@ -150,7 +191,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
     fi
 done
 
-# 6. copilot-setup-steps.yml
+# 9. copilot-setup-steps.yml
 echo "Checking copilot-setup-steps.yml..."
 if [[ -f "$TEMPLATES/copilot-setup-steps.yml" ]] && [[ -f ".github/copilot-setup-steps.yml" ]]; then
     PM="npm"
@@ -261,6 +302,21 @@ apply_resolved() {
     ((updated++)) || true
 }
 
+apply_dir_files() {
+    local src_dir="$1" dst_dir="$2" label_prefix="$3"
+
+    [[ -d "$src_dir" ]] || return
+    for src_file in "$src_dir"/*; do
+        [[ -f "$src_file" ]] || continue
+        local fname dst
+        fname="$(basename "$src_file")"
+        dst="$dst_dir/$fname"
+        if [[ ! -f "$dst" ]] || ! diff -q "$src_file" "$dst" &>/dev/null; then
+            apply_file "$src_file" "$dst" "$label_prefix/$fname"
+        fi
+    done
+}
+
 # Re-run checks and apply (simpler than tracking which files drifted)
 
 # Engine lib
@@ -302,6 +358,20 @@ for cfg in package.json tsconfig.json; do
         fi
     fi
 done
+
+# Runtime prompt and extraction templates
+apply_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
+apply_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
+
+# Helper scripts and hooks
+apply_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
+apply_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
+chmod +x .sandcastle/scripts/*.sh .sandcastle/hooks/*.sh 2>/dev/null || true
+
+# Optional sandbox template
+if [[ "$SANDBOX" == "docker" || -d ".sandcastle/sandbox" ]]; then
+    apply_dir_files "$TEMPLATES/sandbox" ".sandcastle/sandbox" "sandbox"
+fi
 
 # Workflow YAMLs
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
