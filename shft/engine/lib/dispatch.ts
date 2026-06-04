@@ -35,6 +35,18 @@ const workflows: Record<string, WorkflowRunner> = {
     execFileSync("gh", ["pr", "merge", args.pr, "--squash", "--delete-branch", "-R", repo], { cwd: repoDir, stdio: "inherit" });
   },
 
+  "update-branch": async ({ args, repoDir, templatesDir }) => {
+    if (!args.pr) throw new Error("update-branch requires --pr <number>");
+    if (!args.branch) throw new Error("update-branch requires --branch <ref>");
+    if (!args.baseRef) throw new Error("update-branch requires --base-ref <ref>");
+    const { runUpdateBranch } = await import("../workflows/update-branch.js");
+    const result = await runUpdateBranch({ prNumber: args.pr, branch: args.branch, baseRef: args.baseRef, repoDir, templatesDir });
+    const fs = await import("node:fs");
+    const outputDir = process.env["OUTPUT_DIR"] ?? "/tmp";
+    fs.writeFileSync(`${outputDir}/comment.md`, result.comment);
+    fs.writeFileSync(`${outputDir}/should_push.txt`, result.shouldPush ? "true" : "false");
+  },
+
   "check-stale-prs": async ({ repoDir }) => {
     const { execFileSync } = await import("node:child_process");
     const repo = process.env["GITHUB_REPOSITORY"];
