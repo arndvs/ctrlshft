@@ -9,12 +9,26 @@ jobs:
     if: github.event.label.name == 'agent:review'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: agent-plan-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
 
     permissions:
       contents: write
       issues: write
 
+    env:
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+
     steps:
+      - name: Transition labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "$ISSUE_NUMBER" --remove-label "agent:review" -R ${{ github.repository }} || true
+          gh issue edit "$ISSUE_NUMBER" --remove-label "agent:blocked" -R ${{ github.repository }} || true
+          gh issue edit "$ISSUE_NUMBER" --add-label "agent:in-progress" -R ${{ github.repository }}
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -41,7 +55,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
         run: |
-          gh issue edit ${{ github.event.issue.number }} \
-            --remove-label "agent:review" \
+          gh issue edit "$ISSUE_NUMBER" \
             --add-label "agent:plan" \
             -R ${{ github.repository }}
+
+      - name: Mark blocked on failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          reason="(no reason file written — check workflow logs)"
+          if [ -f "${RUNNER_TEMP}/failure_reason.txt" ]; then
+            reason=$(cat "${RUNNER_TEMP}/failure_reason.txt")
+          fi
+          gh issue edit "$ISSUE_NUMBER" --add-label "agent:blocked" -R ${{ github.repository }} || true
+          gh issue comment "$ISSUE_NUMBER" -R ${{ github.repository }} --body "$(cat <<EOF
+          \`agent:review\` plan run failed.
+          **Reason:** $reason
+          **Workflow run:** $RUN_URL
+          Re-add \`agent:review\` to retry.
+          EOF
+          )"
+
+      - name: Remove in-progress label
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "$ISSUE_NUMBER" --remove-label "agent:in-progress" -R ${{ github.repository }} || true
