@@ -125,6 +125,7 @@ jobs:
         if: steps.shape.outputs.mode == 'run'
         id: branch
         run: |
+          set -euo pipefail
           slug=$(echo "$PRD_TITLE" \
             | tr '[:upper:]' '[:lower:]' \
             | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' \
@@ -209,7 +210,7 @@ jobs:
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           set -euo pipefail
-          existing_pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          existing_pr=$(gh pr list -R "$GH_REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
           echo "existing_pr=$existing_pr" >> "$GITHUB_OUTPUT"
 
       - name: Write PR title and description (only when opening a new PR)
@@ -238,6 +239,7 @@ jobs:
             PR_TITLE=$(cat "${RUNNER_TEMP}/pr_title.txt")
             PR_TITLE="${PR_TITLE:0:256}"
             pr_url=$(gh pr create \
+              -R "$GH_REPO" \
               --draft \
               --base {{DEFAULT_BRANCH}} \
               --head "$BRANCH" \
@@ -287,7 +289,7 @@ jobs:
             gh issue edit "$PRD_NUMBER" --add-label "agent:blocked" || true
             exit 1
           fi
-          GH_TOKEN="$AGENT_PAT" gh pr edit "$PR_NUMBER" --add-label "agent:review" || {
+          GH_TOKEN="$AGENT_PAT" gh pr edit -R "$GH_REPO" "$PR_NUMBER" --add-label "agent:review" || {
             status=$?
             echo "AGENT_PAT failed to add agent:review (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
             gh issue edit "$PRD_NUMBER" --add-label "agent:blocked" || true
