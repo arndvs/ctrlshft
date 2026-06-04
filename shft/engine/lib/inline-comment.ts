@@ -6,7 +6,7 @@ import { z } from "zod";
 export interface InlineComment {
   path: string;
   line: number;
-  side: "RIGHT";
+  side: "LEFT" | "RIGHT";
   body: string;
 }
 
@@ -48,5 +48,5 @@ export const InlineCommentSchema = z
       ctx.addIssue({ code: "custom", message: "inline comment missing 'body' (or 'comment')" });
       return z.NEVER;
     }
-    return { path, line, side: "RIGHT" as const, body };
+    return { path, line, side: c.side, body };
   });
