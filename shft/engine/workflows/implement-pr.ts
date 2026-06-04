@@ -6,7 +6,7 @@ import { Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { ImplementPrOutput } from "../schemas/implement-pr-output.js";
 import { fetchPrComments } from "../lib/fetch-pr-comments.js";
-import { parseDiffLines } from "../lib/parse-diff-lines.js";
+import { parseDiffLineAnchors } from "../lib/parse-diff-lines.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 import { runWithExtraction } from "../lib/run-with-extraction.js";
@@ -88,7 +88,7 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
         return "";
       }
     })();
-    const diffLines = parseDiffLines(diffOutput);
+    const diffLines = parseDiffLineAnchors(diffOutput);
 
     const validInlineComments = result.output.newInlineComments.filter((c) => {
       const fileLines = diffLines.get(c.path);
@@ -96,8 +96,8 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
         console.warn(`[implement-pr] Dropping inline comment for ${c.path}:${c.line} — file not in diff`);
         return false;
       }
-      if (!fileLines.has(c.line)) {
-        console.warn(`[implement-pr] Dropping inline comment for ${c.path}:${c.line} — line not in diff hunks`);
+      if (!fileLines[c.side].has(c.line)) {
+        console.warn(`[implement-pr] Dropping inline comment for ${c.path}:${c.line} ${c.side} — line not in diff hunks`);
         return false;
       }
       return true;
