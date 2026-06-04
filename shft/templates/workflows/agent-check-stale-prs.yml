@@ -34,4 +34,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          npx tsx .sandcastle/run.ts check-stale-prs
+          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts check-stale-prs

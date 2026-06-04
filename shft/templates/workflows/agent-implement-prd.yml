@@ -181,7 +181,7 @@ jobs:
           BRANCH: ${{ steps.branch.outputs.name }}
           OUTPUT_DIR: ${{ runner.temp }}
         run: |
-          npx tsx .sandcastle/run.ts implement-prd \
+          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts implement-prd \
             --prd-number "$PRD_NUMBER" \
             --prd-title "$PRD_TITLE" \
             --sub-issue-number "${{ steps.shape.outputs.next_open_number }}" \
@@ -219,7 +219,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OUTPUT_DIR: ${{ runner.temp }}
         run: |
-          npx tsx .sandcastle/run.ts write-prd-pr \
+          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts write-prd-pr \
             --prd-number "$PRD_NUMBER" \
             --prd-title "$PRD_TITLE"
 
