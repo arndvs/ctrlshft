@@ -5,7 +5,7 @@ import { Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { ReviewOutput } from "../schemas/review-output.js";
 import { fetchPrComments } from "../lib/fetch-pr-comments.js";
-import { parseDiffLines } from "../lib/parse-diff-lines.js";
+import { parseDiffLineAnchors } from "../lib/parse-diff-lines.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 import { runWithRetry } from "../lib/run-with-retry.js";
@@ -56,7 +56,7 @@ export async function runReview(opts: { prNumber: string; repoDir: string; model
         return "";
       }
     })();
-    const diffLines = parseDiffLines(diffOutput);
+    const diffLines = parseDiffLineAnchors(diffOutput);
 
     const validInlineComments = result.output.inlineComments.filter((c) => {
       const fileLines = diffLines.get(c.path);
@@ -64,8 +64,8 @@ export async function runReview(opts: { prNumber: string; repoDir: string; model
         console.warn(`[review] Dropping inline comment for ${c.path}:${c.line} — file not in diff`);
         return false;
       }
-      if (!fileLines.has(c.line)) {
-        console.warn(`[review] Dropping inline comment for ${c.path}:${c.line} — line not in diff hunks`);
+      if (!fileLines[c.side].has(c.line)) {
+        console.warn(`[review] Dropping inline comment for ${c.path}:${c.line} ${c.side} — line not in diff hunks`);
         return false;
       }
       return true;

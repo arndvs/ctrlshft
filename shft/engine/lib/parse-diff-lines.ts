@@ -1,9 +1,20 @@
+export interface DiffLineAnchors {
+  LEFT: Set<number>;
+  RIGHT: Set<number>;
+}
+
 export function parseDiffLines(diff: string): Map<string, Set<number>> {
-  const result = new Map<string, Set<number>>();
+  const anchors = parseDiffLineAnchors(diff);
+  return new Map([...anchors.entries()].map(([file, sides]) => [file, sides.RIGHT]));
+}
+
+export function parseDiffLineAnchors(diff: string): Map<string, DiffLineAnchors> {
+  const anchors = new Map<string, DiffLineAnchors>();
   const lines = diff.split("\n");
 
   let currentPath: string | null = null;
   let inHunk = false;
+  let leftLine = 0;
   let rightLine = 0;
 
   for (const line of lines) {
@@ -11,31 +22,36 @@ export function parseDiffLines(diff: string): Map<string, Set<number>> {
     if (fileMatch) {
       currentPath = fileMatch[1]!;
       inHunk = false;
-      if (!result.has(currentPath)) {
-        result.set(currentPath, new Set());
+      if (!anchors.has(currentPath)) {
+        anchors.set(currentPath, { LEFT: new Set(), RIGHT: new Set() });
       }
       continue;
     }
 
-    const hunkMatch = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    const hunkMatch = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
     if (hunkMatch) {
-      rightLine = parseInt(hunkMatch[1]!, 10);
+      leftLine = parseInt(hunkMatch[1]!, 10);
+      rightLine = parseInt(hunkMatch[2]!, 10);
       inHunk = true;
       continue;
     }
 
     if (!currentPath || !inHunk) continue;
+    const fileAnchors = anchors.get(currentPath)!;
 
     if (line.startsWith("+")) {
-      result.get(currentPath)!.add(rightLine);
+      fileAnchors.RIGHT.add(rightLine);
       rightLine++;
     } else if (line.startsWith("-")) {
-      // Removed line — only on left side, don't increment right counter
+      fileAnchors.LEFT.add(leftLine);
+      leftLine++;
     } else if (line.startsWith(" ")) {
-      result.get(currentPath)!.add(rightLine);
+      fileAnchors.LEFT.add(leftLine);
+      fileAnchors.RIGHT.add(rightLine);
+      leftLine++;
       rightLine++;
     }
   }
 
-  return result;
+  return anchors;
 }

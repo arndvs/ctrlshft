@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseDiffLines } from "./parse-diff-lines.js";
+import { parseDiffLineAnchors, parseDiffLines } from "./parse-diff-lines.js";
 
 describe("parseDiffLines", () => {
   it("returns empty map for empty diff", () => {
@@ -89,5 +89,23 @@ describe("parseDiffLines", () => {
 
     const result = parseDiffLines(diff);
     expect(result.get("single.ts")).toEqual(new Set([1]));
+  });
+
+  it("tracks LEFT and RIGHT anchors separately", () => {
+    const diff = [
+      "diff --git a/bar.ts b/bar.ts",
+      "--- a/bar.ts",
+      "+++ b/bar.ts",
+      "@@ -10,3 +20,3 @@",
+      " kept",
+      "-removed",
+      "+added",
+      " kept2",
+    ].join("\n");
+
+    const result = parseDiffLineAnchors(diff).get("bar.ts")!;
+
+    expect(result.LEFT).toEqual(new Set([10, 11, 12]));
+    expect(result.RIGHT).toEqual(new Set([20, 21, 22]));
   });
 });
