@@ -9,9 +9,10 @@ import { parseDiffLines } from "../lib/parse-diff-lines.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 import { runWithRetry } from "../lib/run-with-retry.js";
+import { resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
+const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
 
 export async function runReview(opts: { prNumber: string; repoDir: string; model?: string; templatesDir?: string }): Promise<void> {
   const config = await loadConfig({ cwd: opts.repoDir });

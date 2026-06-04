@@ -4,9 +4,10 @@ import { run, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
+import { resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
+const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
 
 export interface ImplementPrdResult {
   commitCount: number;

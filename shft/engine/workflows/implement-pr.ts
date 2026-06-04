@@ -10,10 +10,11 @@ import { parseDiffLines } from "../lib/parse-diff-lines.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 import { runWithExtraction } from "../lib/run-with-extraction.js";
+import { resolveDefaultExtractionsDir, resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
-const defaultExtractionsDir = path.resolve(__dirname, "..", "..", "templates", "extractions");
+const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
+const defaultExtractionsDir = resolveDefaultExtractionsDir({ workflowDir: __dirname });
 
 export async function runImplementPr(opts: { prNumber: string; repoDir: string; model?: string; templatesDir?: string; extractionsDir?: string }): Promise<void> {
   const config = await loadConfig({ cwd: opts.repoDir });
