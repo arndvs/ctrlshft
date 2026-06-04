@@ -14,19 +14,24 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoDir = path.resolve(__dirname, "..");
 const templatesDir = path.resolve(__dirname, "templates", "prompts");
 
-const args = parseCli(process.argv.slice(2));
+async function main(): Promise<void> {
+  const args = parseCli(process.argv.slice(2));
 
-const runner = resolveWorkflow(args.workflow);
+  const runner = resolveWorkflow(args.workflow);
 
-if (!runner) {
-  const available = WORKFLOW_NAMES.join(", ");
-  console.error(`Unknown workflow: "${args.workflow}". Available: ${available}`);
-  process.exit(1);
+  if (!runner) {
+    const available = WORKFLOW_NAMES.join(", ");
+    console.error(`Unknown workflow: "${args.workflow}". Available: ${available}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    await runner({ args, repoDir, templatesDir });
+  } catch (error) {
+    console.error(`[${args.workflow}] Failed:`, error);
+    process.exitCode = 1;
+  }
 }
 
-try {
-  await runner({ args, repoDir, templatesDir });
-} catch (error) {
-  console.error(`[${args.workflow}] Failed:`, error);
-  process.exit(1);
-}
+void main();
