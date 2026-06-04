@@ -34,7 +34,7 @@ export function requestCopilotReview(opts: { owner: string; repo: string; prNumb
   try {
     execFileSync(
       "gh",
-      ["api", "--method", "POST", `repos/${owner}/${repo}/pulls/${prNumber}/requested_reviewers`, "-f", "reviewers[]=copilot"],
+      ["api", "--method", "POST", `repos/${owner}/${repo}/pulls/${prNumber}/requested_reviewers`, "-f", "reviewers[]=copilot-pull-request-reviewer"],
       { encoding: "utf8", cwd, stdio: ["ignore", "pipe", "pipe"] },
     );
     console.log(`Requested Copilot review on PR #${prNumber}`);
