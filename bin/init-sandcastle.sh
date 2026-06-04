@@ -159,7 +159,7 @@ if [[ ! -f "sandcastle.config.json" ]]; then
 {
   "model": "$MODEL",
   "baseBranch": "$BRANCH",
-    "sandbox": "$SANDBOX",
+  "sandbox": "$SANDBOX",
   "promptDir": ".sandcastle/prompts",
   "codingStandards": ".sandcastle/CODING_STANDARDS.md",
   "contextDoc": "CONTEXT.md",
@@ -227,7 +227,12 @@ fi
 
 # ── 12. Install engine dependencies ──────────────────────────────────────────
 echo "  Installing engine dependencies..."
-(cd .sandcastle/engine && npm install --ignore-scripts 2>/dev/null) || yellow "    npm install failed — run manually in .sandcastle/engine/"
+case "$PM" in
+    pnpm) (cd .sandcastle/engine && pnpm install --ignore-scripts 2>/dev/null) || yellow "    pnpm install failed — run manually in .sandcastle/engine/" ;;
+    yarn) (cd .sandcastle/engine && yarn install --ignore-scripts 2>/dev/null) || yellow "    yarn install failed — run manually in .sandcastle/engine/" ;;
+    bun)  (cd .sandcastle/engine && bun install --ignore-scripts 2>/dev/null) || yellow "    bun install failed — run manually in .sandcastle/engine/" ;;
+    *)    (cd .sandcastle/engine && npm install --ignore-scripts 2>/dev/null) || yellow "    npm install failed — run manually in .sandcastle/engine/" ;;
+esac
 
 echo ""
 green "Sandcastle initialized!"
