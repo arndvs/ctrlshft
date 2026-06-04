@@ -110,7 +110,7 @@ jobs:
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           set -euo pipefail
-          existing_pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          existing_pr=$(gh pr list -R ${{ github.repository }} --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing_pr" ]; then
             echo "PR #${existing_pr} already exists for $BRANCH"
             exit 0
@@ -118,6 +118,7 @@ jobs:
           PR_TITLE=$(cat "${RUNNER_TEMP}/pr_title.txt")
           PR_TITLE="${PR_TITLE:0:256}"
           gh pr create \
+            -R ${{ github.repository }} \
             --draft \
             --base {{DEFAULT_BRANCH}} \
             --head "$BRANCH" \
