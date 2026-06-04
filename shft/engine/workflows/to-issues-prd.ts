@@ -11,6 +11,30 @@ import { runWithRetry } from "../lib/run-with-retry.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesDir = path.resolve(__dirname, "..", "..", "templates", "prompts");
 
+export function resolveBlockedByNumbers(opts: { sliceTitle: string; blockedBy: string[]; createdIssues: Map<string, number> }): number[] {
+  const blockedByNumbers: number[] = [];
+  const missingTitles: string[] = [];
+
+  for (const title of opts.blockedBy) {
+    const issueNumber = opts.createdIssues.get(title);
+    if (issueNumber == null) {
+      missingTitles.push(title);
+    } else {
+      blockedByNumbers.push(issueNumber);
+    }
+  }
+
+  if (missingTitles.length > 0) {
+    const createdTitles = [...opts.createdIssues.keys()];
+    const createdList = createdTitles.length > 0 ? createdTitles.join(", ") : "(none)";
+    throw new Error(
+      `[to-issues-prd] Slice "${opts.sliceTitle}" references blockedBy titles that have not been created yet: ${missingTitles.join(", ")}. Created titles: ${createdList}`,
+    );
+  }
+
+  return blockedByNumbers;
+}
+
 export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: string; model?: string; templatesDir?: string; dryRun: boolean }): Promise<void> {
   const config = await loadConfig({ cwd: opts.repoDir });
   const { issueNumber, repoDir, dryRun } = opts;
@@ -65,9 +89,11 @@ export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: strin
     const createdIssues = new Map<string, number>();
 
     for (const slice of result.output.slices) {
-      const blockedByNumbers = slice.blockedBy
-        .map((title) => createdIssues.get(title))
-        .filter((n): n is number => n != null);
+      const blockedByNumbers = resolveBlockedByNumbers({
+        sliceTitle: slice.title,
+        blockedBy: slice.blockedBy,
+        createdIssues,
+      });
 
       const blockedByLine = blockedByNumbers.length > 0
         ? `**Blocked by:** ${blockedByNumbers.map((n) => `#${n}`).join(", ")}`
