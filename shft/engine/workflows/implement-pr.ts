@@ -1,13 +1,27 @@
 import path from "node:path";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { run, Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
+import { Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { ImplementPrOutput } from "../schemas/implement-pr-output.js";
 import { fetchPrComments } from "../lib/fetch-pr-comments.js";
-import { parseDiffLines } from "../lib/parse-diff-lines.js";
+import { parseDiffLineAnchors } from "../lib/parse-diff-lines.js";
+import { loadConfig } from "../lib/config.js";
+import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
+import { runWithExtraction } from "../lib/run-with-extraction.js";
+import { resolveDefaultExtractionsDir, resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
-export async function runImplementPr(opts: { prNumber: string; repoDir: string; model: string; promptsDir: string }): Promise<void> {
-  const { prNumber, repoDir, model, promptsDir } = opts;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
+const defaultExtractionsDir = resolveDefaultExtractionsDir({ workflowDir: __dirname });
+
+export async function runImplementPr(opts: { prNumber: string; repoDir: string; model?: string; templatesDir?: string; extractionsDir?: string }): Promise<void> {
+  const config = await loadConfig({ cwd: opts.repoDir });
+  const { prNumber, repoDir } = opts;
+  const model = opts.model ?? config.model;
+  const templatesDir = opts.templatesDir ?? defaultTemplatesDir;
+  const extractionsDir = opts.extractionsDir ?? defaultExtractionsDir;
 
   console.log(`[implement-pr] Fetching PR #${prNumber} data...`);
   const prContext = fetchPrComments({ prNumber, cwd: repoDir });
@@ -27,12 +41,21 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
   console.log(`[implement-pr] Unresolved threads: ${prContext.comments.review_threads.length}`);
 
   try {
-    const result = await run({
+    const promptFile = await resolvePrompt({ name: "implement-pr", config, repoDir, templatesDir });
+
+    const extractionPrompt = readFileSync(
+      path.join(extractionsDir, "implement-pr.md"),
+      "utf8",
+    );
+
+    const result = await runWithExtraction({
+      name: `implement-pr-${prNumber}`,
       agent: claudeCode(model),
       sandbox: noSandbox(),
       cwd: repoDir,
-      promptFile: path.join(promptsDir, "implement-pr.md"),
+      promptFile,
       promptArgs: {
+        ...configPromptArgs(config),
         PR_NUMBER: prNumber,
         BRANCH: branch,
         ISSUE_NUMBER: issueNumber,
@@ -40,6 +63,7 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
         PR_COMMENTS_JSON: JSON.stringify(prContext.comments, null, 2),
       },
       output: Output.object({ tag: "output", schema: ImplementPrOutput }),
+      extractionPrompt,
       logging: { type: "stdout" },
     });
 
@@ -64,7 +88,7 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
         return "";
       }
     })();
-    const diffLines = parseDiffLines(diffOutput);
+    const diffLines = parseDiffLineAnchors(diffOutput);
 
     const validInlineComments = result.output.newInlineComments.filter((c) => {
       const fileLines = diffLines.get(c.path);
@@ -72,8 +96,8 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
         console.warn(`[implement-pr] Dropping inline comment for ${c.path}:${c.line} — file not in diff`);
         return false;
       }
-      if (!fileLines.has(c.line)) {
-        console.warn(`[implement-pr] Dropping inline comment for ${c.path}:${c.line} — line not in diff hunks`);
+      if (!fileLines[c.side].has(c.line)) {
+        console.warn(`[implement-pr] Dropping inline comment for ${c.path}:${c.line} ${c.side} — line not in diff hunks`);
         return false;
       }
       return true;

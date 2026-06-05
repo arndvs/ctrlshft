@@ -217,13 +217,35 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
             (tracking_number, str(ws_path), job.id),
         )
 
-    # 6. Exec shft afk 1 inside the workspace.
+    # 6. Dispatch to the appropriate workflow.
+    env = _build_subprocess_env(cfg, token, ws_path, repo)
+
     emit("bridge.job.shft_invoked")
-    shft_bin = str(cfg.dotfiles_root / "shft" / "shft")
-    # Build a scrubbed environment for shft — only pass what it needs.
-    # Do NOT forward the full os.environ (which includes .env.secrets).
-    # Preserve existing PATH (may contain srt location from nvm/npm prefix)
-    # and prepend ~/.local/bin for user-installed tools.
+
+    if job.event_type == "pull_request_review":
+        # Copilot review event — use the typed address-review workflow
+        _dispatch_address_review(
+            cfg=cfg,
+            ws_path=ws_path,
+            env=env,
+            pr_number=job.pr_number,
+            iteration_num=iteration_num,
+            max_iterations=cfg.max_iterations,
+            emit=emit,
+        )
+    else:
+        # Generic issue/PR event — use shft afk
+        _dispatch_shft_afk(
+            cfg=cfg,
+            ws_path=ws_path,
+            env=env,
+            tracking_number=tracking_number,
+            emit=emit,
+        )
+
+
+def _build_subprocess_env(cfg: Config, token, ws_path, repo: str) -> dict[str, str]:
+    """Build a scrubbed environment for subprocess execution."""
     existing_path = os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin")
     local_bin = os.path.expanduser("~/.local/bin")
     if local_bin not in existing_path.split(":"):
@@ -231,8 +253,6 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
     else:
         path_val = existing_path
     env = {
-        # Git credential injection first — shared helper (same as workspace.py).
-        # Spread before PATH so our computed PATH (with ~/.local/bin) wins.
         **git_credential_env(token),
         "HOME": os.environ.get("HOME", ""),
         "PATH": path_val,
@@ -241,41 +261,63 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
         "USER": os.environ.get("USER", ""),
         "BRIDGE_WORKSPACE": str(ws_path),
         "GH_TOKEN": token.value,
+        "GH_REPO": repo,
     }
-    # Pass repo context so gh CLI targets the correct base repo (fork-safe)
-    env["GH_REPO"] = repo
+    return env
 
+
+def _run_subprocess(cmd: list[str], cwd: str, env: dict[str, str], emit) -> None:
+    """Run a subprocess with timeout and process group cleanup."""
+    proc = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        env=env,
+        start_new_session=True,
+    )
     try:
-        shft_cmd = [shft_bin, "afk", "1"]
-        if tracking_number:
-            shft_cmd += ["--issue", str(tracking_number)]
-        proc = subprocess.Popen(
-            shft_cmd,
-            cwd=str(ws_path),
-            env=env,
-            start_new_session=True,
-        )
         proc.wait(timeout=SHFT_RUN_TIMEOUT_SECONDS)
         emit("bridge.job.shft_completed", exit_code=proc.returncode)
         if proc.returncode != 0:
-            raise RuntimeError(f"shft afk exited {proc.returncode}")
+            raise RuntimeError(f"{cmd[0]} exited {proc.returncode}")
     except subprocess.TimeoutExpired:
-        # Kill the entire process group to avoid orphaned agents/stale locks
         try:
             os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
         except (ProcessLookupError, OSError):
             pass
         try:
-            proc.wait(timeout=10)  # Allow graceful shutdown
+            proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
-            # SIGTERM didn't work — escalate to SIGKILL
             try:
                 os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
             except (ProcessLookupError, OSError):
                 pass
             proc.wait(timeout=5)
-        emit("bridge.job.failed", reason="shft_timeout")
-        raise RuntimeError("shft afk timed out")
+        emit("bridge.job.failed", reason="subprocess_timeout")
+        raise RuntimeError(f"{cmd[0]} timed out")
+
+
+def _dispatch_address_review(cfg: Config, ws_path, env: dict[str, str], pr_number: int, iteration_num: int, max_iterations: int, emit) -> None:
+    """Dispatch to the engine's address-review workflow."""
+    engine_main = str(cfg.dotfiles_root / "shft" / "engine" / "main.ts")
+    cmd = [
+        "npx", "tsx", engine_main,
+        "--workflow", "address-review",
+        "--repo", str(ws_path),
+        "--pr", str(pr_number),
+        "--round", str(iteration_num),
+        "--max-rounds", str(max_iterations),
+    ]
+    emit("bridge.job.address_review", pr_number=pr_number, round=iteration_num)
+    _run_subprocess(cmd, cwd=str(ws_path), env=env, emit=emit)
+
+
+def _dispatch_shft_afk(cfg: Config, ws_path, env: dict[str, str], tracking_number: int | None, emit) -> None:
+    """Dispatch to shft afk for generic issue/PR events."""
+    shft_bin = str(cfg.dotfiles_root / "shft" / "shft")
+    cmd = [shft_bin, "afk", "1"]
+    if tracking_number:
+        cmd += ["--issue", str(tracking_number)]
+    _run_subprocess(cmd, cwd=str(ws_path), env=env, emit=emit)
 
 
 def run(worker_id: str) -> None:
