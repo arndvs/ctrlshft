@@ -7,7 +7,7 @@ Labels used by the Sandcastle state machine. Created automatically by `ctrl init
 | Label | Color | Trigger | Next state |
 |-------|-------|---------|------------|
 | `Sandcastle` | `#7057ff` | Human applies to issue | `agent:review` |
-| `agent:review` | `#0075ca` | `agent-review-issue.yml` | `agent:plan` or `agent:implement` |
+| `agent:review` | `#0075ca` | `agent-plan-issue.yml` | `agent:implement` |
 | `agent:plan` | `#006b75` | none (state-tracking label) | `agent:implement` |
 | `agent:implement` | `#e4e669` | `agent-implement-issue.yml` | `agent:pr-open` |
 | `agent:pr-open` | `#1d76db` | PR opened by agent | `agent:merge` or `agent:fix` |
@@ -29,14 +29,13 @@ Labels used by the Sandcastle state machine. Created automatically by `ctrl init
 
 ```
 Human applies "Sandcastle"
-  → agent:review (reviews issue, gathers context)
-    → agent:plan (optional — breaks into sub-tasks)
-      → agent:implement (writes code, opens PR)
-        → agent:pr-open (PR awaiting review)
-          → agent:fix (if review comments)
-            → agent:pr-open (cycle until approved)
-          → agent:merge (checks pass, approved)
-            → closed
+  → agent:review (review workflow gathers context)
+    → agent:implement (plan workflow runs and promotes)
+      → agent:pr-open (PR awaiting review)
+        → agent:fix (if review comments)
+          → agent:pr-open (cycle until approved)
+        → agent:merge (checks pass, approved)
+          → closed
 
 At any point:
   → agent:blocked (needs human input)
