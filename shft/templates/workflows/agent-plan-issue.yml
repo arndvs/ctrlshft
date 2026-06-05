@@ -48,16 +48,24 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts plan-issue \
-            --issue ${{ github.event.issue.number }}
+            --issue "$ISSUE_NUMBER"
 
       - name: Transition label
         if: success()
         env:
-          GITHUB_TOKEN: ${{ secrets.AGENT_PAT }}
+          AGENT_PAT: ${{ secrets.AGENT_PAT }}
         run: |
-          gh issue edit "$ISSUE_NUMBER" \
+          if [ -z "$AGENT_PAT" ]; then
+            echo "AGENT_PAT is required to add agent:implement because GITHUB_TOKEN-created labels do not trigger workflows." > "${RUNNER_TEMP}/failure_reason.txt"
+            exit 1
+          fi
+          if ! GH_TOKEN="$AGENT_PAT" gh issue edit "$ISSUE_NUMBER" \
             --add-label "agent:implement" \
-            -R ${{ github.repository }}
+            -R ${{ github.repository }}; then
+            status=$?
+            echo "AGENT_PAT failed to add agent:implement (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
+            exit 1
+          fi
 
       - name: Mark blocked on failure
         if: failure()
