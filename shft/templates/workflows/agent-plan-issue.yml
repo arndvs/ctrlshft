@@ -59,10 +59,13 @@ jobs:
             echo "AGENT_PAT is required to add agent:implement because GITHUB_TOKEN-created labels do not trigger workflows." > "${RUNNER_TEMP}/failure_reason.txt"
             exit 1
           fi
-          if ! GH_TOKEN="$AGENT_PAT" gh issue edit "$ISSUE_NUMBER" \
+          set +e
+          GH_TOKEN="$AGENT_PAT" gh issue edit "$ISSUE_NUMBER" \
             --add-label "agent:implement" \
-            -R ${{ github.repository }}; then
-            status=$?
+            -R ${{ github.repository }}
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
             echo "AGENT_PAT failed to add agent:implement (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
             exit 1
           fi
