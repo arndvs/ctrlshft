@@ -7,7 +7,7 @@ Sandcastle is an autonomous agent pipeline that turns GitHub issues into merged 
 ```
 GitHub Issue
   ↓ (Sandcastle label applied)
-agent:review → agent:plan → agent:implement → agent:pr-open
+agent:review → agent:implement → agent:pr-open
   ↓                                              ↓
 agent:blocked (human input needed)           agent:review (PR)
                                                  ↓
@@ -53,7 +53,7 @@ GitHub Actions workflows in `shft/templates/workflows/`:
 | `agent-implement-issue.yml` | `agent:implement` label | Implements issue, opens PR |
 | `agent-implement-prd.yml` | `agent:implement-prd` label | Implements next sub-issue of a PRD |
 | `agent-fix-pr-feedback.yml` | `agent:fix` label | Addresses PR review comments |
-| `agent-architecture-review.yml` | `agent:architecture-review` label | Full architecture review |
+| `agent-architecture-review.yml` | Schedule + `workflow_dispatch` | Full architecture review |
 | `agent-merge-pr.yml` | `agent:merge` label | Merges PR after checks pass |
 | `agent-update-branch.yml` | `agent:update-branch` label | Rebases/merges branch against base |
 | `agent-check-stale-prs.yml` | Schedule | Finds stale PRs needing attention |
