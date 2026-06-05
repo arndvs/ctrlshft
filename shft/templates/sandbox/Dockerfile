@@ -33,7 +33,9 @@ RUN usermod -d /home/agent -m -l agent node
 USER agent
 
 # Install Claude Code CLI
-RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN curl -fsSL --proto '=https' --tlsv1.2 https://claude.ai/install.sh -o /tmp/install-claude.sh \
+  && bash /tmp/install-claude.sh \
+  && rm -f /tmp/install-claude.sh
 
 # Add Claude to PATH
 ENV PATH="/home/agent/.local/bin:$PATH"
