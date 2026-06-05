@@ -68,7 +68,7 @@ set_secret() {
     echo "  Error: $name cannot be empty; secret was not changed." >&2
     return 1
   fi
-  echo "$token" | gh secret set "$name" --repo "$REPO"
+  printf '%s' "$token" | gh secret set "$name" --repo "$REPO"
   echo "  Set."
   echo ""
 }
