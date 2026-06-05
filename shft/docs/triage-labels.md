@@ -8,7 +8,7 @@ Labels used by the Sandcastle state machine. Created automatically by `ctrl init
 |-------|-------|---------|------------|
 | `Sandcastle` | `#7057ff` | Human applies to issue | `agent:review` |
 | `agent:review` | `#0075ca` | `agent-review-issue.yml` | `agent:plan` or `agent:implement` |
-| `agent:plan` | `#006b75` | `agent-plan-issue.yml` | `agent:implement` |
+| `agent:plan` | `#006b75` | none (state-tracking label) | `agent:implement` |
 | `agent:implement` | `#e4e669` | `agent-implement-issue.yml` | `agent:pr-open` |
 | `agent:pr-open` | `#1d76db` | PR opened by agent | `agent:merge` or `agent:fix` |
 | `agent:fix` | `#d93f0b` | `agent-fix-pr-feedback.yml` | `agent:pr-open` |

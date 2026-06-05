@@ -49,7 +49,7 @@ GitHub Actions workflows in `shft/templates/workflows/`:
 | File | Trigger | Purpose |
 |------|---------|---------|
 | `agent-review-issue.yml` | `Sandcastle` label | Reviews issue, plans implementation |
-| `agent-plan-issue.yml` | `agent:plan` label | Breaks issue into sub-tasks |
+| `agent-plan-issue.yml` | `agent:review` label | Breaks issue into sub-tasks |
 | `agent-implement-issue.yml` | `agent:implement` label | Implements issue, opens PR |
 | `agent-implement-prd.yml` | `agent:implement-prd` label | Implements next sub-issue of a PRD |
 | `agent-fix-pr-feedback.yml` | `agent:fix` label | Addresses PR review comments |
