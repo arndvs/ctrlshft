@@ -136,8 +136,8 @@ assert_contains "missing .env errors" "not found" "$_missing_output"
 cat > "$_fake_proxy_dir/.env" <<'EOF'
 OTHER_VAR=something
 EOF
-_empty_key=$(_proxy_load_key "$_fake_proxy_dir" 2>/dev/null || true)
-assert_eq "empty key returns empty" "" "$_empty_key"
+_empty_key_output=$(_proxy_load_key "$_fake_proxy_dir" 2>&1 || true)
+assert_contains "empty key errors" "LITELLM_MASTER_KEY not found or empty" "$_empty_key_output"
 
 # ══════════════════════════════════════════════════════════════════════════════
 echo
@@ -359,11 +359,17 @@ _shft_lock_constants=$(sed -n '/^# ── Constants/,/^# ── Helper functions
 assert_contains "shft defines LOCK_BASE_DIR" "LOCK_BASE_DIR" "$_shft_lock_constants"
 assert_contains "shft lock path includes hash id" "shft-afk-" "$_shft_lock_constants"
 _shft_main_lock=$(echo "$_shft_lock_constants" | grep '^LOCK_DIR=' || true)
-assert_not_contains "shft has no static /tmp lock constant" "/tmp/shft-afk.lock" "$_shft_main_lock"
+if [[ -n "$_shft_main_lock" ]]; then
+    _ok "shft defines main LOCK_DIR"
+else
+    _fail "shft defines main LOCK_DIR" "LOCK_DIR declaration missing"
+fi
+assert_not_contains "shft main lock dir is not legacy static /tmp lock" "/tmp/shft-afk.lock" "$_shft_main_lock"
 
-_afk_lock_decl=$(grep -n 'LOCKDIR=' shft/afk.sh || true)
+_afk_lock_decl=$(grep -n '^LOCKDIR=' shft/afk.sh || true)
 assert_contains "afk lockdir consumes SHFT_LOCK_DIR" "SHFT_LOCK_DIR" "$_afk_lock_decl"
-assert_not_contains "afk lockdir is not static /tmp" 'LOCKDIR="/tmp/shft-afk.lock"' "$_afk_lock_decl"
+assert_contains "afk lockdir has TMPDIR fallback" '${TMPDIR:-/tmp}/shft-afk.lock' "$_afk_lock_decl"
+assert_not_contains "afk lockdir is not hardcoded static /tmp" 'LOCKDIR="/tmp/shft-afk.lock"' "$_afk_lock_decl"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Summary
