@@ -159,6 +159,16 @@ describe("runWithRetry", () => {
     expect(mockRun).toHaveBeenCalledTimes(1);
   });
 
+  it.each([0, -1])(
+    "rejects maxAttempts below 1 (%s)",
+    async (maxAttempts) => {
+      await expect(
+        runWithRetry({ ...baseOptions(), maxAttempts })
+      ).rejects.toThrow(/maxAttempts/);
+      expect(mockRun).not.toHaveBeenCalled();
+    }
+  );
+
   it("throws a clear error when the failed run carried no sessionId", async () => {
     mockRun.mockRejectedValueOnce(
       structuredError('{"a":1}', { sessionId: undefined })

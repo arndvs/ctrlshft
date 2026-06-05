@@ -2,6 +2,13 @@ import { describe, it, expect } from "vitest";
 import { Semaphore } from "./semaphore.js";
 
 describe("Semaphore", () => {
+  it.each([0, -1])(
+    "rejects invalid maxConcurrent values (%s)",
+    (maxConcurrent) => {
+      expect(() => new Semaphore(maxConcurrent)).toThrow(/at least 1/);
+    }
+  );
+
   it("allows up to maxConcurrent tasks", async () => {
     const sem = new Semaphore(2);
     let active = 0;
