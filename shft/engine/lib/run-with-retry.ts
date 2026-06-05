@@ -51,6 +51,10 @@ export async function runWithRetry<T>(
 ): Promise<RunResult & { output: T }> {
   const { output, maxAttempts = 3, ...runOptions } = options;
 
+  if (maxAttempts < 1) {
+    throw new Error("runWithRetry: maxAttempts must be at least 1.");
+  }
+
   let lastError: StructuredOutputError | undefined;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

@@ -2,7 +2,13 @@ export class Semaphore {
   private queue: Array<() => void> = [];
   private active = 0;
 
-  constructor(private readonly maxConcurrent: number) {}
+  constructor(private readonly maxConcurrent: number) {
+    if (maxConcurrent < 1) {
+      throw new Error(
+        `Semaphore: maxConcurrent must be at least 1 (got ${maxConcurrent}).`
+      );
+    }
+  }
 
   async acquire(): Promise<void> {
     if (this.active < this.maxConcurrent) {
