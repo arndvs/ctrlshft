@@ -51,7 +51,7 @@ set_secret() {
   echo ""
 
   local existing
-  existing=$(gh secret list --repo "$REPO" 2>/dev/null | grep "$name" || true)
+  existing=$(gh secret list --repo "$REPO" 2>/dev/null | awk '{print $1}' | grep -Fx "$name" || true)
   if [[ -n "$existing" ]]; then
     echo "  [Already set] $name exists. Overwrite? (y/N)"
     read -r overwrite

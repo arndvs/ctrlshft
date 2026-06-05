@@ -53,10 +53,10 @@ jobs:
       - name: Transition label
         if: success()
         env:
-          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT }}
         run: |
           gh issue edit "$ISSUE_NUMBER" \
-            --add-label "agent:plan" \
+            --add-label "agent:implement" \
             -R ${{ github.repository }}
 
       - name: Mark blocked on failure

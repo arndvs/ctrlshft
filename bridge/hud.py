@@ -56,20 +56,6 @@ def _run_emit(hud_script: str, payload_json: str, safe_env: dict) -> None:
         logger.debug("HUD emit failed (non-fatal): %s", e)
 
 
-def _run_emit(hud_script: str, payload_json: str, safe_env: dict) -> None:
-    try:
-        subprocess.run(
-            ["bash", hud_script, "bridge-event"],
-            input=payload_json,
-            text=True,
-            check=False,
-            timeout=2,
-            env=safe_env,
-        )
-    except Exception as e:
-        logger.debug("HUD emit failed (non-fatal): %s", e)
-
-
 def emit(
     hud_script: Path,
     event: str,
