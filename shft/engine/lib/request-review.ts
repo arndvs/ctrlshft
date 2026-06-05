@@ -15,7 +15,7 @@ export function requestCopilotReview(opts: { owner: string; repo: string; prNumb
 
   // Check if PR is a draft
   try {
-    const prJson = execFileSync("gh", ["pr", "view", prNumber, "--json", "isDraft", "--jq", ".isDraft"], {
+    const prJson = execFileSync("gh", ["pr", "view", prNumber, "--repo", `${owner}/${repo}`, "--json", "isDraft", "--jq", ".isDraft"], {
       encoding: "utf8",
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
