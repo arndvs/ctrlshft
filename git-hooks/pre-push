@@ -12,8 +12,12 @@ HOOK_NAME=$(basename "$0")
 REMOTE_URL="${2:-}"
 
 is_public_ctrlshft_remote() {
-    case "$REMOTE_URL" in
-        https://github.com/arndvs/ctrlshft|https://github.com/arndvs/ctrlshft.git|git@github.com:arndvs/ctrlshft.git)
+    local normalized="$REMOTE_URL"
+    normalized="${normalized%/}"
+    normalized="${normalized%.git}"
+
+    case "$normalized" in
+        https://github.com/arndvs/ctrlshft|git@github.com:arndvs/ctrlshft|ssh://git@github.com/arndvs/ctrlshft)
             return 0
             ;;
         *)
