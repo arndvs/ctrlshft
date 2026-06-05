@@ -361,10 +361,10 @@ assert_contains "shft lock path includes hash id" "shft-afk-" "$_shft_lock_const
 _shft_main_lock=$(echo "$_shft_lock_constants" | grep '^LOCK_DIR=' || true)
 if [[ -n "$_shft_main_lock" ]]; then
     _ok "shft defines main LOCK_DIR"
+    assert_not_contains "shft main lock dir is not legacy static /tmp lock" "/tmp/shft-afk.lock" "$_shft_main_lock"
 else
     _fail "shft defines main LOCK_DIR" "LOCK_DIR declaration missing"
 fi
-assert_not_contains "shft main lock dir is not legacy static /tmp lock" "/tmp/shft-afk.lock" "$_shft_main_lock"
 
 _afk_lock_decl=$(grep -n '^LOCKDIR=' shft/afk.sh || true)
 assert_contains "afk lockdir consumes SHFT_LOCK_DIR" "SHFT_LOCK_DIR" "$_afk_lock_decl"
