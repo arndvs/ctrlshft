@@ -9,6 +9,7 @@
 ~/.claude/, ~/.copilot/, and ~/.agents/ are consumer targets, not sources.
 NEVER edit files directly in ~/.claude/, ~/.copilot/, or ~/.agents/.
 ALL changes must be made in ~/dotfiles/ and propagated via bootstrap.sh.
+Repo topology: `origin` is private `dotfiles-private`; `public` is sanitized `ctrlshft`. See `REPO_TOPOLOGY.md` before changing remotes or publishing work.
 </source-of-truth>
 
 Always read global rule instructions first and confirm that you have done so by writing "Read Claude." in the chat:

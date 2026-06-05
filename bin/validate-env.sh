@@ -170,6 +170,12 @@ else
     _fail=1
 fi
 
+if bash "$HOME/dotfiles/bin/validate-remotes.sh"; then
+    :
+else
+    _fail=1
+fi
+
 if [[ -f "$HOME/.claude/CLAUDE.md" ]]; then
     green "  ✓ ~/.claude/CLAUDE.md exists"
 else

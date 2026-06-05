@@ -13,9 +13,12 @@
 _PROXY_MODE="${1:-hitl}"
 _PROXY_STATE="$HOME/.shft/proxy.json"
 _PROXY_DEFAULT_PORT=4000
-SHFT_PROXY_DEFAULT_PORT="$_PROXY_DEFAULT_PORT"
 
 _PROXY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ ! -f "$_PROXY_SCRIPT_DIR/_proxy_health.sh" ]]; then
+    echo "ERROR: missing proxy helper: $_PROXY_SCRIPT_DIR/_proxy_health.sh" >&2
+    return 1 2>/dev/null || exit 1
+fi
 source "$_PROXY_SCRIPT_DIR/_proxy_health.sh"
 
 # ── Minimal helpers (no dependency on shft or _lib.sh) ────────────────────────
@@ -130,8 +133,7 @@ echo "  Routing: Copilot proxy (${_proxy_host}:${_proxy_port})"
 
 # Clean up locals
 unset _PROXY_MODE _PROXY_STATE _PROXY_DEFAULT_PORT
-unset SHFT_PROXY_DEFAULT_PORT
 unset _PROXY_SCRIPT_DIR
 unset _proxy_enabled _proxy_pid _proxy_dir _proxy_port
-unset _proxy_env_file _proxy_key _proxy_host _proxy_check_host
+unset _proxy_env_file _proxy_key _proxy_host
 unset _proxy_health_wait_seconds

@@ -1,13 +1,24 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { run, Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
+import { Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { ReviewOutput } from "../schemas/review-output.js";
 import { fetchPrComments } from "../lib/fetch-pr-comments.js";
-import { parseDiffLines } from "../lib/parse-diff-lines.js";
+import { parseDiffLineAnchors } from "../lib/parse-diff-lines.js";
+import { loadConfig } from "../lib/config.js";
+import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
+import { runWithRetry } from "../lib/run-with-retry.js";
+import { resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
-export async function runReview(opts: { prNumber: string; repoDir: string; model: string; promptsDir: string }): Promise<void> {
-  const { prNumber, repoDir, model, promptsDir } = opts;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
+
+export async function runReview(opts: { prNumber: string; repoDir: string; model?: string; templatesDir?: string }): Promise<void> {
+  const config = await loadConfig({ cwd: opts.repoDir });
+  const { prNumber, repoDir } = opts;
+  const model = opts.model ?? config.model;
+  const templatesDir = opts.templatesDir ?? defaultTemplatesDir;
 
   console.log(`[review] Fetching PR #${prNumber} data...`);
   const prContext = fetchPrComments({ prNumber, cwd: repoDir });
@@ -16,12 +27,15 @@ export async function runReview(opts: { prNumber: string; repoDir: string; model
   console.log(`[review] Existing threads: ${prContext.comments.review_threads.length}`);
 
   try {
-    const result = await run({
+    const promptFile = await resolvePrompt({ name: "review", config, repoDir, templatesDir });
+
+    const result = await runWithRetry({
       agent: claudeCode(model),
       sandbox: noSandbox(),
       cwd: repoDir,
-      promptFile: path.join(promptsDir, "review.md"),
+      promptFile,
       promptArgs: {
+        ...configPromptArgs(config),
         PR_NUMBER: prNumber,
         PR_COMMENTS_JSON: JSON.stringify(prContext.comments, null, 2),
       },
@@ -42,7 +56,7 @@ export async function runReview(opts: { prNumber: string; repoDir: string; model
         return "";
       }
     })();
-    const diffLines = parseDiffLines(diffOutput);
+    const diffLines = parseDiffLineAnchors(diffOutput);
 
     const validInlineComments = result.output.inlineComments.filter((c) => {
       const fileLines = diffLines.get(c.path);
@@ -50,8 +64,8 @@ export async function runReview(opts: { prNumber: string; repoDir: string; model
         console.warn(`[review] Dropping inline comment for ${c.path}:${c.line} — file not in diff`);
         return false;
       }
-      if (!fileLines.has(c.line)) {
-        console.warn(`[review] Dropping inline comment for ${c.path}:${c.line} — line not in diff hunks`);
+      if (!fileLines[c.side].has(c.line)) {
+        console.warn(`[review] Dropping inline comment for ${c.path}:${c.line} ${c.side} — line not in diff hunks`);
         return false;
       }
       return true;

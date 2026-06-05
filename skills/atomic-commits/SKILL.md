@@ -156,13 +156,36 @@ The PR title should summarize the full feature branch, not individual commits. U
 
 ### 6. Request Copilot review (Ship mode only)
 
-After the PR is created (or already exists), request a Copilot review automatically by calling the MCP tool:
+After the PR is created (or already exists), request a Copilot review. Do **not** stop at "no MCP/tool available" — use the GitHub CLI as the reliable fallback path.
 
-```
-mcp_github_request_copilot_review  owner=<owner>  repo=<repo>  pullNumber=<N>
+Preferred order:
+
+1. If a dedicated Copilot-review tool is available, use it.
+2. Otherwise, use `gh` against the explicit repository and PR number:
+
+```bash
+gh pr edit <PR_NUMBER> -R <OWNER>/<REPO> --add-reviewer copilot-pull-request-reviewer
 ```
 
-This is an **agent tool invocation** (MCP), not a shell command — do not run it in a terminal. If the MCP tool is not loaded, use `tool_search` for "request copilot review" first. If no tool is available, surface the PR URL and ask the user to request review manually.
+3. Verify the request:
+
+```bash
+gh pr view <PR_NUMBER> -R <OWNER>/<REPO> --json reviewRequests,reviews
+```
+
+4. If GitHub accepts the command but `reviewRequests` does not show Copilot, trigger the Copilot review by comment via `gh`:
+
+```bash
+gh pr comment <PR_NUMBER> -R <OWNER>/<REPO> --body "@copilot review"
+```
+
+5. Verify the trigger comment exists:
+
+```bash
+gh pr view <PR_NUMBER> -R <OWNER>/<REPO> --json comments
+```
+
+Only report a manual fallback if both CLI routes fail with a concrete GitHub error. Always include the exact non-secret error and the PR URL.
 
 This ensures every PR gets at least one Copilot review pass before human review.
 

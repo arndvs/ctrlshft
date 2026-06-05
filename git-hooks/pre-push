@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Generic git hook dispatcher.
-# Delegates to local hooks (Husky, .git/hooks) when present.
-# No global fallback — only pre-commit has one.
+# Global git pre-push dispatcher.
+# Blocks accidental pushes to the public ctrl+shft repo unless explicitly allowed,
+# then delegates to local hooks (Husky, .git/hooks) when present.
 #
 # Copy of generic-hook for the pre-push hook.
 # See pre-commit for the full dispatcher with fallback logic.
@@ -9,6 +9,35 @@
 set -euo pipefail
 
 HOOK_NAME=$(basename "$0")
+REMOTE_URL="${2:-}"
+
+is_public_ctrlshft_remote() {
+    local normalized="$REMOTE_URL"
+    normalized="${normalized%/}"
+    normalized="${normalized%.git}"
+
+    case "$normalized" in
+        https://github.com/arndvs/ctrlshft|git@github.com:arndvs/ctrlshft|ssh://git@github.com/arndvs/ctrlshft)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+if is_public_ctrlshft_remote && [[ "${CTRL_ALLOW_PUBLIC_PUSH:-}" != "1" ]]; then
+    cat >&2 <<'MSG'
+pre-push: blocked push to public ctrl+shft.
+
+This checkout's private source of truth is dotfiles-private. The ctrlshft remote
+is public/sanitized and must not receive accidental private dotfiles work.
+
+If this push is intentional and sanitized, re-run with:
+  CTRL_ALLOW_PUBLIC_PUSH=1 git push <remote> <refspec>
+MSG
+    exit 1
+fi
 
 # ── 1. Delegate to Husky if present ──────────────────────────────────────────
 if [[ -f ".husky/$HOOK_NAME" ]] && [[ -x ".husky/$HOOK_NAME" ]]; then

@@ -1,11 +1,46 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { run, Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
+import { Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { PrdSlicesOutput } from "../schemas/prd-slices-output.js";
+import { loadConfig } from "../lib/config.js";
+import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
+import { runWithRetry } from "../lib/run-with-retry.js";
+import { resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
-export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: string; model: string; promptsDir: string; dryRun: boolean }): Promise<void> {
-  const { issueNumber, repoDir, model, promptsDir, dryRun } = opts;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
+
+export function resolveBlockedByNumbers(opts: { sliceTitle: string; blockedBy: string[]; createdIssues: Map<string, number> }): number[] {
+  const blockedByNumbers: number[] = [];
+  const missingTitles: string[] = [];
+
+  for (const title of opts.blockedBy) {
+    const issueNumber = opts.createdIssues.get(title);
+    if (issueNumber == null) {
+      missingTitles.push(title);
+    } else {
+      blockedByNumbers.push(issueNumber);
+    }
+  }
+
+  if (missingTitles.length > 0) {
+    const createdTitles = [...opts.createdIssues.keys()];
+    const createdList = createdTitles.length > 0 ? createdTitles.join(", ") : "(none)";
+    throw new Error(
+      `[to-issues-prd] Slice "${opts.sliceTitle}" references blockedBy titles that have not been created yet: ${missingTitles.join(", ")}. Created titles: ${createdList}`,
+    );
+  }
+
+  return blockedByNumbers;
+}
+
+export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: string; model?: string; templatesDir?: string; dryRun: boolean }): Promise<void> {
+  const config = await loadConfig({ cwd: opts.repoDir });
+  const { issueNumber, repoDir, dryRun } = opts;
+  const model = opts.model ?? config.model;
+  const templatesDir = opts.templatesDir ?? defaultTemplatesDir;
 
   console.log(`[to-issues-prd] Reading PRD from issue #${issueNumber}...`);
 
@@ -19,12 +54,15 @@ export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: strin
   console.log(`[to-issues-prd] PRD: ${prd.title}`);
 
   try {
-    const result = await run({
+    const promptFile = await resolvePrompt({ name: "to-issues-prd", config, repoDir, templatesDir });
+
+    const result = await runWithRetry({
       agent: claudeCode(model),
       sandbox: noSandbox(),
       cwd: repoDir,
-      promptFile: path.join(promptsDir, "to-issues-prd.md"),
+      promptFile,
       promptArgs: {
+        ...configPromptArgs(config),
         ISSUE_NUMBER: issueNumber,
       },
       output: Output.object({ tag: "output", schema: PrdSlicesOutput }),
@@ -52,9 +90,11 @@ export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: strin
     const createdIssues = new Map<string, number>();
 
     for (const slice of result.output.slices) {
-      const blockedByNumbers = slice.blockedBy
-        .map((title) => createdIssues.get(title))
-        .filter((n): n is number => n != null);
+      const blockedByNumbers = resolveBlockedByNumbers({
+        sliceTitle: slice.title,
+        blockedBy: slice.blockedBy,
+        createdIssues,
+      });
 
       const blockedByLine = blockedByNumbers.length > 0
         ? `**Blocked by:** ${blockedByNumbers.map((n) => `#${n}`).join(", ")}`
