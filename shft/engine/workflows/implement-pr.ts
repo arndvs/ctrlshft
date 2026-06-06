@@ -1,22 +1,29 @@
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { run, Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { ImplementPrOutput } from "../schemas/implement-pr-output.js";
 import { fetchPrComments } from "../lib/fetch-pr-comments.js";
-import { parseDiffLines } from "../lib/parse-diff-lines.js";
+import { postReviewWithComments } from "../lib/inline-comment.js";
+import { resolveThreads } from "../lib/resolve-threads.js";
+import { sh, ghGraphql } from "../lib/shell-helpers.js";
+import type { DispatchContext } from "../lib/types.js";
 
-export async function runImplementPr(opts: { prNumber: string; repoDir: string; model: string; promptsDir: string }): Promise<void> {
-  const { prNumber, repoDir, model, promptsDir } = opts;
+export async function runImplementPr(ctx: DispatchContext): Promise<void> {
+  const { repoDir, model, promptsDir, args } = ctx;
+  const prNumber = args.pr as string;
+
+  if (!prNumber) {
+    throw new Error("--pr is required for implement-pr workflow");
+  }
 
   console.log(`[implement-pr] Fetching PR #${prNumber} data...`);
   const prContext = fetchPrComments({ prNumber, cwd: repoDir });
 
-  const branch = execFileSync("gh", ["pr", "view", prNumber, "--json", "headRefName", "--jq", ".headRefName"], {
-    encoding: "utf8",
+  const branch = sh({
+    cmd: "gh",
+    args: ["pr", "view", prNumber, "--json", "headRefName", "--jq", ".headRefName"],
     cwd: repoDir,
-    stdio: ["ignore", "pipe", "pipe"],
-  }).trim();
+  });
 
   const issueNumber = prContext.issueNumber || "(none)";
   const issueTitle = prContext.issueTitle || "(no linked issue)";
@@ -51,34 +58,13 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
       process.exit(1);
     }
 
-    const headSha = execFileSync("gh", ["pr", "view", prNumber, "--json", "headRefOid", "--jq", ".headRefOid"], {
-      encoding: "utf8",
+    const headSha = sh({
+      cmd: "gh",
+      args: ["pr", "view", prNumber, "--json", "headRefOid", "--jq", ".headRefOid"],
       cwd: repoDir,
-      stdio: ["ignore", "pipe", "pipe"],
-    }).trim();
-
-    const diffOutput = (() => {
-      try {
-        return execFileSync("gh", ["pr", "diff", prNumber], { encoding: "utf8", cwd: repoDir, stdio: ["ignore", "pipe", "pipe"] });
-      } catch {
-        return "";
-      }
-    })();
-    const diffLines = parseDiffLines(diffOutput);
-
-    const validInlineComments = result.output.newInlineComments.filter((c) => {
-      const fileLines = diffLines.get(c.path);
-      if (!fileLines) {
-        console.warn(`[implement-pr] Dropping inline comment for ${c.path}:${c.line} — file not in diff`);
-        return false;
-      }
-      if (!fileLines.has(c.line)) {
-        console.warn(`[implement-pr] Dropping inline comment for ${c.path}:${c.line} — line not in diff hunks`);
-        return false;
-      }
-      return true;
     });
 
+    // Validate and post thread replies
     const validReplyIds = new Set(prContext.comments.review_threads.map((c) => c.commentId));
     const threadIdByCommentId = new Map(prContext.comments.review_threads.map((c) => [c.commentId, c.threadId]));
     const validThreadReplies = result.output.threadReplies.filter((r) => {
@@ -92,39 +78,30 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
     for (const reply of validThreadReplies) {
       const threadId = threadIdByCommentId.get(reply.commentId)!;
       console.log(`[implement-pr] Posting reply to thread ${threadId}...`);
-      execFileSync(
-        "gh",
-        [
-          "api", "graphql",
-          "-F", `nodeId=${threadId}`,
-          "-f", `body=${reply.body}`,
-          "-f", "query=mutation($nodeId:ID!,$body:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$nodeId,body:$body}){comment{id}}}",
-        ],
-        { cwd: repoDir, stdio: ["ignore", "pipe", "pipe"] },
-      );
+      ghGraphql({
+        query: "mutation($nodeId:ID!,$body:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$nodeId,body:$body}){comment{id}}}",
+        variables: { nodeId: threadId, body: reply.body },
+        cwd: repoDir,
+      });
     }
 
-    if (validInlineComments.length > 0 || result.output.topLevelComments.length > 0) {
+    // Post review with inline comments using shared utility
+    if (result.output.newInlineComments.length > 0 || result.output.topLevelComments.length > 0) {
       const reviewBody = result.output.topLevelComments.map((c) => c.body).join("\n\n") || "Addressed review feedback.";
-      const reviewPayload = JSON.stringify({
-        commit_id: headSha,
-        event: "COMMENT",
-        body: reviewBody,
-        comments: validInlineComments.map((c) => ({ path: c.path, line: c.line, side: c.side, body: c.body })),
-      });
-      execFileSync("gh", ["api", `repos/{owner}/{repo}/pulls/${prNumber}/reviews`, "--input", "-"], {
-        input: reviewPayload,
-        encoding: "utf8",
+      postReviewWithComments({
+        prNumber,
+        comments: result.output.newInlineComments,
+        summary: reviewBody,
+        commitSha: headSha,
         cwd: repoDir,
-        stdio: ["pipe", "pipe", "pipe"],
       });
-      console.log(`[implement-pr] Posted review with ${validInlineComments.length} inline comments`);
+      console.log(`[implement-pr] Posted review with inline comments`);
     }
 
     console.log(`\n[implement-pr] Complete`);
     console.log(`  commits: ${commitsThisRun}`);
     console.log(`  thread replies: ${validThreadReplies.length}`);
-    console.log(`  inline comments: ${validInlineComments.length}`);
+    console.log(`  inline comments: ${result.output.newInlineComments.length}`);
     console.log(`  top-level comments: ${result.output.topLevelComments.length}`);
   } catch (error) {
     if (error instanceof StructuredOutputError) {

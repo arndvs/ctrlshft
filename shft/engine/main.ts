@@ -1,59 +1,29 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
 import { run, Output, StructuredOutputError, claudeCode, createSandbox } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { PlanOutput } from "./schemas/plan-output.js";
 import { MergeOutput } from "./schemas/merge-output.js";
-import { runImplementPr } from "./workflows/implement-pr.js";
-import { runReview } from "./workflows/review.js";
-import { runToIssuesPrd } from "./workflows/to-issues-prd.js";
+import { dispatch, getWorkflow, listWorkflows } from "./lib/dispatch.js";
+import { parseCliArgs } from "./lib/parse-cli-args.js";
+import { loadConfig } from "./lib/config.js";
 import { Semaphore } from "./lib/semaphore.js";
+import { registerAllWorkflows } from "./workflows/register.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const MODEL = process.env["ANTHROPIC_MODEL"] ?? "claude-sonnet-4-20250514";
+// Register all workflow runners
+registerAllWorkflows();
 
-const { values } = parseArgs({
-  options: {
-    repo: { type: "string" },
-    "max-iterations": { type: "string", default: "1" },
-    workflow: { type: "string", default: "implement" },
-    issue: { type: "string" },
-    branch: { type: "string" },
-    pr: { type: "string" },
-    "max-issues": { type: "string", default: "5" },
-    "max-parallel": { type: "string", default: "4" },
-    "dry-run": { type: "boolean", default: false },
-  },
-  strict: true,
-});
+const cliArgs = parseCliArgs();
+const config = loadConfig({ cwd: cliArgs.repo });
 
-if (!values.repo) {
-  throw new Error("--repo is required");
-}
-
-const repoDir = path.resolve(values.repo);
-const maxIterations = parseInt(values["max-iterations"] ?? "1", 10);
-const maxParallel = parseInt(values["max-parallel"] ?? "4", 10);
-
-if (Number.isNaN(maxIterations) || maxIterations < 1) {
-  throw new Error(`--max-iterations must be a positive integer, got: ${values["max-iterations"]}`);
-}
-
-if (Number.isNaN(maxParallel) || maxParallel < 1) {
-  throw new Error(`--max-parallel must be a positive integer, got: ${values["max-parallel"]}`);
-}
-
-const workflow = values.workflow ?? "implement";
-if (!/^[a-z0-9-]+$/i.test(workflow)) {
-  throw new Error(`Invalid --workflow: ${workflow}`);
-}
-const promptsDir = path.resolve(__dirname, "prompts");
-const promptFile = path.resolve(promptsDir, `${workflow}.md`);
-if (!promptFile.startsWith(promptsDir + path.sep)) {
-  throw new Error(`Invalid --workflow (path escapes prompts dir): ${workflow}`);
-}
+const repoDir = path.resolve(cliArgs.repo);
+const MODEL = cliArgs.model ?? process.env["ANTHROPIC_MODEL"] ?? config.model;
+const maxIterations = cliArgs.maxIterations;
+const maxParallel = cliArgs.maxParallel;
+const workflow = cliArgs.workflow;
+const promptsDir = cliArgs.promptsDir ? path.resolve(cliArgs.promptsDir) : path.resolve(__dirname, "prompts");
 
 console.log(`[shft-engine] repo: ${repoDir}`);
 console.log(`[shft-engine] workflow: ${workflow}`);
@@ -61,9 +31,9 @@ console.log(`[shft-engine] model: ${MODEL}`);
 console.log(`[shft-engine] maxIterations: ${maxIterations}`);
 
 const promptArgs: Record<string, string> = {};
-if (values.issue) promptArgs["ISSUE_NUMBER"] = values.issue;
-if (values.branch) promptArgs["BRANCH"] = values.branch;
-if (values["max-issues"]) promptArgs["MAX_ISSUES"] = values["max-issues"];
+if (cliArgs.issue) promptArgs["ISSUE_NUMBER"] = cliArgs.issue;
+if (cliArgs.branch) promptArgs["BRANCH"] = cliArgs.branch;
+promptArgs["MAX_ISSUES"] = String(cliArgs.maxIssues);
 
 interface IssueResult {
   issue: { number: number; title: string; branch: string };
@@ -175,6 +145,8 @@ async function runMerge(completedBranches: string[]): Promise<MergeOutput> {
   }
 }
 
+// Orchestration workflows that need inline logic (plan, parallel, merge)
+// stay here. All other workflows dispatch through the registry.
 if (workflow === "plan") {
   const plan = await runPlan();
   console.log(`\n[shft-engine] Plan output (JSON):`);
@@ -216,54 +188,52 @@ if (workflow === "plan") {
   } else {
     console.log(`\n[shft-engine] No branches to merge — skipping merge phase`);
   }
-} else if (workflow === "implement-pr") {
-  if (!values.pr) {
-    throw new Error("--pr is required for implement-pr workflow");
-  }
-  await runImplementPr({
-    prNumber: values.pr,
-    repoDir,
-    model: MODEL,
-    promptsDir,
-  });
-} else if (workflow === "review") {
-  if (!values.pr) {
-    throw new Error("--pr is required for review workflow");
-  }
-  await runReview({
-    prNumber: values.pr,
-    repoDir,
-    model: MODEL,
-    promptsDir,
-  });
-} else if (workflow === "to-issues-prd") {
-  if (!values.issue) {
-    throw new Error("--issue is required for to-issues-prd workflow");
-  }
-  await runToIssuesPrd({
-    issueNumber: values.issue,
-    repoDir,
-    model: MODEL,
-    promptsDir,
-    dryRun: values["dry-run"] ?? false,
-  });
 } else {
-  const result = await run({
-    agent: claudeCode(MODEL),
-    sandbox: noSandbox(),
-    cwd: repoDir,
-    promptFile,
-    maxIterations,
-    promptArgs,
-    completionSignal: "<promise>COMPLETE</promise>",
-    logging: { type: "stdout" },
-  });
+  // Try dispatch registry first, fall back to generic prompt file execution
+  try {
+    getWorkflow(workflow);
+    await dispatch({
+      workflow,
+      repoDir,
+      model: MODEL,
+      promptsDir,
+      args: {
+        pr: cliArgs.pr,
+        issue: cliArgs.issue,
+        branch: cliArgs.branch,
+        "dry-run": cliArgs.dryRun,
+        "max-parallel": String(cliArgs.maxParallel),
+        "max-issues": String(cliArgs.maxIssues),
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Unknown workflow:")) {
+      // Fallback: run generic prompt file
+      const promptFile = path.resolve(promptsDir, `${workflow}.md`);
+      if (!promptFile.startsWith(promptsDir + path.sep)) {
+        throw new Error(`Invalid --workflow (path escapes prompts dir): ${workflow}`);
+      }
 
-  console.log(`\n[shft-engine] Iterations: ${result.iterations.length}`);
-  console.log(`[shft-engine] Commits: ${result.commits.map((c) => c.sha).join(", ") || "none"}`);
-  console.log(`[shft-engine] Branch: ${result.branch}`);
+      const result = await run({
+        agent: claudeCode(MODEL),
+        sandbox: noSandbox(),
+        cwd: repoDir,
+        promptFile,
+        maxIterations,
+        promptArgs,
+        completionSignal: "<promise>COMPLETE</promise>",
+        logging: { type: "stdout" },
+      });
 
-  if (result.completionSignal) {
-    console.log(`[shft-engine] Completion signal received`);
+      console.log(`\n[shft-engine] Iterations: ${result.iterations.length}`);
+      console.log(`[shft-engine] Commits: ${result.commits.map((c) => c.sha).join(", ") || "none"}`);
+      console.log(`[shft-engine] Branch: ${result.branch}`);
+
+      if (result.completionSignal) {
+        console.log(`[shft-engine] Completion signal received`);
+      }
+    } else {
+      throw error;
+    }
   }
 }

@@ -1,18 +1,25 @@
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { run, Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { PrdSlicesOutput } from "../schemas/prd-slices-output.js";
+import { sh } from "../lib/shell-helpers.js";
+import type { DispatchContext } from "../lib/types.js";
 
-export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: string; model: string; promptsDir: string; dryRun: boolean }): Promise<void> {
-  const { issueNumber, repoDir, model, promptsDir, dryRun } = opts;
+export async function runToIssuesPrd(ctx: DispatchContext): Promise<void> {
+  const { repoDir, model, promptsDir, args } = ctx;
+  const issueNumber = args.issue as string;
+  const dryRun = args["dry-run"] === true;
+
+  if (!issueNumber) {
+    throw new Error("--issue is required for to-issues-prd workflow");
+  }
 
   console.log(`[to-issues-prd] Reading PRD from issue #${issueNumber}...`);
 
-  const prdJson = execFileSync("gh", ["issue", "view", issueNumber, "--json", "title,body"], {
-    encoding: "utf8",
+  const prdJson = sh({
+    cmd: "gh",
+    args: ["issue", "view", issueNumber, "--json", "title,body"],
     cwd: repoDir,
-    stdio: ["ignore", "pipe", "pipe"],
   });
   const prd = JSON.parse(prdJson) as { title: string; body: string };
 
@@ -76,30 +83,26 @@ export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: strin
         ...slice.acceptanceCriteria.map((ac) => `- [ ] ${ac}`),
       ].join("\n");
 
-      const createdJson = execFileSync(
-        "gh",
-        ["issue", "create", "--title", slice.title, "--body-file", "-"],
-        {
-          input: body,
-          encoding: "utf8",
-          cwd: repoDir,
-          stdio: ["pipe", "pipe", "pipe"],
-        },
-      );
+      const issueUrl = sh({
+        cmd: "gh",
+        args: ["issue", "create", "--title", slice.title, "--body-file", "-"],
+        cwd: repoDir,
+        input: body,
+      });
 
-      const issueUrl = createdJson.trim();
       const numberMatch = issueUrl.match(/\/(\d+)$/);
-      if (!numberMatch) {
+      if (!numberMatch?.[1]) {
         throw new Error(`Failed to parse issue number from: ${issueUrl}`);
       }
-      const newNumber = parseInt(numberMatch[1]!, 10);
+      const newNumber = parseInt(numberMatch[1], 10);
       createdIssues.set(slice.title, newNumber);
 
       console.log(`[to-issues-prd] Created #${newNumber}: ${slice.title}`);
 
-      execFileSync("gh", ["issue", "edit", String(newNumber), "--add-parent", issueNumber], {
+      sh({
+        cmd: "gh",
+        args: ["issue", "edit", String(newNumber), "--add-parent", issueNumber],
         cwd: repoDir,
-        stdio: ["ignore", "pipe", "pipe"],
       });
     }
 
