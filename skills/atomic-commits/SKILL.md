@@ -156,15 +156,35 @@ The PR title should summarize the full feature branch, not individual commits. U
 
 ### 6. Request Copilot review (Ship mode only)
 
-After the PR is created (or already exists), request a Copilot review automatically by calling the MCP tool:
+After the PR is created (or already exists), request a Copilot review using this fallback chain. Try each method in order — stop at the first success:
+
+**Method 1 — MCP tool (preferred):**
 
 ```
 mcp_github_request_copilot_review  owner=<owner>  repo=<repo>  pullNumber=<N>
 ```
 
-This is an **agent tool invocation** (MCP), not a shell command — do not run it in a terminal. If the MCP tool is not loaded, use `tool_search` for "request copilot review" first. If no tool is available, surface the PR URL and ask the user to request review manually.
+This is an agent tool invocation (MCP), not a shell command. If the tool is loaded and succeeds, you're done.
 
-This ensures every PR gets at least one Copilot review pass before human review.
+**Method 2 — `gh` CLI add-reviewer:**
+
+If MCP tools are not available or the call fails:
+
+```bash
+gh pr edit <PR_NUMBER> --add-reviewer "copilot"
+```
+
+**Method 3 — `gh` CLI comment mention:**
+
+If `--add-reviewer` fails (e.g. Copilot not registered as a reviewer on the repo):
+
+```bash
+gh pr comment <PR_NUMBER> --body "@copilot review this PR"
+```
+
+**If all three methods fail**, surface the PR URL and tell the user to request Copilot review manually.
+
+This fallback chain ensures every PR gets a Copilot review pass regardless of whether the agent is running in Claude Code (MCP available) or Copilot Chat (MCP unavailable).
 
 ---
 
