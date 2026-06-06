@@ -26,8 +26,12 @@ secrets/*
 *.vault
 credentials.*
 
-# Working/scratch — runtime state, active plans, never tracked
-working/
+# Working/scratch — runtime state, active plans
+# The directory itself is tracked, but contents are ignored by working/.gitignore
+# Only working/.gitignore and working/README.md are tracked
+working/*
+!working/.gitignore
+!working/README.md
 
 # Artifact source files (promoted to bin/ when shipped)
 artifacts/

@@ -1,0 +1,5 @@
+# working/ contents are runtime state — never tracked.
+# Only this .gitignore and README.md are committed.
+*
+!.gitignore
+!README.md

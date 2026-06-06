@@ -1,24 +1,43 @@
 #!/usr/bin/env bash
-# Generic git hook dispatcher.
-# Delegates to local hooks (Husky, .git/hooks) when present.
-# No global fallback — only pre-commit has one.
+# Pre-push hook with public push protection.
 #
-# Copy of generic-hook for the pre-push hook.
-# See pre-commit for the full dispatcher with fallback logic.
+# 1. Blocks pushes to ctrlshft (public) URLs unless CTRL_ALLOW_PUBLIC_PUSH=1
+# 2. Delegates to local hooks (Husky, .git/hooks) when present
+#
+# Git passes the remote name and URL as $1 and $2.
 
 set -euo pipefail
 
 HOOK_NAME=$(basename "$0")
+REMOTE_NAME="${1:-}"
+REMOTE_URL="${2:-}"
 
-# ── 1. Delegate to Husky if present ──────────────────────────────────────────
+# ── 1. Public push protection ────────────────────────────────────────────────
+# Block pushes to any URL containing "ctrlshft" unless explicitly gated.
+# This prevents accidental publication of private content to the public repo.
+if [[ "$REMOTE_URL" == *"ctrlshft"* ]]; then
+    if [[ "${CTRL_ALLOW_PUBLIC_PUSH:-}" != "1" ]]; then
+        echo ""
+        echo "  ✗ Push to public repo blocked."
+        echo "  Remote: $REMOTE_NAME ($REMOTE_URL)"
+        echo ""
+        echo "  To push intentionally:"
+        echo "    CTRL_ALLOW_PUBLIC_PUSH=1 git push $REMOTE_NAME <branch>"
+        echo ""
+        echo "  Verify no private content is included before pushing."
+        echo ""
+        exit 1
+    fi
+fi
+
+# ── 2. Delegate to Husky if present ──────────────────────────────────────────
 if [[ -f ".husky/$HOOK_NAME" ]] && [[ -x ".husky/$HOOK_NAME" ]]; then
     exec ".husky/$HOOK_NAME" "$@"
 fi
 
-# ── 2. Delegate to .git/hooks if present ─────────────────────────────────────
+# ── 3. Delegate to .git/hooks if present ─────────────────────────────────────
 if [[ -x ".git/hooks/$HOOK_NAME" ]]; then
     exec ".git/hooks/$HOOK_NAME" "$@"
 fi
 
-# No global fallback for non-pre-commit hooks
 exit 0

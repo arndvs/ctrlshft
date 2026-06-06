@@ -1,0 +1,14 @@
+# Copilot Setup Steps
+# Configures the environment for GitHub Copilot coding agent.
+# See: https://docs.github.com/en/copilot/customizing-copilot/adding-copilot-setup-steps
+
+steps:
+  - name: Install dependencies
+    run: |
+      npm install
+    working-directory: shft/engine
+
+  - name: Verify TypeScript compiles
+    run: |
+      npx tsc --noEmit
+    working-directory: shft/engine

@@ -170,6 +170,14 @@ else
     _fail=1
 fi
 
+# Remote topology (non-blocking — warns only)
+if [[ -f "$HOME/dotfiles/bin/validate-remotes.sh" ]]; then
+    echo
+    if ! bash "$HOME/dotfiles/bin/validate-remotes.sh"; then
+        _warn=1
+    fi
+fi
+
 if [[ -f "$HOME/.claude/CLAUDE.md" ]]; then
     green "  ✓ ~/.claude/CLAUDE.md exists"
 else
