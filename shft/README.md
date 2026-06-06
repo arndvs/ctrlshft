@@ -2,6 +2,13 @@
 
 The autonomous execution side of ctrl+shft. `ctrl` manages your environment; `shft` manages your work queue.
 
+shft has two faces:
+
+1. **CLI tool** — a bash command that runs locally, picks issues from your backlog, and drives Claude Code to implement them.
+2. **Sandcastle** — a GitHub Actions framework that turns labels into agent workflows, running the same engine in CI.
+
+Both use the same TypeScript engine under the hood.
+
 ## Two Execution Modes
 
 | Mode | Command | How it works |
@@ -39,6 +46,144 @@ The agent picks issues in this order (defined in `prompt.md`):
 4. Polish and quick wins
 5. Refactors
 
+---
+
+## Sandcastle Platform
+
+Sandcastle is a label-driven autonomous agent platform built on GitHub Actions. Apply a label to a GitHub issue or PR, and a workflow fires to plan, implement, review, or merge — no human intervention required for routine tasks.
+
+For full specifications, see [`docs/platform-spec.md`](docs/platform-spec.md).
+
+### How It Works
+
+```
+Issue created
+  │
+  ▼
+Label applied (e.g. agent:implement)
+  │
+  ▼
+GitHub Actions workflow fires
+  │
+  ▼
+Engine runs: checkout → prompt → agent → structured output → side effects
+  │
+  ▼
+Result: PR opened / review posted / issues created / branch merged
+```
+
+### Label State Machine
+
+Labels are the control plane. Each label maps to a workflow:
+
+**Issue triggers:**
+- `agent:plan` — Decompose a PRD into sub-issues
+- `agent:review` — Review an issue for clarity and feasibility
+- `agent:implement` — Implement a single issue (branch → code → PR)
+- `agent:implement-prd` — Implement all slices of a PRD
+- `agent:architecture-review` — Scoped architecture review
+
+**PR triggers:**
+- `agent:auto-fix` — Auto-fix review feedback (scored by comment quality)
+- `agent:merge` — Squash-merge when checks pass
+- `agent:update-branch` — Rebase against base branch
+
+**State labels:**
+- `queued` — Ready for the next scheduled batch
+- `in-progress` — Agent is working on it
+- `blocked` — Needs human intervention
+- `review-cap-reached` — Hit the review round limit
+
+**Classification:**
+- `afk` — Safe for autonomous execution
+- `hitl` — Requires human judgment
+
+See [`docs/triage-labels.md`](docs/triage-labels.md) for the full label reference.
+
+### Data Flow
+
+```
+                    ┌─────────────────┐
+                    │  GitHub Issue    │
+                    │  + label         │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  GitHub Actions  │
+                    │  workflow        │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  .sandcastle/   │
+                    │  run.ts         │◄── Vendored dispatcher
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  Engine         │
+                    │  main.ts        │◄── CLI arg parser + dispatch
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  Workflow       │
+                    │  (e.g.          │
+                    │  implement-     │◄── Reads prompt, runs agent,
+                    │  issue.ts)      │    validates output, acts
+                    └────────┬────────┘
+                             │
+                    ┌────────┼────────┐
+                    ▼        ▼        ▼
+               Commits    PR/Review  Issues
+               pushed     posted     created
+```
+
+### Installing Sandcastle
+
+```bash
+# Scaffold into a target repository
+ctrl init-sandcastle [TARGET_DIR] [--sandbox none|docker]
+
+# Check for drift against latest templates
+ctrl update-sandcastle --dry-run
+
+# Apply updates
+ctrl update-sandcastle
+```
+
+`init-sandcastle` creates:
+- `.sandcastle/` — Engine, prompts, extractions, hooks, scripts
+- `.github/workflows/agent-*.yml` — Workflow files
+- `.github/copilot-setup-steps.yml` — Copilot setup
+- `sandcastle.config.json` — Configuration
+- GitHub labels from `labels.json`
+
+### Configuration
+
+`sandcastle.config.json`:
+
+```json
+{
+  "defaultBranch": "main",
+  "model": "claude-sonnet-4-20250514",
+  "maxIterations": 1,
+  "maxParallel": 4,
+  "maxIssues": 5,
+  "sandbox": "none",
+  "maxReviewRounds": 3,
+  "scoreThresholds": {
+    "auto": 75,
+    "confirm": 40
+  }
+}
+```
+
+All values have defaults. Override any with environment variables (prefix `SANDCASTLE_`, e.g. `SANDCASTLE_MODEL`).
+
+---
+
 ## TypeScript Engine
 
 The TypeScript engine (`shft/engine/`) replaces shft's raw bash-to-Claude pipeline with schema-validated typed results via `@ai-hero/sandcastle`. Enable it with `shft engine on` or `SHFT_ENGINE=ts`.
@@ -58,14 +203,19 @@ shft/engine/
 
 ### Workflows
 
-| Workflow | Flag | Purpose |
-|----------|------|---------|
-| `parallel` | `--workflow parallel` | Plan phase selects issues, then fan-out concurrent implementation + merge |
-| `implement` | `--workflow implement` | Single-issue implementation with `<promise>COMPLETE</promise>` signal |
-| `implement-pr` | `--workflow implement-pr --pr N` | Address PR review feedback, post replies and inline comments |
-| `review` | `--workflow review --pr N` | Code review — posts a GitHub review with summary and inline comments |
-| `to-issues-prd` | `--workflow to-issues-prd --issue N` | Decompose a PRD issue into sub-issues |
-| `plan` | `--workflow plan` | Plan phase only — select and prioritize issues |
+| Workflow | Registry name | Purpose |
+|----------|--------------|---------|
+| Parallel | `parallel` | Plan phase selects issues, then fan-out concurrent implementation + merge |
+| Implement Issue | `implement-issue` | Single-issue implementation with `<promise>COMPLETE</promise>` signal |
+| Implement PRD | `implement-prd` | Implements all slices of a PRD issue |
+| Implement PR | `implement-pr` | Address PR review feedback, post replies and inline comments |
+| Address Review | `address-review` | Score review comments and auto-fix or defer |
+| Review | `review` | Code review — posts a GitHub review with summary and inline comments |
+| Review Issue | `review-issue` | Reviews an issue for clarity and feasibility |
+| Write PR | `write-pr` | Creates a PR from a completed branch |
+| Update Branch | `update-branch` | Rebases or merges base branch into PR branch |
+| Architecture Review | `architecture-review` | Scoped architecture analysis |
+| To-Issues PRD | `to-issues-prd` | Decompose a PRD issue into sub-issues |
 
 ### CLI Flags
 
@@ -81,7 +231,7 @@ shft/engine/
 | `--pr` | — | PR number (for review/implement-pr) |
 | `--dry-run` | `false` | Print without acting (to-issues-prd) |
 
-### How It Works
+### How the Engines Compare
 
 **Bash engine (default):**
 ```
@@ -118,6 +268,8 @@ Schema field aliasing via Zod `.transform()` handles LLM output variations (e.g.
 - Thread reply `commentId`s are validated against fetched PR threads — invalid IDs are dropped with a warning
 - `StructuredOutputError` fires when agent output doesn't match the expected schema
 
+---
+
 ## Files
 
 | File | Purpose |
@@ -129,6 +281,8 @@ Schema field aliasing via Zod `.transform()` handles LLM output variations (e.g.
 | `_build_prompt.sh` | Assembles the full prompt from issues + recent commits |
 | `_proxy_env.sh` | Proxy environment setup (reads `~/.shft/proxy.json`) |
 | `engine/` | TypeScript engine (see above) |
+| `templates/` | Sandcastle installable templates (prompts, workflows, labels) |
+| `docs/` | Platform specification and label reference |
 
 ## Security
 

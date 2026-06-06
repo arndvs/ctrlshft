@@ -1176,6 +1176,11 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
         echo "  shft engine on         switch to TypeScript engine (sandcastle)"
         echo "  shft engine off        switch back to bash pipeline"
         echo ""
+        echo "  Documentation"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  shft docs               list available Sandcastle docs"
+        echo "  shft docs <name>        view a specific doc (e.g. platform-spec)"
+        echo ""
         echo "  Other"
         echo "  ──────────────────────────────────────────────────────────────"
         echo "  shft version            show version"
@@ -1188,6 +1193,53 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
         echo "    shft afk 1           one AFK iteration, verify output"
         echo "    shft afk 5           run the full loop"
         echo ""
+        ;;
+
+    # ── docs ───────────────────────────────────────────────────────────────────
+    docs)
+        _sub="${1:-list}"
+        shift 2>/dev/null || true
+
+        _docs_dir="$SHFT_DIR/docs"
+        case "$_sub" in
+            list|ls|"")
+                echo ""
+                echo "  shft docs — Sandcastle platform documentation"
+                echo ""
+                if [[ -d "$_docs_dir" ]]; then
+                    for _doc in "$_docs_dir"/*.md; do
+                        [[ -f "$_doc" ]] || continue
+                        _name=$(basename "$_doc")
+                        _title=$(head -1 "$_doc" | sed 's/^#\+ *//')
+                        echo "  $_name — $_title"
+                    done
+                else
+                    yellow "  No docs directory found at $_docs_dir"
+                fi
+                echo ""
+                echo "  View a doc: shft docs <filename>"
+                echo "  Example:    shft docs platform-spec.md"
+                echo ""
+                ;;
+            *)
+                _target="$_docs_dir/$_sub"
+                # Try with .md extension if not provided
+                if [[ ! -f "$_target" ]] && [[ ! "$_sub" == *.md ]]; then
+                    _target="$_docs_dir/${_sub}.md"
+                fi
+                if [[ -f "$_target" ]]; then
+                    if command -v less &>/dev/null; then
+                        less "$_target"
+                    else
+                        cat "$_target"
+                    fi
+                else
+                    red "Doc not found: $_sub"
+                    echo "  Run 'shft docs' to list available docs."
+                    exit 1
+                fi
+                ;;
+        esac
         ;;
 
     # ── version ────────────────────────────────────────────────────────────────
