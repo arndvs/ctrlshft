@@ -4,6 +4,7 @@ import { runArchitectureReview } from "./architecture-review.js";
 import { runImplementIssue } from "./implement-issue.js";
 import { runImplementPr } from "./implement-pr.js";
 import { runImplementPrd } from "./implement-prd.js";
+import { runParallel } from "./parallel.js";
 import { runReview } from "./review.js";
 import { runReviewIssue } from "./review-issue.js";
 import { runToIssuesPrd } from "./to-issues-prd.js";
@@ -16,6 +17,7 @@ export function registerAllWorkflows(): void {
   registerWorkflow("implement-issue", runImplementIssue);
   registerWorkflow("implement-pr", runImplementPr);
   registerWorkflow("implement-prd", runImplementPrd);
+  registerWorkflow("parallel", runParallel);
   registerWorkflow("review", runReview);
   registerWorkflow("review-issue", runReviewIssue);
   registerWorkflow("to-issues-prd", runToIssuesPrd);

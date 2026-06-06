@@ -47,9 +47,9 @@ The TypeScript engine (`shft/engine/`) replaces shft's raw bash-to-Claude pipeli
 
 ```
 shft/engine/
-  main.ts          ← CLI entry + orchestrator
+  main.ts          ← Thin CLI dispatcher (parses args, delegates to workflows)
   schemas/         ← Zod schemas for each workflow's output
-  workflows/       ← TypeScript workflow implementations
+  workflows/       ← TypeScript workflow implementations (including parallel orchestration)
   prompts/         ← Prompt templates consumed by sandcastle
   lib/             ← Shared utilities (semaphore, diff parsing, PR comments)
 ```
@@ -91,10 +91,11 @@ shft afk N → afk.sh → _build_prompt.sh → claude CLI → parse stream → l
 **TypeScript engine (`SHFT_ENGINE=ts`):**
 ```
 shft afk N → afk.sh → npx tsx engine/main.ts --workflow parallel
-  → runPlan() → plan.md → PlanOutput (issue list)
-  → Semaphore(maxParallel) for each issue
-    → createSandbox(branch) → implement.md → commits
-  → runMerge(completedBranches) → merge.md → MergeOutput
+  → dispatch("parallel") → workflows/parallel.ts
+    → runPlan() → plan.md → PlanOutput (issue list)
+    → Semaphore(maxParallel) for each issue
+      → createSandbox(branch) → implement.md → commits
+    → runMerge(completedBranches) → merge.md → MergeOutput
 ```
 
 ### Schemas
@@ -103,8 +104,8 @@ Each workflow produces Zod-validated structured output:
 
 | Schema | Fields |
 |--------|--------|
-| `PlanOutput` | `issues[].{number, title, branch}` |
-| `MergeOutput` | `merged[], failed[].{branch, reason}, testsPassed` |
+| `PlanOutput` (inline in `parallel.ts`) | `issues[].{number, title, branch}` |
+| `MergeOutput` (inline in `parallel.ts`) | `merged[], failed[].{branch, reason}, testsPassed` |
 | `ImplementPrOutput` | `threadReplies[], newInlineComments[], topLevelComments[]` |
 | `ReviewOutput` | `summary, inlineComments[], replies[]` |
 | `PrdSlicesOutput` | `slices[].{title, type, whatToBuild, acceptanceCriteria[], blockedBy[]}` |

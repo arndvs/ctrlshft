@@ -17,6 +17,7 @@ describe("registerAllWorkflows", () => {
       "implement-issue",
       "implement-pr",
       "implement-prd",
+      "parallel",
       "review",
       "review-issue",
       "to-issues-prd",
