@@ -476,6 +476,24 @@ except:
         esac
         ;;
 
+    # ── init-sandcastle ────────────────────────────────────────────────────────
+    init-sandcastle)
+        if [[ ! -f "$DOTFILES/bin/init-sandcastle.sh" ]]; then
+            red "init-sandcastle.sh not found. Run: ctrl bootstrap"
+            exit 1
+        fi
+        bash "$DOTFILES/bin/init-sandcastle.sh" "$@"
+        ;;
+
+    # ── update-sandcastle ──────────────────────────────────────────────────────
+    update-sandcastle)
+        if [[ ! -f "$DOTFILES/bin/update-sandcastle.sh" ]]; then
+            red "update-sandcastle.sh not found. Run: ctrl bootstrap"
+            exit 1
+        fi
+        bash "$DOTFILES/bin/update-sandcastle.sh" "$@"
+        ;;
+
     # ── sync-settings ──────────────────────────────────────────────────────────
     sync-settings)
         if [[ ! -f "$DOTFILES/bin/sync-settings.sh" ]]; then
@@ -657,6 +675,12 @@ except:
         echo "  ctrl new-client         onboard a new client"
         echo "  ctrl migrate            read-only diagnostic for existing setups"
         echo "  ctrl uninstall          safely remove ctrl+shft"
+        echo ""
+        echo "  Sandcastle"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl init-sandcastle    scaffold Sandcastle into a target repo"
+        echo "  ctrl update-sandcastle  detect drift + sync framework files"
+        echo "                          (--dry-run, --workflows, --prompts)"
         echo ""
         echo "  Credentials"
         echo "  ──────────────────────────────────────────────────────────────"
