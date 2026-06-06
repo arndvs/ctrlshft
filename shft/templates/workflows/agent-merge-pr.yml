@@ -1,0 +1,44 @@
+name: "Agent: Merge PR"
+
+on:
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  group: sandcastle-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    if: github.event.label.name == 'agent:merge'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: .sandcastle
+
+      - name: Merge PR
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --squash \
+            --auto \
+            --delete-branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

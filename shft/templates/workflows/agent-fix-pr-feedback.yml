@@ -1,0 +1,48 @@
+name: "Agent: Fix PR Feedback"
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+concurrency:
+  group: sandcastle-fix-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  fix-feedback:
+    if: >-
+      github.event.review.state == 'changes_requested' ||
+      (github.event.review.state == 'commented' &&
+       contains(github.event.pull_request.labels.*.name, 'agent:auto-fix'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: .sandcastle
+
+      - name: Run address-review workflow
+        run: |
+          npx tsx .sandcastle/run.ts \
+            --workflow address-review \
+            --pr ${{ github.event.pull_request.number }} \
+            --branch ${{ github.event.pull_request.head.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

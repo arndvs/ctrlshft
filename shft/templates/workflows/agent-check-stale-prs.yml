@@ -1,0 +1,51 @@
+name: "Agent: Check Stale PRs"
+
+on:
+  schedule:
+    - cron: "0 9 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: sandcastle-stale-prs
+  cancel-in-progress: true
+
+jobs:
+  check-stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
+
+      - name: Check for stale PRs
+        run: |
+          # Find PRs with no activity in 7+ days
+          STALE_PRS=$(gh pr list \
+            --state open \
+            --json number,title,updatedAt,headRefName \
+            --jq '[.[] | select(
+              (now - (.updatedAt | fromdateiso8601)) > (7 * 24 * 3600)
+            )]')
+
+          if [ "$STALE_PRS" = "[]" ] || [ -z "$STALE_PRS" ]; then
+            echo "No stale PRs found"
+            exit 0
+          fi
+
+          echo "$STALE_PRS" | jq -r '.[] | "PR #\(.number): \(.title) (branch: \(.headRefName))"'
+
+          # Add a reminder comment to each stale PR
+          echo "$STALE_PRS" | jq -r '.[].number' | while read -r PR_NUM; do
+            gh pr comment "$PR_NUM" \
+              --body "This PR has had no activity for 7+ days. Please review, update, or close it."
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

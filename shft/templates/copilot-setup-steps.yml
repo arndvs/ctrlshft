@@ -1,0 +1,18 @@
+# Copilot Setup Steps — Template
+#
+# Configures the GitHub Copilot coding agent's environment.
+# Vendored into the target repo's .github/ directory by init-sandcastle.
+#
+# Customize the steps below for your project's specific setup needs.
+
+steps:
+  - name: Install project dependencies
+    run: npm install
+
+  - name: Install Sandcastle engine dependencies
+    run: npm install
+    working-directory: .sandcastle
+
+  - name: Verify TypeScript compiles
+    run: npx tsc --noEmit
+    working-directory: .sandcastle

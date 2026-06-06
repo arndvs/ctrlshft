@@ -1,0 +1,55 @@
+name: "Agent: Architecture Review"
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to scope the review (optional)"
+        required: false
+        type: number
+
+concurrency:
+  group: sandcastle-arch-review
+  cancel-in-progress: true
+
+jobs:
+  architecture-review:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'agent:architecture-review'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: .sandcastle
+
+      - name: Run architecture-review workflow
+        run: |
+          ISSUE_ARG=""
+          if [ -n "${{ github.event.inputs.issue_number || github.event.issue.number }}" ]; then
+            ISSUE_ARG="--issue ${{ github.event.inputs.issue_number || github.event.issue.number }}"
+          fi
+          npx tsx .sandcastle/run.ts \
+            --workflow architecture-review \
+            $ISSUE_ARG
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

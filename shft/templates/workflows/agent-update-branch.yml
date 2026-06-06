@@ -1,0 +1,63 @@
+name: "Agent: Update Branch"
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to update"
+        required: true
+        type: number
+
+concurrency:
+  group: sandcastle-update-branch-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  update-branch:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'agent:update-branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Resolve PR info
+        id: pr
+        run: |
+          PR_NUM="${{ github.event.pull_request.number || github.event.inputs.pr_number }}"
+          BRANCH=$(gh pr view "$PR_NUM" --json headRefName --jq '.headRefName')
+          echo "number=$PR_NUM" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: .sandcastle
+
+      - name: Run update-branch workflow
+        run: |
+          npx tsx .sandcastle/run.ts \
+            --workflow update-branch \
+            --branch ${{ steps.pr.outputs.branch }} \
+            --pr ${{ steps.pr.outputs.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

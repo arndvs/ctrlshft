@@ -1,0 +1,72 @@
+[
+  {
+    "name": "agent:implement",
+    "description": "Trigger: agent implements this issue autonomously",
+    "color": "1d76db"
+  },
+  {
+    "name": "agent:implement-prd",
+    "description": "Trigger: agent implements all slices of this PRD",
+    "color": "1d76db"
+  },
+  {
+    "name": "agent:plan",
+    "description": "Trigger: agent breaks this PRD into sub-issues",
+    "color": "5319e7"
+  },
+  {
+    "name": "agent:review",
+    "description": "Trigger: agent reviews this issue for clarity and feasibility",
+    "color": "5319e7"
+  },
+  {
+    "name": "agent:architecture-review",
+    "description": "Trigger: agent performs an architecture review scoped to this issue",
+    "color": "5319e7"
+  },
+  {
+    "name": "agent:auto-fix",
+    "description": "PR label: agent auto-fixes review feedback on this PR",
+    "color": "0e8a16"
+  },
+  {
+    "name": "agent:merge",
+    "description": "PR label: agent merges this PR when checks pass",
+    "color": "0e8a16"
+  },
+  {
+    "name": "agent:update-branch",
+    "description": "PR label: agent updates this branch against base",
+    "color": "0e8a16"
+  },
+  {
+    "name": "queued",
+    "description": "Issue is ready for the next parallel agent sweep",
+    "color": "fbca04"
+  },
+  {
+    "name": "in-progress",
+    "description": "Agent is actively working on this issue",
+    "color": "f9d0c4"
+  },
+  {
+    "name": "review-cap-reached",
+    "description": "PR hit the max review round cap — needs human review",
+    "color": "e11d48"
+  },
+  {
+    "name": "blocked",
+    "description": "Agent could not complete — requires human intervention",
+    "color": "d93f0b"
+  },
+  {
+    "name": "afk",
+    "description": "Can be implemented without human interaction",
+    "color": "c2e0c6"
+  },
+  {
+    "name": "hitl",
+    "description": "Requires human judgment (architectural decision, design review)",
+    "color": "fef2c0"
+  }
+]

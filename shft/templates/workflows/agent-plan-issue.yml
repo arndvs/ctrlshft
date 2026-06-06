@@ -1,0 +1,43 @@
+name: "Agent: Plan Issue"
+
+on:
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: sandcastle-plan-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    if: github.event.label.name == 'agent:plan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: .sandcastle
+
+      - name: Run to-issues-prd workflow
+        run: |
+          npx tsx .sandcastle/run.ts \
+            --workflow to-issues-prd \
+            --issue ${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
