@@ -195,8 +195,7 @@ shft/engine/
   main.ts          ← Thin CLI dispatcher (parses args, delegates to workflows)
   schemas/         ← Zod schemas for each workflow's output
   workflows/       ← TypeScript workflow implementations (including parallel orchestration)
-  prompts/         ← Prompt templates consumed by sandcastle
-  lib/             ← Shared utilities (semaphore, diff parsing, PR comments)
+  lib/             ← Shared utilities (config, dispatch, scoring, diff parsing, PR comments, retry)
 ```
 
 **Key principle:** separation of thinking from acting. The agent emits structured JSON data; TypeScript code acts on it (posting reviews, creating issues, merging branches).
@@ -259,6 +258,9 @@ Each workflow produces Zod-validated structured output:
 | `ImplementPrOutput` | `threadReplies[], newInlineComments[], topLevelComments[]` |
 | `ReviewOutput` | `summary, inlineComments[], replies[]` |
 | `PrdSlicesOutput` | `slices[].{title, type, whatToBuild, acceptanceCriteria[], blockedBy[]}` |
+| `ArchitectureReviewOutput` | `findings[], prdSuggestions[], summary` |
+| `UpdateBranchOutput` | `strategy, success, conflictsResolved, conflictsRemaining, commitSha` |
+| `WritePrOutput` | `title, body, labels` |
 
 Schema field aliasing via Zod `.transform()` handles LLM output variations (e.g. `file`/`path`, `body`/`comment`).
 
@@ -280,6 +282,7 @@ Schema field aliasing via Zod `.transform()` handles LLM output variations (e.g.
 | `prompt.md` | System prompt injected into AFK/HITL sessions |
 | `_build_prompt.sh` | Assembles the full prompt from issues + recent commits |
 | `_proxy_env.sh` | Proxy environment setup (reads `~/.shft/proxy.json`) |
+| `_proxy_health.sh` | Proxy health check (sourced by CLI and `_proxy_env.sh`) |
 | `engine/` | TypeScript engine (see above) |
 | `templates/` | Sandcastle installable templates (prompts, workflows, labels) |
 | `docs/` | Platform specification and label reference |

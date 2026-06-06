@@ -32,8 +32,7 @@ Sandcastle is a label-driven autonomous agent platform built on GitHub Actions. 
                     │  main.ts         │
                     │  ├─ lib/         │
                     │  ├─ workflows/   │
-                    │  ├─ schemas/     │
-                    │  └─ prompts/     │
+                    │  └─ schemas/     │
                     └──────────────────┘
 ```
 
@@ -77,6 +76,7 @@ Schema field aliasing via Zod `.transform()` handles common LLM output variation
 | Workflow | Registry name | Trigger | Purpose |
 |----------|--------------|---------|---------|
 | Address Review | `address-review` | `agent:auto-fix` label + review submitted | Scores review comments, applies fixes, resolves threads |
+| Merge | — (Actions-only) | `agent:merge` label | Squash-merges PR when checks pass (via `gh pr merge`, no engine) |
 | Review | `review` | Direct invocation | Posts a code review with inline comments and summary |
 | Implement PR | `implement-pr` | Direct invocation | Addresses specific PR review feedback |
 | Write PR | `write-pr` | Direct invocation | Creates a PR from a completed branch |
