@@ -132,12 +132,13 @@ assert_not_contains "no OTHER_SECRET" "should-not-leak" "$_key"
 _missing_output=$(_proxy_load_key "$TMP/nonexistent" 2>&1 || true)
 assert_contains "missing .env errors" "not found" "$_missing_output"
 
-# Empty key
+# Empty key — error message goes to stdout via red(), so capture both streams
 cat > "$_fake_proxy_dir/.env" <<'EOF'
 OTHER_VAR=something
 EOF
-_empty_key=$(_proxy_load_key "$_fake_proxy_dir" 2>/dev/null || true)
-assert_eq "empty key returns empty" "" "$_empty_key"
+_empty_key_output=$(_proxy_load_key "$_fake_proxy_dir" 2>&1 || true)
+assert_contains "empty key error mentions key" "LITELLM_MASTER_KEY" "$_empty_key_output"
+assert_contains "empty key error mentions not found" "not found or empty" "$_empty_key_output"
 
 # ══════════════════════════════════════════════════════════════════════════════
 echo
@@ -356,9 +357,11 @@ echo "AFK lock scoping — repo-specific lock path (no global static lock)"
 echo "────────────────────────────────────────────────"
 
 _shft_lock_constants=$(sed -n '/^# ── Constants/,/^# ── Helper functions/p' shft/shft)
-assert_contains "shft defines LOCK_BASE_DIR" "LOCK_BASE_DIR" "$_shft_lock_constants"
+assert_contains "shft defines LOCK_BASE_DIR" 'LOCK_BASE_DIR=' "$_shft_lock_constants"
 assert_contains "shft lock path includes hash id" "shft-afk-" "$_shft_lock_constants"
 _shft_main_lock=$(echo "$_shft_lock_constants" | grep '^LOCK_DIR=' || true)
+assert_contains "LOCK_DIR uses LOCK_BASE_DIR" 'LOCK_BASE_DIR' "$_shft_main_lock"
+assert_contains "LOCK_DIR uses SHFT_LOCK_ID" '_SHFT_LOCK_ID' "$_shft_main_lock"
 assert_not_contains "shft has no static /tmp lock constant" "/tmp/shft-afk.lock" "$_shft_main_lock"
 
 _afk_lock_decl=$(grep -n 'LOCKDIR=' shft/afk.sh || true)
