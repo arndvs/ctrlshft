@@ -1,5 +1,5 @@
 {
-    "version": "0.1",
+    "version": "0.2",
     "language": "en",
     "words": [
         "Agentic",
@@ -47,6 +47,16 @@
         "tavily",
         "venv",
         "websearch",
+        "buildout",
+        "getenv",
+        "pypi",
+        "pythonhosted",
+        "sheal",
+        "shellcheck",
+        "sourceable",
+        "sparkline",
+        "statsig",
+        "statusline",
         "winget",
         "xhigh",
         "yourstack"
