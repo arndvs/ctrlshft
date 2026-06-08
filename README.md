@@ -632,7 +632,7 @@ shft help     # autonomous execution commands
 │   ├── audits/                      dated assessment artifacts
 │   ├── reference/                   durable reference material
 │   └── research/                    durable synthesis and research
-├── working/                         ← GITIGNORED — cross-conversation plans
+├── working/                         ← active/refs/research tracked; runtime/tmp/logs ignored
 └── secrets/                         ← GITIGNORED
     ├── .env.agent
     ├── .env.secrets
