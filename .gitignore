@@ -58,6 +58,9 @@ global.instructions.md.bak
 # Exception: docs/reference/ is a lifecycle directory, not bulk reference material
 !docs/reference/
 !docs/reference/**
+# Exception: lifecycle template for downstream docs/reference/ directories
+!templates/lifecycle/docs/reference/
+!templates/lifecycle/docs/reference/**
 # Local third-party reference dumps require HITL provenance/license review before commit
 docs/reference/grndwrk/
 
