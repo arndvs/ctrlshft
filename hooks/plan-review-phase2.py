@@ -33,6 +33,7 @@ from plan_files_lib import (  # noqa: E402
     extract_plan_files,
     find_best_plan_for_diff,
     normalize_to_repo_relative,
+    repo_active_plans_dir,
 )
 
 
@@ -415,12 +416,17 @@ def main():
 
     # Find best-matching plan by diff overlap (CC-80)
     prefixes = detect_repo_prefixes(cwd)
-    plan_file = find_best_plan_for_diff(diff_files, repo_prefixes=prefixes)
+    extra_dirs = []
+    repo_local = repo_active_plans_dir(cwd)
+    if repo_local is not None:
+        extra_dirs.append(repo_local)
+    plan_file = find_best_plan_for_diff(diff_files, repo_prefixes=prefixes, extra_plan_dirs=extra_dirs)
     if not plan_file:
         info(
-            "PRE-PR AUDIT: SKIPPED -- no plan in ~/.claude/plans/ overlaps "
-            "this diff. Either the PR's changes pre-date any plan, or this "
-            "session never filed one. Not blocking."
+            "PRE-PR AUDIT: SKIPPED -- no plan in ~/.claude/plans/ or "
+            "repo working/active/ overlaps this diff. Either the PR's "
+            "changes pre-date any plan, or this session never filed one. "
+            "Not blocking."
         )
 
     try:
