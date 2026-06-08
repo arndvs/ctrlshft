@@ -270,6 +270,7 @@ _require_gh() {
     if ! gh auth status &>/dev/null; then
         red "GitHub CLI not authenticated."
         echo "  Run: gh auth login"
+        echo "  Then install/configure app access: https://github.com/settings/installations/"
         exit 1
     fi
 }
@@ -507,6 +508,7 @@ case "$CMD" in
             echo "  In progress:  $_assigned (assigned to you)"
         else
             yellow "  gh not authenticated — run: gh auth login"
+            yellow "  then install/configure app access: https://github.com/settings/installations/"
         fi
 
         echo ""
