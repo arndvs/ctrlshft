@@ -6,7 +6,38 @@
 
 PREVIOUS_COMMITS=$(git log --oneline -5 2>/dev/null || echo "No commits yet")
 
-issues=$(gh issue list --state open --json number,title,body,comments 2>/dev/null || echo "[]")
+_resolve_repo_slug() {
+    local _from_env="${GH_REPO:-}"
+    local _origin_url=""
+
+    if [[ -n "$_from_env" ]]; then
+        printf '%s\n' "$_from_env"
+        return 0
+    fi
+
+    _origin_url=$(git remote get-url origin 2>/dev/null || true)
+    if [[ -z "$_origin_url" ]]; then
+        return 1
+    fi
+
+    # https://github.com/owner/repo(.git) and git@github.com:owner/repo(.git)
+    printf '%s\n' "$_origin_url" \
+        | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##' \
+        | sed -E 's#/$##'
+}
+
+_repo_slug="$(_resolve_repo_slug || true)"
+if [[ -z "$_repo_slug" ]]; then
+    echo "ERROR: Unable to resolve target repository for AFK issue discovery." >&2
+    echo "  Set GH_REPO=owner/repo or ensure git remote 'origin' points to GitHub." >&2
+    return 1
+fi
+
+if ! issues=$(gh issue list --repo "$_repo_slug" --state open --json number,title,body,comments 2>/dev/null); then
+    echo "ERROR: Failed to fetch open issues for $_repo_slug." >&2
+    echo "  Verify GH auth/token and GitHub App installation access for this repository." >&2
+    return 1
+fi
 
 # Sanitize issue content — escape ALL XML-like tags to prevent prompt injection.
 # Our wrapper tags (<github-issues>, <previous-commits>) are added AFTER this step.
@@ -30,7 +61,7 @@ ${_target_directive}
 $(cat "$SCRIPT_DIR/prompt.md")"
 
 # Clean up internal variables — only PROMPT and PROMPT_FILE should leak to caller
-unset PREVIOUS_COMMITS issues _target_directive
+unset PREVIOUS_COMMITS issues _target_directive _repo_slug
 
 # Write prompt to a temp file to avoid ARG_MAX limits on large backlogs
 PROMPT_FILE=$(mktemp /tmp/shft-prompt.XXXXXX)

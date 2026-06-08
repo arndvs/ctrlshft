@@ -158,6 +158,63 @@ PY
     else
         green "  ✓ No PAT variables detected for AFK mode"
     fi
+
+    echo
+    echo "AFK Repository Access:"
+
+    _resolve_repo_slug() {
+        local _from_env="${GH_REPO:-}"
+        local _origin_url=""
+
+        if [[ -n "$_from_env" ]]; then
+            printf '%s\n' "$_from_env"
+            return 0
+        fi
+
+        _origin_url=$(git remote get-url origin 2>/dev/null || true)
+        if [[ -z "$_origin_url" ]]; then
+            return 1
+        fi
+
+        printf '%s\n' "$_origin_url" \
+            | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##' \
+            | sed -E 's#/$##'
+    }
+
+    _current_repo="$(_resolve_repo_slug || true)"
+
+    if [[ -z "$_current_repo" ]]; then
+        yellow "  ~ Could not resolve current GitHub repo (skipping AFK App access check)"
+        yellow "    Tip: run from a git checkout with a GitHub remote"
+        _warn=1
+    else
+        _mint_script="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/bin/mint_github_app_token.py"
+        _mint_json=""
+        _afk_app_token=""
+
+        if [[ ! -f "$_mint_script" ]]; then
+            red "  ✗ Missing token mint script: $_mint_script"
+            _fail=1
+        elif [[ -z "$_py_bin" ]]; then
+            red "  ✗ Python is required to mint AFK GitHub App token"
+            _fail=1
+        else
+            _mint_json=$("$_py_bin" "$_mint_script" 2>/dev/null || true)
+            _afk_app_token=$(printf '%s' "$_mint_json" | jq -r '.token // empty' 2>/dev/null || true)
+
+            if [[ -z "$_afk_app_token" ]]; then
+                red "  ✗ Could not mint AFK GitHub App token for repository access check"
+                _fail=1
+            elif GH_TOKEN="$_afk_app_token" gh repo view "$_current_repo" --json nameWithOwner --jq '.nameWithOwner' >/dev/null 2>&1; then
+                green "  ✓ AFK GitHub App installation can access $_current_repo"
+            else
+                red "  ✗ AFK GitHub App installation cannot access $_current_repo"
+                red "    AFK will see an empty backlog and may stop early."
+                red "    Fix: install your GitHub App on $_current_repo (or set GITHUB_APP_INSTALLATION_ID to the correct installation)."
+                _fail=1
+            fi
+        fi
+    fi
 fi
 
 # ── Symlink / file checks ────────────────────────────────────────────────────
