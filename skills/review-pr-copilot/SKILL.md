@@ -281,7 +281,7 @@ For every thread that received a "Fixed in ..." reply, resolve it via `mcp_githu
 
 #### 6d. Re-request review
 
-1. **Re-request the review** — call `mcp_github_request_copilot_review` on the PR. If it fails, surface the PR URL so the user can re-request manually.
+1. **Re-request the review** — call `mcp_github_request_copilot_review` on the PR. If the MCP tool is unavailable or fails, use the GitHub CLI fallback `gh pr edit <N> --add-reviewer "@copilot"`. Do **not** fall back to the raw requested-reviewers REST API with `copilot-pull-request-reviewer`; GitHub rejects that login as a non-collaborator even though the special `@copilot` CLI token works. If both paths fail, surface the PR URL so the user can re-request manually.
 2. **Verify the request landed** — query the PR's `requested_reviewers` (via `gh api repos/<owner>/<repo>/pulls/<N> --jq '.requested_reviewers[].login'` or equivalent MCP call) and confirm `Copilot` appears. If it does not, retry once; if still missing, surface to the user.
 
 #### Completion gate

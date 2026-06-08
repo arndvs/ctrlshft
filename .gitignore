@@ -55,6 +55,11 @@ global.instructions.md.bak
 # Exception: skill-bundled references (progressive disclosure pattern)
 !skills/*/references/
 !skills/*/references/**
+# Exception: docs/reference/ is a lifecycle directory, not bulk reference material
+!docs/reference/
+!docs/reference/**
+# Local third-party reference dumps require HITL provenance/license review before commit
+docs/reference/grndwrk/
 
 # Client scope (keep templates/docs tracked, ignore real client data)
 clients/*
@@ -63,3 +68,15 @@ clients/*
 !clients/_template/**
 mechanisms/
 shft/research/
+
+# Artifact lifecycle — ignored runtime lanes (see docs/ARTIFACT-LIFECYCLE.md)
+# Never blanket-ignore working/ — only specific subdirectories containing runtime noise.
+working/runtime/
+working/tmp/
+working/logs/
+# Generated state and log patterns (loose files during migration)
+working/*.log
+working/*.jsonl
+working/shft-state.json
+working/active-client.md
+working/afk-iter-*-stderr.log
