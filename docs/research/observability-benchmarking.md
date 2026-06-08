@@ -1,7 +1,7 @@
 # ctrl+shft Observability & Benchmarking Plan
 
 Generated: 2026-04-20  
-Source: `working/planning/observability-benchmarking-plan.md` (working draft)
+Source: `working/active/observability-benchmarking.md` (active execution plan)
 
 ## Current status
 
@@ -71,7 +71,7 @@ This plan defines the vertical slices required to close that gap.
 
 - Execute the first implementation slice: **shft Telemetry Wrapper**
 - Keep this file as the tracked reference from README
-- Continue using `working/planning/observability-benchmarking-plan.md` as the editable working draft if needed
+- Continue using `working/active/observability-benchmarking.md` as the editable working draft if needed
 
 ## Notes
 
