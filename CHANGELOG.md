@@ -61,7 +61,7 @@ Slice 7: HUD UI + compliance skills (#48).
 - README: skills table updated from 16 → 18 entries
 - README: observability section updated to reflect shipped HUD
 - README: added Hooks section documenting 6 lifecycle hooks
-- `docs/observability-benchmarking-plan.md` updated with shipped status markers
+- `docs/research/observability-benchmarking.md` updated with shipped status markers
 
 ---
 
@@ -78,8 +78,8 @@ Slices 4–6: migration toolchain, client scope, HUD backend (#46).
 - `bin/hud-daemon.js` — Node.js HTTP server (`/api/state`, `/healthz`, `POST /api/event`)
 - `bin/start-hud.sh` — daemon lifecycle manager (start/stop/status/restart)
 - `bin/detect-context.sh` hook to emit context events to HUD pipeline
-- `docs/observability-benchmarking-plan.md` — tracked observability plan
-- `docs/readme-site-deep-audit.md` — audit findings report
+- `docs/research/observability-benchmarking.md` — tracked observability plan
+- `docs/audits/readme-site-deep-audit.md` — audit findings report
 - `.gitattributes` enforcing LF line endings for all text files
 
 ### Fixed

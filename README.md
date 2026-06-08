@@ -629,8 +629,9 @@ shft help     # autonomous execution commands
 │   └── assets/
 ├── docs/
 │   ├── adr/                         architecture decision records
-│   ├── observability-benchmarking-plan.md
-│   └── readme-site-deep-audit.md
+│   ├── audits/                      dated assessment artifacts
+│   ├── reference/                   durable reference material
+│   └── research/                    durable synthesis and research
 ├── working/                         ← GITIGNORED — cross-conversation plans
 └── secrets/                         ← GITIGNORED
     ├── .env.agent
@@ -933,7 +934,7 @@ See [`hud/README.md`](hud/README.md) for the full API reference, event types, au
 
 ## Observability & Benchmarking (Roadmap)
 
-> Status: **HUD shipped** — see [docs/observability-benchmarking-plan.md](docs/observability-benchmarking-plan.md) for the tracked implementation plan.
+> Status: **HUD shipped** — see [docs/research/observability-benchmarking.md](docs/research/observability-benchmarking.md) for the tracked implementation plan.
 
 ### What's planned
 
