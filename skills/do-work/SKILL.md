@@ -72,6 +72,6 @@ After preflight passes, use the atomic-commits skill in **Ship** mode — push a
 
 ### 7. Context Check
 
-If this is one phase of a multi-phase plan, or if context usage is over 40%, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — commit all work, persist the remaining plan to `working/`, and provide the pickup command.
+If this is one phase of a multi-phase plan, or if context usage is over 40%, follow the standard handoff protocol (`@~/dotfiles/instructions/handoff.instructions.md`) — commit all work, persist the remaining plan to `working/active/`, and provide the pickup command.
 
-Include @-references to research.md, PRD issues, and key files modified this session.
+Include @-references to `working/research/<topic>.md`, PRD issues, and key files modified this session.
