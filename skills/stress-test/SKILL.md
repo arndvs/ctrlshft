@@ -258,7 +258,7 @@ After running all scenarios, produce a stress test report:
 [reasoning]
 ```
 
-Save to `working/stress-test-[date].md`.
+Save to `working/research/stress-test-[date].md`. Promote to `docs/audits/` after review.
 
 ---
 
@@ -266,4 +266,4 @@ Save to `working/stress-test-[date].md`.
 
 The honest answer to "has this been stress tested" is this report, including failures. A system with a published stress test that shows 85% compliance and two known failure modes with documented workarounds is more trustworthy than a system with no test results at all.
 
-Publish the stress test results in the repo under `docs/stress-tests/`. Negative results included.
+Publish the stress test results in the repo under `docs/audits/`. Negative results included.

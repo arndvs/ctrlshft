@@ -54,7 +54,9 @@ graph TB
 | [secrets/](../secrets/README.md) | Three-tier credential isolation | Config / credentials / AFK tokens — agents never see credentials |
 | [hud/](../hud/README.md) | Real-time observability dashboard | HTTP + WebSocket daemon, SQLite persistence, scanline UI |
 | [clients/](../clients/README.md) | Per-client project isolation | Auto-detected on `cd()`, injects client instructions |
-| [docs/](../docs/) | ADRs, reference material, site source | Architecture decisions, audit findings, plans |
+| [docs/](../docs/) | Permanent documentation | ADRs, reference material, research, audits, site source — see [ARTIFACT-LIFECYCLE.md](ARTIFACT-LIFECYCLE.md) |
+| [working/](../working/) | In-progress scratch and execution | Active plans, refs, research (tracked); runtime, tmp, logs (ignored) |
+| [plans/](../plans/) | Formal PRDs and issue breakdowns | Created by `/write-a-prd` and `/prd-to-issues` |
 
 ---
 
@@ -121,6 +123,9 @@ The planning pipeline chains skills end-to-end:
 | Add a subagent persona | [agents/](../agents/README.md) — create `agents/your-agent.md` with model frontmatter |
 | Add a lifecycle guard | [hooks/](../hooks/README.md) — create script + add entry to `settings-hooks.json` |
 | Understand a past decision | [docs/adr/](adr/) — read the relevant ADR |
+| Understand artifact paths | [docs/ARTIFACT-LIFECYCLE.md](ARTIFACT-LIFECYCLE.md) — where files live and how they move |
+| Write a handoff plan | `working/active/<topic>.md` — see [ARTIFACT-LIFECYCLE.md](ARTIFACT-LIFECYCLE.md) |
+| Save reference material | `working/refs/` with provenance — see [ARTIFACT-LIFECYCLE.md](ARTIFACT-LIFECYCLE.md) |
 | Add private/client content | `skills/_local/`, `instructions/_local/`, [clients/](../clients/README.md) — all gitignored |
 | Debug bootstrap | [bin/](../bin/README.md) — `validate-symlinks.sh`, `validate-env.sh` |
 

@@ -37,6 +37,7 @@ CLI scripts and infrastructure. Bootstrap symlinks `ctrl` and `shft` to `~/.loca
 | `run-with-secrets.sh` | Execute a command with credentials in a child process — credentials vanish on exit |
 | `mint_github_app_token.py` | Mint short-lived GitHub App installation tokens for AFK loops |
 | `verify-github-app-token.sh` | Test that token minting works before starting AFK |
+| `gh-assignee-preflight.sh` | Verify `gh` auth/token context can assign issues before running `gh issue edit --add-assignee` |
 
 ## HUD Infrastructure
 
