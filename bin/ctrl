@@ -553,6 +553,15 @@ except:
         bash "$DOTFILES/bin/artifact-lifecycle-audit.sh" "$@"
         ;;
 
+    # ── init-artifacts ────────────────────────────────────────────────────────
+    init-artifacts|init-lifecycle)
+        if [[ ! -f "$DOTFILES/bin/init-artifacts.sh" ]]; then
+            red "init-artifacts.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/init-artifacts.sh" "$@"
+        ;;
+
     # ── new-client ─────────────────────────────────────────────────────────────
     new-client|client)
         if [[ ! -f "$DOTFILES/bin/new-client.sh" ]]; then
@@ -699,6 +708,8 @@ except:
         echo ""
         echo "  Lifecycle"
         echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl init-artifacts     scaffold artifact lifecycle in a repo"
+        echo "  ctrl init-lifecycle     (alias) [--force] [--dry-run] [--gitignore]"
         echo "  ctrl lifecycle-audit    audit artifact placement and lifecycle"
         echo "  ctrl la                 compliance [--strict]"
         echo ""
