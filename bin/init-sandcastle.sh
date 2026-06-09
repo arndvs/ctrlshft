@@ -28,6 +28,8 @@ while [[ $# -gt 0 ]]; do
         --force)   FORCE=true; shift ;;
         --help|-h)
             echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--force]"
+            echo ""
+            echo "Sandbox modes: only 'none' is currently supported by the TypeScript engine."
             exit 0
             ;;
         *) red "Unknown option: $1"; exit 1 ;;
@@ -42,8 +44,9 @@ esac
 
 # ── Validate sandbox ─────────────────────────────────────────────────────────
 case "$SANDBOX" in
-    none|docker|worktree) ;;
-    *) red "Invalid sandbox: $SANDBOX (must be none, docker, or worktree)"; exit 1 ;;
+    none) ;;
+    docker|worktree) red "Unsupported sandbox: $SANDBOX. Only 'none' is currently supported; Docker/worktree are not wired into the TypeScript engine yet."; exit 1 ;;
+    *) red "Invalid sandbox: $SANDBOX (must be none)"; exit 1 ;;
 esac
 
 # ── Verify git repo ──────────────────────────────────────────────────────────
@@ -150,15 +153,7 @@ chmod +x .sandcastle/scripts/*.sh .sandcastle/hooks/*.sh 2>/dev/null || true
 echo "    .sandcastle/scripts/"
 echo "    .sandcastle/hooks/"
 
-# ── 8. Copy sandbox template when requested ──────────────────────────────────
-if [[ "$SANDBOX" == "docker" ]]; then
-    echo "  Installing Docker sandbox template..."
-    rm -rf .sandcastle/sandbox
-    cp -R "$TEMPLATES/sandbox" .sandcastle/sandbox
-    echo "    .sandcastle/sandbox/"
-fi
-
-# ── 9. Create config (only if not exists or --force without existing) ────────
+# ── 8. Create config (only if not exists or --force without existing) ────────
 if [[ ! -f "sandcastle.config.json" ]]; then
     echo "  Creating config..."
     cat > sandcastle.config.json <<CONFIGEOF
@@ -178,7 +173,7 @@ else
     yellow "  sandcastle.config.json already exists — skipping"
 fi
 
-# ── 10. Create CODING_STANDARDS.md skeleton ───────────────────────────────────
+# ── 9. Create CODING_STANDARDS.md skeleton ───────────────────────────────────
 if [[ ! -f ".sandcastle/CODING_STANDARDS.md" ]]; then
     echo "  Creating CODING_STANDARDS.md skeleton..."
     cat > .sandcastle/CODING_STANDARDS.md <<'CSEOF'
@@ -206,7 +201,7 @@ else
     yellow "  .sandcastle/CODING_STANDARDS.md already exists — skipping"
 fi
 
-# ── 11. Create GitHub labels ─────────────────────────────────────────────────
+# ── 10. Create GitHub labels ─────────────────────────────────────────────────
 echo "  Creating GitHub labels..."
 if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
     LABELS_FILE="$TEMPLATES/labels.json"
@@ -231,7 +226,7 @@ else
     echo "    Run manually: gh label create <name> --color <hex> --description <desc>"
 fi
 
-# ── 12. Install engine dependencies ──────────────────────────────────────────
+# ── 11. Install engine dependencies ──────────────────────────────────────────
 echo "  Installing engine dependencies..."
 case "$PM" in
     pnpm) (cd .sandcastle/engine && pnpm install --ignore-scripts 2>/dev/null) || yellow "    pnpm install failed — run manually in .sandcastle/engine/" ;;
