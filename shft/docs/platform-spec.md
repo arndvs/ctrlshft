@@ -41,6 +41,7 @@ Two wrappers handle structured output extraction failures:
 | `runWithExtraction()` | Work has side effects (commits) | Produce phase (no output), then extract phase with retries |
 
 Both resume the existing Sandcastle session rather than re-running from scratch.
+For `runWithExtraction()` workflows, produce prompts do the side-effecting work only; extraction prompts own all structured-output instructions.
 
 ## Workflow YAMLs
 
@@ -83,6 +84,8 @@ Extraction prompts (for two-phase workflows) live in `shft/templates/extractions
   "packageManager": "pnpm"
 }
 ```
+
+Only `sandbox: "none"` is currently supported by the TypeScript engine. Docker and worktree sandbox modes are intentionally rejected until provider wiring and CI validation are implemented.
 
 ## Vendoring model
 

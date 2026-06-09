@@ -64,15 +64,30 @@ describe("loadConfig", () => {
     await expect(loadConfig({ cwd: tempDir })).rejects.toThrow();
   });
 
-  it("accepts all valid sandbox values", async () => {
-    for (const sandbox of ["none", "docker", "worktree"] as const) {
-      writeFileSync(
-        join(tempDir, "sandcastle.config.json"),
-        JSON.stringify({ sandbox }),
-      );
-      const config = await loadConfig({ cwd: tempDir });
-      expect(config.sandbox).toBe(sandbox);
-    }
+  it("accepts the supported sandbox value", async () => {
+    writeFileSync(
+      join(tempDir, "sandcastle.config.json"),
+      JSON.stringify({ sandbox: "none" }),
+    );
+
+    const config = await loadConfig({ cwd: tempDir });
+
+    expect(config.sandbox).toBe("none");
+  });
+
+  it.each(["docker", "worktree"])("rejects unsupported sandbox value %s", async (sandbox) => {
+    writeFileSync(
+      join(tempDir, "sandcastle.config.json"),
+      JSON.stringify({ sandbox }),
+    );
+
+    await expect(loadConfig({ cwd: tempDir })).rejects.toThrow(/Only sandbox/);
+  });
+
+  it("rejects unsupported sandbox environment overrides", async () => {
+    process.env["SANDCASTLE_SANDBOX"] = "docker";
+
+    await expect(loadConfig({ cwd: tempDir })).rejects.toThrow(/Only sandbox/);
   });
 
   it("accepts all valid package manager values", async () => {

@@ -2,10 +2,15 @@ import { z } from "zod";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+const unsupportedSandboxMessage =
+  'Only sandbox "none" is currently supported. Docker and worktree sandbox modes are not wired into the TypeScript engine yet.';
+
 const SandcastleConfigSchema = z.object({
   model: z.string().default("claude-opus-4-6"),
   baseBranch: z.string().default("main"),
-  sandbox: z.enum(["none", "docker", "worktree"]).default("none"),
+  sandbox: z.literal("none", {
+    errorMap: () => ({ message: unsupportedSandboxMessage }),
+  }).default("none"),
   promptDir: z.string().default(".sandcastle/prompts"),
   codingStandards: z.string().default(".sandcastle/CODING_STANDARDS.md"),
   contextDoc: z.string().default("CONTEXT.md"),

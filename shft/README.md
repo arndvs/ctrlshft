@@ -85,7 +85,7 @@ ctrl update-sandcastle --dry-run
 - `.sandcastle/engine/package.json` and `tsconfig.json`
 - `.sandcastle/templates/prompts/` and `extractions/`
 - `.sandcastle/scripts/` and `hooks/`
-- `.sandcastle/sandbox/` when `sandbox` is `docker` or the directory exists
+- `.sandcastle/sandbox/` when the directory exists
 - `.github/workflows/agent-*.yml`
 - `.github/copilot-setup-steps.yml`
 
@@ -121,7 +121,7 @@ Each initialized repo gets `sandcastle.config.json`. Missing fields fall back to
 |-------|---------|----------------------|---------|
 | `model` | `claude-opus-4-6` | `SANDCASTLE_MODEL`, `ANTHROPIC_MODEL` | Model used by runners |
 | `baseBranch` | `main` | `SANDCASTLE_BASE_BRANCH` | Default branch used by workflow templates |
-| `sandbox` | `none` | `SANDCASTLE_SANDBOX` | `none`, `docker`, or `worktree` |
+| `sandbox` | `none` | `SANDCASTLE_SANDBOX` | Only `none` is currently supported by the TypeScript engine |
 | `promptDir` | `.sandcastle/prompts` | — | Project prompt override directory |
 | `codingStandards` | `.sandcastle/CODING_STANDARDS.md` | — | Project standards document |
 | `contextDoc` | `CONTEXT.md` | — | Project context document |
@@ -192,7 +192,7 @@ Required GitHub Actions secrets:
 Workflow runners use `@ai-hero/sandcastle` plus Zod schemas for typed output. Two shared retry helpers keep side-effecting work from being repeated:
 
 - `runWithRetry()` retries schema extraction by resuming the failed session with validation feedback.
-- `runWithExtraction()` runs side-effecting work first, then resumes the produced session only to extract structured output.
+- `runWithExtraction()` runs side-effecting work first, then resumes the produced session only to extract structured output. Produce prompts should not contain structured-output instructions; extraction prompts own the output contract.
 
 Validation rules include:
 
