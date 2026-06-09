@@ -91,6 +91,8 @@ ctrl update-sandcastle --dry-run
 
 Project-specific prompts, config, and coding standards are never overwritten by drift updates.
 
+The vendored engine intentionally excludes source test files. Its `package.json` is rendered with a no-op `test` script and a working `typecheck` script, so consumer repos can run package checks without a false Vitest failure from an empty test suite.
+
 ### Source layout in dotfiles
 
 ```
@@ -175,7 +177,7 @@ Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--
 
 ### Labels and secrets
 
-Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is authenticated. The label state machine uses:
+Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is authenticated and can resolve the current GitHub repository. In local-only repos with no remote, init skips label creation and prints the manual command to run after adding a remote. The label state machine uses:
 
 - Entry/control labels: `Sandcastle`, `agent:review`, `agent:plan`, `agent:implement`, `agent:implement-prd`, `agent:fix`, `agent:update-branch`, `agent:merge`
 - Status labels: `agent:in-progress`, `agent:pr-open`, `agent:queued`, `agent:blocked`
