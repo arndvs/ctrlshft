@@ -711,7 +711,7 @@ except:
         echo "  ──────────────────────────────────────────────────────────────"
         echo "  ctrl init-sandcastle    scaffold Sandcastle in a repo"
         echo "                          [--branch main] [--model claude-opus-4-6]"
-        echo "                          [--pm npm] [--sandbox none] [--force]"
+        echo "                          [--pm pnpm] [--sandbox none] [--force]"
         echo "  ctrl update-sandcastle  detect drift in vendored Sandcastle files"
         echo "                          [--dry-run]"
         echo ""

@@ -127,7 +127,7 @@ done
 
 # 4. Engine package.json + tsconfig.json
 echo "Checking engine config files..."
-for cfg in package.json tsconfig.json; do
+for cfg in package.json pnpm-lock.yaml tsconfig.json; do
     if [[ -f "$ENGINE/$cfg" ]]; then
         check_file "$ENGINE/$cfg" ".sandcastle/engine/$cfg" "engine/$cfg"
     fi
@@ -164,6 +164,7 @@ echo "Checking workflow YAMLs..."
 
 # Read baseBranch from config (default: main)
 BASE_BRANCH="main"
+PM="pnpm"
 if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
     BASE_BRANCH=$(node -e "
         try {
@@ -171,6 +172,12 @@ if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
             console.log(c.baseBranch || 'main');
         } catch { console.log('main'); }
     " 2>/dev/null || echo "main")
+    PM=$(node -e "
+        try {
+            const c = JSON.parse(require('fs').readFileSync('sandcastle.config.json','utf8'));
+            console.log(c.packageManager || 'pnpm');
+        } catch { console.log('pnpm'); }
+    " 2>/dev/null || echo "pnpm")
 fi
 
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
@@ -183,7 +190,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
         continue
     fi
     # Resolve template variables for comparison
-    resolved_tmpl=$(sed "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+    resolved_tmpl=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" -e "s/{{PACKAGE_MANAGER}}/$PM/g" "$tmpl")
     if ! echo "$resolved_tmpl" | diff -q "$vendored" - &>/dev/null; then
         DRIFTED_FILES+=("workflows/$fname")
         DIFF_OUTPUT+="$(printf '\n── workflows/%s ──\n' "$fname")"
@@ -195,15 +202,6 @@ done
 # 9. copilot-setup-steps.yml
 echo "Checking copilot-setup-steps.yml..."
 if [[ -f "$TEMPLATES/copilot-setup-steps.yml" ]] && [[ -f ".github/copilot-setup-steps.yml" ]]; then
-    PM="npm"
-    if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
-        PM=$(node -e "
-            try {
-                const c = JSON.parse(require('fs').readFileSync('sandcastle.config.json','utf8'));
-                console.log(c.packageManager || 'npm');
-            } catch { console.log('npm'); }
-        " 2>/dev/null || echo "npm")
-    fi
     resolved_copilot=$(sed "s/{{PACKAGE_MANAGER}}/$PM/g" "$TEMPLATES/copilot-setup-steps.yml")
     if ! echo "$resolved_copilot" | diff -q ".github/copilot-setup-steps.yml" - &>/dev/null; then
         DRIFTED_FILES+=("copilot-setup-steps.yml")
@@ -352,7 +350,7 @@ for src_file in "$ENGINE/workflows/"*.ts; do
 done
 
 # Engine config files
-for cfg in package.json tsconfig.json; do
+for cfg in package.json pnpm-lock.yaml tsconfig.json; do
     if [[ -f "$ENGINE/$cfg" ]]; then
         dst=".sandcastle/engine/$cfg"
         if [[ ! -f "$dst" ]] || ! diff -q "$ENGINE/$cfg" "$dst" &>/dev/null; then
@@ -380,7 +378,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
     [[ ! -f "$tmpl" ]] && continue
     fname="$(basename "$tmpl")"
     dst=".github/workflows/$fname"
-    resolved=$(sed "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+    resolved=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" -e "s/{{PACKAGE_MANAGER}}/$PM/g" "$tmpl")
     if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
         apply_resolved "$resolved" "$dst" "workflows/$fname"
     fi

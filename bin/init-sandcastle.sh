@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # init-sandcastle.sh — Scaffold a complete Sandcastle setup in any repo.
 #
-# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm npm] [--sandbox none] [--force]
+# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--force]
 #
 # Copies workflow YAMLs, vendors engine code, creates config, sets up prompt
 # directory, creates GitHub labels, and prints a checklist of manual steps.
@@ -14,7 +14,7 @@ source "$DOTFILES/bin/_lib.sh"
 # ── Defaults ──────────────────────────────────────────────────────────────────
 BRANCH="main"
 MODEL="claude-opus-4-6"
-PM="npm"
+PM="pnpm"
 SANDBOX="none"
 FORCE=false
 
@@ -27,7 +27,7 @@ while [[ $# -gt 0 ]]; do
         --sandbox) SANDBOX="$2"; shift 2 ;;
         --force)   FORCE=true; shift ;;
         --help|-h)
-            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm npm] [--sandbox none] [--force]"
+            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--force]"
             exit 0
             ;;
         *) red "Unknown option: $1"; exit 1 ;;
@@ -85,7 +85,7 @@ mkdir -p .sandcastle/prompts
 echo "  Installing workflow YAMLs..."
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
     fname="$(basename "$tmpl")"
-    sed "s/{{DEFAULT_BRANCH}}/$BRANCH/g" "$tmpl" > ".github/workflows/$fname"
+    sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" -e "s/{{PACKAGE_MANAGER}}/$PM/g" "$tmpl" > ".github/workflows/$fname"
     echo "    .github/workflows/$fname"
 done
 
@@ -104,6 +104,7 @@ rm -rf .sandcastle/engine
 mkdir -p .sandcastle/engine
 cp "$ENGINE/package.json" .sandcastle/engine/
 cp "$ENGINE/tsconfig.json" .sandcastle/engine/
+[[ -f "$ENGINE/pnpm-lock.yaml" ]] && cp "$ENGINE/pnpm-lock.yaml" .sandcastle/engine/
 
 mkdir -p .sandcastle/engine/lib
 for f in "$ENGINE/lib/"*.ts; do
@@ -236,7 +237,8 @@ case "$PM" in
     pnpm) (cd .sandcastle/engine && pnpm install --ignore-scripts 2>/dev/null) || yellow "    pnpm install failed — run manually in .sandcastle/engine/" ;;
     yarn) (cd .sandcastle/engine && yarn install --ignore-scripts 2>/dev/null) || yellow "    yarn install failed — run manually in .sandcastle/engine/" ;;
     bun)  (cd .sandcastle/engine && bun install --ignore-scripts 2>/dev/null) || yellow "    bun install failed — run manually in .sandcastle/engine/" ;;
-    *)    (cd .sandcastle/engine && npm install --ignore-scripts 2>/dev/null) || yellow "    npm install failed — run manually in .sandcastle/engine/" ;;
+    npm)  (cd .sandcastle/engine && npm install --ignore-scripts 2>/dev/null) || yellow "    npm install failed — run manually in .sandcastle/engine/" ;;
+    *)    red "Unexpected package manager after validation: $PM"; exit 1 ;;
 esac
 
 echo ""

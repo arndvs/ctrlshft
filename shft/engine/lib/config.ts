@@ -10,7 +10,7 @@ const SandcastleConfigSchema = z.object({
   codingStandards: z.string().default(".sandcastle/CODING_STANDARDS.md"),
   contextDoc: z.string().default("CONTEXT.md"),
   adrDir: z.string().default("docs/adr"),
-  packageManager: z.enum(["npm", "pnpm", "yarn", "bun"]).default("npm"),
+  packageManager: z.enum(["npm", "pnpm", "yarn", "bun"]).default("pnpm"),
 });
 
 export type SandcastleConfig = z.infer<typeof SandcastleConfigSchema>;

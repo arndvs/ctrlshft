@@ -38,7 +38,7 @@ describe("loadConfig", () => {
     expect(config.codingStandards).toBe(".sandcastle/CODING_STANDARDS.md");
     expect(config.contextDoc).toBe("CONTEXT.md");
     expect(config.adrDir).toBe("docs/adr");
-    expect(config.packageManager).toBe("npm");
+    expect(config.packageManager).toBe("pnpm");
   });
 
   it("merges partial config with defaults", async () => {
@@ -52,7 +52,7 @@ describe("loadConfig", () => {
     expect(config.model).toBe("claude-sonnet-4-20250514");
     expect(config.baseBranch).toBe("dev");
     expect(config.sandbox).toBe("none"); // default
-    expect(config.packageManager).toBe("npm"); // default
+    expect(config.packageManager).toBe("pnpm"); // default
   });
 
   it("throws on invalid config values", async () => {
