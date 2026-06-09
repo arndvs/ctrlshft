@@ -83,6 +83,11 @@ _skip "ctrl migrate"            "writes report file"
 _skip "ctrl uninstall"          "destructive"
 _skip "ctrl verify-token"       "requires GitHub App credentials"
 
+# Lifecycle commands
+_test "ctrl init-artifacts (dry-run)"   ctrl init-artifacts --dry-run
+_test "ctrl update-artifacts (dry-run)" ctrl update-artifacts --dry-run
+_skip "ctrl lifecycle-audit"            "requires git repo setup"
+
 # HUD subcommands that need daemon running
 _skip "ctrl hud start"          "starts daemon"
 _skip "ctrl hud stop"           "stops daemon"
