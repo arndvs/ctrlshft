@@ -29,6 +29,6 @@ fi
 FIRST_WORD=$(echo "$COMMAND" | awk '{print $1}')
 
 if [[ "$FIRST_WORD" = "npx" ]] && echo "$COMMAND" | head -1 | grep -qE 'npx\s+tsc(\s|$)'; then
-  echo 'Use `npm run typecheck` instead of `npx tsc`' >&2
+  echo 'Use `pnpm run typecheck` instead of `npx tsc`' >&2
   exit 2
 fi

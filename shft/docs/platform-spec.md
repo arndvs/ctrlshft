@@ -80,7 +80,7 @@ Extraction prompts (for two-phase workflows) live in `shft/templates/extractions
   "codingStandards": ".sandcastle/CODING_STANDARDS.md",
   "contextDoc": "CONTEXT.md",
   "adrDir": "docs/adr",
-  "packageManager": "npm"
+  "packageManager": "pnpm"
 }
 ```
 

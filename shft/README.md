@@ -48,7 +48,7 @@ Sandcastle is the CI-triggered AFK agent platform extracted under `shft/`. It st
 Run this from the target repository root:
 
 ```bash
-ctrl init-sandcastle --branch main --model claude-opus-4-6 --pm npm --sandbox none
+ctrl init-sandcastle --branch main --model claude-opus-4-6 --pm pnpm --sandbox none
 ```
 
 `ctrl init-sandcastle` is a stamp-and-own installer. It copies files into the target repo instead of symlinking them, which keeps GitHub Actions independent of `~/dotfiles`:
@@ -126,16 +126,16 @@ Each initialized repo gets `sandcastle.config.json`. Missing fields fall back to
 | `codingStandards` | `.sandcastle/CODING_STANDARDS.md` | — | Project standards document |
 | `contextDoc` | `CONTEXT.md` | — | Project context document |
 | `adrDir` | `docs/adr` | — | ADR directory |
-| `packageManager` | `npm` | `SANDCASTLE_PACKAGE_MANAGER` | `npm`, `pnpm`, `yarn`, or `bun` |
+| `packageManager` | `pnpm` | `SANDCASTLE_PACKAGE_MANAGER` | `npm`, `pnpm`, `yarn`, or `bun` |
 
 Prompt resolution checks `.sandcastle/prompts/` first, then falls back to the templates directory passed by `.sandcastle/run.ts`.
 
 ### Workflow dispatcher
 
-All GitHub Actions call the same entrypoint:
+All GitHub Actions install engine dependencies with the configured package manager, then call the vendored dispatcher with the engine-local `tsx` binary:
 
 ```bash
-npx tsx .sandcastle/run.ts <workflow-name> [args]
+./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts <workflow-name> [args]
 ```
 
 Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:

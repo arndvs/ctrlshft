@@ -39,7 +39,7 @@ export default {
   codingStandards: ".sandcastle/CODING_STANDARDS.md",
   contextDoc: "CONTEXT.md",
   adrDir: "docs/adr",
-  packageManager: "npm",           // "npm" | "pnpm" | "yarn" | "bun"
+  packageManager: "pnpm",          // "npm" | "pnpm" | "yarn" | "bun"
 }
 ```
 
@@ -112,7 +112,7 @@ In GitHub Actions CI, `~/dotfiles` isn't available. The engine code is vendored 
 
 ### CLI commands
 
-- `ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm npm] [--force]`
+- `ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--force]`
 - `ctrl update-sandcastle` — checksums vendored engine + workflow YAMLs vs dotfiles, shows diffs, prompts for update
 
 ## Testing Decisions
