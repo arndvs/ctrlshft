@@ -130,11 +130,28 @@ _copy_template "working/refs/README.md"     "working/refs/README.md"
 _copy_template "working/research/README.md" "working/research/README.md"
 
 # ── 2. Create ignored working/ lanes (directories only, no README) ──────────
-if [[ "$DRY_RUN" != true ]]; then
-    mkdir -p "$REPO_ROOT/working/runtime"
-    mkdir -p "$REPO_ROOT/working/tmp"
-    mkdir -p "$REPO_ROOT/working/logs"
-fi
+echo "  Runtime lanes:"
+for lane in "working/runtime" "working/tmp" "working/logs"; do
+    lane_path="$REPO_ROOT/$lane"
+    if [[ "$DRY_RUN" == true ]]; then
+        if [[ -d "$lane_path" ]]; then
+            yellow "  [skip] $lane (exists)"
+            _skipped=$((_skipped + 1))
+        else
+            echo "  [create] $lane"
+            _would_create=$((_would_create + 1))
+        fi
+    else
+        if [[ -d "$lane_path" ]]; then
+            yellow "  $lane exists — skipping"
+            _skipped=$((_skipped + 1))
+        else
+            mkdir -p "$lane_path"
+            echo "    $lane"
+            _created=$((_created + 1))
+        fi
+    fi
+done
 
 # ── 3. Create plans/ ────────────────────────────────────────────────────────
 echo "  Plans:"
