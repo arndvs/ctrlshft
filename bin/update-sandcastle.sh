@@ -56,6 +56,29 @@ if [[ ! -d "$ENGINE" ]]; then
     exit 1
 fi
 
+render_vendored_engine_package() {
+    if ! command -v node &>/dev/null; then
+        red "Node.js is required to render .sandcastle/engine/package.json."
+        exit 1
+    fi
+
+    ENGINE_PACKAGE="$ENGINE/package.json" node <<'NODE'
+const fs = require("fs");
+
+const pkg = JSON.parse(fs.readFileSync(process.env.ENGINE_PACKAGE, "utf8"));
+pkg.scripts = {
+  ...pkg.scripts,
+  test: 'echo "Vendored Sandcastle engine excludes test files; run pnpm run typecheck to validate runtime sources."',
+};
+
+process.stdout.write(`${JSON.stringify(pkg, null, 2)}\n`);
+NODE
+}
+
+VENDORED_ENGINE_PACKAGE_JSON="$(mktemp)"
+trap 'rm -f "$VENDORED_ENGINE_PACKAGE_JSON"' EXIT
+render_vendored_engine_package > "$VENDORED_ENGINE_PACKAGE_JSON"
+
 # ── Drift detection ──────────────────────────────────────────────────────────
 
 DRIFTED_FILES=()
@@ -127,7 +150,8 @@ done
 
 # 4. Engine package.json + tsconfig.json
 echo "Checking engine config files..."
-for cfg in package.json pnpm-lock.yaml tsconfig.json; do
+check_file "$VENDORED_ENGINE_PACKAGE_JSON" ".sandcastle/engine/package.json" "engine/package.json"
+for cfg in pnpm-lock.yaml tsconfig.json; do
     if [[ -f "$ENGINE/$cfg" ]]; then
         check_file "$ENGINE/$cfg" ".sandcastle/engine/$cfg" "engine/$cfg"
     fi
@@ -350,7 +374,10 @@ for src_file in "$ENGINE/workflows/"*.ts; do
 done
 
 # Engine config files
-for cfg in package.json pnpm-lock.yaml tsconfig.json; do
+if [[ ! -f ".sandcastle/engine/package.json" ]] || ! diff -q "$VENDORED_ENGINE_PACKAGE_JSON" ".sandcastle/engine/package.json" &>/dev/null; then
+    apply_file "$VENDORED_ENGINE_PACKAGE_JSON" ".sandcastle/engine/package.json" "engine/package.json"
+fi
+for cfg in pnpm-lock.yaml tsconfig.json; do
     if [[ -f "$ENGINE/$cfg" ]]; then
         dst=".sandcastle/engine/$cfg"
         if [[ ! -f "$dst" ]] || ! diff -q "$ENGINE/$cfg" "$dst" &>/dev/null; then

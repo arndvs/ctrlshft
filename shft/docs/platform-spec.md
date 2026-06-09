@@ -90,3 +90,5 @@ Only `sandbox: "none"` is currently supported by the TypeScript engine. Docker a
 ## Vendoring model
 
 Consumer repos don't install Sandcastle engine as a dependency — `init-sandcastle.sh` copies the engine source into `.sandcastle/engine/` and `update-sandcastle.sh` syncs it with drift detection. This keeps the pipeline self-contained and version-pinned per repo.
+
+The vendored engine is a runtime scaffold, not a source checkout. Test files are excluded, so `init-sandcastle.sh` and `update-sandcastle.sh` render `.sandcastle/engine/package.json` with a no-op `test` script while preserving `typecheck` for validating vendored runtime sources.

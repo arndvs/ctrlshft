@@ -77,6 +77,25 @@ if [[ ! -d "$ENGINE" ]]; then
     exit 1
 fi
 
+render_vendored_engine_package() {
+    if ! command -v node &>/dev/null; then
+        red "Node.js is required to render .sandcastle/engine/package.json."
+        exit 1
+    fi
+
+    ENGINE_PACKAGE="$ENGINE/package.json" node <<'NODE'
+const fs = require("fs");
+
+const pkg = JSON.parse(fs.readFileSync(process.env.ENGINE_PACKAGE, "utf8"));
+pkg.scripts = {
+  ...pkg.scripts,
+  test: 'echo "Vendored Sandcastle engine excludes test files; run pnpm run typecheck to validate runtime sources."',
+};
+
+process.stdout.write(`${JSON.stringify(pkg, null, 2)}\n`);
+NODE
+}
+
 green "Initializing Sandcastle in $(basename "$REPO_ROOT")..."
 echo ""
 
@@ -105,7 +124,7 @@ rm -rf .sandcastle/engine
 
 # Copy engine, excluding node_modules and tests
 mkdir -p .sandcastle/engine
-cp "$ENGINE/package.json" .sandcastle/engine/
+render_vendored_engine_package > .sandcastle/engine/package.json
 cp "$ENGINE/tsconfig.json" .sandcastle/engine/
 [[ -f "$ENGINE/pnpm-lock.yaml" ]] && cp "$ENGINE/pnpm-lock.yaml" .sandcastle/engine/
 
@@ -205,16 +224,22 @@ fi
 echo "  Creating GitHub labels..."
 if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
     LABELS_FILE="$TEMPLATES/labels.json"
-    if [[ -f "$LABELS_FILE" ]]; then
+    if ! gh repo view &>/dev/null; then
+        yellow "    gh CLI could not resolve a GitHub repository — skipping label creation"
+        echo "    Run manually after adding a GitHub remote: gh label create <name> --color <hex> --description <desc>"
+    elif [[ -f "$LABELS_FILE" ]]; then
         if command -v node &>/dev/null; then
             LABELS_FILE="$LABELS_FILE" node -e "
                 const labels = JSON.parse(require('fs').readFileSync(process.env.LABELS_FILE, 'utf8'));
                 labels.forEach(l => console.log(l.name + '|' + l.color + '|' + l.description));
             " | while IFS='|' read -r name color desc; do
-                if gh label create "$name" --color "$color" --description "$desc" 2>/dev/null; then
+                label_output="$(gh label create "$name" --color "$color" --description "$desc" 2>&1)" && label_status=0 || label_status=$?
+                if [[ $label_status -eq 0 ]]; then
                     echo "    Created: $name"
-                else
+                elif grep -qi "already exists" <<<"$label_output"; then
                     echo "    Exists:  $name"
+                else
+                    yellow "    Failed:  $name — $label_output"
                 fi
             done
         else
