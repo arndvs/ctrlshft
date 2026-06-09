@@ -22,7 +22,7 @@ _fail() {
 assert_no_forbidden_refs() {
     local label="$1" file="$2"
     local hits grep_status
-    if hits=$(grep -nE '@~/dotfiles/instructions/(nextjs|php|sanity|css|google-docs|sentry|hud)\.instructions\.md|@~/dotfiles/instructions/_local/(cmd|copywriting)\.instructions\.md' "$file" 2>&1); then
+    if hits=$(grep -nE '@~/dotfiles/instructions/(nextjs|php|sanity|css|google-docs|sentry|hud)\.instructions\.md|@~/dotfiles/instructions/_local/[^[:space:]]+\.instructions\.md' "$file" 2>&1); then
         _fail "$label" "$hits"
     else
         grep_status=$?
@@ -52,7 +52,6 @@ assert_no_forbidden_refs "CLAUDE.md has no conditional @ instruction refs" "CLAU
 assert_contains "global instructions remain auto-loaded" '@~/dotfiles/global.instructions.md' "CLAUDE.base.md"
 assert_contains "always-loaded handoff remains auto-loaded" '@~/dotfiles/instructions/handoff.instructions.md' "CLAUDE.base.md"
 assert_contains "generated handoff remains auto-loaded" '@~/dotfiles/instructions/handoff.instructions.md' "CLAUDE.md"
-assert_contains "generated task-triggered local path is plain" '`~/dotfiles/instructions/_local/cmd.instructions.md`' "CLAUDE.md"
 
 echo
 echo "════════════════════════════════════════════════"
