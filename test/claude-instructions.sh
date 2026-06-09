@@ -21,12 +21,16 @@ _fail() {
 
 assert_no_forbidden_refs() {
     local label="$1" file="$2"
-    local hits
-    hits=$(grep -nE '@~/dotfiles/instructions/(nextjs|php|sanity|css|google-docs|sentry|hud)\.instructions\.md|@~/dotfiles/instructions/_local/(cmd|copywriting)\.instructions\.md' "$file" 2>/dev/null || true)
-    if [[ -z "$hits" ]]; then
-        _ok "$label"
-    else
+    local hits grep_status
+    if hits=$(grep -nE '@~/dotfiles/instructions/(nextjs|php|sanity|css|google-docs|sentry|hud)\.instructions\.md|@~/dotfiles/instructions/_local/(cmd|copywriting)\.instructions\.md' "$file" 2>&1); then
         _fail "$label" "$hits"
+    else
+        grep_status=$?
+        if [[ $grep_status -eq 1 ]]; then
+            _ok "$label"
+        else
+            _fail "$label" "grep failed with exit $grep_status: $hits"
+        fi
     fi
 }
 
