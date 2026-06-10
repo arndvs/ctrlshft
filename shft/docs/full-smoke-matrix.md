@@ -25,6 +25,8 @@ Rules:
 
 For the safe scheduled-workflow dispatch slice, use `ctrl smoke-sandcastle-dispatch`. It defaults to `agent-check-stale-prs.yml`, waits for completion, and prints the run URL, status, conclusion, and failed step names. Other `workflow_dispatch` workflows require `--allow-side-effects` so mutating fixtures are explicit.
 
+For the issue-label state-machine slice, use `ctrl smoke-sandcastle-issue-labels`. It creates a disposable issue, applies `Sandcastle`, waits for `agent-review-issue.yml`, `agent-plan-issue.yml`, and `agent-implement-issue.yml`, verifies the terminal `agent:pr-open` label state, and closes disposable issue/PR artifacts. Live runs require `--allow-side-effects`; use `--dry-run` to preview without creating artifacts.
+
 ## Global setup
 
 | Requirement | Purpose |
