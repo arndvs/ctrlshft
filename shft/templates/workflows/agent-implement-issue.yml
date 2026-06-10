@@ -69,7 +69,10 @@ jobs:
           node-version: "22"
 
       - name: Install engine dependencies
-        run: cd .sandcastle/engine && npm install
+        run: |
+          corepack enable
+          cd .sandcastle/engine
+          {{PACKAGE_MANAGER}} install
 
       - name: Run implement
         env:

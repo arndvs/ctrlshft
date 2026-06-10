@@ -167,7 +167,10 @@ jobs:
 
       - name: Install engine dependencies
         if: steps.shape.outputs.mode == 'run'
-        run: cd .sandcastle/engine && npm install
+        run: |
+          corepack enable
+          cd .sandcastle/engine
+          {{PACKAGE_MANAGER}} install
 
       - name: Install Claude Code
         if: steps.shape.outputs.mode == 'run'

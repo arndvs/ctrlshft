@@ -14,7 +14,7 @@ function makeConfig(overrides: Partial<SandcastleConfig> = {}): SandcastleConfig
     codingStandards: ".sandcastle/CODING_STANDARDS.md",
     contextDoc: "CONTEXT.md",
     adrDir: "docs/adr",
-    packageManager: "npm",
+    packageManager: "pnpm",
     ...overrides,
   };
 }
