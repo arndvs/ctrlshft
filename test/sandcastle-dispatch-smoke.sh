@@ -93,7 +93,6 @@ YAML
 
 install_fake_gh() {
     local bin_dir="$1"
-    local mode="$2"
     mkdir -p "$bin_dir"
     cat > "$bin_dir/gh" <<'FAKEGH'
 #!/usr/bin/env bash
@@ -158,14 +157,14 @@ run_case "dry run reports dispatch command" pass "Would run: gh workflow run age
 
 success_bin="$TMP_ROOT/success-bin"
 success_state="$TMP_ROOT/success-state"
-install_fake_gh "$success_bin" success
+install_fake_gh "$success_bin"
 run_case "dispatch success reports run url and conclusion" pass "Conclusion: success" \
     env PATH="$success_bin:$PATH" FAKE_GH_MODE=success FAKE_GH_STATE_DIR="$success_state" \
     bash -c "cd '$repo' && DOTFILES='$ROOT' '$SCRIPT' --repo owner/repo --ref dev --poll-seconds 1 --timeout-seconds 10"
 
 failure_bin="$TMP_ROOT/failure-bin"
 failure_state="$TMP_ROOT/failure-state"
-install_fake_gh "$failure_bin" failure
+install_fake_gh "$failure_bin"
 run_case "dispatch failure reports failed step names" fail "check-stale / Check stale PRs (failure)" \
     env PATH="$failure_bin:$PATH" FAKE_GH_MODE=failure FAKE_GH_STATE_DIR="$failure_state" \
     bash -c "cd '$repo' && DOTFILES='$ROOT' '$SCRIPT' --repo owner/repo --ref dev --poll-seconds 1 --timeout-seconds 10"
