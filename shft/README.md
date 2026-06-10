@@ -188,7 +188,8 @@ Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is
 Required GitHub Actions secrets:
 
 - `CLAUDE_CODE_OAUTH_TOKEN` — authenticates Claude Code inside workflows
-- `ANTHROPIC_API_KEY` — authenticates workflows that call the Anthropic API directly
+- `LITELLM_BASE_URL` — points Claude-compatible model traffic at the LiteLLM proxy backed by GitHub Copilot
+- `LITELLM_MASTER_KEY` — authenticates workflow calls to the LiteLLM proxy
 - `AGENT_PAT` — optional but recommended; label mutations made with `GITHUB_TOKEN` do not trigger downstream workflows, so `AGENT_PAT` is needed for chains such as `agent:implement` → `agent:review` and PRD sub-issue chaining
 
 ### Structured output and validation

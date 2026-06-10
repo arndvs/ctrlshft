@@ -541,7 +541,7 @@ case "$CMD" in
             fi
             yellow "  ⚠ Extended thinking disabled (Copilot limitation)"
         else
-            echo "  Routing:   Anthropic API (direct)"
+            echo "  Routing:   proxy disabled (no model proxy env injected)"
         fi
 
         # Engine mode
@@ -886,7 +886,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
             off)
                 _proxy_set "enabled" "false"
                 green "Proxy disabled"
-                echo "  Routing: Claude → Anthropic API (direct)"
+                echo "  Routing: no model proxy env injected"
                 ;;
 
             # ── proxy start ───────────────────────────────────────────────────
@@ -1025,7 +1025,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
                     echo "  Routing:   Claude → Copilot proxy"
                 else
                     echo "  Enabled:   no"
-                    echo "  Routing:   Claude → Anthropic API (direct)"
+                    echo "  Routing:   no model proxy env injected"
                 fi
 
                 echo ""
@@ -1065,7 +1065,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
                 echo "  ──────────────────────────────────────────────────────────────"
                 echo "  shft proxy init <path>  set path to claude-code-copilot repo"
                 echo "  shft proxy on           enable proxy routing"
-                echo "  shft proxy off          disable proxy routing (use Anthropic)"
+                echo "  shft proxy off          disable proxy env injection"
                 echo ""
                 echo "  Daemon"
                 echo "  ──────────────────────────────────────────────────────────────"
