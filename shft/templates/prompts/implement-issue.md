@@ -26,7 +26,7 @@ Use red-green-refactor where applicable.
 3. REPEAT until the issue is complete.
 4. REFACTOR while keeping tests green.
 
-Before committing, run the relevant project feedback loops. Prefer `npm run typecheck` and `npm run test` when available.
+Before committing, run the relevant project feedback loops. Prefer `pnpm run typecheck` and `pnpm run test` when available.
 
 # COMMIT
 
