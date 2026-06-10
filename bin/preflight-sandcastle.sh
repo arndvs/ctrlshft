@@ -31,7 +31,7 @@ while [[ $# -gt 0 ]]; do
             echo "Checks:"
             echo "  CONFIG   install shape, config JSON, vendored drift, package manager"
             echo "  SYNTAX   installed agent workflow YAML shape"
-            echo "  SECRETS  ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN, AGENT_PAT"
+            echo "  SECRETS  CLAUDE_CODE_OAUTH_TOKEN, LITELLM_BASE_URL, LITELLM_MASTER_KEY, AGENT_PAT"
             echo "  PERMS    workflow permissions blocks"
             echo ""
             echo "Options:"
@@ -199,7 +199,7 @@ PY
 
 _check_required_secrets() {
     local missing=()
-    local required=(ANTHROPIC_API_KEY CLAUDE_CODE_OAUTH_TOKEN AGENT_PAT)
+    local required=(CLAUDE_CODE_OAUTH_TOKEN LITELLM_BASE_URL LITELLM_MASTER_KEY AGENT_PAT)
     local repo_slug=""
 
     for secret in "${required[@]}"; do
