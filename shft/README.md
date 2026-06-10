@@ -175,6 +175,8 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 
 Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--branch` or `sandcastle.config.json`.
 
+The canonical dogfood smoke-test contract for these templates is documented in `shft/docs/full-smoke-matrix.md`.
+
 ### Labels and secrets
 
 Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is authenticated and can resolve the current GitHub repository. In local-only repos with no remote, init skips label creation and prints the manual command to run after adding a remote. The label state machine uses:

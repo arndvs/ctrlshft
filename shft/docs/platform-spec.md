@@ -47,6 +47,8 @@ For `runWithExtraction()` workflows, produce prompts do the side-effecting work 
 
 GitHub Actions workflows in `shft/templates/workflows/`:
 
+The full dogfood smoke-test contract for these workflows lives in `shft/docs/full-smoke-matrix.md`.
+
 | File | Trigger | Purpose |
 |------|---------|---------|
 | `agent-review-issue.yml` | `Sandcastle` label | Reviews issue context and advances to `agent:review` |
