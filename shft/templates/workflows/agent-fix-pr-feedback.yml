@@ -62,7 +62,7 @@ jobs:
         run: |
           corepack enable
           cd .sandcastle/engine
-          {{PACKAGE_MANAGER}} install --ignore-scripts
+          {{PACKAGE_MANAGER}} install
 
       - name: Run fix feedback
         env:
