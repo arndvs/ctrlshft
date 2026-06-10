@@ -91,6 +91,7 @@ _skip "ctrl lifecycle-audit"            "requires git repo setup"
 # Sandcastle commands
 _test "ctrl preflight-sandcastle help"  ctrl preflight-sandcastle --help
 _test "ctrl smoke-sandcastle-dispatch help" ctrl smoke-sandcastle-dispatch --help
+_test "ctrl smoke-sandcastle-issue-labels help" ctrl smoke-sandcastle-issue-labels --help
 
 # HUD subcommands that need daemon running
 _skip "ctrl hud start"          "starts daemon"
