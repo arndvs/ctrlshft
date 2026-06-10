@@ -562,6 +562,15 @@ except:
         bash "$DOTFILES/bin/smoke-sandcastle-dispatch.sh" "$@"
         ;;
 
+    # ── smoke-sandcastle-issue-labels ────────────────────────────────────────
+    smoke-sandcastle-issue-labels|sandcastle-issue-label-smoke)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-issue-labels.sh" ]]; then
+            red "smoke-sandcastle-issue-labels.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-issue-labels.sh" "$@"
+        ;;
+
     # ── lifecycle-audit ───────────────────────────────────────────────────────
     lifecycle-audit|la)
         if [[ ! -f "$DOTFILES/bin/artifact-lifecycle-audit.sh" ]]; then
@@ -736,6 +745,8 @@ except:
         echo "                          [--skip-drift] [--skip-engine] [--skip-github]"
         echo "  ctrl smoke-sandcastle-dispatch trigger safe workflow_dispatch smoke"
         echo "                          [--workflow FILE] [--ref REF] [--dry-run]"
+        echo "  ctrl smoke-sandcastle-issue-labels trigger disposable issue-label smoke"
+        echo "                          [--dry-run] [--allow-side-effects]"
         echo ""
         echo "  Lifecycle"
         echo "  ──────────────────────────────────────────────────────────────"
