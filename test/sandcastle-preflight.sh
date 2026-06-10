@@ -109,7 +109,8 @@ run_case "malformed workflow reports SYNTAX" fail "SYNTAX" bash -c "cd '$malform
 missing_permissions="$TMP_ROOT/missing-permissions"
 make_repo "$missing_permissions"
 seed_minimal_sandcastle "$missing_permissions"
-python - "$missing_permissions/.github/workflows/agent-review-issue.yml" <<'PY'
+if command -v python3 >/dev/null 2>&1; then
+    python3 - "$missing_permissions/.github/workflows/agent-review-issue.yml" <<'PY'
 import re
 import sys
 
@@ -118,6 +119,17 @@ text = open(path, encoding="utf-8").read()
 text = re.sub(r"\n    permissions:\n      contents: read\n      issues: write\n", "\n", text)
 open(path, "w", encoding="utf-8").write(text)
 PY
+else
+    python - "$missing_permissions/.github/workflows/agent-review-issue.yml" <<'PY'
+import re
+import sys
+
+path = sys.argv[1]
+text = open(path, encoding="utf-8").read()
+text = re.sub(r"\n    permissions:\n      contents: read\n      issues: write\n", "\n", text)
+open(path, "w", encoding="utf-8").write(text)
+PY
+fi
 run_case "missing workflow permissions reports PERMS" fail "PERMS" bash -c "cd '$missing_permissions' && DOTFILES='$ROOT' CLAUDE_CODE_OAUTH_TOKEN=dummy LITELLM_BASE_URL=dummy LITELLM_MASTER_KEY=dummy AGENT_PAT=dummy '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
 
 healthy="$TMP_ROOT/healthy"
