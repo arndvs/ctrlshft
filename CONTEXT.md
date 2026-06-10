@@ -27,7 +27,7 @@ This repo is the first Sandcastle consumer. `.sandcastle/` is intentionally vend
 - Use `ctrl update-sandcastle --dry-run` to detect drift between `.sandcastle/` and `shft/`.
 - Project-specific files are `sandcastle.config.json`, `.sandcastle/CODING_STANDARDS.md`, and `.sandcastle/prompts/` overrides.
 - Default branch for dogfood workflows is `dev`.
-- Required GitHub Actions secrets are `CLAUDE_CODE_OAUTH_TOKEN` and `ANTHROPIC_API_KEY`; `AGENT_PAT` is recommended for label-driven workflow chaining.
+- Required GitHub Actions secrets are `CLAUDE_CODE_OAUTH_TOKEN`, `LITELLM_BASE_URL`, and `LITELLM_MASTER_KEY`; `AGENT_PAT` is recommended for label-driven workflow chaining.
 
 ## Working expectations
 
