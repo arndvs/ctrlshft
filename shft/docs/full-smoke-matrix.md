@@ -6,13 +6,13 @@ Use this matrix as the source of truth for the full-smoke implementation slices 
 
 ## Contract
 
-A smoke run is complete only when every workflow row ends in one of these states:
+A smoke run is complete only when every workflow row records one of these result values:
 
-| State | Meaning | Required evidence |
-|-------|---------|-------------------|
-| Pass | The workflow ran on the intended trigger and reached its expected terminal state. | Workflow run URL, target issue or PR URL, final labels/state, and any created PR/issue URL. |
-| Expected skip | The workflow intentionally refused or skipped because the matrix's skip semantics matched the fixture. | Workflow run URL and the refusal/skip comment, summary, or log line. |
-| Fail | The workflow ran but did not reach the expected terminal state, or skipped for a reason not listed here. | Workflow run URL, failure reason, final labels/state, and the suspected owner slice. |
+| Result | Meaning | Required evidence |
+|--------|---------|-------------------|
+| `pass` | The workflow ran on the intended trigger and reached its expected terminal state. | Workflow run URL, target issue or PR URL, final labels/state, and any created PR/issue URL. |
+| `expected-skip` | The workflow intentionally refused or skipped because the matrix's skip semantics matched the fixture. | Workflow run URL and the refusal/skip comment, summary, or log line. |
+| `fail` | The workflow ran but did not reach the expected terminal state, or skipped for a reason not listed here. | Workflow run URL, failure reason, final labels/state, and the suspected owner slice. |
 
 Rules:
 
@@ -36,7 +36,7 @@ Rules:
 
 ## Workflow matrix
 
-| Workflow | Trigger source | Fixture setup | Expected terminal state | Required secrets / permissions | Skip semantics |
+| Workflow | Trigger source | Fixture setup | Expected terminal state | Secrets / permissions | Skip semantics |
 |----------|----------------|---------------|-------------------------|--------------------------------|----------------|
 | `agent-review-issue.yml` | `issues:labeled` with `Sandcastle` | Open a disposable issue with enough context for either direct implementation or planning; apply `Sandcastle`. | `Sandcastle` removed, `agent:in-progress` removed, `agent:review` added. On failure, `agent:blocked` is added with a workflow-run comment. | Secrets: `ANTHROPIC_API_KEY`, `AGENT_PAT` for the `agent:review` handoff. Permissions: `contents: read`, `issues: write`. | Missing `AGENT_PAT` is an expected failure fixture only when testing token hardening; otherwise it is a fail. |
 | `agent-plan-issue.yml` | `issues:labeled` with `agent:review` | Use an issue that should become implementation work; apply `agent:review`. | `agent:review` removed, `agent:in-progress` removed, `agent:implement` added. On failure, `agent:blocked` is added with a workflow-run comment. | Secrets: `ANTHROPIC_API_KEY`, `AGENT_PAT` for the `agent:implement` handoff. Permissions: `contents: write`, `issues: write`. | Missing `AGENT_PAT` is an expected failure fixture only when testing token hardening; otherwise it is a fail. |
