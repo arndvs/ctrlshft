@@ -91,7 +91,7 @@ ctrl update-sandcastle --dry-run
 
 Project-specific prompts, config, and coding standards are never overwritten by drift updates.
 
-The vendored engine intentionally excludes source test files. Its `package.json` is rendered with a no-op `test` script and a working `typecheck` script, so consumer repos can run package checks without a false Vitest failure from an empty test suite.
+The vendored engine intentionally excludes source test files. Its `package.json` is rendered with a no-op `test` script and a working `typecheck` script, so consumer repos can run package checks without a false Vitest failure from an empty test suite. The engine package also lists reviewed pnpm build approvals for native dependencies used by `tsx`/Vitest, avoiding a blanket lifecycle-script allow-all while still letting runtime binaries initialize correctly.
 
 ### Source layout in dotfiles
 

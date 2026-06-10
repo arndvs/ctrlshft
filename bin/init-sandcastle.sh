@@ -91,6 +91,10 @@ pkg.scripts = {
   ...pkg.scripts,
   test: 'echo "Vendored Sandcastle engine excludes test files; run pnpm run typecheck to validate runtime sources."',
 };
+pkg.pnpm = {
+    ...pkg.pnpm,
+    onlyBuiltDependencies: ["@parcel/watcher", "esbuild", "msgpackr-extract"],
+};
 
 process.stdout.write(`${JSON.stringify(pkg, null, 2)}\n`);
 NODE
@@ -254,10 +258,10 @@ fi
 # ── 11. Install engine dependencies ──────────────────────────────────────────
 echo "  Installing engine dependencies..."
 case "$PM" in
-    pnpm) (cd .sandcastle/engine && pnpm install --ignore-scripts 2>/dev/null) || yellow "    pnpm install failed — run manually in .sandcastle/engine/" ;;
-    yarn) (cd .sandcastle/engine && yarn install --ignore-scripts 2>/dev/null) || yellow "    yarn install failed — run manually in .sandcastle/engine/" ;;
-    bun)  (cd .sandcastle/engine && bun install --ignore-scripts 2>/dev/null) || yellow "    bun install failed — run manually in .sandcastle/engine/" ;;
-    npm)  (cd .sandcastle/engine && npm install --ignore-scripts 2>/dev/null) || yellow "    npm install failed — run manually in .sandcastle/engine/" ;;
+    pnpm) (cd .sandcastle/engine && pnpm install 2>/dev/null) || yellow "    pnpm install failed — run manually in .sandcastle/engine/" ;;
+    yarn) (cd .sandcastle/engine && yarn install 2>/dev/null) || yellow "    yarn install failed — run manually in .sandcastle/engine/" ;;
+    bun)  (cd .sandcastle/engine && bun install 2>/dev/null) || yellow "    bun install failed — run manually in .sandcastle/engine/" ;;
+    npm)  (cd .sandcastle/engine && npm install 2>/dev/null) || yellow "    npm install failed — run manually in .sandcastle/engine/" ;;
     *)    red "Unexpected package manager after validation: $PM"; exit 1 ;;
 esac
 
