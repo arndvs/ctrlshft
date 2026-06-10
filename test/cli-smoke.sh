@@ -88,6 +88,9 @@ _test "ctrl init-artifacts (dry-run)"   ctrl init-artifacts --dry-run
 _test "ctrl update-artifacts (dry-run)" ctrl update-artifacts --dry-run
 _skip "ctrl lifecycle-audit"            "requires git repo setup"
 
+# Sandcastle commands
+_test "ctrl preflight-sandcastle help"  ctrl preflight-sandcastle --help
+
 # HUD subcommands that need daemon running
 _skip "ctrl hud start"          "starts daemon"
 _skip "ctrl hud stop"           "stops daemon"
