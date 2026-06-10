@@ -23,6 +23,8 @@ Rules:
 - Do not print secret values in reports or logs. Record only whether each required secret was configured.
 - Treat fork PR refusal as a pass only for the explicit fork-safety fixture on `pull_request_target` workflows.
 
+For the safe scheduled-workflow dispatch slice, use `ctrl smoke-sandcastle-dispatch`. It defaults to `agent-check-stale-prs.yml`, waits for completion, and prints the run URL, status, conclusion, and failed step names. Other `workflow_dispatch` workflows require `--allow-side-effects` so mutating fixtures are explicit.
+
 ## Global setup
 
 | Requirement | Purpose |
