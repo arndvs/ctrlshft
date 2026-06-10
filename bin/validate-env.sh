@@ -333,10 +333,10 @@ else
     fi
 
     if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
-        red "  ✗ ANTHROPIC_API_KEY is in shell env — should only be in .env.secrets"
+        red "  ✗ ANTHROPIC_API_KEY is in shell env — direct Anthropic keys are not supported; use LiteLLM proxy routing"
         _fail=1
     else
-        green "  ✓ ANTHROPIC_API_KEY not in shell env (good)"
+        green "  ✓ ANTHROPIC_API_KEY not in shell env (good — use LiteLLM proxy routing)"
     fi
 fi
 

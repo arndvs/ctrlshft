@@ -544,6 +544,15 @@ except:
         bash "$DOTFILES/bin/update-sandcastle.sh" "$@"
         ;;
 
+    # ── preflight-sandcastle ──────────────────────────────────────────────────
+    preflight-sandcastle|sandcastle-preflight)
+        if [[ ! -f "$DOTFILES/bin/preflight-sandcastle.sh" ]]; then
+            red "preflight-sandcastle.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/preflight-sandcastle.sh" "$@"
+        ;;
+
     # ── lifecycle-audit ───────────────────────────────────────────────────────
     lifecycle-audit|la)
         if [[ ! -f "$DOTFILES/bin/artifact-lifecycle-audit.sh" ]]; then
@@ -714,6 +723,8 @@ except:
         echo "                          [--pm pnpm] [--sandbox none] [--force]"
         echo "  ctrl update-sandcastle  detect drift in vendored Sandcastle files"
         echo "                          [--dry-run]"
+        echo "  ctrl preflight-sandcastle validate drift, workflows, engine, secrets"
+        echo "                          [--skip-drift] [--skip-engine] [--skip-github]"
         echo ""
         echo "  Lifecycle"
         echo "  ──────────────────────────────────────────────────────────────"

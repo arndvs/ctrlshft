@@ -83,7 +83,8 @@ jobs:
 
       - name: Run update-branch
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
           OUTPUT_DIR: ${{ runner.temp }}
         run: |
           ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts update-branch \
