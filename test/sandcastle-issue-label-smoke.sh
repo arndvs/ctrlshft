@@ -142,8 +142,9 @@ if [[ "$1" == "run" && "${2:-}" == "list" ]]; then
         agent-implement-issue.yml) id=103 ;;
         *) id=999 ;;
     esac
+    skipped_id=$((id + 900))
     cat <<JSON
-[{"databaseId":$id,"url":"https://github.com/owner/repo/actions/runs/$id","status":"completed","conclusion":"success","createdAt":"2026-06-10T00:00:00Z","name":"$workflow","displayTitle":"$workflow"}]
+[{"databaseId":$skipped_id,"url":"https://github.com/owner/repo/actions/runs/$skipped_id","status":"completed","conclusion":"skipped","createdAt":"2026-06-10T00:00:01Z","name":"$workflow","displayTitle":"$workflow skipped fan-out"},{"databaseId":$id,"url":"https://github.com/owner/repo/actions/runs/$id","status":"completed","conclusion":"success","createdAt":"2026-06-10T00:00:00Z","name":"$workflow","displayTitle":"$workflow"}]
 JSON
     exit 0
 fi

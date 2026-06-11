@@ -63,6 +63,7 @@ jobs:
           corepack enable
           cd .sandcastle/engine
           {{PACKAGE_MANAGER}} install
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Run merge
         env:

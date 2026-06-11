@@ -260,6 +260,8 @@ with open(os.environ["BEFORE_FILE"], encoding="utf-8") as handle:
 
 for run in runs:
     run_id = str(run.get("databaseId", ""))
+    if run.get("status") == "completed" and run.get("conclusion") == "skipped":
+        continue
     if run_id and run_id not in before:
         print(json.dumps({"id": run_id, "url": run.get("url", "")}))
         break
