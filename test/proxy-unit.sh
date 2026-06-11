@@ -48,6 +48,15 @@ assert_exit() {
     if [[ "$expected" == "$actual" ]]; then _ok "$label"
     else _fail "$label" "expected exit $expected, got $actual"; fi
 }
+extract_function() {
+    local file="$1" name="$2"
+    awk -v name="$name" '
+        $0 ~ "^" name "\\(\\)" { in_fn=1 }
+        in_fn && $0 ~ /^[[:alnum:]_]+\(\)[[:space:]]*\{/ && $0 !~ "^" name "\\(\\)" { exit }
+        in_fn { print }
+        in_fn && /^}[[:space:]]*$/ { exit }
+    ' "$file"
+}
 
 # ── Temp environment ──────────────────────────────────────────────────────────
 TMP=$(mktemp -d)
@@ -241,7 +250,7 @@ cat > "$_PROXY_STATE" <<'EOF'
 EOF
 
 # Source _proxy_env_get from _proxy_env.sh
-eval "$(sed -n '/^_proxy_env_get()/,/^}$/p' shft/_proxy_env.sh)"
+eval "$(extract_function shft/_proxy_env.sh _proxy_env_get)"
 
 assert_eq "env_get enabled" "true" "$(_proxy_env_get enabled)"
 assert_eq "env_get port" "4000" "$(_proxy_env_get port)"
@@ -312,10 +321,10 @@ echo
 echo "curl timeouts — _proxy_running has --max-time + --connect-timeout"
 echo "────────────────────────────────────────────────"
 
-_running_fn=$(sed -n '/^_proxy_running()/,/^}/p' shft/shft)
+_running_fn=$(extract_function shft/shft _proxy_running)
 assert_contains "running fn delegates to _proxy_health_ok" "_proxy_health_ok" "$_running_fn"
 
-_running_health_helper=$(sed -n '/^_proxy_health_ok()/,/^}/p' shft/_proxy_health.sh)
+_running_health_helper=$(extract_function shft/_proxy_health.sh _proxy_health_ok)
 assert_contains "health helper has --max-time" "--max-time" "$_running_health_helper"
 assert_contains "health helper has --connect-timeout" "--connect-timeout" "$_running_health_helper"
 
@@ -325,7 +334,7 @@ assert_contains "shft sources shared proxy helper" "_proxy_health.sh" "$_shft_so
 # Same in _proxy_env.sh via _proxy_health_ok helper
 _env_daemon_check=$(sed -n '/Verify daemon is running/,/^fi$/p' shft/_proxy_env.sh)
 assert_contains "env.sh daemon check uses _proxy_health_ok" "_proxy_health_ok" "$_env_daemon_check"
-_env_health_helper=$(sed -n '/^_proxy_health_ok()/,/^}/p' shft/_proxy_health.sh)
+_env_health_helper=$(extract_function shft/_proxy_health.sh _proxy_health_ok)
 assert_contains "env.sh health helper has --max-time" "--max-time" "$_env_health_helper"
 
 _env_sources_helper=$(grep -n '_proxy_health.sh' shft/_proxy_env.sh || true)
@@ -336,7 +345,7 @@ echo
 echo "_proxy_env.sh — python shim guard"
 echo "────────────────────────────────────────────────"
 
-_env_get_fn=$(sed -n '/^_proxy_env_get()/,/^}/p' shft/_proxy_env.sh)
+_env_get_fn=$(extract_function shft/_proxy_env.sh _proxy_env_get)
 assert_contains "validates python3 with --version" "python3 --version" "$_env_get_fn"
 assert_contains "validates python with --version" "python --version" "$_env_get_fn"
 assert_contains "prefers jq first" "command -v jq" "$_env_get_fn"
@@ -370,6 +379,88 @@ _afk_lock_decl=$(grep -n '^LOCKDIR=' shft/afk.sh || true)
 assert_contains "afk lockdir consumes SHFT_LOCK_DIR" "SHFT_LOCK_DIR" "$_afk_lock_decl"
 assert_contains "afk lockdir has TMPDIR fallback" '${TMPDIR:-/tmp}/shft-afk.lock' "$_afk_lock_decl"
 assert_not_contains "afk lockdir is not hardcoded static /tmp" 'LOCKDIR="/tmp/shft-afk.lock"' "$_afk_lock_decl"
+
+# ══════════════════════════════════════════════════════════════════════════════
+echo
+echo "AFK process control — run-state, fail-closed proxy, and hard stop"
+echo "────────────────────────────────────────────────"
+
+_shft_constants=$(sed -n '/^# ── Constants/,/^# ── Helper functions/p' shft/shft)
+assert_contains "shft defines run-state file" "RUN_STATE_FILE" "$_shft_constants"
+assert_contains "shft run-state file is repo-scoped" 'shft-run-${_SHFT_LOCK_ID}.json' "$_shft_constants"
+assert_not_contains "shft run-state file is not global" 'shft-run.json' "$_shft_constants"
+
+_running_fn=$(extract_function shft/shft _shft_running)
+assert_contains "running checks run-state worker pid" "worker_pid" "$_running_fn"
+assert_contains "running still checks lock dir" "LOCK_DIR" "$_running_fn"
+assert_contains "running scopes pid fallback to tracked lock" '_tracked_lock_dir" == "$LOCK_DIR' "$_running_fn"
+
+_run_state_get_fn=$(extract_function shft/shft _run_state_get)
+assert_contains "run-state get has grep fallback" "_run_state_get_grep" "$_run_state_get_fn"
+assert_contains "run-state python parse failure exits non-zero" "sys.exit(1)" "$_run_state_get_fn"
+
+_run_state_set_fn=$(extract_function shft/shft _run_state_set)
+assert_contains "run-state set has jq fallback" "command -v jq" "$_run_state_set_fn"
+assert_contains "run-state set has shell fallback" "_escaped_value" "$_run_state_set_fn"
+assert_contains "run-state set preserves existing state without json merger" '[[ -f "$RUN_STATE_FILE" ]]' "$_run_state_set_fn"
+assert_contains "run-state set warns when update skipped" "Run-state update skipped" "$_run_state_set_fn"
+
+_kill_tree_fn=$(extract_function shft/shft _kill_afk_tree)
+assert_contains "kill tree escalates to SIGKILL" "kill -KILL" "$_kill_tree_fn"
+assert_contains "kill tree verifies live pids" "kill -0" "$_kill_tree_fn"
+
+_collect_descendants_fn=$(extract_function shft/shft _collect_descendant_pids)
+assert_contains "descendant collector filters non-numeric ps rows" 'pid !~ /^[0-9]+$/' "$_collect_descendants_fn"
+assert_contains "descendant collector builds child table once" "children[ppid]" "$_collect_descendants_fn"
+assert_contains "descendant collector walks descendants in awk" "stack_len" "$_collect_descendants_fn"
+assert_not_contains "descendant collector does not recurse through ps" 'while IFS= read' "$_collect_descendants_fn"
+
+_validate_fn=$(extract_function shft/shft _validate_afk)
+assert_contains "proxy down fails closed" "AFK will not start" "$_validate_fn"
+assert_contains "proxy validation exits non-zero" "exit 1" "$_validate_fn"
+
+_stop_block=$(sed -n '/^    stop)/,/^        ;;$/p' shft/shft)
+assert_contains "stop supports --kill" "--kill" "$_stop_block"
+assert_contains "stop delegates to kill tree" "_kill_afk_tree" "$_stop_block"
+assert_contains "stop kill fails non-zero when kill tree fails" "exit 1" "$_stop_block"
+assert_contains "stop uses tracked lock dir" "lock_dir" "$_stop_block"
+assert_contains "stop removes tracked lock dir" 'rmdir "$_lock_dir"' "$_stop_block"
+assert_contains "graceful stop mentions hard kill" "shft stop --kill" "$_stop_block"
+
+_status_block=$(sed -n '/^    status)/,/^        ;;$/p' shft/shft)
+assert_contains "status shows worker pid" "Worker:" "$_status_block"
+assert_contains "status detects orphaned process" "orphaned AFK process" "$_status_block"
+assert_contains "status displays tracked lock when scoped lock missing" "_display_lock_dir=\"\$_tracked_lock_dir\"" "$_status_block"
+
+_afk_command_block=$(sed -n '/^    afk)/,/^        ;;$/p' shft/shft)
+assert_contains "shft passes scoped run-state to afk" "SHFT_RUN_STATE_FILE" "$_afk_command_block"
+
+_afk_state_writes=$(grep -n '_run_state_set' shft/afk.sh || true)
+assert_contains "afk records worker pid" "worker_pid" "$_afk_state_writes"
+assert_contains "afk records current iteration" "current_iteration" "$_afk_state_writes"
+assert_contains "afk records stderr log" "current_stderr_log" "$_afk_state_writes"
+
+_afk_run_state_decl=$(grep -n 'RUN_STATE_FILE=' shft/afk.sh || true)
+assert_contains "afk consumes injected run-state file" "SHFT_RUN_STATE_FILE" "$_afk_run_state_decl"
+assert_contains "afk run-state fallback derives from lock" "_RUN_STATE_ID" "$_afk_run_state_decl"
+assert_not_contains "afk run-state file is not global" 'shft-run.json' "$_afk_run_state_decl"
+
+_afk_loop_block=$(sed -n '/^for i in /,/^done/p' shft/afk.sh)
+assert_contains "afk checks lock between iterations" '[[ ! -d "$LOCKDIR" ]]' "$_afk_loop_block"
+
+_afk_cleanup_fn=$(extract_function shft/afk.sh _cleanup_afk)
+assert_contains "afk cleanup stops ticker" "_stop_ticker" "$_afk_cleanup_fn"
+assert_contains "afk cleanup removes raw output" "raw_output" "$_afk_cleanup_fn"
+_afk_exit_traps=$(grep -n "trap .*EXIT" shft/afk.sh || true)
+assert_contains "afk has single cleanup exit trap" "_cleanup_afk" "$_afk_exit_traps"
+_afk_exit_trap_count=$(printf '%s\n' "$_afk_exit_traps" | grep -c 'trap ' || true)
+assert_eq "afk has exactly one EXIT trap" "1" "$_afk_exit_trap_count"
+
+_afk_log_writes=$(grep -n '_log_afk' shft/afk.sh || true)
+assert_contains "afk writes lifecycle log" "afk started" "$_afk_log_writes"
+
+_run_with_secrets_syntax=$(grep -n 'expected KEY=value assignment' bin/run-with-secrets.sh || true)
+assert_contains "run-with-secrets validates assignment syntax" "expected KEY=value assignment" "$_run_with_secrets_syntax"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Summary
