@@ -91,10 +91,6 @@ pkg.scripts = {
   ...pkg.scripts,
   test: 'echo "Vendored Sandcastle engine excludes test files; run pnpm run typecheck to validate runtime sources."',
 };
-pkg.pnpm = {
-    ...pkg.pnpm,
-    onlyBuiltDependencies: ["@parcel/watcher", "esbuild", "msgpackr-extract"],
-};
 
 process.stdout.write(`${JSON.stringify(pkg, null, 2)}\n`);
 NODE
