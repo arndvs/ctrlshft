@@ -95,6 +95,7 @@ LEGACY_LOCK_DIR="$LOCK_BASE_DIR/shft-afk.lock"
 WORKING_DIR="$DOTFILES/working"
 LOG_FILE="$WORKING_DIR/shft.log"
 STATE_FILE="$WORKING_DIR/shft-state.json"
+RUN_STATE_FILE="$WORKING_DIR/shft-run-${_SHFT_LOCK_ID}.json"
 PLAN_FILE="$WORKING_DIR/plan.md"
 
 # Proxy state (global — shared across all projects)
@@ -114,7 +115,147 @@ source "$SHFT_DIR/_proxy_health.sh"
 
 # Check if an AFK loop is currently running
 _shft_running() {
-    [[ -d "$LOCK_DIR" ]] && return 0 || return 1
+    if [[ -d "$LOCK_DIR" ]]; then
+        return 0
+    fi
+
+    local _pid _tracked_lock_dir
+    _pid=$(_run_state_get "worker_pid")
+    _tracked_lock_dir=$(_run_state_get "lock_dir")
+    if [[ -n "$_pid" ]] \
+       && [[ -z "$_tracked_lock_dir" || "$_tracked_lock_dir" == "$LOCK_DIR" ]] \
+       && kill -0 "$_pid" 2>/dev/null; then
+        return 0
+    fi
+
+    return 1
+}
+
+_run_state_get() {
+    local field="$1"
+    if [[ ! -f "$RUN_STATE_FILE" ]]; then
+        return 0
+    fi
+    _run_state_get_grep() {
+        grep -o "\"$field\" *: *[^,}]*" "$RUN_STATE_FILE" 2>/dev/null | sed 's/^[^:]*: *//; s/^ *//; s/ *$//' | tr -d '"\r' || true
+    }
+    if [[ -n "$SHFT_PYTHON" ]]; then
+        local _value
+        if _value=$("$SHFT_PYTHON" - "$RUN_STATE_FILE" "$field" <<'PYEOF'
+import json, sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+    value = data.get(sys.argv[2], "")
+    print(value if value is not None else "")
+except Exception:
+    sys.exit(1)
+PYEOF
+        ); then
+            printf '%s\n' "$_value"
+        else
+            _run_state_get_grep
+        fi
+    else
+        _run_state_get_grep
+    fi
+}
+
+_run_state_set() {
+    local field="$1" value="$2"
+    mkdir -p "$WORKING_DIR"
+    if [[ -n "$SHFT_PYTHON" ]]; then
+        "$SHFT_PYTHON" - "$RUN_STATE_FILE" "$field" "$value" <<'PYEOF'
+import json, os, sys
+path, field, value = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    data = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
+except Exception:
+    data = {}
+if value.isdigit():
+    value = int(value)
+data[field] = value
+json.dump(data, open(path, "w", encoding="utf-8"), indent=2)
+PYEOF
+    elif command -v jq &>/dev/null; then
+        if [[ -f "$RUN_STATE_FILE" ]] \
+           && jq --arg f "$field" --arg v "$value" '.[$f] = ($v | tonumber? // $v)' "$RUN_STATE_FILE" > "${RUN_STATE_FILE}.tmp"; then
+            mv "${RUN_STATE_FILE}.tmp" "$RUN_STATE_FILE"
+        else
+            rm -f "${RUN_STATE_FILE}.tmp" 2>/dev/null || true
+            jq -n --arg f "$field" --arg v "$value" '{($f): ($v | tonumber? // $v)}' > "$RUN_STATE_FILE"
+        fi
+    else
+        if [[ -f "$RUN_STATE_FILE" ]]; then
+            yellow "Run-state update skipped (no python/jq available): $field"
+            return 0
+        fi
+        local _escaped_value
+        _escaped_value=$(printf '%s' "$value" | sed 's/\\/\\\\/g; s/"/\\"/g')
+        if [[ "$value" =~ ^[0-9]+$ ]]; then
+            printf '{"%s": %s}\n' "$field" "$value" > "$RUN_STATE_FILE"
+        else
+            printf '{"%s": "%s"}\n' "$field" "$_escaped_value" > "$RUN_STATE_FILE"
+        fi
+    fi
+}
+
+_collect_descendant_pids() {
+    local root_pid="$1"
+    ps -ef | awk -v root="$root_pid" '
+        {
+            pid=$2; ppid=$3
+            if (pid !~ /^[0-9]+$/ || ppid !~ /^[0-9]+$/) next
+            children[ppid] = children[ppid] " " pid
+        }
+        END {
+            stack_len = split(children[root], stack, " ")
+            while (stack_len > 0) {
+                pid = stack[stack_len--]
+                if (pid == "") continue
+                print pid
+                child_count = split(children[pid], child_stack, " ")
+                for (i = 1; i <= child_count; i++) {
+                    if (child_stack[i] != "") stack[++stack_len] = child_stack[i]
+                }
+            }
+        }
+    '
+}
+
+_kill_afk_tree() {
+    local _pid
+    _pid=$(_run_state_get "worker_pid")
+    if [[ -z "$_pid" ]] || ! kill -0 "$_pid" 2>/dev/null; then
+        red "No live AFK worker PID found in $RUN_STATE_FILE"
+        return 1
+    fi
+
+    local _pids
+    _pids="$(_collect_descendant_pids "$_pid" | tr '\n' ' ') $_pid"
+    yellow "Killing AFK process tree: $_pids"
+    kill $_pids 2>/dev/null || true
+
+    sleep 1
+
+    local _live_pids="" _candidate
+    for _candidate in $_pids; do
+        if kill -0 "$_candidate" 2>/dev/null; then
+            _live_pids="$_live_pids $_candidate"
+        fi
+    done
+
+    if [[ -n "${_live_pids// }" ]]; then
+        yellow "Force-killing AFK process tree: $_live_pids"
+        kill -KILL $_live_pids 2>/dev/null || true
+        sleep 1
+    fi
+
+    for _candidate in $_pids; do
+        if kill -0 "$_candidate" 2>/dev/null; then
+            red "AFK process still running after kill: $_candidate"
+            return 1
+        fi
+    done
 }
 
 _shft_warn_legacy_lock() {
@@ -314,13 +455,17 @@ _validate_afk() {
             if curl -sf --max-time 2 "http://${_h}:${_port}/health/readiness" > /dev/null 2>&1 || curl -sf --max-time 2 "http://localhost:${_port}/health/readiness" > /dev/null 2>&1; then
                 green "Copilot proxy: healthy (port $_port)"
             else
-                yellow "Copilot proxy: PID exists but health check failed"
-                yellow "  Restart: shft proxy stop && shft proxy start"
+                red "Copilot proxy: PID exists but health check failed"
+                red "  AFK will not start while proxy routing is unhealthy."
+                red "  Restart: shft proxy stop && SHFT_PROXY_HEALTH_WAIT_SECONDS=180 shft proxy start"
+                exit 1
             fi
         else
-            yellow "Copilot proxy enabled but daemon not running"
-            yellow "  Start it: shft proxy start"
-            yellow "  Or disable: shft proxy off"
+            red "Copilot proxy enabled but daemon not running"
+            red "  AFK will not start while proxy routing is enabled but unavailable."
+            red "  Start it: shft proxy start"
+            red "  Or disable: shft proxy off"
+            exit 1
         fi
         echo ""
     fi
@@ -469,6 +614,7 @@ case "$CMD" in
         SHFT_ENGINE="$_engine" \
         SHFT_TARGET_ISSUE="$_target_issue" \
         SHFT_LOCK_DIR="$LOCK_DIR" \
+        SHFT_RUN_STATE_FILE="$RUN_STATE_FILE" \
         SHFT_LEGACY_LOCK_DIR="$LEGACY_LOCK_DIR" \
         bash "$SHFT_DIR/afk.sh" "$_iterations"
         ;;
@@ -483,13 +629,43 @@ case "$CMD" in
         # No `local` here — we're at case scope, not inside a function
         if _shft_running; then
             green "  Loop:      running (AFK)"
-            echo "  Lock:      $LOCK_DIR"
+            _tracked_lock_dir=$(_run_state_get "lock_dir")
+            _display_lock_dir="$LOCK_DIR"
+            if [[ ! -d "$_display_lock_dir" ]] && [[ -n "$_tracked_lock_dir" ]]; then
+                _display_lock_dir="$_tracked_lock_dir"
+            fi
+            echo "  Lock:      $_display_lock_dir"
+
+            _worker_pid=$(_run_state_get "worker_pid")
+            if [[ -n "$_worker_pid" ]]; then
+                if kill -0 "$_worker_pid" 2>/dev/null; then
+                    echo "  Worker:    PID $_worker_pid"
+                else
+                    yellow "  Worker:    stale PID $_worker_pid"
+                fi
+            fi
+
+            _current_iter=$(_run_state_get "current_iteration")
+            [[ -n "$_current_iter" ]] && echo "  Iteration: $_current_iter"
+
+            _stderr_log=$(_run_state_get "current_stderr_log")
+            [[ -n "$_stderr_log" ]] && echo "  Stderr:    $_stderr_log"
 
             _started=$(_shft_state "started_at")
             [[ -n "$_started" ]] && echo "  Started:   $_started"
 
             _max=$(_shft_state "max_iterations")
             [[ -n "$_max" ]] && echo "  Max iters: $_max"
+        elif [[ -f "$RUN_STATE_FILE" ]]; then
+            _worker_pid=$(_run_state_get "worker_pid")
+            if [[ -n "$_worker_pid" ]] && kill -0 "$_worker_pid" 2>/dev/null; then
+                red "  Loop:      orphaned AFK process running"
+                red "  Worker:    PID $_worker_pid"
+                red "  Stop:      shft stop --kill"
+            else
+                yellow "  Loop:      not running (stale run state present)"
+                echo "  State:     $RUN_STATE_FILE"
+            fi
         else
             echo "  Loop:      not running"
             if [[ "$LEGACY_LOCK_DIR" != "$LOCK_DIR" ]] && [[ -d "$LEGACY_LOCK_DIR" ]]; then
@@ -558,6 +734,26 @@ case "$CMD" in
 
     # ── stop ───────────────────────────────────────────────────────────────────
     stop)
+        _kill=false
+        for _arg in "$@"; do
+            case "$_arg" in
+                --kill|--force) _kill=true ;;
+            esac
+        done
+
+        if $_kill; then
+            _lock_dir="$(_run_state_get "lock_dir")"
+            _lock_dir="${_lock_dir:-$LOCK_DIR}"
+            if _kill_afk_tree; then
+                rmdir "$LOCK_DIR" 2>/dev/null || true
+                rmdir "$_lock_dir" 2>/dev/null || true
+                rm -f "$RUN_STATE_FILE" 2>/dev/null || true
+                green "AFK process tree stopped."
+                exit 0
+            fi
+            exit 1
+        fi
+
         if ! _shft_running; then
             yellow "No AFK loop is currently running."
             if [[ "$LEGACY_LOCK_DIR" != "$LOCK_DIR" ]] && [[ -d "$LEGACY_LOCK_DIR" ]]; then
@@ -574,8 +770,18 @@ case "$CMD" in
         echo "  The loop checks for the lock on each iteration boundary."
         echo ""
 
-        rmdir "$LOCK_DIR" 2>/dev/null && green "Lock removed — loop will stop after current iteration." \
-            || red "Could not remove lock at $LOCK_DIR — may need manual cleanup."
+        _lock_dir="$LOCK_DIR"
+        if [[ ! -d "$_lock_dir" ]]; then
+            _tracked_lock_dir="$(_run_state_get "lock_dir")"
+            [[ -n "$_tracked_lock_dir" ]] && _lock_dir="$_tracked_lock_dir"
+        fi
+
+        rmdir "$_lock_dir" 2>/dev/null && green "Lock removed — loop will stop after current iteration." \
+            || red "Could not remove lock at $_lock_dir — may need manual cleanup."
+        if [[ -f "$RUN_STATE_FILE" ]]; then
+            _run_state_set "status" "stopping"
+            yellow "If the current Claude process must stop immediately, run: shft stop --kill"
+        fi
         ;;
 
     # ── log ────────────────────────────────────────────────────────────────────
@@ -1143,6 +1349,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
         echo "  ──────────────────────────────────────────────────────────────"
         echo "  shft status            is a loop running? how many issues open?"
         echo "  shft stop              stop a running AFK loop after current iteration"
+        echo "  shft stop --kill       immediately terminate the tracked AFK process tree"
         echo "  shft log               show last 50 lines of shft log"
         echo "  shft log -f            follow log in real time"
         echo ""

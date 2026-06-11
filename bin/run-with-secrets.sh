@@ -34,6 +34,15 @@ if [[ -f "$_SECRETS_FILE" ]]; then
         red "[run-with-secrets] .env.secrets is empty or could not be parsed" >&2
         exit 1
     fi
+    if ! awk '
+        /^[[:space:]]*$/ || /^[[:space:]]*#/ { next }
+        /^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=/ { next }
+        { printf "line %d: expected KEY=value assignment\n", NR; bad=1 }
+        END { exit bad }
+    ' "$_tmp" >&2; then
+        red "[run-with-secrets] Syntax error in .env.secrets — expected KEY=value assignments" >&2
+        exit 1
+    fi
     set -a
     if ! source "$_tmp"; then
         red "[run-with-secrets] Syntax error in .env.secrets — fix the file" >&2

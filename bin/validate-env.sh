@@ -48,9 +48,39 @@ _recommend() {
     fi
 }
 
+_validate_env_file_syntax() {
+    local file="$1"
+    local label="$2"
+
+    if [[ ! -f "$file" ]]; then
+        return 0
+    fi
+
+    local output
+    if output=$(tr -d '\r' < "$file" | awk '
+        /^[[:space:]]*$/ || /^[[:space:]]*#/ { next }
+        /^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=/ { next }
+        { printf "line %d: expected KEY=value assignment\n", NR; bad=1 }
+        END { exit bad }
+    ' 2>&1); then
+        green "  ✓ $label syntax is sourceable"
+    else
+        red "  ✗ $label has invalid shell env syntax"
+        while IFS= read -r line; do
+            [[ -n "$line" ]] && red "    $line"
+        done <<< "$output"
+        _fail=1
+    fi
+}
+
 echo "================================================"
 echo "Dotfiles Environment Variable Validation"
 echo "================================================"
+
+echo
+echo "Environment File Syntax:"
+_validate_env_file_syntax "$HOME/dotfiles/secrets/.env.agent" "secrets/.env.agent"
+_validate_env_file_syntax "$HOME/dotfiles/secrets/.env.secrets" "secrets/.env.secrets"
 
 # ── Core vars (always checked) ────────────────────────────────────────────────
 echo
