@@ -23,8 +23,9 @@ Check the $ACTIVE_CONTEXTS environment variable (set by ~/dotfiles/bin/detect-co
 - `nextjs` → `~/dotfiles/instructions/nextjs.instructions.md`
 - `php` or `laravel` → `~/dotfiles/instructions/php.instructions.md`
 - `sanity` → `~/dotfiles/instructions/sanity.instructions.md`
+- `expo` or `react-native` → `~/dotfiles/instructions/expo-mobile.instructions.md`
 
-If `$ACTIVE_CONTEXTS` is not set, fall back to checking for file signatures (`next.config.*`, `composer.json`, `sanity.config.*`, etc.) and load the matching instructions above.
+If `$ACTIVE_CONTEXTS` is not set, fall back to checking for file signatures (`next.config.*`, `composer.json`, `sanity.config.*`, `metro.config.*`, etc.) and load the matching instructions above.
 
 Output "Active Context: [list of detected contexts]." to chat (e.g. "Active Context: nextjs, sanity."). If no contexts were detected, output "Active Context: none."
 
