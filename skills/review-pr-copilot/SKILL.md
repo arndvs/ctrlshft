@@ -281,8 +281,9 @@ For every thread that received a "Fixed in ..." reply, resolve it via `mcp_githu
 
 #### 6d. Re-request review
 
-1. **Re-request the review** — call `mcp_github_request_copilot_review` on the PR. If the MCP tool is unavailable or fails, use the GitHub CLI fallback `gh pr edit <N> --add-reviewer "@copilot"`. Do **not** fall back to the raw requested-reviewers REST API with `copilot-pull-request-reviewer`; GitHub rejects that login as a non-collaborator even though the special `@copilot` CLI token works. If both paths fail, surface the PR URL so the user can re-request manually.
-2. **Verify the request landed** — query the PR's `requested_reviewers` (via `gh api repos/<owner>/<repo>/pulls/<N> --jq '.requested_reviewers[].login'` or equivalent MCP call) and confirm `Copilot` appears. If it does not, retry once; if still missing, surface to the user.
+1. **Re-request the review** — call `mcp_github_request_copilot_review` on the PR. If the MCP tool is unavailable or fails, use the GitHub CLI fallback `gh pr edit <N> -R <owner>/<repo> --add-reviewer copilot-pull-request-reviewer`. If both paths fail, surface the PR URL so the user can re-request manually.
+2. **Verify the request landed** — query the PR's direct REST payload and confirm a Copilot reviewer bot login appears in `requested_reviewers` (use `gh api repos/<owner>/<repo>/pulls/<N> --jq '[.requested_reviewers[]?.login] | map(select(. != null)) | any(test("^(Copilot|copilot-pull-request-reviewer)(\\[bot\\])?$"; "i"))'` or equivalent MCP call). GitHub may return `Copilot` or `copilot-pull-request-reviewer[bot]`; use an anchored, case-insensitive match to avoid both false positives and false negatives. Prefer this REST check over `gh pr view --json reviewRequests`, which can omit the Copilot reviewer even when the request landed.
+3. **Never use a comment fallback** — do not post `@copilot review`. On GitHub.com that comment can start the Copilot SWE/cloud-agent task flow (`copilot-swe-agent`) instead of the Copilot Pull Request Reviewer (`copilot-pull-request-reviewer`). That creates a separate Actions-backed task, can fail on unrelated cloud-agent model availability (for example `Model "claude-sonnet-4.5" is not available`), and does not guarantee a PR code review.
 
 #### Completion gate
 
@@ -290,7 +291,7 @@ The round is **not done** until all four sub-steps are verified:
 - [ ] Fixes pushed to remote
 - [ ] Every addressed thread has a "Fixed in ..." reply
 - [ ] Every replied thread is resolved (`isResolved == true`)
-- [ ] Copilot appears in `requested_reviewers`
+- [ ] A Copilot reviewer bot login (e.g. `Copilot` or `copilot-pull-request-reviewer[bot]`) appears in `requested_reviewers`
 
 If any item is missing, complete it before moving to Step 7. Skipping any item leaves the PR in a dead state — threads without replies lose the paper trail, unresolved threads clutter the next review, and a missing re-request means Copilot never re-runs.
 
