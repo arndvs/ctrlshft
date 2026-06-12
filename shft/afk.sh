@@ -116,6 +116,10 @@ _run_state_set "worker_pid" "$$"
 _run_state_set "lock_dir" "$LOCKDIR"
 _run_state_set "max_iterations" "$MAX_ITERATIONS"
 _run_state_set "started_at" "$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")"
+[[ -n "${SHFT_ISOLATED_WORKTREE:-}" ]] && _run_state_set "isolated_worktree" "1"
+[[ -n "${SHFT_WORKTREE_PATH:-}" ]] && _run_state_set "worktree_path" "$SHFT_WORKTREE_PATH"
+[[ -n "${SHFT_WORKTREE_BRANCH:-}" ]] && _run_state_set "worktree_branch" "$SHFT_WORKTREE_BRANCH"
+[[ -n "${SHFT_SOURCE_REPO_ROOT:-}" ]] && _run_state_set "source_repo_root" "$SHFT_SOURCE_REPO_ROOT"
 _log_afk "afk started worker_pid=$$ max_iterations=$MAX_ITERATIONS lock_dir=$LOCKDIR"
 
 if ! "$RUN_WITH_SECRETS" bash "$CTRL_DIR/bin/validate-env.sh" --afk; then

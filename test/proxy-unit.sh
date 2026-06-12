@@ -390,6 +390,9 @@ assert_contains "shft defines run-state file" "RUN_STATE_FILE" "$_shft_constants
 assert_contains "shft run-state file is repo-scoped" 'shft-run-${_SHFT_LOCK_ID}.json' "$_shft_constants"
 assert_not_contains "shft run-state file is not global" 'shft-run.json' "$_shft_constants"
 
+_lock_identity_fn=$(extract_function shft/shft _shft_lock_identity)
+assert_contains "lock identity uses git common dir" "--git-common-dir" "$_lock_identity_fn"
+
 _running_fn=$(extract_function shft/shft _shft_running)
 assert_contains "running checks run-state worker pid" "worker_pid" "$_running_fn"
 assert_contains "running still checks lock dir" "LOCK_DIR" "$_running_fn"
@@ -418,6 +421,41 @@ assert_not_contains "descendant collector does not recurse through ps" 'while IF
 _validate_fn=$(extract_function shft/shft _validate_afk)
 assert_contains "proxy down fails closed" "AFK will not start" "$_validate_fn"
 assert_contains "proxy validation exits non-zero" "exit 1" "$_validate_fn"
+assert_contains "proxy validation waits for readiness" "_proxy_wait_healthy" "$_validate_fn"
+assert_contains "proxy validation honors wait env" "SHFT_PROXY_HEALTH_WAIT_SECONDS" "$_validate_fn"
+
+_dirty_guard_fn=$(extract_function shft/shft _shft_require_clean_for_afk)
+assert_contains "dirty guard explains worktree mode" "shft afk --worktree" "$_dirty_guard_fn"
+_dirty_check_fn=$(extract_function shft/shft _shft_working_tree_dirty)
+assert_contains "dirty check includes untracked files" "git status --porcelain" "$_dirty_check_fn"
+
+_canonical_dir_fn=$(extract_function shft/shft _shft_canonical_dir)
+assert_contains "canonical dir resolves physical path" "cd -P" "$_canonical_dir_fn"
+assert_contains "canonical dir prints physical path" "pwd -P" "$_canonical_dir_fn"
+assert_contains "canonical dir normalizes Windows paths" "cygpath -u" "$_canonical_dir_fn"
+eval "$_canonical_dir_fn"
+_tmp_physical=$(cd -P "$TMP" && pwd -P)
+_tmp_canonical=$(_shft_canonical_dir "$TMP")
+assert_eq "canonical dir resolves absolute temp path" "$_tmp_physical" "$_tmp_canonical"
+if command -v cygpath &>/dev/null; then
+    _tmp_windows_forward=$(cygpath -m "$TMP")
+    _tmp_windows_backslash=$(cygpath -w "$TMP")
+    assert_eq "canonical dir accepts Windows forward-slash path" "$_tmp_physical" "$(_shft_canonical_dir "$_tmp_windows_forward")"
+    assert_eq "canonical dir accepts Windows backslash path" "$_tmp_physical" "$(_shft_canonical_dir "$_tmp_windows_backslash")"
+fi
+
+_create_worktree_fn=$(extract_function shft/shft _shft_create_afk_worktree)
+assert_contains "worktree creation uses git worktree" "git worktree add" "$_create_worktree_fn"
+assert_contains "worktree branch is per run" 'afk/$_branch_suffix' "$_create_worktree_fn"
+assert_contains "targeted worktree branch names issue" 'issue-${_target_issue}' "$_create_worktree_fn"
+assert_contains "worktree branch suffix includes PID uniqueness" '$$' "$_create_worktree_fn"
+assert_contains "worktree lives in runtime lane" "_shft_worktree_base_dir" "$_create_worktree_fn"
+
+_worktrees_remove_fn=$(extract_function shft/shft _shft_worktree_remove)
+assert_contains "worktree remove blocks active run" "Refusing to remove active AFK worktree" "$_worktrees_remove_fn"
+assert_contains "worktree remove canonicalizes requested path" '_canonical_path="$(_shft_canonical_dir "$_path")"' "$_worktrees_remove_fn"
+assert_contains "worktree remove canonicalizes active path" '_canonical_active_worktree="$(_shft_canonical_dir "$_active_worktree"' "$_worktrees_remove_fn"
+assert_contains "worktree remove protects dirty trees" "status --porcelain" "$_worktrees_remove_fn"
 
 _stop_block=$(sed -n '/^    stop)/,/^        ;;$/p' shft/shft)
 assert_contains "stop supports --kill" "--kill" "$_stop_block"
@@ -431,14 +469,27 @@ _status_block=$(sed -n '/^    status)/,/^        ;;$/p' shft/shft)
 assert_contains "status shows worker pid" "Worker:" "$_status_block"
 assert_contains "status detects orphaned process" "orphaned AFK process" "$_status_block"
 assert_contains "status displays tracked lock when scoped lock missing" "_display_lock_dir=\"\$_tracked_lock_dir\"" "$_status_block"
+assert_contains "status shows AFK worktree path" "Worktree:" "$_status_block"
+assert_contains "status shows AFK worktree branch" "Branch:" "$_status_block"
 
 _afk_command_block=$(sed -n '/^    afk)/,/^        ;;$/p' shft/shft)
 assert_contains "shft passes scoped run-state to afk" "SHFT_RUN_STATE_FILE" "$_afk_command_block"
+assert_contains "afk supports worktree flag" "--worktree" "$_afk_command_block"
+assert_contains "afk current checkout dirty guard" "_shft_require_clean_for_afk" "$_afk_command_block"
+assert_contains "afk creates isolated worktree" "_shft_create_afk_worktree" "$_afk_command_block"
+assert_contains "afk passes isolated flag" "SHFT_ISOLATED_WORKTREE" "$_afk_command_block"
+assert_contains "afk runs from selected cwd" 'cd "$_afk_cwd"' "$_afk_command_block"
+
+_worktrees_block=$(sed -n '/^    worktrees|worktree)/,/^        ;;$/p' shft/shft)
+assert_contains "worktrees command lists" "_shft_worktrees_list" "$_worktrees_block"
+assert_contains "worktrees command removes" "_shft_worktree_remove" "$_worktrees_block"
 
 _afk_state_writes=$(grep -n '_run_state_set' shft/afk.sh || true)
 assert_contains "afk records worker pid" "worker_pid" "$_afk_state_writes"
 assert_contains "afk records current iteration" "current_iteration" "$_afk_state_writes"
 assert_contains "afk records stderr log" "current_stderr_log" "$_afk_state_writes"
+assert_contains "afk records worktree path" "worktree_path" "$_afk_state_writes"
+assert_contains "afk records worktree branch" "worktree_branch" "$_afk_state_writes"
 
 _afk_run_state_decl=$(grep -n 'RUN_STATE_FILE=' shft/afk.sh || true)
 assert_contains "afk consumes injected run-state file" "SHFT_RUN_STATE_FILE" "$_afk_run_state_decl"
@@ -458,6 +509,17 @@ assert_eq "afk has exactly one EXIT trap" "1" "$_afk_exit_trap_count"
 
 _afk_log_writes=$(grep -n '_log_afk' shft/afk.sh || true)
 assert_contains "afk writes lifecycle log" "afk started" "$_afk_log_writes"
+
+_build_prompt_text=$(cat shft/_build_prompt.sh)
+assert_contains "prompt builder has worktree directive" "Isolated AFK Worktree Mode" "$_build_prompt_text"
+assert_contains "prompt builder keeps one branch per run" "Later issues in this AFK run may depend" "$_build_prompt_text"
+
+_help_block=$(sed -n '/^    help|--help|-h)/,/^        ;;$/p' shft/shft)
+assert_contains "help documents worktree AFK" "shft afk --worktree" "$_help_block"
+assert_contains "help documents worktrees command" "shft worktrees" "$_help_block"
+
+_gitignore_runtime=$(grep -n 'working/runtime/afk-worktrees' .gitignore || true)
+assert_contains "AFK worktrees are ignored" "working/runtime/afk-worktrees" "$_gitignore_runtime"
 
 _run_with_secrets_syntax=$(grep -n 'expected KEY=value assignment' bin/run-with-secrets.sh || true)
 assert_contains "run-with-secrets validates assignment syntax" "expected KEY=value assignment" "$_run_with_secrets_syntax"

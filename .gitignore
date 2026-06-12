@@ -77,9 +77,11 @@ shft/research/
 working/runtime/
 working/tmp/
 working/logs/
+working/runtime/afk-worktrees/
 # Generated state and log patterns (loose files during migration)
 working/*.log
 working/*.jsonl
 working/shft-state.json
+working/shft-run-*.json
 working/active-client.md
 working/afk-iter-*-stderr.log

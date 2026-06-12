@@ -50,6 +50,21 @@ PRIORITY OVERRIDE: You MUST work on issue #${SHFT_TARGET_ISSUE} first. Skip task
 "
 fi
 
+_worktree_directive=""
+if [[ -n "${SHFT_ISOLATED_WORKTREE:-}" ]]; then
+    _worktree_directive="
+## Isolated AFK Worktree Mode
+
+You are running in an isolated git worktree for AFK execution.
+
+- Work only in this current worktree: ${SHFT_WORKTREE_PATH:-$PWD}
+- Stay on this AFK branch for the whole run: ${SHFT_WORKTREE_BRANCH:-unknown}
+- Later issues in this AFK run may depend on commits from earlier issues; build on the existing branch history instead of creating a new branch per issue.
+- When completing an issue, include the AFK branch name and final commit SHA in the issue comment/closure note so the human can inspect or promote the branch later.
+- Do NOT navigate back to the source checkout: ${SHFT_SOURCE_REPO_ROOT:-unknown}
+"
+fi
+
 PROMPT="<github-issues>
 $issues
 </github-issues>
@@ -58,10 +73,11 @@ $issues
 $PREVIOUS_COMMITS
 </previous-commits>
 ${_target_directive}
-$(cat "$SCRIPT_DIR/prompt.md")"
+$(cat "$SCRIPT_DIR/prompt.md")
+${_worktree_directive}"
 
 # Clean up internal variables — only PROMPT and PROMPT_FILE should leak to caller
-unset PREVIOUS_COMMITS issues _target_directive _repo_slug
+unset PREVIOUS_COMMITS issues _target_directive _worktree_directive _repo_slug
 
 # Write prompt to a temp file to avoid ARG_MAX limits on large backlogs
 PROMPT_FILE=$(mktemp /tmp/shft-prompt.XXXXXX)
