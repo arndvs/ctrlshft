@@ -15,8 +15,10 @@ The autonomous execution side of ctrl+shft. `ctrl` manages your environment; `sh
 |---------|---------|
 | `shft run` | Start a HITL session |
 | `shft afk [n]` | Start an AFK loop (`n` iterations, default 5) |
+| `shft afk --worktree [n]` | Start AFK in an isolated git worktree/branch so the IDE checkout stays untouched |
 | `shft status` | Show loop state, open issues, plan progress |
 | `shft stop` | Signal the AFK loop to stop after current iteration |
+| `shft worktrees` | List or remove AFK-created git worktrees |
 | `shft log [-f]` | Show recent log entries (`-f` to follow) |
 | `shft issues` | List open GitHub issues sorted by priority |
 | `shft next` | Show the next issue to work on |
@@ -221,5 +223,7 @@ Validation rules include:
 
 - AFK mode uses **short-lived GitHub App tokens** minted per iteration via `bin/mint_github_app_token.py`
 - **Repo-scoped lock directory** (`${TMPDIR:-/tmp}/shft-afk-<repo-hash>.lock`) prevents concurrent AFK loops per repository; legacy `/tmp/shft-afk.lock` is detected and surfaced as a warning
+- By default, local `shft afk` edits the current checkout and refuses to start on a dirty working tree unless `--force` is passed. Use `shft afk --worktree` when you want to keep working in the IDE while AFK runs.
+- `shft afk --worktree` creates one isolated git worktree and branch for the AFK run. Multiple issues in the same run share that branch, so dependent follow-up work can build on earlier AFK commits. `shft status` shows the active worktree and branch, and `shft worktrees` lists/removes AFK-created worktrees after review.
 - AFK invokes Claude with `--dangerously-skip-permissions`; on Linux/macOS it typically runs inside the Docker-backed `srt` sandbox, but on WSL/MSYS it runs unsandboxed with an explicit warning (deny rules still apply)
 - The TypeScript engine currently uses `noSandbox()` on all platforms; Docker-backed sandboxing is not yet wired in

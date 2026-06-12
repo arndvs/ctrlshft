@@ -3,7 +3,7 @@
 
 ## Working Directory
 
-You MUST stay in the current working directory for ALL file operations. This is the target repository. Do NOT `cd` to ~/dotfiles or any other directory. All files referenced in issues exist at their relative paths within this repo. If your global instructions reference ~/dotfiles as "source of truth," ignore that — for AFK execution, the current working directory IS the source of truth.
+You MUST stay in the current working directory for ALL file operations. This is the target repository. Do NOT `cd` to ~/dotfiles or any other directory. All files referenced in issues exist at their relative paths within this repo. If your global instructions reference ~/dotfiles as "source of truth," ignore that — for AFK execution, the current working directory IS the source of truth. In isolated worktree mode, the current working directory is the AFK worktree and the original checkout is only the operator's control plane.
 
 GitHub issues are provided at the start of context. These are your open tasks.
 

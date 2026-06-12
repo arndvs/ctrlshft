@@ -86,9 +86,29 @@ PYEOF
     fi
 }
 
+_shft_lock_identity() {
+    local _root="$1" _common_dir=""
+    _common_dir=$(git -C "$_root" rev-parse --git-common-dir 2>/dev/null || true)
+    if [[ -z "$_common_dir" ]]; then
+        printf '%s\n' "$_root"
+        return 0
+    fi
+
+    case "$_common_dir" in
+        /*|[A-Za-z]:/*) ;;
+        *) _common_dir="$_root/$_common_dir" ;;
+    esac
+
+    if [[ -d "$_common_dir" ]]; then
+        (cd -P "$_common_dir" 2>/dev/null && pwd -P) || printf '%s\n' "$_common_dir"
+    else
+        printf '%s\n' "$_common_dir"
+    fi
+}
+
 # ── Constants ─────────────────────────────────────────────────────────────────
 _SHFT_REPO_ROOT="$(_shft_repo_root)"
-_SHFT_LOCK_ID="$(_shft_hash_path "$_SHFT_REPO_ROOT" | tr -d '\r\n' | cut -c1-12)"
+_SHFT_LOCK_ID="$(_shft_hash_path "$(_shft_lock_identity "$_SHFT_REPO_ROOT")" | tr -d '\r\n' | cut -c1-12)"
 LOCK_BASE_DIR="${TMPDIR:-/tmp}"
 LOCK_DIR="$LOCK_BASE_DIR/shft-afk-${_SHFT_LOCK_ID}.lock"
 LEGACY_LOCK_DIR="$LOCK_BASE_DIR/shft-afk.lock"
@@ -265,6 +285,170 @@ _shft_warn_legacy_lock() {
         yellow "  If no old loop is running, remove it: rmdir $LEGACY_LOCK_DIR"
         echo ""
     fi
+}
+
+_shft_worktree_safe_name() {
+    printf '%s' "$1" \
+    | sed -E 's#[/[:space:]:]+#-#g; s/[^A-Za-z0-9._-]+/-/g; s/^-+//; s/-+$//; s/-+/-/g'
+}
+
+_shft_worktree_base_dir() {
+    printf '%s\n' "$WORKING_DIR/runtime/afk-worktrees"
+}
+
+_shft_canonical_dir() {
+    local _path="$1"
+    if command -v cygpath &>/dev/null; then
+        _path="$(cygpath -u "$_path" 2>/dev/null || printf '%s\n' "$_path")"
+    fi
+    (cd -P "$_path" 2>/dev/null && pwd -P)
+}
+
+_shft_working_tree_dirty() {
+    git diff --quiet --ignore-submodules -- 2>/dev/null || return 0
+    git diff --cached --quiet --ignore-submodules -- 2>/dev/null || return 0
+    [[ -n "$(git status --porcelain --untracked-files=normal 2>/dev/null)" ]]
+}
+
+_shft_require_clean_for_afk() {
+    if _shft_working_tree_dirty; then
+        red "Current checkout has uncommitted changes."
+        red "  AFK current-checkout mode can edit and commit your IDE work."
+        echo ""
+        echo "  Safer:  shft afk --worktree"
+        echo "  Or:     commit/stash your work, then rerun shft afk"
+        echo "  Bypass: shft afk --force   (keeps current risky behavior)"
+        exit 1
+    fi
+}
+
+_shft_current_ref() {
+    local _branch
+    _branch=$(git branch --show-current 2>/dev/null || true)
+    if [[ -n "$_branch" ]]; then
+        printf '%s\n' "$_branch"
+    else
+        git rev-parse --verify HEAD 2>/dev/null
+    fi
+}
+
+_shft_create_afk_worktree() {
+    local _target_issue="$1" _base_ref _timestamp _run_unique _repo_name _branch_suffix _branch _path_name _path
+    _base_ref="$(_shft_current_ref)" || {
+        red "Unable to resolve current git ref for AFK worktree."
+        exit 1
+    }
+    _timestamp=$(date -u +%Y%m%d-%H%M%S)
+    _run_unique="${_timestamp}-$$"
+    _repo_name="$(_shft_worktree_safe_name "$(basename "$_SHFT_REPO_ROOT")")"
+
+    if [[ -n "$_target_issue" ]]; then
+        _branch_suffix="issue-${_target_issue}-${_run_unique}-${_SHFT_LOCK_ID}"
+    else
+        _branch_suffix="run-${_run_unique}-${_SHFT_LOCK_ID}"
+    fi
+
+    _branch="afk/$_branch_suffix"
+    _path_name="$(_shft_worktree_safe_name "${_repo_name}-${_branch_suffix}")"
+    _path="$(_shft_worktree_base_dir)/$_path_name"
+
+    if git show-ref --verify --quiet "refs/heads/$_branch"; then
+        red "AFK branch already exists: $_branch"
+        echo "  Remove or continue it manually before starting a new isolated run."
+        exit 1
+    fi
+    if [[ -e "$_path" ]]; then
+        red "AFK worktree path already exists: $_path"
+        echo "  Remove stale worktree/path before starting a new isolated run."
+        exit 1
+    fi
+
+    mkdir -p "$(_shft_worktree_base_dir)"
+    git worktree add -b "$_branch" "$_path" "$_base_ref" >/dev/null || {
+        red "Failed to create AFK worktree."
+        echo "  Branch: $_branch"
+        echo "  Path:   $_path"
+        exit 1
+    }
+
+    _AFK_WORKTREE_PATH="$_path"
+    _AFK_WORKTREE_BRANCH="$_branch"
+    _AFK_WORKTREE_BASE_REF="$_base_ref"
+}
+
+_shft_worktrees_list() {
+    local _base
+    _base="$(_shft_worktree_base_dir)"
+    if [[ ! -d "$_base" ]]; then
+        yellow "No AFK worktrees found."
+        return 0
+    fi
+
+    git worktree list --porcelain 2>/dev/null \
+        | awk -v base="$_base" '
+            /^worktree / { wt=substr($0, 10); next }
+            /^branch / { br=substr($0, 8); if (index(wt, base) == 1) { sub("refs/heads/", "", br); printf "  %s\n    branch: %s\n", wt, br } }
+        '
+}
+
+_shft_worktree_remove() {
+    local _force=false _path="" _arg _base _canonical_base _active_worktree _canonical_path _canonical_active_worktree
+    for _arg in "$@"; do
+        case "$_arg" in
+            --force|-f) _force=true ;;
+            *) _path="$_arg" ;;
+        esac
+    done
+
+    if [[ -z "$_path" ]]; then
+        red "Usage: shft worktrees remove <path> [--force]"
+        exit 1
+    fi
+    if [[ ! -d "$_path" ]]; then
+        red "Worktree path not found: $_path"
+        exit 1
+    fi
+
+    _canonical_path="$(_shft_canonical_dir "$_path")" || {
+        red "Unable to resolve worktree path: $_path"
+        exit 1
+    }
+
+    _base="$(_shft_worktree_base_dir)"
+    _canonical_base="$(_shft_canonical_dir "$_base" 2>/dev/null || printf '%s\n' "$_base")"
+    case "$_canonical_path" in
+        "$_canonical_base"/*) ;;
+        *)
+            red "Refusing to remove non-AFK worktree: $_canonical_path"
+            echo "  Only worktrees under $_canonical_base are managed by shft."
+            exit 1
+            ;;
+    esac
+
+
+    _active_worktree=$(_run_state_get "worktree_path")
+    _canonical_active_worktree=""
+    if [[ -n "$_active_worktree" ]]; then
+        _canonical_active_worktree="$(_shft_canonical_dir "$_active_worktree" 2>/dev/null || true)"
+    fi
+    if [[ -n "$_canonical_active_worktree" ]] && [[ "$_canonical_active_worktree" == "$_canonical_path" ]] && _shft_running; then
+        red "Refusing to remove active AFK worktree: $_canonical_path"
+        echo "  Stop it first: shft stop"
+        exit 1
+    fi
+
+    if ! $_force && [[ -n "$(git -C "$_canonical_path" status --porcelain 2>/dev/null)" ]]; then
+        red "Worktree has uncommitted changes: $_canonical_path"
+        echo "  Review/commit them, or rerun with --force."
+        exit 1
+    fi
+
+    if $_force; then
+        git worktree remove --force "$_canonical_path"
+    else
+        git worktree remove "$_canonical_path"
+    fi
+    green "Removed AFK worktree: $_canonical_path"
 }
 
 # Get current shft state from state file
@@ -451,8 +635,8 @@ _validate_afk() {
         if _proxy_running; then
             _port=$(_proxy_get "port")
             _port="${_port:-$PROXY_DEFAULT_PORT}"
-            _h=$( (ip route 2>/dev/null || true) | awk '/default/{print $3; exit}'); _h="${_h:-localhost}"
-            if curl -sf --max-time 2 "http://${_h}:${_port}/health/readiness" > /dev/null 2>&1 || curl -sf --max-time 2 "http://localhost:${_port}/health/readiness" > /dev/null 2>&1; then
+            _health_wait_seconds="${SHFT_PROXY_HEALTH_WAIT_SECONDS:-30}"
+            if _proxy_wait_healthy "$_port" "$_health_wait_seconds"; then
                 green "Copilot proxy: healthy (port $_port)"
             else
                 red "Copilot proxy: PID exists but health check failed"
@@ -538,6 +722,7 @@ case "$CMD" in
         # Parse iteration count (first non-flag arg, or default)
         _iterations=5
         _force=false
+        _use_worktree=false
         _target_issue=""
         _next_is_issue=false
         for _arg in "$@"; do
@@ -548,6 +733,7 @@ case "$CMD" in
             fi
             case "$_arg" in
                 --force|-f) _force=true ;;
+                --worktree|--isolated) _use_worktree=true ;;
                 --issue)    _next_is_issue=true ;;
                 --issue=*)  _target_issue="${_arg#--issue=}" ;;
                 [0-9]*)     _iterations="$_arg" ;;
@@ -567,6 +753,10 @@ case "$CMD" in
         fi
 
         _require_gh
+        if [[ "$_use_worktree" == false ]] && [[ "$_force" == false ]]; then
+            _shft_require_clean_for_afk
+        fi
+
         # srt + Docker only required when not on WSL/MSYS (those use plain claude)
         _has_sandbox=true
         if ! grep -qi microsoft /proc/version 2>/dev/null && [[ "$(uname -o 2>/dev/null)" != "Msys" ]]; then
@@ -588,12 +778,32 @@ case "$CMD" in
             echo ""
         fi
 
+        _afk_cwd="$PWD"
+        _afk_worktree_path=""
+        _afk_worktree_branch=""
+        _afk_worktree_base_ref=""
+        if [[ "$_use_worktree" == true ]]; then
+            _shft_create_afk_worktree "$_target_issue"
+            _afk_cwd="$_AFK_WORKTREE_PATH"
+            _afk_worktree_path="$_AFK_WORKTREE_PATH"
+            _afk_worktree_branch="$_AFK_WORKTREE_BRANCH"
+            _afk_worktree_base_ref="$_AFK_WORKTREE_BASE_REF"
+        fi
+
         green "shft afk — AFK mode ($_iterations iterations max)"
         echo ""
         if [[ "$_has_sandbox" == true ]]; then
             echo "  Claude runs in a Docker sandbox."
         else
             yellow "  Claude runs WITHOUT a sandbox (no containment)."
+        fi
+        if [[ "$_use_worktree" == true ]]; then
+            green "  Git worktree isolation enabled."
+            echo "  Worktree: $_afk_worktree_path"
+            echo "  Branch:   $_afk_worktree_branch"
+            echo "  Base ref: $_afk_worktree_base_ref"
+        else
+            yellow "  AFK edits this checkout. Do not edit it in your IDE while AFK runs."
         fi
         echo "  Picks issues, implements, commits, closes, repeats."
         echo "  Exits when backlog is empty or $_iterations iterations reached."
@@ -606,17 +816,26 @@ case "$CMD" in
         _shft_state_set "mode" "afk"
         _shft_state_set "max_iterations" "$_iterations"
         _shft_state_set "started_at" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+        [[ -n "$_afk_worktree_path" ]] && _shft_state_set "worktree_path" "$_afk_worktree_path"
+        [[ -n "$_afk_worktree_branch" ]] && _shft_state_set "worktree_branch" "$_afk_worktree_branch"
 
         # Resolve engine: explicit env var > state file > default (bash)
         _engine="${SHFT_ENGINE:-$(_shft_state "engine")}"
         _engine="${_engine:-bash}"
 
-        SHFT_ENGINE="$_engine" \
-        SHFT_TARGET_ISSUE="$_target_issue" \
-        SHFT_LOCK_DIR="$LOCK_DIR" \
-        SHFT_RUN_STATE_FILE="$RUN_STATE_FILE" \
-        SHFT_LEGACY_LOCK_DIR="$LEGACY_LOCK_DIR" \
-        bash "$SHFT_DIR/afk.sh" "$_iterations"
+        (
+            cd "$_afk_cwd"
+            SHFT_ENGINE="$_engine" \
+            SHFT_TARGET_ISSUE="$_target_issue" \
+            SHFT_LOCK_DIR="$LOCK_DIR" \
+            SHFT_RUN_STATE_FILE="$RUN_STATE_FILE" \
+            SHFT_LEGACY_LOCK_DIR="$LEGACY_LOCK_DIR" \
+            SHFT_ISOLATED_WORKTREE="$([[ "$_use_worktree" == true ]] && printf '1' || printf '')" \
+            SHFT_WORKTREE_PATH="$_afk_worktree_path" \
+            SHFT_WORKTREE_BRANCH="$_afk_worktree_branch" \
+            SHFT_SOURCE_REPO_ROOT="$_SHFT_REPO_ROOT" \
+            bash "$SHFT_DIR/afk.sh" "$_iterations"
+        )
         ;;
 
     # ── status ─────────────────────────────────────────────────────────────────
@@ -650,6 +869,12 @@ case "$CMD" in
 
             _stderr_log=$(_run_state_get "current_stderr_log")
             [[ -n "$_stderr_log" ]] && echo "  Stderr:    $_stderr_log"
+
+            _worktree_path=$(_run_state_get "worktree_path")
+            [[ -n "$_worktree_path" ]] && echo "  Worktree:  $_worktree_path"
+
+            _worktree_branch=$(_run_state_get "worktree_branch")
+            [[ -n "$_worktree_branch" ]] && echo "  Branch:    $_worktree_branch"
 
             _started=$(_shft_state "started_at")
             [[ -n "$_started" ]] && echo "  Started:   $_started"
@@ -782,6 +1007,25 @@ case "$CMD" in
             _run_state_set "status" "stopping"
             yellow "If the current Claude process must stop immediately, run: shft stop --kill"
         fi
+        ;;
+
+    # ── worktrees ──────────────────────────────────────────────────────────────
+    worktrees|worktree)
+        _sub="${1:-list}"
+        shift 2>/dev/null || true
+        case "$_sub" in
+            list|ls|"")
+                _shft_worktrees_list
+                ;;
+            remove|rm)
+                _shft_worktree_remove "$@"
+                ;;
+            *)
+                red "Unknown worktrees subcommand: $_sub"
+                echo "  Usage: shft worktrees [list|remove <path> [--force]]"
+                exit 1
+                ;;
+        esac
         ;;
 
     # ── log ────────────────────────────────────────────────────────────────────
@@ -1343,6 +1587,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
         echo "  shft run               HITL — runs once while you watch"
         echo "  shft afk               AFK  — autonomous loop (default 5 iterations)"
         echo "  shft afk <n>           AFK  — specify iteration count"
+        echo "  shft afk --worktree    AFK  — run in an isolated git worktree"
         echo "  shft afk --force       AFK  — skip pre-flight validation"
         echo ""
         echo "  Monitoring"
@@ -1350,6 +1595,8 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
         echo "  shft status            is a loop running? how many issues open?"
         echo "  shft stop              stop a running AFK loop after current iteration"
         echo "  shft stop --kill       immediately terminate the tracked AFK process tree"
+        echo "  shft worktrees         list AFK-created git worktrees"
+        echo "  shft worktrees remove  remove an AFK worktree by path"
         echo "  shft log               show last 50 lines of shft log"
         echo "  shft log -f            follow log in real time"
         echo ""
