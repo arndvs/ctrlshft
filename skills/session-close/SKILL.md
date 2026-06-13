@@ -193,6 +193,6 @@ Be direct. If something was skipped, say so. The verdict is authoritative — re
 
 If the session is ending due to context pressure, after the report:
 
-1. Write remaining work to `working/<topic>.md`
+1. Write remaining work to `working/active/<topic>.md`
 2. Provide the pickup command for the next session
 3. Follow the handoff protocol from `handoff.instructions.md`

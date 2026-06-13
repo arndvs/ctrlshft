@@ -603,5 +603,188 @@ class TestH3HeadingSupport(unittest.TestCase):
         self.assertNotIn("test_foo", str(repo_files))
 
 
+# ============================================================
+# Repo-local active plan discovery
+# ============================================================
+
+class TestRepoActivePlansDir(unittest.TestCase):
+    """repo_active_plans_dir reads active_plans_dir from .ctrlshft config."""
+
+    def test_reads_configured_dir(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / ".ctrlshft").write_text("active_plans_dir: working/active\n")
+            active = tmp / "working" / "active"
+            active.mkdir(parents=True)
+            # Initialize a real git repo so rev-parse works
+            subprocess.run(["git", "init"], cwd=tmp, capture_output=True)
+            result = pfl.repo_active_plans_dir(cwd=tmp)
+            self.assertIsNotNone(result)
+            self.assertEqual(result.resolve(), active.resolve())
+
+    def test_returns_none_when_no_config(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            subprocess.run(["git", "init"], cwd=tmp, capture_output=True)
+            result = pfl.repo_active_plans_dir(cwd=tmp)
+            self.assertIsNone(result)
+
+    def test_returns_none_when_dir_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / ".ctrlshft").write_text("active_plans_dir: working/active\n")
+            subprocess.run(["git", "init"], cwd=tmp, capture_output=True)
+            result = pfl.repo_active_plans_dir(cwd=tmp)
+            self.assertIsNone(result)
+
+    def test_returns_none_when_key_empty(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / ".ctrlshft").write_text("active_plans_dir:\n")
+            subprocess.run(["git", "init"], cwd=tmp, capture_output=True)
+            result = pfl.repo_active_plans_dir(cwd=tmp)
+            self.assertIsNone(result)
+
+
+class TestExtraPlanDirs(unittest.TestCase):
+    """find_plans_matching_diff and find_best_plan_for_diff search extra dirs."""
+
+    PLAN_CLAUDE = textwrap.dedent("""\
+        # Plan: in claude plans
+        ## Files
+        - `~/myOS/scripts/foo.py`
+    """)
+
+    PLAN_REPO = textwrap.dedent("""\
+        # Plan: in repo active
+        ## Files
+        - `~/myOS/lib/bar.py`
+        - `~/myOS/lib/baz.py`
+    """)
+
+    def test_extra_dir_plans_discovered(self):
+        """Plans in extra_plan_dirs are discovered alongside plans_dir."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            claude_dir = tmp / "claude_plans"
+            claude_dir.mkdir()
+            (claude_dir / "plan-a.md").write_text(self.PLAN_CLAUDE)
+
+            repo_dir = tmp / "repo_active"
+            repo_dir.mkdir()
+            (repo_dir / "plan-b.md").write_text(self.PLAN_REPO)
+
+            diff = {"lib/bar.py", "lib/baz.py"}
+            matches = pfl.find_plans_matching_diff(
+                diff, plans_dir=claude_dir, extra_plan_dirs=[repo_dir],
+            )
+            self.assertEqual(len(matches), 1)
+            self.assertEqual(matches[0][2].name, "plan-b.md")
+
+    def test_best_plan_prefers_overlap_across_dirs(self):
+        """Best plan selection prefers diff overlap regardless of which dir."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            claude_dir = tmp / "claude_plans"
+            claude_dir.mkdir()
+            (claude_dir / "plan-a.md").write_text(self.PLAN_CLAUDE)
+
+            repo_dir = tmp / "repo_active"
+            repo_dir.mkdir()
+            (repo_dir / "plan-b.md").write_text(self.PLAN_REPO)
+
+            # diff overlaps both, but plan-b has 2 overlapping files vs 1
+            diff = {"scripts/foo.py", "lib/bar.py", "lib/baz.py"}
+            result = pfl.find_best_plan_for_diff(
+                diff, plans_dir=claude_dir, extra_plan_dirs=[repo_dir],
+            )
+            self.assertIsNotNone(result)
+            self.assertEqual(result.name, "plan-b.md")
+
+    def test_claude_plans_still_found_without_extras(self):
+        """Existing ~/.claude/plans behavior preserved when no extras given."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / "plan-a.md").write_text(self.PLAN_CLAUDE)
+
+            diff = {"scripts/foo.py"}
+            result = pfl.find_best_plan_for_diff(diff, plans_dir=tmp)
+            self.assertIsNotNone(result)
+            self.assertEqual(result.name, "plan-a.md")
+
+    def test_no_duplication_when_same_dir(self):
+        """Passing same dir as both plans_dir and extra doesn't duplicate."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / "plan-a.md").write_text(self.PLAN_CLAUDE)
+
+            diff = {"scripts/foo.py"}
+            matches = pfl.find_plans_matching_diff(
+                diff, plans_dir=tmp, extra_plan_dirs=[tmp],
+            )
+            self.assertEqual(len(matches), 1)
+
+    def test_extra_dir_nonexistent_ignored(self):
+        """Non-existent extra dirs don't cause errors."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / "plan-a.md").write_text(self.PLAN_CLAUDE)
+
+            diff = {"scripts/foo.py"}
+            result = pfl.find_best_plan_for_diff(
+                diff, plans_dir=tmp,
+                extra_plan_dirs=[Path("/nonexistent/path")],
+            )
+            self.assertIsNotNone(result)
+            self.assertEqual(result.name, "plan-a.md")
+
+    def test_empty_extra_dirs_list(self):
+        """Empty extra_plan_dirs list works like None."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / "plan-a.md").write_text(self.PLAN_CLAUDE)
+
+            diff = {"scripts/foo.py"}
+            result = pfl.find_best_plan_for_diff(
+                diff, plans_dir=tmp, extra_plan_dirs=[],
+            )
+            self.assertIsNotNone(result)
+
+
+class TestReadCtrlshftKey(unittest.TestCase):
+    """_read_ctrlshft_key parses simple YAML-like config."""
+
+    def test_reads_key(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / ".ctrlshft").write_text(
+                "commit_types:\n  - feat\nactive_plans_dir: working/active\n"
+            )
+            result = pfl._read_ctrlshft_key(tmp, "active_plans_dir")
+            self.assertEqual(result, "working/active")
+
+    def test_returns_none_for_missing_key(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / ".ctrlshft").write_text("commit_types:\n  - feat\n")
+            result = pfl._read_ctrlshft_key(tmp, "active_plans_dir")
+            self.assertIsNone(result)
+
+    def test_returns_none_for_missing_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = pfl._read_ctrlshft_key(Path(tmpdir), "active_plans_dir")
+            self.assertIsNone(result)
+
+    def test_ignores_list_items(self):
+        """List items (- value) under a different key don't match."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / ".ctrlshft").write_text(
+                "commit_types:\n  - active_plans_dir: fake\n"
+            )
+            result = pfl._read_ctrlshft_key(tmp, "active_plans_dir")
+            self.assertIsNone(result)
+
+
 if __name__ == "__main__":
     unittest.main()

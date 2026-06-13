@@ -9,23 +9,23 @@ description: "Session handoff protocol — cross-conversation persistence, conte
 When I say "wrap up", "hand off", "fresh context", or when you notice your own outputs degrading (repeating yourself, losing track of earlier decisions, tool calls returning stale results): stop current work, commit what's done, and output a handoff block containing:
 
 - Current plan file path or PRD issue number
-- Research file path (research.md) if one exists
+- Research file path (`working/research/<topic>.md`) if one exists
 - List of files modified this session
 - What's done vs what remains
 - Exact @-reference command to start the next conversation (see pickup command below)
 
-**Plan persistence:** When a task spans multiple conversations, write the remaining plan to `working/` in the project root with a descriptive name: `working/<topic>-plan.md` (e.g. `working/production-docs-audit-plan.md`). Include full slice details, acceptance criteria, what's done, and what remains. This file is the handoff artifact — the next conversation starts by reading it.
+**Plan persistence:** When a task spans multiple conversations, write the remaining plan to `working/active/<topic>.md` (e.g. `working/active/production-docs-audit.md`). Include full slice details, acceptance criteria, what's done, and what remains. This file is the handoff artifact — the next conversation starts by reading it.
 
 **Pickup command:** Always end a handoff block with a ready-to-paste command for the next conversation:
 
 ```
-@working/<plan-name>.md — pick up on remaining slices. Start with Slice [N].
+@working/active/<topic>.md — pick up on remaining slices. Start with Slice [N].
 ```
 
-Include any other @-references needed for context (research.md, PRD issue, key files).
+Include any other @-references needed for context (`working/research/<topic>.md`, PRD issue, key files).
 
-**Lifecycle:** Delete plan files from `working/` after the work is complete. They're working documents, not permanent docs.
+**Lifecycle:** Delete plan and research files after the work ships. They're working documents, not permanent docs. If research has lasting value beyond the task, promote it to `docs/research/`. See `docs/ARTIFACT-LIFECYCLE.md` for the full lifecycle.
 
-Standard forward-pass files: research.md (project root — cached exploration), working/\*-plan.md (slice tracking). research.md stays in project root for broad reuse; plans go in working/ because they're task-specific and disposable.
+Standard forward-pass files: `working/research/<topic>.md` (cached exploration), `working/active/<topic>.md` (execution tracking). Both are disposable — delete when work ships.
 
-**Proactive nudge:** If context usage is high or you've been working for many turns, suggest wrapping up: "Context is getting high. I'd recommend wrapping up and starting a fresh conversation." Then offer to write the plan to working/ and provide the pickup command.
+**Proactive nudge:** If context usage is high or you've been working for many turns, suggest wrapping up: "Context is getting high. I'd recommend wrapping up and starting a fresh conversation." Then offer to write the plan to `working/active/` and provide the pickup command.

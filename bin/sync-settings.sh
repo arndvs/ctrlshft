@@ -6,8 +6,8 @@
 #   bash ~/dotfiles/bin/sync-settings.sh --stable    # merge into stable VS Code
 #   bash ~/dotfiles/bin/sync-settings.sh --dry-run   # show what would change
 #
-# Creates a timestamped backup before writing. Additive merge — never deletes
-# keys from user settings, only adds or updates keys from dotfiles.
+# Creates a timestamped backup before writing. Merges managed keys from dotfiles
+# and removes keys that are explicitly listed as retired managed settings.
 #
 # Requires: python3 (or python on Windows)
 
@@ -158,10 +158,19 @@ def deep_merge(base, overlay):
 dotfiles = parse_jsonc(dotfiles_path)
 user = parse_jsonc(user_path)
 
-merged = deep_merge(user, dotfiles)
+retired_managed_keys = {
+    # Retired because it pointed every workspace at root node_modules/typescript/lib,
+    # which is often absent and breaks nested pnpm TypeScript projects.
+    'js/ts.tsdk',
+}
 
-added = [k for k in dotfiles if k not in user]
-updated = [k for k in dotfiles if k in user and user[k] != dotfiles[k]]
+removed = [key for key in retired_managed_keys if key in user]
+pruned_user = {key: value for key, value in user.items() if key not in retired_managed_keys}
+
+merged = deep_merge(pruned_user, dotfiles)
+
+added = [k for k in dotfiles if k not in pruned_user]
+updated = [k for k in dotfiles if k in pruned_user and pruned_user[k] != dotfiles[k]]
 unchanged = len(dotfiles) - len(added) - len(updated)
 
 print(f'Dotfiles keys: {len(dotfiles)}')
@@ -169,18 +178,21 @@ print(f'User keys:     {len(user)}')
 print(f'Result keys:   {len(merged)}')
 print(f'Added:         {len(added)}')
 print(f'Updated:       {len(updated)}')
+print(f'Removed:       {len(removed)}')
 print(f'Unchanged:     {unchanged}')
 
 if added:
     print(f'\nNew keys: {added[:10]}' + (' ...' if len(added) > 10 else ''))
 if updated:
     print(f'Changed keys: {updated[:10]}' + (' ...' if len(updated) > 10 else ''))
+if removed:
+    print(f'Removed retired keys: {removed[:10]}' + (' ...' if len(removed) > 10 else ''))
 
 if dry_run:
     print('\n--dry-run: no changes written')
     sys.exit(0)
 
-if not added and not updated:
+if not added and not updated and not removed:
     print('\nAlready in sync — nothing to do')
     sys.exit(0)
 

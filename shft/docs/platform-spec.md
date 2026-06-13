@@ -41,10 +41,13 @@ Two wrappers handle structured output extraction failures:
 | `runWithExtraction()` | Work has side effects (commits) | Produce phase (no output), then extract phase with retries |
 
 Both resume the existing Sandcastle session rather than re-running from scratch.
+For `runWithExtraction()` workflows, produce prompts do the side-effecting work only; extraction prompts own all structured-output instructions.
 
 ## Workflow YAMLs
 
 GitHub Actions workflows in `shft/templates/workflows/`:
+
+The full dogfood smoke-test contract for these workflows lives in `shft/docs/full-smoke-matrix.md`.
 
 | File | Trigger | Purpose |
 |------|---------|---------|
@@ -80,10 +83,14 @@ Extraction prompts (for two-phase workflows) live in `shft/templates/extractions
   "codingStandards": ".sandcastle/CODING_STANDARDS.md",
   "contextDoc": "CONTEXT.md",
   "adrDir": "docs/adr",
-  "packageManager": "npm"
+  "packageManager": "pnpm"
 }
 ```
+
+Only `sandbox: "none"` is currently supported by the TypeScript engine. Docker and worktree sandbox modes are intentionally rejected until provider wiring and CI validation are implemented.
 
 ## Vendoring model
 
 Consumer repos don't install Sandcastle engine as a dependency — `init-sandcastle.sh` copies the engine source into `.sandcastle/engine/` and `update-sandcastle.sh` syncs it with drift detection. This keeps the pipeline self-contained and version-pinned per repo.
+
+The vendored engine is a runtime scaffold, not a source checkout. Test files are excluded, so `init-sandcastle.sh` and `update-sandcastle.sh` render `.sandcastle/engine/package.json` with a no-op `test` script while preserving `typecheck` for validating vendored runtime sources.

@@ -7,7 +7,7 @@ description: "Cache expensive exploration into a research document before buildi
 
 Output "Read Research skill." to chat to acknowledge you read this file.
 
-Cache expensive exploration into a persistent research.md so implementation conversations can start with full context instead of re-exploring.
+Cache expensive exploration into a persistent `working/research/<topic>.md` so implementation conversations can start with full context instead of re-exploring.
 
 ## When to Use
 
@@ -20,7 +20,7 @@ Cache expensive exploration into a persistent research.md so implementation conv
 
 ### 1. Check for Existing Research
 
-If research.md already exists in the project root:
+If `working/research/<topic>.md` already exists:
 
 - Read it fully
 - Check the `Generated` date in the header
@@ -37,7 +37,7 @@ Spawn a dedicated sub-agent for each area using the `explore` verb (per the expl
 
 ### 4. Synthesize
 
-Combine all sub-agent findings into research.md in the project root with this structure:
+Combine all sub-agent findings into `working/research/<topic>.md` with this structure:
 
 ```markdown
 # Research: [Topic]
@@ -75,14 +75,16 @@ Topic: [one-line summary]
 After research is complete, offer the user three paths:
 
 1. /write-a-prd — capture findings as a formal PRD
-2. /do-work — start implementing with research.md as context
+2. /do-work — start implementing with `working/research/<topic>.md` as context
 3. Continue exploring — spawn additional sub-agents for open questions
 
 ## Lifecycle Management
 
-- research.md lives in the project root
-- When passing to a new conversation, always include research.md
-- If a `working/*-plan.md` exists, the pickup command should include both: `@research.md @working/<plan-name>.md — pick up on remaining slices. Start with Slice [N].`
-- If research.md is >7 days old, re-validate before relying on it
+- Research lives in `working/research/<topic>.md` — one file per topic
+- When passing to a new conversation, always include the research file in @-references
+- If a `working/active/<topic>.md` plan exists, the pickup command should include both: `@working/research/<topic>.md @working/active/<topic>.md — pick up on remaining slices. Start with Slice [N].`
+- If the research file is >7 days old, re-validate before relying on it
 - If the codebase has changed significantly (major refactor, new dependencies), regenerate
-- Delete research.md after the feature ships — it's a working document, not permanent docs
+- Delete research files after the feature ships — they're working documents, not permanent docs
+- If the synthesis has lasting value beyond the immediate task, promote it to `docs/research/<topic>.md` before deleting the working copy
+- See `docs/ARTIFACT-LIFECYCLE.md` for the full lifecycle

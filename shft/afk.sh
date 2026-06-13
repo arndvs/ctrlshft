@@ -19,6 +19,54 @@ source "$CTRL_DIR/bin/_lib.sh"
 # ── HUD event helper (inline — works without sourcing write-hud-state.sh) ─
 WORKING_DIR="$CTRL_DIR/working"
 mkdir -p "$WORKING_DIR"
+LOG_FILE="$WORKING_DIR/shft.log"
+_RUN_STATE_ID="$(basename "$LOCKDIR")"
+_RUN_STATE_ID="${_RUN_STATE_ID#shft-afk-}"
+_RUN_STATE_ID="${_RUN_STATE_ID%.lock}"
+RUN_STATE_FILE="${SHFT_RUN_STATE_FILE:-$WORKING_DIR/shft-run-${_RUN_STATE_ID}.json}"
+
+_log_afk() {
+    printf '%s %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")" "$*" >> "$LOG_FILE" 2>/dev/null || true
+}
+
+_ticker_pid=""
+raw_output=""
+
+_stop_ticker() {
+    if [[ -n "${_ticker_pid:-}" ]]; then
+        kill "$_ticker_pid" 2>/dev/null || true
+        wait "$_ticker_pid" 2>/dev/null || true
+        printf "\r\033[K" >&2
+        _ticker_pid=""
+    fi
+}
+
+_run_state_set() {
+    local field="$1" value="$2"
+    "$PYTHON_BIN" - "$RUN_STATE_FILE" "$field" "$value" <<'PYEOF'
+import json, os, sys
+path, field, value = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    data = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
+except Exception:
+    data = {}
+if value.isdigit():
+    value = int(value)
+data[field] = value
+json.dump(data, open(path, "w", encoding="utf-8"), indent=2)
+PYEOF
+}
+
+_cleanup_afk() {
+    local ec="${1:-$?}"
+    _stop_ticker
+    [[ -n "${raw_output:-}" ]] && rm -f "$raw_output" 2>/dev/null || true
+    [[ -n "${PROMPT_FILE:-}" ]] && rm -f "$PROMPT_FILE" 2>/dev/null || true
+    _log_afk "afk exit code=$ec"
+    rm -f "$RUN_STATE_FILE" 2>/dev/null || true
+    rmdir "$LOCKDIR" 2>/dev/null || true
+    exit "$ec"
+}
 
 _push_afk_event() {
     local _type="$1" _msg="$2"
@@ -44,7 +92,7 @@ if ! mkdir "$LOCKDIR" 2>/dev/null; then
     echo "shft already running" >&2
     exit 1
 fi
-trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
+trap '_cleanup_afk "$?"' EXIT
 
 if [[ ! -x "$RUN_WITH_SECRETS" ]]; then
     echo "ERROR: $RUN_WITH_SECRETS not found or not executable" >&2
@@ -61,6 +109,18 @@ if ! find_python; then
     exit 1
 fi
 PYTHON_BIN="$PYTHON"
+
+_run_state_set "mode" "afk"
+_run_state_set "status" "running"
+_run_state_set "worker_pid" "$$"
+_run_state_set "lock_dir" "$LOCKDIR"
+_run_state_set "max_iterations" "$MAX_ITERATIONS"
+_run_state_set "started_at" "$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")"
+[[ -n "${SHFT_ISOLATED_WORKTREE:-}" ]] && _run_state_set "isolated_worktree" "1"
+[[ -n "${SHFT_WORKTREE_PATH:-}" ]] && _run_state_set "worktree_path" "$SHFT_WORKTREE_PATH"
+[[ -n "${SHFT_WORKTREE_BRANCH:-}" ]] && _run_state_set "worktree_branch" "$SHFT_WORKTREE_BRANCH"
+[[ -n "${SHFT_SOURCE_REPO_ROOT:-}" ]] && _run_state_set "source_repo_root" "$SHFT_SOURCE_REPO_ROOT"
+_log_afk "afk started worker_pid=$$ max_iterations=$MAX_ITERATIONS lock_dir=$LOCKDIR"
 
 if ! "$RUN_WITH_SECRETS" bash "$CTRL_DIR/bin/validate-env.sh" --afk; then
     echo "ERROR: AFK environment validation failed" >&2
@@ -83,7 +143,15 @@ else
 fi
 
 for i in $(seq 1 "$MAX_ITERATIONS"); do
+    if [[ ! -d "$LOCKDIR" ]]; then
+        _log_afk "lock removed before iteration $i; stopping"
+        echo "shft stopped before iteration $i"
+        exit 0
+    fi
+
     echo "=== shft iteration $i of $MAX_ITERATIONS ==="
+    _run_state_set "current_iteration" "$i"
+    _log_afk "iteration $i started"
     _push_afk_event "info" "AFK iteration $i of $MAX_ITERATIONS started"
 
     mint_json=$("$RUN_WITH_SECRETS" "$PYTHON_BIN" "$MINT_SCRIPT") || {
@@ -116,8 +184,6 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
         sleep 0.2
     done &
     _ticker_pid=$!
-    # Kill ticker on first output or error
-    _stop_ticker() { kill "$_ticker_pid" 2>/dev/null || true; wait "$_ticker_pid" 2>/dev/null || true; printf "\r\033[K" >&2; }
 
     # Thinking-gap spinner — animates when jq output pauses > 1s
     _thinking_filter() {
@@ -151,9 +217,7 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
     }
 
     source "$SCRIPT_DIR/_build_prompt.sh"
-    trap '_stop_ticker; rm -f "$PROMPT_FILE"; rmdir "$LOCKDIR" 2>/dev/null' EXIT
     raw_output=$(mktemp)
-    trap '_stop_ticker; rm -f "$raw_output" "$PROMPT_FILE"; rmdir "$LOCKDIR" 2>/dev/null' EXIT
 
     # jq filters for stream-json format
     # stream_live: streams tool calls + assistant text to stderr for real-time visibility
@@ -196,6 +260,7 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
     [[ -n "${CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC:-}" ]] && _afk_env+=("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=$CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC")
 
     _afk_stderr_log="$WORKING_DIR/afk-iter-${i}-stderr.log"
+    _run_state_set "current_stderr_log" "$_afk_stderr_log"
     if ! "${_afk_env[@]}" \
         "${_CLAUDE_CMD[@]}" \
         --print \
@@ -212,6 +277,7 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
         | tee >(jq --unbuffered -rj "$stream_live" 2>/dev/null | _thinking_filter >&2; cat >/dev/null) \
         > "$raw_output"; then
         _stop_ticker
+        _log_afk "iteration $i failed stderr=$_afk_stderr_log"
         echo "ERROR: ${_CLAUDE_CMD[*]} failed on iteration $i" >&2
         echo "  stderr log: $_afk_stderr_log" >&2
         exit 1
@@ -221,6 +287,8 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
 
     result=$(jq -r "$final_result" < "$raw_output" 2>/dev/null || true)
     rm -f "$raw_output" "$PROMPT_FILE"
+    raw_output=""
+    PROMPT_FILE=""
 
     if echo "$result" | grep -q '<promise>NO MORE TASKS</promise>'; then
         _push_afk_event "info" "AFK complete after $i iterations — no more tasks"
@@ -229,6 +297,7 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
     fi
 
     _push_afk_event "info" "AFK iteration $i of $MAX_ITERATIONS complete"
+    _log_afk "iteration $i complete"
 done
 
 echo "shft reached max iterations ($MAX_ITERATIONS)"

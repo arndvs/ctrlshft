@@ -544,6 +544,60 @@ except:
         bash "$DOTFILES/bin/update-sandcastle.sh" "$@"
         ;;
 
+    # ── preflight-sandcastle ──────────────────────────────────────────────────
+    preflight-sandcastle|sandcastle-preflight)
+        if [[ ! -f "$DOTFILES/bin/preflight-sandcastle.sh" ]]; then
+            red "preflight-sandcastle.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/preflight-sandcastle.sh" "$@"
+        ;;
+
+    # ── smoke-sandcastle-dispatch ────────────────────────────────────────────
+    smoke-sandcastle-dispatch|sandcastle-dispatch-smoke)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-dispatch.sh" ]]; then
+            red "smoke-sandcastle-dispatch.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-dispatch.sh" "$@"
+        ;;
+
+    # ── smoke-sandcastle-issue-labels ────────────────────────────────────────
+    smoke-sandcastle-issue-labels|sandcastle-issue-label-smoke)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-issue-labels.sh" ]]; then
+            red "smoke-sandcastle-issue-labels.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-issue-labels.sh" "$@"
+        ;;
+
+    # ── lifecycle-audit ───────────────────────────────────────────────────────
+    lifecycle-audit|la)
+        if [[ ! -f "$DOTFILES/bin/artifact-lifecycle-audit.sh" ]]; then
+            red "artifact-lifecycle-audit.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/artifact-lifecycle-audit.sh" "$@"
+        ;;
+
+    # ── init-artifacts ────────────────────────────────────────────────────────
+    init-artifacts|init-lifecycle)
+        if [[ ! -f "$DOTFILES/bin/init-artifacts.sh" ]]; then
+            red "init-artifacts.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/init-artifacts.sh" "$@"
+        ;;
+
+    # ── update-artifacts ──────────────────────────────────────────────────────
+    update-artifacts)
+        if [[ ! -f "$DOTFILES/bin/update-artifacts.sh" ]]; then
+            red "update-artifacts.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/update-artifacts.sh" "$@"
+        ;;
+
     # ── new-client ─────────────────────────────────────────────────────────────
     new-client|client)
         if [[ ! -f "$DOTFILES/bin/new-client.sh" ]]; then
@@ -684,9 +738,24 @@ except:
         echo "  ──────────────────────────────────────────────────────────────"
         echo "  ctrl init-sandcastle    scaffold Sandcastle in a repo"
         echo "                          [--branch main] [--model claude-opus-4-6]"
-        echo "                          [--pm npm] [--sandbox none] [--force]"
+        echo "                          [--pm pnpm] [--sandbox none] [--force]"
         echo "  ctrl update-sandcastle  detect drift in vendored Sandcastle files"
         echo "                          [--dry-run]"
+        echo "  ctrl preflight-sandcastle validate drift, workflows, engine, secrets"
+        echo "                          [--skip-drift] [--skip-engine] [--skip-github]"
+        echo "  ctrl smoke-sandcastle-dispatch trigger safe workflow_dispatch smoke"
+        echo "                          [--workflow FILE] [--ref REF] [--dry-run]"
+        echo "  ctrl smoke-sandcastle-issue-labels trigger disposable issue-label smoke"
+        echo "                          [--dry-run] [--allow-side-effects]"
+        echo ""
+        echo "  Lifecycle"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl init-artifacts     scaffold artifact lifecycle in a repo"
+        echo "  ctrl init-lifecycle     (alias) [--force] [--dry-run] [--gitignore]"
+        echo "  ctrl update-artifacts   detect drift in lifecycle templates"
+        echo "                          [--dry-run]"
+        echo "  ctrl lifecycle-audit    audit artifact placement and lifecycle"
+        echo "  ctrl la                 compliance [--strict]"
         echo ""
         echo "  Session analysis (requires sheal)"
         echo "  ──────────────────────────────────────────────────────────────"

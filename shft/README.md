@@ -15,8 +15,10 @@ The autonomous execution side of ctrl+shft. `ctrl` manages your environment; `sh
 |---------|---------|
 | `shft run` | Start a HITL session |
 | `shft afk [n]` | Start an AFK loop (`n` iterations, default 5) |
+| `shft afk --worktree [n]` | Start AFK in an isolated git worktree/branch so the IDE checkout stays untouched |
 | `shft status` | Show loop state, open issues, plan progress |
 | `shft stop` | Signal the AFK loop to stop after current iteration |
+| `shft worktrees` | List or remove AFK-created git worktrees |
 | `shft log [-f]` | Show recent log entries (`-f` to follow) |
 | `shft issues` | List open GitHub issues sorted by priority |
 | `shft next` | Show the next issue to work on |
@@ -48,7 +50,7 @@ Sandcastle is the CI-triggered AFK agent platform extracted under `shft/`. It st
 Run this from the target repository root:
 
 ```bash
-ctrl init-sandcastle --branch main --model claude-opus-4-6 --pm npm --sandbox none
+ctrl init-sandcastle --branch main --model claude-opus-4-6 --pm pnpm --sandbox none
 ```
 
 `ctrl init-sandcastle` is a stamp-and-own installer. It copies files into the target repo instead of symlinking them, which keeps GitHub Actions independent of `~/dotfiles`:
@@ -85,11 +87,13 @@ ctrl update-sandcastle --dry-run
 - `.sandcastle/engine/package.json` and `tsconfig.json`
 - `.sandcastle/templates/prompts/` and `extractions/`
 - `.sandcastle/scripts/` and `hooks/`
-- `.sandcastle/sandbox/` when `sandbox` is `docker` or the directory exists
+- `.sandcastle/sandbox/` when the directory exists
 - `.github/workflows/agent-*.yml`
 - `.github/copilot-setup-steps.yml`
 
 Project-specific prompts, config, and coding standards are never overwritten by drift updates.
+
+The vendored engine intentionally excludes source test files. Its `package.json` is rendered with a no-op `test` script and a working `typecheck` script, so consumer repos can run package checks without a false Vitest failure from an empty test suite. The engine package also lists reviewed pnpm build approvals for native dependencies used by `tsx`/Vitest, avoiding a blanket lifecycle-script allow-all while still letting runtime binaries initialize correctly.
 
 ### Source layout in dotfiles
 
@@ -121,21 +125,21 @@ Each initialized repo gets `sandcastle.config.json`. Missing fields fall back to
 |-------|---------|----------------------|---------|
 | `model` | `claude-opus-4-6` | `SANDCASTLE_MODEL`, `ANTHROPIC_MODEL` | Model used by runners |
 | `baseBranch` | `main` | `SANDCASTLE_BASE_BRANCH` | Default branch used by workflow templates |
-| `sandbox` | `none` | `SANDCASTLE_SANDBOX` | `none`, `docker`, or `worktree` |
+| `sandbox` | `none` | `SANDCASTLE_SANDBOX` | Only `none` is currently supported by the TypeScript engine |
 | `promptDir` | `.sandcastle/prompts` | — | Project prompt override directory |
 | `codingStandards` | `.sandcastle/CODING_STANDARDS.md` | — | Project standards document |
 | `contextDoc` | `CONTEXT.md` | — | Project context document |
 | `adrDir` | `docs/adr` | — | ADR directory |
-| `packageManager` | `npm` | `SANDCASTLE_PACKAGE_MANAGER` | `npm`, `pnpm`, `yarn`, or `bun` |
+| `packageManager` | `pnpm` | `SANDCASTLE_PACKAGE_MANAGER` | `npm`, `pnpm`, `yarn`, or `bun` |
 
 Prompt resolution checks `.sandcastle/prompts/` first, then falls back to the templates directory passed by `.sandcastle/run.ts`.
 
 ### Workflow dispatcher
 
-All GitHub Actions call the same entrypoint:
+All GitHub Actions install engine dependencies with the configured package manager, then call the vendored dispatcher with the engine-local `tsx` binary:
 
 ```bash
-npx tsx .sandcastle/run.ts <workflow-name> [args]
+./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts <workflow-name> [args]
 ```
 
 Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
@@ -173,9 +177,11 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 
 Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--branch` or `sandcastle.config.json`.
 
+The canonical dogfood smoke-test contract for these templates is documented in `shft/docs/full-smoke-matrix.md`.
+
 ### Labels and secrets
 
-Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is authenticated. The label state machine uses:
+Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is authenticated and can resolve the current GitHub repository. In local-only repos with no remote, init skips label creation and prints the manual command to run after adding a remote. The label state machine uses:
 
 - Entry/control labels: `Sandcastle`, `agent:review`, `agent:plan`, `agent:implement`, `agent:implement-prd`, `agent:fix`, `agent:update-branch`, `agent:merge`
 - Status labels: `agent:in-progress`, `agent:pr-open`, `agent:queued`, `agent:blocked`
@@ -184,7 +190,8 @@ Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is
 Required GitHub Actions secrets:
 
 - `CLAUDE_CODE_OAUTH_TOKEN` — authenticates Claude Code inside workflows
-- `ANTHROPIC_API_KEY` — authenticates workflows that call the Anthropic API directly
+- `LITELLM_BASE_URL` — points Claude-compatible model traffic at the LiteLLM proxy backed by GitHub Copilot
+- `LITELLM_MASTER_KEY` — authenticates workflow calls to the LiteLLM proxy
 - `AGENT_PAT` — optional but recommended; label mutations made with `GITHUB_TOKEN` do not trigger downstream workflows, so `AGENT_PAT` is needed for chains such as `agent:implement` → `agent:review` and PRD sub-issue chaining
 
 ### Structured output and validation
@@ -192,7 +199,7 @@ Required GitHub Actions secrets:
 Workflow runners use `@ai-hero/sandcastle` plus Zod schemas for typed output. Two shared retry helpers keep side-effecting work from being repeated:
 
 - `runWithRetry()` retries schema extraction by resuming the failed session with validation feedback.
-- `runWithExtraction()` runs side-effecting work first, then resumes the produced session only to extract structured output.
+- `runWithExtraction()` runs side-effecting work first, then resumes the produced session only to extract structured output. Produce prompts should not contain structured-output instructions; extraction prompts own the output contract.
 
 Validation rules include:
 
@@ -216,5 +223,7 @@ Validation rules include:
 
 - AFK mode uses **short-lived GitHub App tokens** minted per iteration via `bin/mint_github_app_token.py`
 - **Repo-scoped lock directory** (`${TMPDIR:-/tmp}/shft-afk-<repo-hash>.lock`) prevents concurrent AFK loops per repository; legacy `/tmp/shft-afk.lock` is detected and surfaced as a warning
+- By default, local `shft afk` edits the current checkout and refuses to start on a dirty working tree unless `--force` is passed. Use `shft afk --worktree` when you want to keep working in the IDE while AFK runs.
+- `shft afk --worktree` creates one isolated git worktree and branch for the AFK run. Multiple issues in the same run share that branch, so dependent follow-up work can build on earlier AFK commits. `shft status` shows the active worktree and branch, and `shft worktrees` lists/removes AFK-created worktrees after review.
 - AFK invokes Claude with `--dangerously-skip-permissions`; on Linux/macOS it typically runs inside the Docker-backed `srt` sandbox, but on WSL/MSYS it runs unsandboxed with an explicit warning (deny rules still apply)
 - The TypeScript engine currently uses `noSandbox()` on all platforms; Docker-backed sandboxing is not yet wired in
