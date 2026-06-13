@@ -173,19 +173,21 @@ gh pr edit <PR_NUMBER> -R <OWNER>/<REPO> --add-reviewer copilot-pull-request-rev
 gh pr view <PR_NUMBER> -R <OWNER>/<REPO> --json reviewRequests,reviews
 ```
 
-4. If GitHub accepts the command but `reviewRequests` does not show Copilot, trigger the Copilot review by comment via `gh`:
+4. If GitHub accepts the command but `reviewRequests` does not show a Copilot reviewer, verify through the REST pull request endpoint before retrying. Some GitHub CLI JSON views omit the Copilot reviewer even when the direct REST payload includes a bot login. GitHub may return `Copilot` or `copilot-pull-request-reviewer[bot]` in `requested_reviewers[].login`, so use an anchored, case-insensitive match:
 
 ```bash
-gh pr comment <PR_NUMBER> -R <OWNER>/<REPO> --body "@copilot review"
+gh api repos/<OWNER>/<REPO>/pulls/<PR_NUMBER> --jq '[.requested_reviewers[]?.login] | map(select(. != null)) | any(test("^(Copilot|copilot-pull-request-reviewer)(\\[bot\\])?$"; "i"))'
 ```
 
-5. Verify the trigger comment exists:
+5. If the REST payload also does not include a Copilot reviewer bot login, retry the reviewer request once with the explicit PR reviewer app login:
 
 ```bash
-gh pr view <PR_NUMBER> -R <OWNER>/<REPO> --json comments
+gh pr edit <PR_NUMBER> -R <OWNER>/<REPO> --add-reviewer copilot-pull-request-reviewer
 ```
 
-Only report a manual fallback if both CLI routes fail with a concrete GitHub error. Always include the exact non-secret error and the PR URL.
+6. If no Copilot reviewer bot login is present in `requested_reviewers` after the retry, report a manual fallback with the exact non-secret error and the PR URL.
+
+Never post `@copilot review` as a fallback. On GitHub.com that comment can start the Copilot SWE/cloud-agent task flow instead of the Copilot Pull Request Reviewer, which may fail independently and does not guarantee a PR code review.
 
 This ensures every PR gets at least one Copilot review pass before human review.
 

@@ -27,9 +27,21 @@ if [[ -f "next.config.ts" ]] || [[ -f "next.config.js" ]] || [[ -f "next.config.
     contexts="$contexts,nextjs"
 fi
 
-# --- React Native ---
+# --- Expo / React Native ---
+if [[ -f "package.json" ]] && grep -q '"expo"' package.json 2>/dev/null; then
+    contexts="$contexts,expo"
+fi
 if [[ -f "package.json" ]] && grep -q '"react-native"' package.json 2>/dev/null; then
     contexts="$contexts,react-native"
+fi
+# Detect Expo inside a monorepo (apps/mobile has expo or app.config.ts exists)
+if [[ -f "apps/mobile/package.json" ]] && grep -q '"expo"' apps/mobile/package.json 2>/dev/null; then
+    contexts="$contexts,expo"
+fi
+if [[ -f "apps/mobile/app.config.ts" ]] || [[ -f "apps/mobile/app.config.js" ]]; then
+    if [[ "$contexts" != *"expo"* ]]; then
+        contexts="$contexts,expo"
+    fi
 fi
 
 # --- React (non-Next, non-Native) ---

@@ -31,7 +31,7 @@ Use this skill to create GitHub issues from a finalized PRD or plan. Use `/archi
    - Should any slices be split further?
    - Are the correct slices marked as HITL vs AFK?
 
-7. **Create GitHub issues** — generate issues using this template:
+7. **Create GitHub issues** — generate issues using this template. When using the GitHub CLI, pass bodies via `--body-file -` from a quoted here-doc (`<<'EOF'`) or a small helper script. Do **not** put Markdown bodies with backticks in unquoted shell variables or here-docs — the shell will execute command substitutions and corrupt the issue body.
 
 ```markdown
 # [Slice Title]

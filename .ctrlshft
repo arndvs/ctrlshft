@@ -21,3 +21,7 @@ commit_types:
 protected_branches:
   - main
   - master
+
+# Repo-local active plans directory (plan discovery hooks)
+# Plans here are searched alongside ~/.claude/plans/ for diff overlap.
+active_plans_dir: working/active

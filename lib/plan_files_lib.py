@@ -11,6 +11,7 @@ Exports:
   normalize_to_repo_relative() — strip repo prefixes from a path
   find_plans_matching_diff()   — find plans overlapping a set of diff files
   find_best_plan_for_diff()    — return the single best-matching plan
+  repo_active_plans_dir()      — resolve repo-local active plans directory
 """
 
 from __future__ import annotations
@@ -21,6 +22,51 @@ import subprocess
 from pathlib import Path
 
 PLANS_DIR = Path.home() / ".claude" / "plans"
+
+
+def _read_ctrlshft_key(repo_root: Path, key: str) -> str | None:
+    """Read a simple key: value from the repo's .ctrlshft config file."""
+    config = repo_root / ".ctrlshft"
+    if not config.is_file():
+        return None
+    try:
+        for line in config.read_text().splitlines():
+            stripped = line.strip()
+            if stripped.startswith(f"{key}:"):
+                val = stripped[len(key) + 1:].strip()
+                return val if val else None
+    except OSError:
+        pass
+    return None
+
+
+def repo_active_plans_dir(cwd: str | Path | None = None) -> Path | None:
+    """Resolve the repo-local active plans directory from .ctrlshft config.
+
+    Looks for the ``active_plans_dir`` key in the repo's ``.ctrlshft`` file.
+    Returns an absolute Path if the directory exists, None otherwise.
+    """
+    if cwd is None:
+        repo_root = _find_repo_root_from_module()
+    else:
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                capture_output=True, text=True, timeout=2, cwd=cwd,
+            )
+            repo_root = Path(result.stdout.strip()) if result.returncode == 0 else None
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            repo_root = None
+
+    if repo_root is None:
+        return None
+
+    configured = _read_ctrlshft_key(repo_root, "active_plans_dir")
+    if configured is None:
+        return None
+
+    plans_path = repo_root / configured
+    return plans_path if plans_path.is_dir() else None
 
 
 def _find_repo_root_from_module() -> Path | None:
@@ -155,29 +201,43 @@ def find_plans_matching_diff(
     plans_dir: Path | None = None,
     min_overlap: int = 1,
     repo_prefixes: list[str] | None = None,
+    extra_plan_dirs: list[Path] | None = None,
 ) -> list[tuple[int, float, Path]]:
     """Find every plan whose ## Files section overlaps diff_files by >= min_overlap.
+
+    Searches ``plans_dir`` (default ``~/.claude/plans/``) plus any directories
+    in ``extra_plan_dirs`` (e.g. repo-local ``working/active/``).
 
     Returns a list of (overlap, mtime, plan_path) tuples, sorted by overlap desc
     then mtime desc.
     """
     if plans_dir is None:
         plans_dir = PLANS_DIR
-    if not plans_dir.exists():
+
+    dirs_to_search: list[Path] = []
+    if plans_dir.exists():
+        dirs_to_search.append(plans_dir)
+    for d in (extra_plan_dirs or []):
+        if d.exists() and d not in dirs_to_search:
+            dirs_to_search.append(d)
+
+    if not dirs_to_search:
         return []
+
     candidates: list[tuple[int, float, Path]] = []
-    for plan_file in plans_dir.glob("*.md"):
-        try:
-            plan_text = plan_file.read_text()
-        except Exception:
-            continue
-        repo_files, _, _ = extract_plan_files(plan_text, repo_prefixes)
-        if not repo_files:
-            continue
-        plan_rel = {normalize_to_repo_relative(p, repo_prefixes) for p in repo_files}
-        overlap = len(plan_rel & diff_files)
-        if overlap >= min_overlap:
-            candidates.append((overlap, plan_file.stat().st_mtime, plan_file))
+    for search_dir in dirs_to_search:
+        for plan_file in search_dir.glob("*.md"):
+            try:
+                plan_text = plan_file.read_text()
+            except Exception:
+                continue
+            repo_files, _, _ = extract_plan_files(plan_text, repo_prefixes)
+            if not repo_files:
+                continue
+            plan_rel = {normalize_to_repo_relative(p, repo_prefixes) for p in repo_files}
+            overlap = len(plan_rel & diff_files)
+            if overlap >= min_overlap:
+                candidates.append((overlap, plan_file.stat().st_mtime, plan_file))
     candidates.sort(key=lambda x: (-x[0], -x[1]))
     return candidates
 
@@ -186,7 +246,12 @@ def find_best_plan_for_diff(
     diff_files: set[str],
     plans_dir: Path | None = None,
     repo_prefixes: list[str] | None = None,
+    extra_plan_dirs: list[Path] | None = None,
 ) -> Path | None:
     """Return the single best-matching plan for a set of diff files, or None."""
-    matches = find_plans_matching_diff(diff_files, plans_dir, min_overlap=1, repo_prefixes=repo_prefixes)
+    matches = find_plans_matching_diff(
+        diff_files, plans_dir, min_overlap=1,
+        repo_prefixes=repo_prefixes,
+        extra_plan_dirs=extra_plan_dirs,
+    )
     return matches[0][2] if matches else None

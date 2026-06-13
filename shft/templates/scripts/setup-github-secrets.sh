@@ -6,20 +6,21 @@ set -euo pipefail
 # ============================================================
 #
 # Walks you through setting the secrets needed for agent
-# workflows to authenticate with Anthropic and GitHub.
+# workflows to authenticate with the Copilot-backed LiteLLM proxy and GitHub.
 #
 # Secrets configured:
 #
 #   1. CLAUDE_CODE_OAUTH_TOKEN
 #      OAuth token used by Claude Code inside GitHub Actions.
 #
-#   2. ANTHROPIC_API_KEY
-#      API key for Claude. Used by workflows that call the
-#      Anthropic API from GitHub Actions runners.
+#   2. LITELLM_BASE_URL
+#      Base URL for the LiteLLM proxy that routes model traffic
+#      to GitHub Copilot.
 #
-#      Get one at: https://console.anthropic.com/settings/keys
+#   3. LITELLM_MASTER_KEY
+#      Auth token for the LiteLLM proxy.
 #
-#   3. AGENT_PAT  (optional but recommended)
+#   4. AGENT_PAT  (optional but recommended)
 #      A GitHub Personal Access Token (classic) with repo scope.
 #      Used for label mutations that trigger downstream workflows
 #      (GITHUB_TOKEN cannot trigger other workflow runs).
@@ -77,9 +78,13 @@ set_secret "CLAUDE_CODE_OAUTH_TOKEN" \
   "OAuth token for Claude Code in GitHub Actions." \
   "Use the same token value expected by the Claude Code action."
 
-set_secret "ANTHROPIC_API_KEY" \
-  "API key for Claude (Anthropic)." \
-  "Get one at: https://console.anthropic.com/settings/keys"
+set_secret "LITELLM_BASE_URL" \
+  "Base URL for the LiteLLM proxy that routes Claude-compatible traffic to GitHub Copilot." \
+  "Use the HTTPS URL for your LiteLLM proxy, without an Anthropic API key."
+
+set_secret "LITELLM_MASTER_KEY" \
+  "Auth token for the LiteLLM proxy." \
+  "Use the proxy master key expected by your LiteLLM deployment."
 
 set_secret "AGENT_PAT" \
   "GitHub PAT (classic) with repo scope." \

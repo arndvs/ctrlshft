@@ -50,6 +50,22 @@ for candidate in PLAN.md plan.md .plan.md docs/PLAN.md docs/plan.md; do
     fi
 done
 
+# Check repo-local active plans directory (from .ctrlshft config or default)
+if [[ -z "$PLAN_FILE" ]]; then
+    ACTIVE_DIR=$(_config_val "active_plans_dir" "working/active")
+    ACTIVE_PATH="$GIT_ROOT/$ACTIVE_DIR"
+    if [[ -d "$ACTIVE_PATH" ]]; then
+        REPO_NAME=$(basename "$GIT_ROOT")
+        while IFS= read -r candidate; do
+            [[ -f "$candidate" ]] || continue
+            if grep -Fq "$GIT_ROOT" "$candidate" 2>/dev/null || grep -Fq "$REPO_NAME" "$candidate" 2>/dev/null; then
+                PLAN_FILE="$candidate"
+                break
+            fi
+        done < <(ls -t "$ACTIVE_PATH"/*.md 2>/dev/null || true)
+    fi
+fi
+
 # Also check ~/.claude/plans/ for a recent plan that matches this repo
 PLANS_DIR="$HOME/.claude/plans"
 if [[ -z "$PLAN_FILE" && -d "$PLANS_DIR" ]]; then
@@ -65,7 +81,7 @@ fi
 
 if [[ -z "$PLAN_FILE" || ! -f "$PLAN_FILE" ]]; then
     # No plan found — emit info warning (never blocks)
-    MSG="⚠️ No plan file found (PLAN.md, docs/PLAN.md, ~/.claude/plans/). Consider documenting your approach before scaffolding."
+    MSG="⚠️ No plan file found (PLAN.md, docs/PLAN.md, working/active/, ~/.claude/plans/). Consider documenting your approach before scaffolding."
     jq -cn --arg msg "$MSG" '{"hookSpecificOutput":{"additionalContext":$msg}}' >&2
     exit 0
 fi

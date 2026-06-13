@@ -184,7 +184,7 @@ Add the fix directly to the relevant section of the skill or rule, not in a sepa
 
 ### Phase 6 — Log entry
 
-Append to `working/compliance-log.md`:
+Append to `working/logs/compliance-log.md`:
 
 ```markdown
 ## [date] — [task name] — [PASS/FAIL/PARTIAL]
@@ -219,7 +219,7 @@ The audit produces:
 
 1. A rule-by-rule compliance report in the session transcript
 2. Any skill/rule updates applied inline
-3. A log entry in `working/compliance-log.md`
+3. A log entry in `working/logs/compliance-log.md`
 
 The report goes in the session. The log persists across sessions. Over time the log is the empirical record of compliance rate.
 
