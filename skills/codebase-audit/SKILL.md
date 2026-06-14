@@ -46,6 +46,23 @@ Report in this exact format, grouped by severity:
 
 - [file:line] vs [file:line] — which convention to pick and why
 
+## MEMORY LEAK PATTERNS — Code that will leak memory at runtime
+
+- [file:line] The pattern, why it leaks, and suggested fix
+
+Look for these concrete patterns:
+
+- **Module-scope accumulation** — Maps, Sets, arrays, or objects at module scope that grow with each request/render and are never cleared
+- **Event listeners without cleanup** — `addEventListener`, `on()`, `subscribe()` without corresponding removal in cleanup/unmount/destroy
+- **Timers without cleanup** — `setInterval`/`setTimeout` without `clearInterval`/`clearTimeout` on teardown
+- **Closures capturing large scope** — callbacks or handlers that close over large data structures unnecessarily
+- **Unbounded caches** — in-memory caches (`Map`, plain objects, `unstable_cache`) with no eviction, TTL, or size limit
+- **Circular references in persistent structures** — objects referencing each other in long-lived data structures preventing GC
+- **Dev-mode fetch/data accumulation** — `fetch()` without `revalidate` in Next.js dev mode (cache grows unbounded), large static imports re-evaluated on HMR
+- **Middleware state accumulation** — middleware or interceptors that append to request-scoped arrays/objects that survive the request lifecycle
+- **Unaborted fetch/async** — `fetch()` or async operations without `AbortController` cleanup on component unmount or route change
+- **Stream/connection leaks** — database connections, file handles, or readable streams opened without guaranteed `close()`/`destroy()` in error paths
+
 ## HUD Events
 
 Emit bookend events so the HUD tracks this audit:
