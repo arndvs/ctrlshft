@@ -109,6 +109,20 @@ For each active rule and instruction file:
 2. Check the diff for evidence it was followed
 3. Flag any violation explicitly
 
+**Resource management checks (always run when JS/TS files are in the diff):**
+
+When the diff touches `.ts`, `.tsx`, `.js`, or `.jsx` files, always check `rules/resource-management.md` compliance — even if not explicitly listed in active contexts. Specifically scan the diff for:
+
+- `addEventListener` / `.on()` / `.subscribe()` without cleanup
+- `setInterval` / `setTimeout` without clear/cleanup
+- `new Map()` / `new Set()` / `= {}` / `= []` at module scope without eviction
+- `useEffect` that creates resources without a return cleanup function
+- `fetch()` in components without `AbortController`
+- Database/file/stream `open()` without `close()` in a `finally` block
+- Closures capturing large objects in long-lived callbacks
+
+These are **High** severity by default — leaked resources compound silently and are expensive to diagnose after the fact.
+
 **Output format per rule:**
 
 ```

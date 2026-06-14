@@ -765,6 +765,16 @@ except:
         echo "  ctrl ask \"question\"     search across session transcripts"
         echo "  ctrl learn [opts]       manage session learnings"
         echo ""
+        echo "  Performance"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  ctrl perf               full performance audit (triage + deep)"
+        echo "  ctrl perf triage        system-level triage"
+        echo "  ctrl perf deep          deep analysis (vscode, bloatware, devs)"
+        echo "  ctrl perf memory        memory snapshot"
+        echo "  ctrl perf bloatware     OEM bloatware detection"
+        echo "  ctrl perf vscode        VS Code extension host analysis"
+        echo "  ctrl perf devservers    dev server profiling"
+        echo ""
         echo "  Other"
         echo "  ──────────────────────────────────────────────────────────────"
         echo "  ctrl version            show version"
@@ -775,6 +785,69 @@ except:
         echo "           ctrl check --ci"
         echo "           ctrl hud logs -f"
         echo ""
+        ;;
+
+    # ── perf ───────────────────────────────────────────────────────────────────
+    perf)
+        _perf_cmd="${1:-all}"
+        shift 2>/dev/null || true
+
+        case "$_perf_cmd" in
+            triage|t)
+                bash "$DOTFILES/bin/perf/system-triage.sh" "$@"
+                ;;
+            deep|d)
+                bash "$DOTFILES/bin/perf/deep-analysis.sh" "$@"
+                ;;
+            all|full)
+                bash "$DOTFILES/bin/perf/system-triage.sh" "$@"
+                echo ""
+                bash "$DOTFILES/bin/perf/deep-analysis.sh" "$@"
+                ;;
+            memory|mem)
+                bash "$DOTFILES/bin/perf/system-triage.sh" --section memory
+                ;;
+            processes|proc)
+                bash "$DOTFILES/bin/perf/system-triage.sh" --section processes
+                ;;
+            network|net)
+                bash "$DOTFILES/bin/perf/system-triage.sh" --section network
+                ;;
+            disk)
+                bash "$DOTFILES/bin/perf/system-triage.sh" --section disk
+                ;;
+            proxy)
+                bash "$DOTFILES/bin/perf/system-triage.sh" --section proxy
+                ;;
+            vscode|code)
+                bash "$DOTFILES/bin/perf/deep-analysis.sh" --section vscode
+                ;;
+            bloatware|bloat)
+                bash "$DOTFILES/bin/perf/deep-analysis.sh" --section bloatware
+                ;;
+            devservers|dev)
+                bash "$DOTFILES/bin/perf/deep-analysis.sh" --section devservers
+                ;;
+            *)
+                red "Unknown perf subcommand: $_perf_cmd"
+                echo ""
+                echo "  Usage: ctrl perf [subcommand]"
+                echo ""
+                echo "  Subcommands:"
+                echo "    all          full triage + deep analysis (default)"
+                echo "    triage       system-level triage (memory, processes, network, disk, proxy)"
+                echo "    deep         deep analysis (vscode, bloatware, dev servers)"
+                echo "    memory       memory snapshot only"
+                echo "    processes    process census only"
+                echo "    network      API latency check only"
+                echo "    disk         disk space only"
+                echo "    proxy        LiteLLM proxy health only"
+                echo "    vscode       VS Code extension host analysis"
+                echo "    bloatware    OEM bloatware detection"
+                echo "    devservers   dev server profiling"
+                exit 1
+                ;;
+        esac
         ;;
 
     # ── unknown ────────────────────────────────────────────────────────────────
