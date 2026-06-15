@@ -553,6 +553,24 @@ except:
         bash "$DOTFILES/bin/preflight-sandcastle.sh" "$@"
         ;;
 
+    # ── validate-public-promotion ────────────────────────────────────────────
+    validate-public-promotion|public-promotion)
+        if [[ ! -f "$DOTFILES/bin/validate-public-promotion.sh" ]]; then
+            red "validate-public-promotion.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/validate-public-promotion.sh" "$@"
+        ;;
+
+    # ── preflight-public-promotion ───────────────────────────────────────────
+    preflight-public-promotion|public-promotion-preflight)
+        if [[ ! -f "$DOTFILES/bin/preflight-public-promotion.sh" ]]; then
+            red "preflight-public-promotion.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/preflight-public-promotion.sh" "$@"
+        ;;
+
     # ── smoke-sandcastle-dispatch ────────────────────────────────────────────
     smoke-sandcastle-dispatch|sandcastle-dispatch-smoke)
         if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-dispatch.sh" ]]; then
@@ -743,6 +761,10 @@ except:
         echo "                          [--dry-run]"
         echo "  ctrl preflight-sandcastle validate drift, workflows, engine, secrets"
         echo "                          [--skip-drift] [--skip-engine] [--skip-github]"
+        echo "  ctrl validate-public-promotion"
+        echo "                          block private-only paths before public push"
+        echo "  ctrl preflight-public-promotion --range RANGE"
+        echo "                          validate candidate commits before public push"
         echo "  ctrl smoke-sandcastle-dispatch trigger safe workflow_dispatch smoke"
         echo "                          [--workflow FILE] [--ref REF] [--dry-run]"
         echo "  ctrl smoke-sandcastle-issue-labels trigger disposable issue-label smoke"

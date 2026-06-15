@@ -26,8 +26,9 @@ is_public_ctrlshft_remote() {
     esac
 }
 
-if is_public_ctrlshft_remote && [[ "${CTRL_ALLOW_PUBLIC_PUSH:-}" != "1" ]]; then
-    cat >&2 <<'MSG'
+if is_public_ctrlshft_remote; then
+    if [[ "${CTRL_ALLOW_PUBLIC_PUSH:-}" != "1" ]]; then
+        cat >&2 <<'MSG'
 pre-push: blocked push to public ctrl+shft.
 
 This checkout's private source of truth is dotfiles-private. The ctrlshft remote
@@ -36,7 +37,15 @@ is public/sanitized and must not receive accidental private dotfiles work.
 If this push is intentional and sanitized, re-run with:
   CTRL_ALLOW_PUBLIC_PUSH=1 git push <remote> <refspec>
 MSG
-    exit 1
+        exit 1
+    fi
+
+    DOTFILES="${DOTFILES:-$HOME/dotfiles}"
+    if [[ ! -f "$DOTFILES/bin/validate-public-promotion.sh" ]]; then
+        echo "pre-push: missing $DOTFILES/bin/validate-public-promotion.sh" >&2
+        exit 1
+    fi
+    bash "$DOTFILES/bin/validate-public-promotion.sh"
 fi
 
 # ── 1. Delegate to Husky if present ──────────────────────────────────────────

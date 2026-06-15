@@ -29,6 +29,12 @@ credentials.*
 # Working/scratch — runtime state, active plans, never tracked
 # working/
 
+# Public/private guardrails — ignore accidental Sandcastle dogfood installs.
+# Intentional Sandcastle productization lives under shft/ source paths instead.
+sandcastle.config.json
+.github/workflows/agent-*.yml
+.github/workflows/agent-*.yaml
+
 # Artifact source files (promoted to bin/ when shipped)
 artifacts/
 
