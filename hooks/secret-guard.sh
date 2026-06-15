@@ -47,24 +47,6 @@ if echo "$COMMAND" | grep -qiE '((^|;|&&|\|\||\||\(|{|\$\()[[:space:]]*|(^|[[:sp
     _deny "🔒 Blocked: command would expose credentials. Use run-with-secrets.sh for credential injection."
 fi
 
-# Block bare env/printenv (dumps all env vars including secrets)
-# Also catches leading env assignments: FOO=bar env, FOO=bar printenv
-# Handles wrapper prefixes and env-as-wrapper (env env, env printenv)
-# Also catches assignment-only env invocations: env FOO=bar (still dumps env)
-# Catches env with flags that still dump: env -0, env --null, env -v
-# Catches env -u NAME (unsets one var but still dumps the rest)
-# Each flag optionally consumes a following non-flag argument (e.g. -u NAME)
-if echo "$COMMAND" | grep -qE '((^|;|&&|\|\||\||\(|{|\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'(printenv|env)([[:space:]]+(-[-a-zA-Z0-9]+([[:space:]]+[^-[:space:]=][^[:space:]]*)?|[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*))*[[:space:]]*($|;|&&|\|\||\|)'; then
-    _deny "🔒 Blocked: bare env/printenv dumps all variables. Use echo \$SPECIFIC_VAR instead."
-fi
-
-# Block printenv/env with credential-named arguments anywhere in the argument list
-# (e.g. printenv SECRET_KEY OTHER_VAR, printenv OTHER_VAR AUTH0_TOKEN, env OAUTH2_SECRET)
-# Uses [A-Za-z_][A-Za-z0-9_]*_ to allow digits in prefix (e.g. AUTH0_, OAUTH2_)
-if echo "$COMMAND" | grep -qE '((^|;|&&|\|\||\||\(|{|\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'(printenv|env)([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+([A-Za-z_][A-Za-z0-9_]*_)?(SECRET|KEY|TOKEN|PASSWORD|CREDENTIAL|AUTH|PRIVATE)[A-Za-z_0-9]*([[:space:]]+[^;&|[:space:]]+)*[[:space:]]*($|;|&&|\|\||\|)'; then
-    _deny "🔒 Blocked: printenv with credential variable name. Use approved credential access methods."
-fi
-
 # Block any command that references protected secrets paths (covers relative, nested, and home paths)
 # Handles leading env assignments, sudo, command, builtin, env prefixes
 # Covers .env.secrets, any file under secrets/, and ~/dotfiles/secrets/
@@ -105,13 +87,31 @@ _command_secret_refs_are_safe() {
     done < <(printf '%s\n' "$command" | sed -E 's/(&&|\|\||;|\|)/\n/g')
     return 0
 }
-if echo "$COMMAND" | grep -qE '((^|;|&&|\|\||\||\(|{|\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'[^[:space:];|&(){}]+([[:space:]]+[^;|&(){}[:space:]]+)*[[:space:]]+'"$SECRETS_PATH_PATTERN"; then
+if echo "$COMMAND" | grep -qE "$SECRETS_PATH_PATTERN"; then
     # Allow only when every segment referencing a protected path is a safe git op on safe files
     if _command_secret_refs_are_safe "$COMMAND"; then
         : # Safe git operation on tracked documentation/template — allow
     else
         _deny "🔒 Blocked: command references protected secrets path."
     fi
+fi
+
+# Block bare env/printenv (dumps all env vars including secrets)
+# Also catches leading env assignments: FOO=bar env, FOO=bar printenv
+# Handles wrapper prefixes and env-as-wrapper (env env, env printenv)
+# Also catches assignment-only env invocations: env FOO=bar (still dumps env)
+# Catches env with flags that still dump: env -0, env --null, env -v
+# Catches env -u NAME (unsets one var but still dumps the rest)
+# Each flag optionally consumes a following non-flag argument (e.g. -u NAME)
+if echo "$COMMAND" | grep -qE '((^|;|&&|\|\||\||\(|{|\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'(printenv|env)([[:space:]]+(-[-a-zA-Z0-9]+([[:space:]]+[^-[:space:]=][^[:space:]]*)?|[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*))*[[:space:]]*($|;|&&|\|\||\|)'; then
+    _deny "🔒 Blocked: bare env/printenv dumps all variables. Use echo \$SPECIFIC_VAR instead."
+fi
+
+# Block printenv/env with credential-named arguments anywhere in the argument list
+# (e.g. printenv SECRET_KEY OTHER_VAR, printenv OTHER_VAR AUTH0_TOKEN, env OAUTH2_SECRET)
+# Uses [A-Za-z_][A-Za-z0-9_]*_ to allow digits in prefix (e.g. AUTH0_, OAUTH2_)
+if echo "$COMMAND" | grep -qE '((^|;|&&|\|\||\||\(|{|\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'(printenv|env)([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+([A-Za-z_][A-Za-z0-9_]*_)?(SECRET|KEY|TOKEN|PASSWORD|CREDENTIAL|AUTH|PRIVATE)[A-Za-z_0-9]*([[:space:]]+[^;&|[:space:]]+)*[[:space:]]*($|;|&&|\|\||\|)'; then
+    _deny "🔒 Blocked: printenv with credential variable name. Use approved credential access methods."
 fi
 
 # Block nested shell invocations that reference credential variables or secrets paths

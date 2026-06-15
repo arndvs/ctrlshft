@@ -13,19 +13,33 @@
 _DOTFILES_ENV_AGENT="$HOME/dotfiles/secrets/.env.agent"
 
 _source_env() {
-    local _tmp _prev_allexport
+    local _tmp _prev_allexport _prev_int_trap _prev_hup_trap _prev_term_trap
     _prev_allexport=$(set +o | grep allexport)
+    _prev_int_trap=$(trap -p INT || true)
+    _prev_hup_trap=$(trap -p HUP || true)
+    _prev_term_trap=$(trap -p TERM || true)
     _tmp=$(mktemp) || { printf '\033[31m[dotfiles] mktemp failed — cannot load %s\033[0m\n' "$1" >&2; return 1; }
+    _restore_source_env_traps() {
+        if [[ -n "$_prev_int_trap" ]]; then eval "$_prev_int_trap"; else trap - INT; fi
+        if [[ -n "$_prev_hup_trap" ]]; then eval "$_prev_hup_trap"; else trap - HUP; fi
+        if [[ -n "$_prev_term_trap" ]]; then eval "$_prev_term_trap"; else trap - TERM; fi
+    }
+    _cleanup_source_env_tmp() {
+        rm -f "$_tmp" 2>/dev/null || true
+        _restore_source_env_traps
+        unset -f _cleanup_source_env_tmp _restore_source_env_traps
+    }
+    trap '_cleanup_source_env_tmp; return 130' INT HUP TERM
     tr -d '\r' < "$1" > "$_tmp"
     set -a
     if ! source "$_tmp"; then
         printf '\033[31m[dotfiles] Syntax error in %s — fix the file and re-source\033[0m\n' "$1" >&2
         eval "$_prev_allexport"
-        rm -f "$_tmp"
+        _cleanup_source_env_tmp
         return 1
     fi
     eval "$_prev_allexport"
-    rm -f "$_tmp"
+    _cleanup_source_env_tmp
 }
 
 if [ -f "$_DOTFILES_ENV_AGENT" ]; then
