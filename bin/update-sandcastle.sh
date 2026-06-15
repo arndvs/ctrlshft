@@ -68,7 +68,7 @@ const fs = require("fs");
 const pkg = JSON.parse(fs.readFileSync(process.env.ENGINE_PACKAGE, "utf8"));
 pkg.scripts = {
   ...pkg.scripts,
-  test: 'echo "Vendored Sandcastle engine excludes test files; run pnpm run typecheck to validate runtime sources."',
+  test: 'echo "Vendored Sandcastle engine excludes test files; run the repo typecheck script (for example, pnpm run typecheck) to validate runtime sources."',
 };
 
 process.stdout.write(`${JSON.stringify(pkg, null, 2)}\n`);
