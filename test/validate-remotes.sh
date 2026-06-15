@@ -93,6 +93,16 @@ run_validator "$repo"
 assert_pass "valid private topology"
 
 repo="$(make_repo)"
+git -C "$repo" remote add origin git@github.com:arndvs/dotfiles-private.git
+git -C "$repo" remote add public ssh://git@github.com/arndvs/ctrlshft.git
+git -C "$repo" remote set-url --push public DISABLED
+git -C "$repo" config remote.pushDefault origin
+git -C "$repo" config branch.main.remote origin
+git -C "$repo" config branch.main.merge refs/heads/main
+run_validator "$repo"
+assert_pass "ssh private topology normalizes like https"
+
+repo="$(make_repo)"
 configure_private_remotes "$repo"
 git -C "$repo" config branch.main.remote public
 run_validator "$repo"

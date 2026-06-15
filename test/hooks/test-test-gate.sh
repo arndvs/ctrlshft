@@ -48,7 +48,7 @@ echo '{"scripts":{}}' > "$NO_TEST_DIR/package.json"
 git -C "$NO_TEST_DIR" init -b main --quiet 2>/dev/null
 git -C "$NO_TEST_DIR" config user.email "test@test.com"
 git -C "$NO_TEST_DIR" config user.name "Test"
-git -C "$NO_TEST_DIR" add . && git -C "$NO_TEST_DIR" commit -m "init" --quiet 2>/dev/null
+git -C "$NO_TEST_DIR" add . && git -C "$NO_TEST_DIR" -c core.hooksPath=/dev/null commit -m "init" --quiet 2>/dev/null
 
 run_hook "$HOOK" "$(make_pretooluse_json 'git commit -m "test"' "$NO_TEST_DIR")"
 assert_allow "skip: no test script in package.json"
@@ -58,7 +58,7 @@ assert_allow "skip: no test script in package.json"
 NO_TS_DIR=$(make_tmp_repo)
 echo '{"scripts":{"test":"echo ok"}}' > "$NO_TS_DIR/package.json"
 echo "# readme" > "$NO_TS_DIR/README.md"
-git -C "$NO_TS_DIR" add . && git -C "$NO_TS_DIR" commit -m "add pkg" --quiet 2>/dev/null
+git -C "$NO_TS_DIR" add . && git -C "$NO_TS_DIR" -c core.hooksPath=/dev/null commit -m "add pkg" --quiet 2>/dev/null
 # Modify only a non-testable file
 echo "update" >> "$NO_TS_DIR/README.md"
 git -C "$NO_TS_DIR" add .
@@ -71,7 +71,7 @@ assert_allow "skip: no testable (.ts/.js) files modified"
 FAIL_DIR=$(make_tmp_repo)
 echo '{"scripts":{"test":"exit 1"}}' > "$FAIL_DIR/package.json"
 echo "export const x = 1;" > "$FAIL_DIR/index.ts"
-git -C "$FAIL_DIR" add . && git -C "$FAIL_DIR" commit -m "add pkg" --quiet 2>/dev/null
+git -C "$FAIL_DIR" add . && git -C "$FAIL_DIR" -c core.hooksPath=/dev/null commit -m "add pkg" --quiet 2>/dev/null
 # Stage a .ts file change
 echo "export const x = 2;" > "$FAIL_DIR/index.ts"
 git -C "$FAIL_DIR" add .
@@ -88,7 +88,7 @@ assert_deny "deny: --amend inside quoted message is not real flag" "tests failed
 PASS_DIR=$(make_tmp_repo)
 echo '{"scripts":{"test":"exit 0"}}' > "$PASS_DIR/package.json"
 echo "export const y = 1;" > "$PASS_DIR/index.ts"
-git -C "$PASS_DIR" add . && git -C "$PASS_DIR" commit -m "add pkg" --quiet 2>/dev/null
+git -C "$PASS_DIR" add . && git -C "$PASS_DIR" -c core.hooksPath=/dev/null commit -m "add pkg" --quiet 2>/dev/null
 # Stage a .ts file change
 echo "export const y = 2;" > "$PASS_DIR/index.ts"
 git -C "$PASS_DIR" add .

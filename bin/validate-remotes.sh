@@ -9,22 +9,15 @@ set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
-EXPECTED_ORIGIN="https://github.com/arndvs/dotfiles-private.git"
-EXPECTED_PUBLIC="https://github.com/arndvs/ctrlshft.git"
+EXPECTED_ORIGIN="$CTRLSHFT_PRIVATE_REMOTE_URL"
+EXPECTED_PUBLIC="$CTRLSHFT_PUBLIC_REMOTE_URL"
 DISABLED_PUSHURL="DISABLED"
 
 _fail=0
 _warn=0
 
 normalize_url() {
-    local url="$1"
-    case "$url" in
-        git@github.com:arndvs/dotfiles-private.git) printf '%s\n' "$EXPECTED_ORIGIN" ;;
-        git@github.com:arndvs/ctrlshft.git) printf '%s\n' "$EXPECTED_PUBLIC" ;;
-        https://github.com/arndvs/dotfiles-private) printf '%s\n' "$EXPECTED_ORIGIN" ;;
-        https://github.com/arndvs/ctrlshft) printf '%s\n' "$EXPECTED_PUBLIC" ;;
-        *) printf '%s\n' "$url" ;;
-    esac
+    normalize_ctrlshft_remote_url "$1"
 }
 
 remote_url() {

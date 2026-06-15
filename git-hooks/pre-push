@@ -10,23 +10,12 @@ set -euo pipefail
 
 HOOK_NAME=$(basename "$0")
 REMOTE_URL="${2:-}"
+DOTFILES="${DOTFILES:-$HOME/dotfiles}"
 
-is_public_ctrlshft_remote() {
-    local normalized="$REMOTE_URL"
-    normalized="${normalized%/}"
-    normalized="${normalized%.git}"
+# shellcheck source=../bin/_lib.sh
+source "$DOTFILES/bin/_lib.sh"
 
-    case "$normalized" in
-        https://github.com/arndvs/ctrlshft|git@github.com:arndvs/ctrlshft|ssh://git@github.com/arndvs/ctrlshft)
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-}
-
-if is_public_ctrlshft_remote; then
+if is_public_ctrlshft_remote_url "$REMOTE_URL"; then
     if [[ "${CTRL_ALLOW_PUBLIC_PUSH:-}" != "1" ]]; then
         cat >&2 <<'MSG'
 pre-push: blocked push to public ctrl+shft.
@@ -40,7 +29,6 @@ MSG
         exit 1
     fi
 
-    DOTFILES="${DOTFILES:-$HOME/dotfiles}"
     if [[ ! -f "$DOTFILES/bin/validate-public-promotion.sh" ]]; then
         echo "pre-push: missing $DOTFILES/bin/validate-public-promotion.sh" >&2
         exit 1

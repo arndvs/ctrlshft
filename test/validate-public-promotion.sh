@@ -182,6 +182,12 @@ git -C "$pre_push_repo" add -f sandcastle.config.json
 run_case "allowed public pre-push still runs promotion guard" fail "sandcastle.config.json" \
     bash -c "cd '$pre_push_repo' && CTRL_ALLOW_PUBLIC_PUSH=1 DOTFILES='$ROOT' bash '$PRE_PUSH' public https://github.com/arndvs/ctrlshft.git"
 
+run_case "ssh public pre-push is blocked without explicit allow" fail "blocked push to public ctrl+shft" \
+    bash -c "cd '$pre_push_repo' && DOTFILES='$ROOT' bash '$PRE_PUSH' public git@github.com:arndvs/ctrlshft.git"
+
+run_case "ssh public pre-push still runs promotion guard when allowed" fail "sandcastle.config.json" \
+    bash -c "cd '$pre_push_repo' && CTRL_ALLOW_PUBLIC_PUSH=1 DOTFILES='$ROOT' bash '$PRE_PUSH' public ssh://git@github.com/arndvs/ctrlshft.git"
+
 printf "\n  \033[32m%d passed\033[0m  \033[31m%d failed\033[0m\n" "$PASS" "$FAIL"
 
 if [[ ${#FAILURES[@]} -gt 0 ]]; then
