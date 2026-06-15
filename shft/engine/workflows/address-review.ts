@@ -31,6 +31,7 @@ interface AddressReviewResult {
   deferred: number;
   remaining: number;
   roundCapped: boolean;
+  roundsRun: number;
 }
 
 interface CommentWithThread {
@@ -40,6 +41,38 @@ interface CommentWithThread {
 }
 
 export async function runAddressReview(opts: AddressReviewOpts): Promise<AddressReviewResult> {
+  if (opts.round > opts.maxRounds) {
+    throw new Error(`Invalid address-review round range: round (${opts.round}) must be less than or equal to maxRounds (${opts.maxRounds})`);
+  }
+
+  let totalFixed = 0;
+  let totalDeferred = 0;
+  let latestRemaining = 0;
+  let latestRoundCapped = false;
+  let roundsRun = 0;
+
+  for (let currentRound = opts.round; currentRound <= opts.maxRounds; currentRound++) {
+    const result = await runAddressReviewRound({ ...opts, round: currentRound });
+    roundsRun++;
+    totalFixed += result.fixed;
+    totalDeferred += result.deferred;
+    latestRemaining = result.remaining;
+    latestRoundCapped = result.roundCapped;
+
+    if (result.roundCapped || (result.remaining === 0 && result.fixed === 0 && result.deferred === 0)) {
+      break;
+    }
+  }
+
+  if (!latestRoundCapped && (totalFixed > 0 || totalDeferred > 0)) {
+    const { owner, repo } = getOwnerRepo({ cwd: opts.repoDir });
+    requestCopilotReview({ owner, repo, prNumber: opts.prNumber, cwd: opts.repoDir });
+  }
+
+  return { fixed: totalFixed, deferred: totalDeferred, remaining: latestRemaining, roundCapped: latestRoundCapped, roundsRun };
+}
+
+async function runAddressReviewRound(opts: AddressReviewOpts): Promise<Omit<AddressReviewResult, "roundsRun">> {
   const config = await loadConfig({ cwd: opts.repoDir });
   const { prNumber, round, maxRounds, repoDir } = opts;
   const model = opts.model ?? config.model;
@@ -99,7 +132,7 @@ export async function runAddressReview(opts: AddressReviewOpts): Promise<Address
     try {
       const promptFile = await resolvePrompt({ name: "address-review", config, repoDir, templatesDir });
 
-      await run({
+      const fixRun = await run({
         agent: claudeCode(model),
         sandbox: noSandbox(),
         cwd: repoDir,
@@ -114,11 +147,15 @@ export async function runAddressReview(opts: AddressReviewOpts): Promise<Address
         logging: { type: "stdout" },
       });
 
-      // All auto/confirm comments treated as fixed after Sandcastle run
+      const touchedFiles = collectTouchedFiles({ runResult: fixRun, cwd: repoDir });
       for (const c of autoConfirm) {
-        fixedCount++;
-        fixedThreadIds.push(c.threadId);
-        results.push({ body: c.scored.comment.body, score: c.scored.score, tier: c.scored.tier, action: "fixed" });
+        if (c.scored.comment.path && touchedFiles.has(c.scored.comment.path)) {
+          fixedCount++;
+          fixedThreadIds.push(c.threadId);
+          results.push({ body: c.scored.comment.body, score: c.scored.score, tier: c.scored.tier, action: "fixed" });
+        } else {
+          results.push({ body: c.scored.comment.body, score: c.scored.score, tier: c.scored.tier, action: "skipped" });
+        }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -164,11 +201,6 @@ export async function runAddressReview(opts: AddressReviewOpts): Promise<Address
   const remaining = results.filter((r) => r.action === "skipped").length;
   const roundCapped = round >= maxRounds && remaining > 0;
 
-  // 8. Re-request Copilot review (skip if round-capped with unresolved comments)
-  if (!roundCapped) {
-    requestCopilotReview({ owner, repo, prNumber, cwd: repoDir });
-  }
-
   console.log(`\n[address-review] Round ${round} complete`);
   console.log(`  fixed: ${fixedCount}`);
   console.log(`  deferred: ${deferredCount}`);
@@ -186,4 +218,58 @@ function getBranch(opts: { prNumber: string; cwd: string }): string {
     cwd: opts.cwd,
     stdio: ["ignore", "pipe", "pipe"],
   }).trim();
+}
+
+interface AgentCommit {
+  sha?: string;
+  files?: string[];
+}
+
+interface AgentRunResult {
+  commits?: AgentCommit[];
+}
+
+function collectTouchedFiles(opts: { runResult: unknown; cwd: string }): Set<string> {
+  const files = new Set<string>();
+  const commits = getAgentCommits(opts.runResult);
+
+  for (const commit of commits) {
+    for (const file of commit.files ?? []) {
+      files.add(file);
+    }
+
+    if (!commit.sha) {
+      continue;
+    }
+
+    for (const file of changedFilesForCommit({ sha: commit.sha, cwd: opts.cwd })) {
+      files.add(file);
+    }
+  }
+
+  return files;
+}
+
+function getAgentCommits(runResult: unknown): AgentCommit[] {
+  if (typeof runResult !== "object" || runResult === null || !("commits" in runResult)) {
+    return [];
+  }
+
+  const commits = (runResult as AgentRunResult).commits;
+  return Array.isArray(commits) ? commits : [];
+}
+
+function changedFilesForCommit(opts: { sha: string; cwd: string }): string[] {
+  try {
+    const output = execFileSync("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", opts.sha], {
+      encoding: "utf8",
+      cwd: opts.cwd,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    return output.split(/\r?\n/).filter(Boolean);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[address-review] Could not inspect changed files for ${opts.sha}: ${message}`);
+    return [];
+  }
 }

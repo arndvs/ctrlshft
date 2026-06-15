@@ -123,6 +123,13 @@ describe("scoreComment", () => {
   });
 
   describe("signal: small scope (+15)", () => {
+    it("does not apply when affected file and line counts are unknown", () => {
+      const comment: PrComment = { path: "a.ts", line: 1, body: "fix this" };
+      const result = scoreComment(comment);
+
+      expect(result.signals.find((s) => s.label === "small-scope")).toBeUndefined();
+    });
+
     it("applies +15 when filesAffected <= 1 and linesAffected <= 10", () => {
       const comment: PrComment = { path: "a.ts", line: 1, body: "fix this", filesAffected: 1, linesAffected: 5 };
       const result = scoreComment(comment);

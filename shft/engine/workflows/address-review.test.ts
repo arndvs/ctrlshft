@@ -43,33 +43,39 @@ import { fetchPrComments } from "../lib/fetch-pr-comments.js";
 import { scoreComment } from "../lib/score-comment.js";
 import { requestCopilotReview } from "../lib/request-review.js";
 import { run } from "@ai-hero/sandcastle";
+import { resolveThreads } from "../lib/resolve-threads.js";
 
 const mockFetchPrComments = vi.mocked(fetchPrComments);
 const mockScoreComment = vi.mocked(scoreComment);
 const mockRequestCopilotReview = vi.mocked(requestCopilotReview);
 const mockRun = vi.mocked(run);
+const mockResolveThreads = vi.mocked(resolveThreads);
 
 function setupThreads(threads: Array<{ body: string; tier: "auto" | "confirm" | "hitl" }>) {
-  mockFetchPrComments.mockReturnValue({
-    comments: {
-      review_threads: threads.map((t, i) => ({
-        path: `src/file${i}.ts`,
-        line: 10,
-        body: t.body,
-        threadId: `thread-${i}`,
-        commentId: `comment-${i}`,
-      })),
-    },
-  } as never);
+  mockFetchPrComments
+    .mockReturnValueOnce({
+      comments: {
+        review_threads: threads.map((t, i) => ({
+          path: `src/file${i}.ts`,
+          line: 10,
+          body: t.body,
+          threadId: `thread-${i}`,
+          commentId: `comment-${i}`,
+        })),
+      },
+    } as never)
+    .mockReturnValue({
+      comments: { review_threads: [] },
+    } as never);
 
-  for (const t of threads) {
+  threads.forEach((t, i) => {
     mockScoreComment.mockReturnValueOnce({
-      comment: { path: "src/file.ts", line: 10, body: t.body },
+      comment: { path: `src/file${i}.ts`, line: 10, body: t.body },
       score: t.tier === "auto" ? 85 : t.tier === "confirm" ? 60 : 30,
       tier: t.tier,
       signals: [],
     });
-  }
+  });
 }
 
 const baseOpts = {
@@ -86,9 +92,64 @@ beforeEach(() => {
 });
 
 describe("address-review round-cap guard", () => {
+  it("continues rounds until unresolved comments are gone", async () => {
+    mockFetchPrComments
+      .mockReturnValueOnce({
+        comments: {
+          review_threads: [
+            {
+              path: "src/file0.ts",
+              line: 10,
+              body: "Add missing await.",
+              threadId: "thread-0",
+              commentId: "comment-0",
+            },
+          ],
+        },
+      } as never)
+      .mockReturnValueOnce({
+        comments: { review_threads: [] },
+      } as never);
+    mockScoreComment.mockReturnValueOnce({
+      comment: { path: "src/file0.ts", line: 10, body: "Add missing await." },
+      score: 100,
+      tier: "auto",
+      signals: [],
+    });
+    mockRun.mockResolvedValueOnce({ commits: [{ files: ["src/file0.ts"] }] } as never);
+
+    const result = await runAddressReview({ ...baseOpts, round: 1, maxRounds: 3 });
+
+    expect(mockFetchPrComments).toHaveBeenCalledTimes(2);
+    expect(result.roundsRun).toBe(2);
+    expect(result.remaining).toBe(0);
+  });
+
+  it("throws when the starting round exceeds the max round", async () => {
+    await expect(runAddressReview({ ...baseOpts, round: 4, maxRounds: 3 })).rejects.toThrow(
+      "Invalid address-review round range: round (4) must be less than or equal to maxRounds (3)",
+    );
+
+    expect(mockFetchPrComments).not.toHaveBeenCalled();
+    expect(mockRequestCopilotReview).not.toHaveBeenCalled();
+  });
+
+  it("does not mark comments fixed when the agent commit does not touch their files", async () => {
+    setupThreads([{ body: "Add missing await.", tier: "auto" }]);
+    mockRun.mockResolvedValueOnce({
+      commits: [{ sha: "abc123", files: ["docs/README.md"] }],
+    } as never);
+
+    const result = await runAddressReview({ ...baseOpts, round: 1, maxRounds: 1 });
+
+    expect(result.fixed).toBe(0);
+    expect(result.remaining).toBe(1);
+    expect(mockResolveThreads).not.toHaveBeenCalled();
+  });
+
   it("requests Copilot review when round < maxRounds", async () => {
     setupThreads([{ body: "fix typo", tier: "auto" }]);
-    mockRun.mockResolvedValueOnce({} as never);
+    mockRun.mockResolvedValueOnce({ commits: [{ files: ["src/file0.ts"] }] } as never);
 
     await runAddressReview({ ...baseOpts, round: 1, maxRounds: 3 });
 
@@ -97,7 +158,7 @@ describe("address-review round-cap guard", () => {
 
   it("requests Copilot review when all comments resolved (even at max round)", async () => {
     setupThreads([{ body: "fix typo", tier: "auto" }]);
-    mockRun.mockResolvedValueOnce({} as never);
+    mockRun.mockResolvedValueOnce({ commits: [{ files: ["src/file0.ts"] }] } as never);
 
     const result = await runAddressReview({ ...baseOpts, round: 3, maxRounds: 3 });
 
@@ -125,7 +186,7 @@ describe("address-review round-cap guard", () => {
 
     const result = await runAddressReview({ ...baseOpts, round: 1, maxRounds: 3 });
 
-    expect(result).toEqual({ fixed: 0, deferred: 0, remaining: 0, roundCapped: false });
+    expect(result).toEqual({ fixed: 0, deferred: 0, remaining: 0, roundCapped: false, roundsRun: 1 });
     expect(mockRequestCopilotReview).not.toHaveBeenCalled();
   });
 });
