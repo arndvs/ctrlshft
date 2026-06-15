@@ -17,7 +17,22 @@ Do not use `upstream` for `arndvs/ctrlshft` in this checkout. In this repo, `ups
 - Push normal dotfiles work to `origin`.
 - Treat `public` as fetch-only by default.
 - Public pushes must be intentional, sanitized, and explicitly allowed with `CTRL_ALLOW_PUBLIC_PUSH=1`.
+- Even intentional public pushes run `bin/validate-public-promotion.sh` to block private-only runtime paths, local config, unsafe installed workflows, and unsanitized content.
+- Before promoting commit history, run `bin/preflight-public-promotion.sh --range <public-base>..HEAD` to validate only the candidate commits and exclude containment work.
 - `remote.pushDefault` must be unset or set to `origin`; it must never point at `public` or `upstream`.
+
+## Public promotion guardrails
+
+Sandcastle is intended to become public ctrl+shft product code, including the installed `.sandcastle/**` tree after sanitization. The promotion guard scans `.sandcastle/**` for private repo/local-machine references and high-confidence secret-like values before public push.
+
+Do not promote these private-only paths directly to `ctrlshft`:
+
+- `sandcastle.config.json`
+- `.github/workflows/agent-*.yml`
+- `working/active/**`, `working/runtime/**`, `working/tmp/**`, `working/logs/**`, `working/refs/**`, `working/research/**`
+- non-example `secrets/**` and local `.env*` files
+
+Intentional Sandcastle productization belongs in `.sandcastle/**` plus source paths such as `shft/templates/`, `shft/engine/`, `shft/docs/`, `bin/*sandcastle*.sh`, and `test/sandcastle-*.sh`.
 
 ## Issue ownership
 
