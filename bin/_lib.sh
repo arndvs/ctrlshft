@@ -29,9 +29,13 @@ detect_os() {
 # ── Python discovery ──────────────────────────────────────────────────────────
 # Sets PYTHON to the best available Python binary (venv first, then system).
 # Requires VENV_DIR to be set. Returns 1 if no Python found.
+_is_windows_ostype() {
+    [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || "$OSTYPE" == win32* ]]
+}
+
 find_python() {
     PYTHON=""
-    if [[ -f "$VENV_DIR/Scripts/python.exe" ]] && [[ "$OSTYPE" != linux* ]]; then
+    if _is_windows_ostype && [[ -f "$VENV_DIR/Scripts/python.exe" ]]; then
         PYTHON="$VENV_DIR/Scripts/python.exe"
     elif [[ -f "$VENV_DIR/bin/python" ]]; then
         PYTHON="$VENV_DIR/bin/python"
@@ -52,7 +56,7 @@ find_python() {
 # Requires VENV_DIR to be set.
 find_venv_python() {
     _venv_python=""
-    if [[ -f "$VENV_DIR/Scripts/python.exe" ]] && [[ "$OSTYPE" != linux* ]]; then
+    if _is_windows_ostype && [[ -f "$VENV_DIR/Scripts/python.exe" ]]; then
         _venv_python="$VENV_DIR/Scripts/python.exe"
     elif [[ -f "$VENV_DIR/bin/python" ]]; then
         _venv_python="$VENV_DIR/bin/python"
