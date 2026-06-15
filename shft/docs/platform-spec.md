@@ -117,6 +117,33 @@ Consumer repos don't install Sandcastle engine as a dependency — `init-sandcas
 
 The vendored engine is a runtime scaffold, not a source checkout. Test files are excluded, so `init-sandcastle.sh` and `update-sandcastle.sh` render `.sandcastle/engine/package.json` with a no-op `test` script while preserving `typecheck` for validating vendored runtime sources.
 
+## Engine package and lockfile policy
+
+`shft/engine/package.json` is the public product package for the Sandcastle engine. It should be promoted with:
+
+| Field | Public policy |
+|-------|---------------|
+| `packageManager` | Keep the declared `pnpm@10.33.2` package manager so installs and lockfile updates are reproducible. |
+| `dependencies` | Keep `@anthropic-ai/claude-code`, `@ai-hero/sandcastle`, and `zod`; these are runtime requirements for GitHub Actions workflows and the engine's structured output validation. |
+| `devDependencies` | Keep TypeScript, `tsx`, Node types, and `vitest`; tests and local typechecking run from the source package, not the vendored runtime package. |
+| `scripts.test` | Keep `vitest run` in `shft/engine/package.json`. Render a no-op `test` script only in `.sandcastle/engine/package.json` because vendored runtime installs intentionally omit `*.test.ts` files. |
+| `pnpm.onlyBuiltDependencies` | Keep the explicit build allowlist for packages that need install-time native/binary setup. |
+| `pnpm-lock.yaml` | Track and promote the lockfile with the source package and vendored runtime snapshot. Do not regenerate it with another package manager. |
+
+The only intentional source-to-vendored package drift is the rendered no-op `test` script in `.sandcastle/engine/package.json`. Dependency versions, package-manager declaration, TypeScript configuration, and lockfile content should otherwise match the source engine package.
+
+For the current private-to-public Sandcastle promotion, the private `shft/engine/package.json` changes are public-safe and should be recreated or replayed in ctrl+shft:
+
+| Current public drift | Decision |
+|----------------------|----------|
+| Missing `packageManager` and lockfile | Promote `pnpm@10.33.2` and `pnpm-lock.yaml`; package-manager drift is not intentional. |
+| `@ai-hero/sandcastle` behind the private source version | Promote the private source version with the matching lockfile. |
+| Missing `@anthropic-ai/claude-code` | Promote it; workflow runners invoke Claude Code in GitHub Actions and this is product behavior, not private dogfood state. |
+| Missing `vitest` and `test` script | Promote them in `shft/engine` so source tests are runnable; keep only the rendered no-op test script in `.sandcastle/engine`. |
+| `start` still pointing at the legacy `main.ts` runner | Promote the dispatcher-oriented `start` script because workflow runners now execute via `.sandcastle/run.ts`. |
+
+No package dependency is private-only by itself. Private dogfood assumptions live in `sandcastle.config.json`, installed `.github/workflows/agent-*.yml`, repository secrets, and local runtime state; those remain excluded from public promotion.
+
 ## Public promotion shape
 
 The public ctrl+shft repository should carry both Sandcastle source and the sanitized installed runtime:
