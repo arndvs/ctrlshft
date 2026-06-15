@@ -42,14 +42,14 @@ import { runAddressReview } from "./address-review.js";
 import { fetchPrComments } from "../lib/fetch-pr-comments.js";
 import { scoreComment } from "../lib/score-comment.js";
 import { requestCopilotReview } from "../lib/request-review.js";
-import { run } from "@ai-hero/sandcastle";
 import { resolveThreads } from "../lib/resolve-threads.js";
+import { run } from "@ai-hero/sandcastle";
 
 const mockFetchPrComments = vi.mocked(fetchPrComments);
 const mockScoreComment = vi.mocked(scoreComment);
 const mockRequestCopilotReview = vi.mocked(requestCopilotReview);
-const mockRun = vi.mocked(run);
 const mockResolveThreads = vi.mocked(resolveThreads);
+const mockRun = vi.mocked(run);
 
 function setupThreads(threads: Array<{ body: string; tier: "auto" | "confirm" | "hitl" }>) {
   mockFetchPrComments
@@ -121,7 +121,8 @@ describe("address-review round-cap guard", () => {
     const result = await runAddressReview({ ...baseOpts, round: 1, maxRounds: 3 });
 
     expect(mockFetchPrComments).toHaveBeenCalledTimes(2);
-    expect(result.roundsRun).toBe(2);
+    expect(mockResolveThreads).toHaveBeenCalledWith({ threadIds: ["thread-0"], cwd: "/repo" });
+    expect(result.roundsRun).toBe(1);
     expect(result.remaining).toBe(0);
   });
 
@@ -134,17 +135,35 @@ describe("address-review round-cap guard", () => {
     expect(mockRequestCopilotReview).not.toHaveBeenCalled();
   });
 
-  it("does not mark comments fixed when the agent commit does not touch their files", async () => {
-    setupThreads([{ body: "Add missing await.", tier: "auto" }]);
+  it("does not mark comments fixed when the thread remains unresolved after the run", async () => {
+    mockFetchPrComments.mockReturnValue({
+      comments: {
+        review_threads: [
+          {
+            path: "src/file0.ts",
+            line: 10,
+            body: "Add missing await.",
+            threadId: "thread-0",
+            commentId: "comment-0",
+          },
+        ],
+      },
+    } as never);
+    mockScoreComment.mockReturnValue({
+      comment: { path: "src/file0.ts", line: 10, body: "Add missing await." },
+      score: 100,
+      tier: "auto",
+      signals: [],
+    });
     mockRun.mockResolvedValueOnce({
-      commits: [{ sha: "abc123", files: ["docs/README.md"] }],
+      commits: [{ sha: "abc123", files: ["src/file0.ts"] }],
     } as never);
 
     const result = await runAddressReview({ ...baseOpts, round: 1, maxRounds: 1 });
 
     expect(result.fixed).toBe(0);
     expect(result.remaining).toBe(1);
-    expect(mockResolveThreads).not.toHaveBeenCalled();
+    expect(mockResolveThreads).toHaveBeenCalledWith({ threadIds: ["thread-0"], cwd: "/repo" });
   });
 
   it("requests Copilot review when round < maxRounds", async () => {

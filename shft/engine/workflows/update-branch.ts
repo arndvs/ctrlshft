@@ -8,7 +8,7 @@ import { runWithExtraction } from "../lib/run-with-extraction.js";
 import { UpdateBranchOutput } from "../schemas/update-branch-output.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
-import { required, fail, sh } from "../lib/shell-helpers.js";
+import { required, fail, sh, shFile } from "../lib/shell-helpers.js";
 import { resolveDefaultExtractionsDir, resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -39,9 +39,9 @@ export async function runUpdateBranch(opts: {
 
   execFileSync("git", ["fetch", "origin", baseRef], { cwd: repoDir, stdio: "inherit" });
 
-  const preMergeSha = sh("git rev-parse HEAD", repoDir).trim();
-  const baseSha = sh(`git rev-parse origin/${baseRef}`, repoDir).trim();
-  const mergeBase = sh(`git merge-base HEAD origin/${baseRef}`, repoDir).trim();
+  const preMergeSha = shFile("git", ["rev-parse", "HEAD"], repoDir).trim();
+  const baseSha = shFile("git", ["rev-parse", `origin/${baseRef}`], repoDir).trim();
+  const mergeBase = shFile("git", ["merge-base", "HEAD", `origin/${baseRef}`], repoDir).trim();
 
   if (mergeBase === baseSha) {
     const comment = `\`agent:update-branch\`: branch is already up to date with \`origin/${baseRef}\`. No merge needed.`;
@@ -82,7 +82,7 @@ export async function runUpdateBranch(opts: {
     logging: { type: "stdout" },
   });
 
-  const postSha = sh("git rev-parse HEAD", repoDir).trim();
+  const postSha = shFile("git", ["rev-parse", "HEAD"], repoDir).trim();
   if (postSha === preMergeSha) {
     fail("Agent produced no commits — branch still at pre-merge HEAD.");
   }

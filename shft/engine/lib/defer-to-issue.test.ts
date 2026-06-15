@@ -112,4 +112,16 @@ describe("deferToIssue", () => {
     const args = replyCall[1] as string[];
     expect(args.some((a) => a.includes("Deferred to #99"))).toBe(true);
   });
+
+  it("does not resolve the thread when posting the backlink fails", () => {
+    mockExecFileSync
+      .mockReturnValueOnce(JSON.stringify([]))
+      .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
+      .mockImplementationOnce(() => {
+        throw new Error("graphql failed");
+      });
+
+    expect(() => deferToIssue({ scored: makeScoredComment(), pr: basePr, threadId: "PRRT_abc", cwd: "/repo" })).toThrow("graphql failed");
+    expect(mockResolveThread).not.toHaveBeenCalled();
+  });
 });

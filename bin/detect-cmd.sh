@@ -36,7 +36,9 @@ _dcmd_client_file="$DOTFILES/clients/$_dcmd_client/client.instructions.md"
 [[ -f "$_dcmd_client_file" ]] || return 0 2>/dev/null || exit 0
 
 _dcmd_venture=""
+_dcmd_line_no=0
 while IFS= read -r line; do
+    _dcmd_line_no=$(( _dcmd_line_no + 1 ))
     if [[ "$line" =~ ^cmd-venture:[[:space:]]*(.+)$ ]]; then
         _dcmd_venture="${BASH_REMATCH[1]}"
         _dcmd_venture="${_dcmd_venture%%[[:space:]]}"
@@ -45,7 +47,7 @@ while IFS= read -r line; do
         break
     fi
     # Stop reading after frontmatter closes
-    [[ "$line" == "---" ]] && [[ -n "$_dcmd_venture" || "$REPLY" -gt 1 ]] && break
+    [[ "$line" == "---" && "$_dcmd_line_no" -gt 1 ]] && break
 done < "$_dcmd_client_file"
 
 # Bail if no cmd-venture mapping
@@ -75,4 +77,4 @@ _dcmd_venture_dir="$CMD_DIR/ventures/$_dcmd_venture"
     fi
 } >> "$OUTPUT_FILE"
 
-unset _dcmd_client _dcmd_venture _dcmd_venture_dir _dcmd_client_file
+unset _dcmd_client _dcmd_venture _dcmd_venture_dir _dcmd_client_file _dcmd_line_no

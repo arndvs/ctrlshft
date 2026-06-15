@@ -106,7 +106,6 @@ Sandcastle expects these repository secrets after `ctrl init-sandcastle`:
 
 | Secret | Required for | Notes |
 |--------|--------------|-------|
-| `CLAUDE_CODE_OAUTH_TOKEN` | Workflows that invoke Claude Code (`implement-issue`, `implement-prd`, `write-pr`, `architecture-review`) | Authenticates Claude Code in GitHub Actions. Configure it alongside the LiteLLM proxy secrets; it is not a replacement for them. |
 | `LITELLM_BASE_URL` | All model-backed workflows | Claude-compatible proxy endpoint used through `ANTHROPIC_BASE_URL`. |
 | `LITELLM_MASTER_KEY` | All model-backed workflows | Proxy auth token used through `ANTHROPIC_AUTH_TOKEN`. |
 | `AGENT_PAT` | Workflow-to-workflow label handoffs and reliable branch/PR mutations | Required for the label-driven state machine because `GITHUB_TOKEN` label changes do not trigger follow-up workflow runs. Use a classic PAT with `repo` scope for private repositories, or equivalent fine-grained issue/PR/content scopes. |

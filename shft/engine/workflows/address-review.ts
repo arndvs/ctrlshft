@@ -6,11 +6,11 @@ import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { fetchPrComments, getOwnerRepo } from "../lib/fetch-pr-comments.js";
 import { scoreComment } from "../lib/score-comment.js";
 import { deferToIssue } from "../lib/defer-to-issue.js";
-import { resolveThreads } from "../lib/resolve-threads.js";
 import { postRoundSummary } from "../lib/round-summary.js";
 import { requestCopilotReview } from "../lib/request-review.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
+import { resolveThreads } from "../lib/resolve-threads.js";
 import type { ScoredComment, Tier } from "../lib/types.js";
 import { resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
@@ -59,7 +59,7 @@ export async function runAddressReview(opts: AddressReviewOpts): Promise<Address
     latestRemaining = result.remaining;
     latestRoundCapped = result.roundCapped;
 
-    if (result.roundCapped || (result.remaining === 0 && result.fixed === 0 && result.deferred === 0)) {
+    if (result.roundCapped || result.remaining === 0) {
       break;
     }
   }
@@ -116,7 +116,6 @@ async function runAddressReviewRound(opts: AddressReviewOpts): Promise<Omit<Addr
 
   // 4. For Auto/Confirm: fix via Sandcastle
   let fixedCount = 0;
-  const fixedThreadIds: string[] = [];
 
   if (autoConfirm.length > 0) {
     console.log(`[address-review] Fixing ${autoConfirm.length} auto/confirm comment(s) via Sandcastle...`);
@@ -148,10 +147,14 @@ async function runAddressReviewRound(opts: AddressReviewOpts): Promise<Omit<Addr
       });
 
       const touchedFiles = collectTouchedFiles({ runResult: fixRun, cwd: repoDir });
+      const touchedComments = autoConfirm.filter((c) => c.scored.comment.path && touchedFiles.has(c.scored.comment.path));
+      if (touchedComments.length > 0) {
+        resolveThreads({ threadIds: touchedComments.map((c) => c.threadId), cwd: repoDir });
+      }
+      const unresolvedAfterResolution = new Set(fetchPrComments({ prNumber, cwd: repoDir }).comments.review_threads.map((thread) => thread.commentId));
       for (const c of autoConfirm) {
-        if (c.scored.comment.path && touchedFiles.has(c.scored.comment.path)) {
+        if (c.scored.comment.path && touchedFiles.has(c.scored.comment.path) && !unresolvedAfterResolution.has(c.commentId)) {
           fixedCount++;
-          fixedThreadIds.push(c.threadId);
           results.push({ body: c.scored.comment.body, score: c.scored.score, tier: c.scored.tier, action: "fixed" });
         } else {
           results.push({ body: c.scored.comment.body, score: c.scored.score, tier: c.scored.tier, action: "skipped" });
@@ -189,13 +192,7 @@ async function runAddressReviewRound(opts: AddressReviewOpts): Promise<Omit<Addr
     }
   }
 
-  // 6. Resolve threads for fixed comments (HITL threads already resolved by deferToIssue)
-  if (fixedThreadIds.length > 0) {
-    console.log(`[address-review] Resolving ${fixedThreadIds.length} fixed thread(s)...`);
-    resolveThreads({ threadIds: fixedThreadIds, cwd: repoDir });
-  }
-
-  // 7. Post round summary
+  // 6. Post round summary
   postRoundSummary({ owner, repo, prNumber, round, maxRounds, results, cwd: repoDir });
 
   const remaining = results.filter((r) => r.action === "skipped").length;

@@ -10,17 +10,14 @@ set -euo pipefail
 #
 # Secrets configured:
 #
-#   1. CLAUDE_CODE_OAUTH_TOKEN
-#      OAuth token used by Claude Code inside GitHub Actions.
-#
-#   2. LITELLM_BASE_URL
+#   1. LITELLM_BASE_URL
 #      Base URL for the LiteLLM proxy that routes model traffic
 #      to GitHub Copilot.
 #
-#   3. LITELLM_MASTER_KEY
+#   2. LITELLM_MASTER_KEY
 #      Auth token for the LiteLLM proxy.
 #
-#   4. AGENT_PAT
+#   3. AGENT_PAT
 #      A GitHub Personal Access Token (classic) with repo scope.
 #      Required for label mutations that trigger downstream workflows
 #      (GITHUB_TOKEN cannot trigger other workflow runs).
@@ -73,10 +70,6 @@ set_secret() {
   echo "  Set."
   echo ""
 }
-
-set_secret "CLAUDE_CODE_OAUTH_TOKEN" \
-  "OAuth token for Claude Code in GitHub Actions." \
-  "Required by workflows that invoke Claude Code; configure it alongside the LiteLLM proxy secrets."
 
 set_secret "LITELLM_BASE_URL" \
   "Base URL for the LiteLLM proxy that routes Claude-compatible traffic to GitHub Copilot." \

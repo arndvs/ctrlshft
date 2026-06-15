@@ -110,7 +110,7 @@ if _detect_client_project; then
     # Inject cmd venture context if available
     _dc_cmd_script="$DOTFILES/bin/detect-cmd.sh"
     if [[ -f "$_dc_cmd_script" ]]; then
-        source "$_dc_cmd_script" "$ACTIVE_CLIENT" 2>/dev/null || true
+        bash "$_dc_cmd_script" "$ACTIVE_CLIENT" 2>/dev/null || true
     fi
     unset _dc_cmd_script
 
