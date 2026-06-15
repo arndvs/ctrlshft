@@ -78,7 +78,7 @@ function collectSignals(comment: PrComment): Signal[] {
   }
 
   // +15 small scope — ≤1 file and ≤10 lines
-  if ((comment.filesAffected ?? 1) <= 1 && (comment.linesAffected ?? 1) <= 10) {
+  if (comment.filesAffected != null && comment.linesAffected != null && comment.filesAffected <= 1 && comment.linesAffected <= 10) {
     signals.push({ label: "small-scope", delta: 15 });
   }
 
