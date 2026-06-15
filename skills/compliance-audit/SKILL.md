@@ -113,15 +113,56 @@ For each active rule and instruction file:
 
 When the diff touches `.ts`, `.tsx`, `.js`, or `.jsx` files, always check `rules/resource-management.md` compliance — even if not explicitly listed in active contexts. Specifically scan the diff for:
 
-- `addEventListener` / `.on()` / `.subscribe()` without cleanup
-- `setInterval` / `setTimeout` without clear/cleanup
-- `new Map()` / `new Set()` / `= {}` / `= []` at module scope without eviction
-- `useEffect` that creates resources without a return cleanup function
-- `fetch()` in components without `AbortController`
-- Database/file/stream `open()` without `close()` in a `finally` block
-- Closures capturing large objects in long-lived callbacks
+**Detection — scan for these anti-patterns:**
 
-These are **High** severity by default — leaked resources compound silently and are expensive to diagnose after the fact.
+- `addEventListener` / `.on()` / `.subscribe()` / `.observe()` without cleanup `[PROD]`
+- `setInterval` / `setTimeout` / `requestAnimationFrame` without clear/cleanup `[PROD]`
+- `new Map()` / `new Set()` / `= {}` / `= []` at module scope without eviction `[PROD]`
+- `useEffect` that creates resources without a return cleanup function `[PROD]`
+- `fetch()` in components without `AbortController` `[PROD]`
+- Database/file/stream `open()` without `close()` in a `finally` block or TC39 `using` `[PROD]`
+- Closures capturing large objects in long-lived callbacks `[PROD]`
+- Module-scope state without `globalThis.__x ??=` protection (HMR stacking) `[DEV]`
+- Large inline data arrays/objects (100+ entries) at module scope instead of loaded from JSON/disk `[DEV]`
+- `new SomeSDK()` / `new Client()` created inside functions instead of as a `globalThis`-protected singleton `[BOTH]`
+- Build plugin wrappers (`withSentryConfig`, `withBundleAnalyzer`) applied without `NODE_ENV` guard `[DEV]`
+- SSE/WebSocket listeners accumulating events without backpressure or consumption bounds `[PROD]`
+- `console.log` of large objects (request bodies, datasets, DOM trees) in per-request or render-path code `[DEV]`
+
+Severity: `[PROD]` patterns are **High** — they affect deployed applications. `[DEV]` patterns are **Medium** — they affect developer experience. `[BOTH]` patterns are **High**.
+
+**Fix verification — when the diff contains a fix for any of the above, verify the fix is correct:**
+
+Do NOT mark a violation as resolved unless the fix matches a valid pattern from `rules/resource-management.md`. Common invalid fixes:
+
+| Pattern | Invalid fix | Why it's wrong | Valid fix |
+|---------|-------------|----------------|-----------|
+| Large inline data | Delete the file/data | Masks the problem, loses functionality | Extract to JSON + lazy accessor with `globalThis` |
+| Large inline data | Wrap in function without `globalThis` | Module-scope `let` still duplicates on HMR | `globalThis.__x ??=` lazy accessor |
+| Large inline data | Move to separate `.ts` file with `export const` | Same problem, different file | JSON import or `globalThis` accessor |
+| SDK per-request | Move to module-scope `const` | Duplicates on HMR (each with own timers/queues) | `globalThis.__client ??= new SDK()` |
+| Unbounded Map | Add `.clear()` on a timer | Periodic clearing loses valid data | LRU/TTL eviction or `WeakMap` |
+| Missing cleanup | Add mounted-ref check | Outdated React 17 pattern, doesn't cancel work | `AbortController` |
+
+**Fix chaining — verify compound fixes:**
+
+Some patterns require TWO fixes applied together. If only one is applied, flag the gap:
+
+- SDK singleton moved to module scope → also needs `globalThis` for HMR safety
+- Unbounded cache given eviction → also needs `globalThis` for HMR safety
+- Large data extracted to function → function still needs `globalThis` cache
+
+**Output format per violation:**
+
+```
+[RULE] resource-management.md — [section name]
+[STATUS] ✗ VIOLATION
+[HAZARD] [PROD] / [DEV] / [BOTH]
+[EVIDENCE] file:line — description of what was found
+[SEVERITY] High / Medium
+[REMEDIATION] Correct fix pattern from rules/resource-management.md:
+  [one-line code example or reference to specific rule section]
+```
 
 **Output format per rule:**
 
