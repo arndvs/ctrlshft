@@ -48,4 +48,4 @@ Labels are defined in `shft/templates/labels.json` and created by `init-sandcast
 
 ## AGENT_PAT requirement
 
-Label changes made by `GITHUB_TOKEN` don't trigger other workflows (GitHub security constraint). For the full state machine chain to work, workflows that change labels need `AGENT_PAT` — a Personal Access Token with `issues:write` scope.
+Label changes made by `GITHUB_TOKEN` don't trigger other workflows (GitHub security constraint). For the full state machine chain to work, workflows that change labels require `AGENT_PAT` — a Personal Access Token with `repo` scope for private repositories or equivalent issue/PR/content scopes for fine-grained tokens.

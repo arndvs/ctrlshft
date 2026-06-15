@@ -62,6 +62,17 @@ The full dogfood smoke-test contract for these workflows lives in `shft/docs/ful
 | `agent-check-stale-prs.yml` | Schedule | Finds stale PRs needing attention |
 | `agent-promote-queued.yml` | Issue closed | Unblocks queued issues when dependencies close |
 
+Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` and `{{PACKAGE_MANAGER}}` into `.github/workflows/agent-*.yml`; publishing or installing raw templates without that substitution produces broken workflows.
+
+### Workflow security contract
+
+`agent-fix-pr-feedback.yml`, `agent-merge-pr.yml`, and `agent-update-branch.yml` use `pull_request_target` so they can update labels and same-repository PR branches. Their fork protections are a required security pair:
+
+- keep the `refuse-fork` job that removes the triggering label, adds `agent:blocked`, and comments on fork PRs
+- keep the main mutation job guarded by `github.event.pull_request.head.repo.full_name == github.repository`
+
+Do not remove either side of that pair. Without both checks, a public repository could run privileged agent steps against untrusted fork code.
+
 ## Prompt templates
 
 Located in `shft/templates/prompts/`. Each workflow resolves its prompt via `resolvePrompt()` which checks:
@@ -89,8 +100,33 @@ Extraction prompts (for two-phase workflows) live in `shft/templates/extractions
 
 Only `sandbox: "none"` is currently supported by the TypeScript engine. Docker and worktree sandbox modes are intentionally rejected until provider wiring and CI validation are implemented.
 
+## Required GitHub Actions secrets
+
+Sandcastle expects these repository secrets after `ctrl init-sandcastle`:
+
+| Secret | Required for | Notes |
+|--------|--------------|-------|
+| `CLAUDE_CODE_OAUTH_TOKEN` | Workflows that invoke Claude Code (`implement-issue`, `implement-prd`, `write-pr`, `architecture-review`) | Authenticates Claude Code in GitHub Actions. Configure it alongside the LiteLLM proxy secrets; it is not a replacement for them. |
+| `LITELLM_BASE_URL` | All model-backed workflows | Claude-compatible proxy endpoint used through `ANTHROPIC_BASE_URL`. |
+| `LITELLM_MASTER_KEY` | All model-backed workflows | Proxy auth token used through `ANTHROPIC_AUTH_TOKEN`. |
+| `AGENT_PAT` | Workflow-to-workflow label handoffs and reliable branch/PR mutations | Required for the label-driven state machine because `GITHUB_TOKEN` label changes do not trigger follow-up workflow runs. Use a classic PAT with `repo` scope for private repositories, or equivalent fine-grained issue/PR/content scopes. |
+
 ## Vendoring model
 
 Consumer repos don't install Sandcastle engine as a dependency — `init-sandcastle.sh` copies the engine source into `.sandcastle/engine/` and `update-sandcastle.sh` syncs it with drift detection. This keeps the pipeline self-contained and version-pinned per repo.
 
 The vendored engine is a runtime scaffold, not a source checkout. Test files are excluded, so `init-sandcastle.sh` and `update-sandcastle.sh` render `.sandcastle/engine/package.json` with a no-op `test` script while preserving `typecheck` for validating vendored runtime sources.
+
+## Public promotion shape
+
+The public ctrl+shft repository should carry both Sandcastle source and the sanitized installed runtime:
+
+| Path | Public role | Promotion rule |
+|------|-------------|----------------|
+| `shft/engine/**` | Product source for the TypeScript engine | Preserve safe commit history where `preflight-public-promotion.sh` passes. |
+| `shft/templates/**` | Product source for workflows, prompts, scripts, hooks, and setup templates | Preserve safe commit history; promote installed workflow behavior as templates, not as `.github/workflows/agent-*.yml`. |
+| `shft/docs/**` | Public product documentation | Preserve safe commit history. |
+| `bin/*sandcastle*.sh`, `test/sandcastle-*.sh` | Public CLI/update/preflight and smoke-test tooling | Preserve safe commit history after private wording is sanitized. |
+| `.sandcastle/**` | Sanitized generated runtime snapshot for dogfooding and public inspection | Add from the reviewed final tree as a snapshot; do not replay private dogfood runtime history. |
+
+Private install state stays private. Do not publish `sandcastle.config.json`, installed `.github/workflows/agent-*.yml`, working/runtime artifacts, local env files, or secret values. Validate the exact promotion branch with `bin/validate-public-promotion.sh` and `bin/preflight-public-promotion.sh --range public/main..HEAD` before pushing to public.
