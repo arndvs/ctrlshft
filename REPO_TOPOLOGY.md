@@ -34,6 +34,21 @@ Do not promote these private-only paths directly to `ctrlshft`:
 
 Intentional Sandcastle productization belongs in `.sandcastle/**` plus source paths such as `shft/templates/`, `shft/engine/`, `shft/docs/`, `bin/*sandcastle*.sh`, and `test/sandcastle-*.sh`.
 
+## Sandcastle public promotion plan
+
+Do not promote the private `dev` branch to public `main` directly. The raw private-to-public history includes private-only installed workflow files, local Sandcastle install config, and emergency-containment/token-hardening subjects that the range preflight intentionally blocks.
+
+Promote Sandcastle from a dedicated public promotion branch based on `public/main`:
+
+1. Fetch the public base and create a promotion branch from it: `git fetch public main && git switch -c promote/sandcastle public/main`.
+2. Preserve public-safe source history by replaying commits for `shft/engine/**`, `shft/templates/**`, `shft/docs/**`, `bin/init-sandcastle.sh`, `bin/update-sandcastle.sh`, `bin/preflight-sandcastle.sh`, and `test/sandcastle-*.sh` when each commit passes `bin/preflight-public-promotion.sh`.
+3. Rewrite or squash commits whose content is public-safe but whose original subject/path history is not. In the current Sandcastle history this includes token-name workflow fixes and dogfood commits that touched installed `.github/workflows/agent-*.yml` or `sandcastle.config.json`.
+4. Add `.sandcastle/**` as a sanitized installed-runtime snapshot from the reviewed source tree instead of replaying the dogfood `.sandcastle` history. The final `.sandcastle/**` tree is promotable, but its private dogfood history is not the public product history.
+5. Exclude `sandcastle.config.json` and installed `.github/workflows/agent-*.yml`; public consumers should get workflow templates from `shft/templates/workflows/` and generate installed workflows intentionally.
+6. Before any public push, run `bash bin/validate-public-promotion.sh` and `bash bin/preflight-public-promotion.sh --range public/main..HEAD` on the exact promotion branch. Push only through `bin/preflight-public-promotion.sh --push --confirm-public-push`.
+
+This keeps the public repository current with Sandcastle product work while preserving safe source history and avoiding publication of private dotfiles runtime state.
+
 ## Issue ownership
 
 | Work type | Issue home |

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # update-sandcastle.sh — Detect drift between vendored Sandcastle files and
-# dotfiles source. Shows diffs and prompts the user to update.
+# the source checkout. Shows diffs and prompts the user to update.
 #
 # Usage: ctrl update-sandcastle [--dry-run]
 #
 # Checks:
-#   1. .sandcastle/engine/ vs ~/dotfiles/shft/engine/ (excluding tests/node_modules)
-#   2. .sandcastle/templates/ vs ~/dotfiles/shft/templates/{prompts,extractions}/
-#   3. .sandcastle/{scripts,hooks}/ vs ~/dotfiles/shft/templates/{scripts,hooks}/
-#   4. .github/workflows/agent-*.yml vs ~/dotfiles/shft/templates/workflows/
-#   5. .github/copilot-setup-steps.yml vs ~/dotfiles/shft/templates/copilot-setup-steps.yml
+#   1. .sandcastle/engine/ vs shft/engine/ in the source checkout (excluding tests/node_modules)
+#   2. .sandcastle/templates/ vs shft/templates/{prompts,extractions}/ in the source checkout
+#   3. .sandcastle/{scripts,hooks}/ vs shft/templates/{scripts,hooks}/ in the source checkout
+#   4. .github/workflows/agent-*.yml vs shft/templates/workflows/ in the source checkout
+#   5. .github/copilot-setup-steps.yml vs shft/templates/copilot-setup-steps.yml in the source checkout
 #
 # Never touches project-specific files: prompts, config, CODING_STANDARDS.md.
 
@@ -26,7 +26,7 @@ while [[ $# -gt 0 ]]; do
         --help|-h)
             echo "Usage: ctrl update-sandcastle [--dry-run]"
             echo ""
-            echo "Detects drift between vendored Sandcastle files and dotfiles source."
+            echo "Detects drift between vendored Sandcastle files and the source checkout."
             echo "  --dry-run  Show what would change without changing anything"
             exit 0
             ;;
