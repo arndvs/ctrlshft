@@ -1,16 +1,25 @@
 # Repository Topology
 
-This checkout is the private source checkout for Aaron's real dotfiles.
+This document describes the maintainer topology for keeping Aaron's private dotfiles and the public ctrl+shft project aligned. Public users do not need Aaron's private remote; they should use the normal GitHub fork flow for `arndvs/ctrlshft`.
+
+## Operating phases
+
+| Phase | Where work starts | Why |
+| --- | --- | --- |
+| Cleanup/staging | `dotfiles-private` | Containment, secret-adjacent cleanup, remote guardrails, and public-promotion planning stay private until validated. |
+| Steady state | `ctrlshft` for core/product work; `dotfiles-private` for personal overlay | Public product work should build public history first, then be pulled back into the private checkout for Aaron's machine-specific configuration. |
+
+Until final readiness is approved, use `dotfiles-private` as the staging area and promote only sanitized ranges to `ctrlshft`. After cleanup, default new Sandcastle, shft, hooks, skills, and docs work to public `ctrlshft` unless it is personal, secret-adjacent, local-machine-specific, or part of a private containment workflow.
 
 ## Canonical roles
 
 | Name | URL | Role |
 | --- | --- | --- |
 | `~/dotfiles` | local path | Private working checkout and source of truth for this machine |
-| `origin` | `https://github.com/arndvs/dotfiles-private.git` | Private canonical remote for real dotfiles work |
+| `origin` | private GitHub repo | Maintainer-only canonical remote for real dotfiles and personal overlay work |
 | `public` | `https://github.com/arndvs/ctrlshft.git` | Public/sanitized ctrl+shft project repository |
 
-Do not use `upstream` for `arndvs/ctrlshft` in this checkout. In this repo, `upstream` reads like "canonical source", but the canonical source is private `origin`.
+Do not use `upstream` for `arndvs/ctrlshft` in the private checkout. In this repo, `upstream` reads like "canonical source", but the current cleanup-phase canonical source is private `origin`. Public forks may use the conventional `origin` = fork and `upstream` = `arndvs/ctrlshft`; that public-fork topology is separate from this maintainer checkout.
 
 ## Push policy
 
@@ -20,6 +29,17 @@ Do not use `upstream` for `arndvs/ctrlshft` in this checkout. In this repo, `ups
 - Even intentional public pushes run `bin/validate-public-promotion.sh` to block private-only runtime paths, local config, unsafe installed workflows, and unsanitized content.
 - Before promoting commit history, run `bin/preflight-public-promotion.sh --range <public-base>..HEAD` to validate only the candidate commits and exclude containment work.
 - `remote.pushDefault` must be unset or set to `origin`; it must never point at `public` or `upstream`.
+
+## Steady-state sync workflow
+
+After cleanup and final readiness:
+
+1. Start public-safe product work in `ctrlshft` so public history is native and reviewable.
+2. Pull or merge accepted public changes back into `dotfiles-private`.
+3. Keep private overlay changes, local machine configuration, secrets, working state, and emergency containment work only in `dotfiles-private`.
+4. If private work later becomes product work, create a sanitized promotion branch from the public base and validate it before pushing.
+
+This makes `ctrlshft` the durable public product history while `dotfiles-private` remains Aaron's private integration checkout.
 
 ## Public promotion guardrails
 
@@ -61,7 +81,7 @@ This keeps the public repository current with Sandcastle product work while pres
 
 This project was originally called `ctrlshft` while also serving as the real private dotfiles repo. That private instance was briefly published publicly. The current split is intentional:
 
-- `dotfiles-private` is the private source of truth.
-- `ctrlshft` is the public/sanitized project.
+- `dotfiles-private` is the private cleanup/staging area and long-term personal overlay.
+- `ctrlshft` is the public/sanitized project and steady-state home for core product work.
 
-Run `bash ~/dotfiles/bin/validate-remotes.sh` after clone, branch changes, or remote changes to confirm the topology is safe.
+Run `bash ~/dotfiles/bin/validate-remotes.sh` after clone, branch changes, or remote changes to confirm the topology is safe. In a private checkout it enforces the maintainer remote layout above. In a public/fork checkout it skips private remote requirements and only checks for private remote URL references in tracked content.
