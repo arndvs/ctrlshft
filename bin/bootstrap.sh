@@ -607,6 +607,10 @@ if [[ "$MINIMAL_MODE" == true ]]; then
 else
     GIT_HOOKS_DIR="$DOTFILES/git-hooks"
     if [[ -d "$GIT_HOOKS_DIR" ]]; then
+        if ! bash "$DOTFILES/bin/validate-git-hooks.sh"; then
+            red "  Git hook drift detected — fix git-hooks/ before installing"
+            _fail=1
+        fi
         chmod +x "$GIT_HOOKS_DIR/"* 2>/dev/null || true
         _current_hooks_path=$(git config --global core.hooksPath 2>/dev/null || echo "")
         if [[ "$_current_hooks_path" == "$GIT_HOOKS_DIR" ]] || [[ "$_current_hooks_path" == "$HOME/dotfiles/git-hooks" ]]; then

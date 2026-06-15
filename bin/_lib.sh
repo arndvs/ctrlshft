@@ -26,6 +26,30 @@ detect_os() {
     esac
 }
 
+# ── GitHub remote normalization ───────────────────────────────────────────────
+CTRLSHFT_PRIVATE_REMOTE_URL="https://github.com/arndvs/dotfiles-private.git"
+CTRLSHFT_PUBLIC_REMOTE_URL="https://github.com/arndvs/ctrlshft.git"
+
+normalize_ctrlshft_remote_url() {
+    local url="${1:-}"
+    url="${url%/}"
+    case "$url" in
+        https://github.com/arndvs/dotfiles-private|https://github.com/arndvs/dotfiles-private.git|git@github.com:arndvs/dotfiles-private|git@github.com:arndvs/dotfiles-private.git|ssh://git@github.com/arndvs/dotfiles-private|ssh://git@github.com/arndvs/dotfiles-private.git)
+            printf '%s\n' "$CTRLSHFT_PRIVATE_REMOTE_URL"
+            ;;
+        https://github.com/arndvs/ctrlshft|https://github.com/arndvs/ctrlshft.git|git@github.com:arndvs/ctrlshft|git@github.com:arndvs/ctrlshft.git|ssh://git@github.com/arndvs/ctrlshft|ssh://git@github.com/arndvs/ctrlshft.git)
+            printf '%s\n' "$CTRLSHFT_PUBLIC_REMOTE_URL"
+            ;;
+        *)
+            printf '%s\n' "$url"
+            ;;
+    esac
+}
+
+is_public_ctrlshft_remote_url() {
+    [[ "$(normalize_ctrlshft_remote_url "${1:-}")" == "$CTRLSHFT_PUBLIC_REMOTE_URL" ]]
+}
+
 # ── Python discovery ──────────────────────────────────────────────────────────
 # Sets PYTHON to the best available Python binary (venv first, then system).
 # Requires VENV_DIR to be set. Returns 1 if no Python found.

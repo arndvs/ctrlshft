@@ -263,6 +263,12 @@ else
     _fail=1
 fi
 
+if bash "$HOME/dotfiles/bin/validate-git-hooks.sh"; then
+    :
+else
+    _fail=1
+fi
+
 if [[ -f "$HOME/.claude/CLAUDE.md" ]]; then
     green "  ✓ ~/.claude/CLAUDE.md exists"
 else
