@@ -617,7 +617,7 @@ class TestRepoActivePlansDir(unittest.TestCase):
             active = tmp / "working" / "active"
             active.mkdir(parents=True)
             # Initialize a real git repo so rev-parse works
-            subprocess.run(["git", "init"], cwd=tmp, capture_output=True)
+            subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
             result = pfl.repo_active_plans_dir(cwd=tmp)
             self.assertIsNotNone(result)
             self.assertEqual(result.resolve(), active.resolve())
@@ -625,7 +625,7 @@ class TestRepoActivePlansDir(unittest.TestCase):
     def test_returns_none_when_no_config(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            subprocess.run(["git", "init"], cwd=tmp, capture_output=True)
+            subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
             result = pfl.repo_active_plans_dir(cwd=tmp)
             self.assertIsNone(result)
 
@@ -633,7 +633,7 @@ class TestRepoActivePlansDir(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             (tmp / ".ctrlshft").write_text("active_plans_dir: working/active\n")
-            subprocess.run(["git", "init"], cwd=tmp, capture_output=True)
+            subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
             result = pfl.repo_active_plans_dir(cwd=tmp)
             self.assertIsNone(result)
 
@@ -641,7 +641,7 @@ class TestRepoActivePlansDir(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             (tmp / ".ctrlshft").write_text("active_plans_dir:\n")
-            subprocess.run(["git", "init"], cwd=tmp, capture_output=True)
+            subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
             result = pfl.repo_active_plans_dir(cwd=tmp)
             self.assertIsNone(result)
 

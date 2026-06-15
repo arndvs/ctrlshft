@@ -48,10 +48,17 @@ echo "Claude instruction loading guard"
 echo "════════════════════════════════════════════════"
 
 assert_no_forbidden_refs "CLAUDE.base.md has no conditional @ instruction refs" "CLAUDE.base.md"
-assert_no_forbidden_refs "CLAUDE.md has no conditional @ instruction refs" "CLAUDE.md"
+
+# CLAUDE.md is bootstrap-generated and gitignored — only assert when present
+if [[ -f "CLAUDE.md" ]]; then
+    assert_no_forbidden_refs "CLAUDE.md has no conditional @ instruction refs" "CLAUDE.md"
+    assert_contains "generated handoff remains auto-loaded" '@~/dotfiles/instructions/handoff.instructions.md' "CLAUDE.md"
+else
+    _ok "CLAUDE.md not present (bootstrap not run) — skipped"
+fi
+
 assert_contains "global instructions remain auto-loaded" '@~/dotfiles/global.instructions.md' "CLAUDE.base.md"
 assert_contains "always-loaded handoff remains auto-loaded" '@~/dotfiles/instructions/handoff.instructions.md' "CLAUDE.base.md"
-assert_contains "generated handoff remains auto-loaded" '@~/dotfiles/instructions/handoff.instructions.md' "CLAUDE.md"
 
 echo
 echo "════════════════════════════════════════════════"
