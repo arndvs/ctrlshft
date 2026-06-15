@@ -101,14 +101,9 @@ mutation($threadId: ID!, $body: String!) {
   }
 }`;
 
-  try {
-    execFileSync("gh", ["api", "graphql", "-F", `threadId=${opts.threadId}`, "-F", `body=${opts.message}`, "-f", `query=${mutation}`], {
-      encoding: "utf8",
-      cwd: opts.cwd,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.warn(`Failed to post thread reply: ${message}`);
-  }
+  execFileSync("gh", ["api", "graphql", "-F", `threadId=${opts.threadId}`, "-F", `body=${opts.message}`, "-f", `query=${mutation}`], {
+    encoding: "utf8",
+    cwd: opts.cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 }

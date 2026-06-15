@@ -59,12 +59,19 @@ const getArg = (flag, def) => {
 const HTTP_PORT = parseInt(getArg('--port', '7823'));
 const WS_PORT   = parseInt(getArg('--ws-port', '7822'));
 const DEBUG     = args.includes('--debug');
+const PROJECT_TTL_MS = parsePositiveInt(process.env.HUD_PROJECT_TTL_HOURS, 168) * 60 * 60 * 1000;
+const MAX_PROJECTS = parsePositiveInt(process.env.HUD_MAX_PROJECTS, 100);
 
 const log  = (...a) => console.log(`[ctrlshft]`, new Date().toLocaleTimeString(), ...a);
 const dbg  = (...a) => DEBUG && console.log(`[debug]`, ...a);
 const warn = (...a) => console.warn(`[ctrlshft WARN]`, ...a);
 
 fs.mkdirSync(WORKING, { recursive: true });
+
+function parsePositiveInt(raw, fallback) {
+    const parsed = Number.parseInt(raw || '', 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
 
 // ── Concurrency guard (same mkdir pattern as afk.sh) ──────────────────────────
 try {
@@ -158,7 +165,6 @@ let totalEventCount  = 0;
 const complianceData = new Map(); // project → { latestRate, violations, history }
 const loadedFilesMap = new Map(); // session_id → [{file_name, file_type, read_at}]
 const violationsMap  = new Map(); // project_id → [{session_id, timestamp, rule_file, severity, title, body}]
-const MAX_PROJECTS = 100;
 
 // Dismissed projects — persisted to disk, un-dismissed on new events
 const dismissedProjects = new Set();
@@ -533,6 +539,52 @@ function getAllProjectsPublic() {
     return out;
 }
 
+function deleteProjectState(projectId) {
+    const session = sessions.get(projectId);
+    sessions.delete(projectId);
+    eventBuffers.delete(projectId);
+    complianceData.delete(projectId);
+    violationsMap.delete(projectId);
+
+    if (session) {
+        loadedFilesMap.delete(session.id);
+    }
+    for (const [sessionId, files] of loadedFilesMap.entries()) {
+        if (files.some(f => f.project_id === projectId)) {
+            loadedFilesMap.delete(sessionId);
+        }
+    }
+}
+
+function lastEventTimestamp(projectId, session) {
+    const buf = eventBuffers.get(projectId) || [];
+    const last = buf[buf.length - 1];
+    const raw = last?.timestamp || session?.started_at || startedAt;
+    const ms = Date.parse(raw);
+    return Number.isFinite(ms) ? ms : 0;
+}
+
+function pruneInMemoryState() {
+    const now = Date.now();
+    const cutoff = now - PROJECT_TTL_MS;
+
+    for (const [projectId, session] of sessions.entries()) {
+        if (lastEventTimestamp(projectId, session) < cutoff) {
+            deleteProjectState(projectId);
+        }
+    }
+
+    if (sessions.size <= MAX_PROJECTS) return;
+
+    const oldest = [...sessions.entries()]
+        .map(([projectId, session]) => ({ projectId, lastEvent: lastEventTimestamp(projectId, session) }))
+        .sort((a, b) => a.lastEvent - b.lastEvent);
+
+    for (const entry of oldest.slice(0, sessions.size - MAX_PROJECTS)) {
+        deleteProjectState(entry.projectId);
+    }
+}
+
 // ── Named pipe listener ───────────────────────────────────────────────────────
 function startPipeListener() {
     // Create FIFO if it doesn't exist (Linux/macOS only)
@@ -866,6 +918,7 @@ function startHttpServer() {
         if (req.method === 'DELETE' && url.pathname.startsWith('/api/projects/')) {
             const projectId = decodeURIComponent(url.pathname.split('/')[3]);
             dismissedProjects.add(projectId);
+            deleteProjectState(projectId);
             saveDismissed();
             log('Dismissed project:', projectId);
             res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -936,6 +989,7 @@ ws.onmessage = e => { const d=JSON.parse(e.data); if(d.type==='event') console.l
 
 // ── Heartbeat ─────────────────────────────────────────────────────────────────
 setInterval(() => {
+    pruneInMemoryState();
     broadcast({ type: 'heartbeat', uptime: process.uptime(), sessions: sessions.size, clients: wsClients.size });
     dbg(`heartbeat — sessions:${sessions.size} clients:${wsClients.size} uptime:${Math.round(process.uptime())}s`);
 }, 30000);

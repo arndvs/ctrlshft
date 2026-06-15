@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { readFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { required, fail, sh, safeSh } from "./shell-helpers.js";
+import { required, fail, outputDirPath, sh, safeSh } from "./shell-helpers.js";
 
 describe("required", () => {
   const ENV_KEY = "SHELL_HELPERS_TEST_VAR";
@@ -50,6 +50,12 @@ describe("fail", () => {
 
     const content = readFileSync(join(testDir, "failure_reason.txt"), "utf8");
     expect(content).toBe("something broke");
+  });
+
+  it("uses the OS temp directory when OUTPUT_DIR is unset", () => {
+    delete process.env.OUTPUT_DIR;
+
+    expect(outputDirPath()).toBe(tmpdir());
   });
 });
 

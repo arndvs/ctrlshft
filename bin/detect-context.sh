@@ -43,6 +43,11 @@ if [[ -f "apps/mobile/app.config.ts" ]] || [[ -f "apps/mobile/app.config.js" ]];
         contexts="$contexts,expo"
     fi
 fi
+if compgen -G "metro.config.*" > /dev/null; then
+    if [[ "$contexts" != *"react-native"* ]]; then
+        contexts="$contexts,react-native"
+    fi
+fi
 
 # --- React (non-Next, non-Native) ---
 # Must come AFTER react-native check — both match "react" in package.json
@@ -95,7 +100,8 @@ fi
 _dc_cmd_dir="${CMD_DIR:-$HOME/cmd}"
 # Expand ~ if present
 _dc_cmd_dir="${_dc_cmd_dir/#\~/$HOME}"
-if [[ -n "$_dc_cmd_dir" ]] && [[ "$PWD" == "$_dc_cmd_dir"* ]] && [[ -f "$_dc_cmd_dir/CLAUDE.md" ]]; then
+_dc_cmd_dir="${_dc_cmd_dir%/}"
+if [[ -n "$_dc_cmd_dir" ]] && { [[ "$PWD" == "$_dc_cmd_dir" ]] || [[ "$PWD" == "$_dc_cmd_dir"/* ]]; } && [[ -f "$_dc_cmd_dir/CLAUDE.md" ]]; then
     contexts="$contexts,cmd"
 fi
 unset _dc_cmd_dir

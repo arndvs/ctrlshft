@@ -113,7 +113,7 @@ malformed_workflow="$TMP_ROOT/malformed-workflow"
 make_repo "$malformed_workflow"
 seed_minimal_sandcastle "$malformed_workflow"
 printf 'name: [unterminated\n' > "$malformed_workflow/.github/workflows/agent-review-issue.yml"
-run_case "malformed workflow reports SYNTAX" fail "SYNTAX" bash -c "cd '$malformed_workflow' && DOTFILES='$ROOT' CLAUDE_CODE_OAUTH_TOKEN=dummy LITELLM_BASE_URL=dummy LITELLM_MASTER_KEY=dummy AGENT_PAT=dummy '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
+run_case "malformed workflow reports SYNTAX" fail "SYNTAX" bash -c "cd '$malformed_workflow' && DOTFILES='$ROOT' LITELLM_BASE_URL=dummy LITELLM_MASTER_KEY=dummy AGENT_PAT=dummy '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
 
 missing_permissions="$TMP_ROOT/missing-permissions"
 make_repo "$missing_permissions"
@@ -127,12 +127,12 @@ text = open(path, encoding="utf-8").read()
 text = re.sub(r"\n    permissions:\n      contents: read\n      issues: write\n", "\n", text)
 open(path, "w", encoding="utf-8").write(text)
 PY
-run_case "missing workflow permissions reports PERMS" fail "PERMS" bash -c "cd '$missing_permissions' && DOTFILES='$ROOT' CLAUDE_CODE_OAUTH_TOKEN=dummy LITELLM_BASE_URL=dummy LITELLM_MASTER_KEY=dummy AGENT_PAT=dummy '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
+run_case "missing workflow permissions reports PERMS" fail "PERMS" bash -c "cd '$missing_permissions' && DOTFILES='$ROOT' LITELLM_BASE_URL=dummy LITELLM_MASTER_KEY=dummy AGENT_PAT=dummy '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
 
 healthy="$TMP_ROOT/healthy"
 make_repo "$healthy"
 seed_minimal_sandcastle "$healthy"
-run_case "healthy minimal repo passes skipped external gates" pass "Sandcastle preflight passed" bash -c "cd '$healthy' && DOTFILES='$ROOT' CLAUDE_CODE_OAUTH_TOKEN=dummy LITELLM_BASE_URL=dummy LITELLM_MASTER_KEY=dummy AGENT_PAT=dummy '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
+run_case "healthy minimal repo passes skipped external gates" pass "Sandcastle preflight passed" bash -c "cd '$healthy' && DOTFILES='$ROOT' LITELLM_BASE_URL=dummy LITELLM_MASTER_KEY=dummy AGENT_PAT=dummy '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
 
 printf "\n  \033[32m%d passed\033[0m  \033[31m%d failed\033[0m\n" "$PASS" "$FAIL"
 

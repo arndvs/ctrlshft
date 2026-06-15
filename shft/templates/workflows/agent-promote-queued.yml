@@ -18,6 +18,9 @@ jobs:
     if: github.event.issue.state_reason != 'not_planned'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    concurrency:
+      group: agent-promote-queued-${{ github.repository }}
+      cancel-in-progress: false
     permissions:
       issues: write
 
