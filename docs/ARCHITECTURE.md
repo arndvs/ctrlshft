@@ -138,3 +138,4 @@ The planning pipeline chains skills end-to-end:
 | [ADR-001](adr/ADR-001-vendor-boundary.md) | Vendor skills removed — `skills/` is universal workflow only |
 | [ADR-002](adr/ADR-002-four-tier-disclosure.md) | Four-tier progressive disclosure model |
 | [ADR-003](adr/ADR-003-hud-observability.md) | HUD observability architecture |
+| [ADR-004](adr/ADR-004-sandcastle-hosted-proxy.md) | Sandcastle hosted proxy baseline |
