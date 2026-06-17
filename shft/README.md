@@ -193,6 +193,8 @@ Required GitHub Actions secrets:
 - `LITELLM_MASTER_KEY` — authenticates workflow calls to the LiteLLM proxy
 - `AGENT_PAT` — optional but recommended; label mutations made with `GITHUB_TOKEN` do not trigger downstream workflows, so `AGENT_PAT` is needed for chains such as `agent:implement` → `agent:review` and PRD sub-issue chaining
 
+For hosted GitHub Actions, see [the EC2 hosted proxy runbook](docs/hosted-proxy-ec2-runbook.md). Sandcastle expects an HTTPS reverse proxy endpoint (for example Caddy or nginx) while the LiteLLM app port remains bound to localhost on the proxy host.
+
 ### Structured output and validation
 
 Workflow runners use `@ai-hero/sandcastle` plus Zod schemas for typed output. Two shared retry helpers keep side-effecting work from being repeated:

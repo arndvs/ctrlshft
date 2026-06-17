@@ -81,6 +81,7 @@ Do not move Sandcastle to an EC2 self-hosted runner for this slice. Self-hosted 
 **Neutral:**
 
 - This ADR selects the baseline only. Provisioning, deployment, HTTPS exposure, Actions secret wiring, and live Sandcastle smoke validation remain separate slices.
+- The operational companion is the [Sandcastle hosted proxy EC2 runbook](../../shft/docs/hosted-proxy-ec2-runbook.md).
 
 ---
 
