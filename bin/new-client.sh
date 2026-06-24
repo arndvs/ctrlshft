@@ -17,7 +17,7 @@ if [[ -z "$CLIENT_SLUG" ]]; then
     echo "  New client setup"
     echo "  ─────────────────────────────────────────────────"
     echo ""
-    read -rp "  Client slug (no spaces, e.g. alignsd): " CLIENT_SLUG
+    read -rp "  Client slug (no spaces, e.g. acme): " CLIENT_SLUG
 fi
 
 if [[ ! "$CLIENT_SLUG" =~ ^[a-z0-9_-]+$ ]]; then
@@ -27,7 +27,7 @@ if [[ ! "$CLIENT_SLUG" =~ ^[a-z0-9_-]+$ ]]; then
 fi
 
 if [[ -z "$CLIENT_NAME" ]]; then
-    read -rp "  Client display name (e.g. AlignSD Wellness Center): " CLIENT_NAME
+    read -rp "  Client display name (e.g. Acme Wellness Center): " CLIENT_NAME
 fi
 
 CLIENT_DIR="$CLIENTS_DIR/$CLIENT_SLUG"
@@ -92,7 +92,7 @@ fi
 echo ""
 read -rp "  Map a project directory now? [Y/n]: " _map_project
 if [[ ! "$_map_project" =~ ^[Nn]$ ]]; then
-    read -rp "  Project directory path (e.g. ~/projects/alignsd-website): " _proj_path
+    read -rp "  Project directory path (e.g. ~/projects/acme-website): " _proj_path
     _proj_path="${_proj_path/#\~\//$HOME/}"
 
     read -rp "  Project slug (e.g. website): " _proj_slug
