@@ -656,6 +656,7 @@ _validate_afk() {
 
     if [[ -f "$DOTFILES/bin/validate-env.sh" ]]; then
         bash "$DOTFILES/bin/run-with-secrets.sh" \
+            --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
             bash "$DOTFILES/bin/validate-env.sh" --afk || {
             echo ""
             red "AFK validation failed. Fix the above before running shft afk."

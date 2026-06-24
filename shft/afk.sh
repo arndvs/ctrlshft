@@ -122,7 +122,9 @@ _run_state_set "started_at" "$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo
 [[ -n "${SHFT_SOURCE_REPO_ROOT:-}" ]] && _run_state_set "source_repo_root" "$SHFT_SOURCE_REPO_ROOT"
 _log_afk "afk started worker_pid=$$ max_iterations=$MAX_ITERATIONS lock_dir=$LOCKDIR"
 
-if ! "$RUN_WITH_SECRETS" bash "$CTRL_DIR/bin/validate-env.sh" --afk; then
+if ! "$RUN_WITH_SECRETS" \
+    --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
+    bash "$CTRL_DIR/bin/validate-env.sh" --afk; then
     echo "ERROR: AFK environment validation failed" >&2
     exit 1
 fi
@@ -154,7 +156,9 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
     _log_afk "iteration $i started"
     _push_afk_event "info" "AFK iteration $i of $MAX_ITERATIONS started"
 
-    mint_json=$("$RUN_WITH_SECRETS" "$PYTHON_BIN" "$MINT_SCRIPT") || {
+    mint_json=$("$RUN_WITH_SECRETS" \
+        --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
+        "$PYTHON_BIN" "$MINT_SCRIPT") || {
         echo "ERROR: failed to mint GitHub App token for iteration $i" >&2
         exit 1
     }
@@ -252,7 +256,7 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
 
     # ANTHROPIC_MODEL is set by _proxy_env.sh when proxying; --model flag not needed.
     # Build env array — only pass vars that are actually set.
-    _afk_env=(env "GITHUB_TOKEN=$afk_token")
+    _afk_env=(env -u GITHUB_PACKAGE_REGISTRY_TOKEN "GITHUB_TOKEN=$afk_token")
     [[ -n "${ANTHROPIC_BASE_URL:-}" ]]                      && _afk_env+=("ANTHROPIC_BASE_URL=$ANTHROPIC_BASE_URL")
     [[ -n "${ANTHROPIC_AUTH_TOKEN:-}" ]]                     && _afk_env+=("ANTHROPIC_AUTH_TOKEN=$ANTHROPIC_AUTH_TOKEN")
     [[ -n "${ANTHROPIC_MODEL:-}" ]]                          && _afk_env+=("ANTHROPIC_MODEL=$ANTHROPIC_MODEL")

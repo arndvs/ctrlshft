@@ -23,6 +23,7 @@ User types /work → commands/work.md → loads skills/do-work/SKILL.md → exec
 | `/compliance-audit` | `compliance-audit` | Review diff against active rules, flag violations |
 | `/document` | `document` | Write, update, or audit documentation |
 | `/explore` | `explore` | Deep codebase exploration via parallel subagents |
+| `/mobile-fresh` | `mobile-dev` | Kill stale mobile processes and relaunch a clean Expo+API session |
 | `/plan` | `architect` | Implementation plan with vertical slices |
 | `/preflight` | `pr-preflight` | Exhaustive pre-PR audit that front-runs review tools |
 | `/review` | `code-review` | Focused review of staged or recent changes |

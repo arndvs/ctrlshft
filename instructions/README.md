@@ -19,6 +19,7 @@ Context, service, and task-triggered knowledge packs (Tiers 1–2). Each file lo
 | `nextjs.instructions.md` | T2 context | `next.config.*` present | Next.js 16 breaking changes, Turbopack, `"use cache"`, Server Actions |
 | `php.instructions.md` | T2 context | `composer.json` present | PHP 8.4+ conventions, `#[Override]`, strict types |
 | `sanity.instructions.md` | T2 context | `sanity.config.*` present | Sanity v5 CMS, `defineLive`, GROQ, TypeGen, Visual Editing |
+| `better-auth.instructions.md` | T2 context | `better-auth` dependency or Better Auth auth files present | Better Auth skill routing, setup, secrets, plugins, security, migrations |
 | `css.instructions.md` | T2 task | CSS/styling/frontend UI work | Tailwind v4, shadcn/ui, semantic tokens, dark mode, forms, images |
 | `hud.instructions.md` | T2 service | HUD daemon running on :7823 | Event emission protocol via `write-hud-state.sh` |
 | `google-docs.instructions.md` | T2 service | Working with Google APIs | Service account auth, Sheets/Docs/Slides patterns |
