@@ -27,6 +27,10 @@ For the safe scheduled-workflow dispatch slice, use `ctrl smoke-sandcastle-dispa
 
 For the issue-label state-machine slice, use `ctrl smoke-sandcastle-issue-labels`. It creates a disposable issue, applies `Sandcastle`, waits for `agent-review-issue.yml`, `agent-plan-issue.yml`, and `agent-implement-issue.yml`, verifies the terminal `agent:pr-open` label state, and closes disposable issue/PR artifacts. Live runs require `--allow-side-effects`; use `--dry-run` to preview without creating artifacts.
 
+For exercising schedule-backed workflows on-demand, use `ctrl smoke-sandcastle-scheduled`. It discovers every workflow that declares both `schedule:` and `workflow_dispatch` (currently `agent-architecture-review.yml` and `agent-check-stale-prs.yml`), dispatches each as a schedule-equivalent run via `smoke-sandcastle-dispatch` with a standardized timeout and retry policy, and aggregates pass/fail across all of them. Use `--list` to enumerate the discovered workflows, `--dry-run` to preview the planned dispatches, and `--allow-side-effects` for live runs (which may create issues, e.g. a `source:architecture-review` issue).
+
+For the queued-promotion dependency-unblocking slice, use `ctrl smoke-sandcastle-promote-queued`. It creates disposable blocker/dependent issue pairs, links them with the native GitHub "blocked by" dependency, labels each dependent `agent:queued`, and closes the blocker to trigger `agent-promote-queued.yml`. It verifies the promotion run succeeded and the dependent lost `agent:queued` and gained `agent:implement`, repeating across at least two disposable pairs (`--pairs`, default 2), then cleans up the issues plus any branch/PR a cascading `agent-implement-issue.yml` raised. Requires `AGENT_PAT`; live runs require `--allow-side-effects`, and `--dry-run` previews without creating artifacts.
+
 ## Global setup
 
 | Requirement | Purpose |

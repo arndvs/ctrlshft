@@ -589,6 +589,24 @@ except:
         bash "$DOTFILES/bin/smoke-sandcastle-issue-labels.sh" "$@"
         ;;
 
+    # ── smoke-sandcastle-scheduled ───────────────────────────────────────────
+    smoke-sandcastle-scheduled|sandcastle-scheduled-smoke)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-scheduled.sh" ]]; then
+            red "smoke-sandcastle-scheduled.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-scheduled.sh" "$@"
+        ;;
+
+    # ── smoke-sandcastle-promote-queued ──────────────────────────────────────
+    smoke-sandcastle-promote-queued|sandcastle-promote-queued-smoke)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-promote-queued.sh" ]]; then
+            red "smoke-sandcastle-promote-queued.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-promote-queued.sh" "$@"
+        ;;
+
     # ── lifecycle-audit ───────────────────────────────────────────────────────
     lifecycle-audit|la)
         if [[ ! -f "$DOTFILES/bin/artifact-lifecycle-audit.sh" ]]; then
@@ -769,6 +787,10 @@ except:
         echo "                          [--workflow FILE] [--ref REF] [--dry-run]"
         echo "  ctrl smoke-sandcastle-issue-labels trigger disposable issue-label smoke"
         echo "                          [--dry-run] [--allow-side-effects]"
+        echo "  ctrl smoke-sandcastle-scheduled  run schedule-backed workflows on-demand"
+        echo "                          [--list] [--dry-run] [--allow-side-effects]"
+        echo "  ctrl smoke-sandcastle-promote-queued  test queued-promotion unblocking"
+        echo "                          [--pairs N] [--dry-run] [--allow-side-effects]"
         echo ""
         echo "  Lifecycle"
         echo "  ──────────────────────────────────────────────────────────────"
