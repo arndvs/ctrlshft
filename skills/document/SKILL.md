@@ -122,6 +122,8 @@ Status: Proposed | Accepted | Deprecated | Superseded by ADR-NNN
 [What does this make easier? What does it make harder?]
 ```
 
+**When to write one.** Create an ADR when the decision is costly to reverse, when it constrains future choices, or when you chose between viable alternatives a maintainer would later question. Routine, easily-reversible choices do not need an ADR. As always, document the decision actually made — do not invent rationale.
+
 ### User-Facing Docs / Guides
 
 - Write for the user's goal, not the system's structure

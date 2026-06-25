@@ -14,6 +14,22 @@
 set -euo pipefail
 trap 'exit 0' ERR  # fail-open: any error → allow
 
+# --- Config helper: read a key from repo-local .ctrlshft, else default ---
+# Defined early so callers below (active plans dir, required sections) can use it.
+_config_val() {
+    local key="$1" default="$2"
+    local config_file="$GIT_ROOT/.ctrlshft"
+    if [[ -f "$config_file" ]] && command -v grep &>/dev/null; then
+        local val
+        val=$(grep -E "^${key}:" "$config_file" 2>/dev/null | head -1 | sed 's/^[^:]*:[[:space:]]*//' || true)
+        if [[ -n "$val" ]]; then
+            echo "$val"
+            return
+        fi
+    fi
+    echo "$default"
+}
+
 if ! command -v jq &>/dev/null; then
     exit 0
 fi
@@ -91,20 +107,6 @@ PLAN_TEXT=$(cat "$PLAN_FILE") || exit 0
 
 # --- Read required sections from .ctrlshft config or use defaults ---
 # Config key: plan_required_sections (comma-separated)
-_config_val() {
-    local key="$1" default="$2"
-    local config_file="$GIT_ROOT/.ctrlshft"
-    if [[ -f "$config_file" ]] && command -v grep &>/dev/null; then
-        local val
-        val=$(grep -E "^${key}:" "$config_file" 2>/dev/null | head -1 | sed 's/^[^:]*:[[:space:]]*//' || true)
-        if [[ -n "$val" ]]; then
-            echo "$val"
-            return
-        fi
-    fi
-    echo "$default"
-}
-
 REQUIRED_SECTIONS=$(_config_val "plan_required_sections" "Context,Implementation,Test,Verification,Files")
 
 # --- Section check helper ---

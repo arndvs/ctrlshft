@@ -17,4 +17,6 @@ paths:
 - Never use `sleep()` or fixed timeouts — use `waitFor`, polling, or event-driven assertions
 - Keep test setup in `beforeEach`, not duplicated across tests
 - Mock at the boundary (API, DB, filesystem), not internal modules
+- Assert observable behavior and intent, not implementation details — a test should survive any refactor that preserves behavior
+- Never loosen, delete, skip, or mock away an assertion just to make a test pass. If a test is genuinely wrong, explain why it is wrong before changing it
 - Any file identified as a service (e.g. `authTokenService.ts`, or anything under a `services/` directory) MUST have an accompanying `.test.ts` file colocated with it. When creating or modifying a service, create or update its test file in the same change

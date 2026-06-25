@@ -125,6 +125,14 @@ If conflicts arise:
 
 ### 5. Push and create PR (Ship mode only)
 
+**Pre-push gate — run before `git push`. Do not push while any gate is red.**
+
+1. **Branch safety** — confirm you are NOT on a base branch (`dev`, `main`, `master`).
+2. **Quality gates** — run the repo's detected feedback loops (tests, lint, typecheck via `package.json` scripts, `Makefile`, etc.). If none exist, say so explicitly rather than skipping silently.
+3. **Secret scan** — scan the staged/recent diff for secret-like content and filenames (`*.pem`, `*.key`, `.env`, `ghp_`/`github_pat_`/`sk-`/`AKIA`, private keys). Abort the push if anything matches.
+
+Only after all three pass:
+
 ```bash
 git push -u origin HEAD
 ```

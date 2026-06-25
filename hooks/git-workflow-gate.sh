@@ -233,7 +233,9 @@ CMD_GIT="((^|;|&&|\\|\\||\\||\(|{|\\\$\()[[:space:]]*|(^|[[:space:]])(then|do|el
 # Catches cd anywhere before a later git command in the same chain,
 # not just immediately adjacent (e.g. cd /repo && true && git commit).
 # Anchored to command boundaries so 'echo cd /tmp' or 'echo git status' don't false-positive.
-CD_COMMAND='(^|;|&&|\|\||\||\(|{|\$\(|[[:space:]]+(then|do|else))[[:space:]]*cd[[:space:]]+("[^"]*"|'\''[^'\'']*'\''|[^[:space:];|&]+)'
+# Single-char separators use a character class [;|({]; a lone `{` alternative
+# broke alternation anchoring under this grep build (matched 'cd' mid-word).
+CD_COMMAND='(^|[;|({]|&&|\|\||\$\(|[[:space:]]+(then|do|else))[[:space:]]*cd[[:space:]]+("[^"]*"|'\''[^'\'']*'\''|[^[:space:];|&]+)'
 CD_CHAIN_TO_GIT="${CD_COMMAND}([[:space:]]*(&&|;|\\|\\|)[[:space:]]*[^;&|]+)*[[:space:]]*(&&|;|\\|\\|)[[:space:]]*${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git([[:space:]]|$)"
 if echo "$COMMAND" | grep -qE "$CD_CHAIN_TO_GIT"; then
     _deny "🚫 Don't chain cd && git commands. Use the cwd parameter on the tool call instead — cd chains leak shell state."

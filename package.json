@@ -8,7 +8,11 @@
     "start":   "node bin/hud-daemon.js",
     "dev":     "node bin/hud-daemon.js --debug",
     "stop":    "bash bin/start-hud.sh --stop",
-    "status":  "bash bin/start-hud.sh --status"
+    "status":  "bash bin/start-hud.sh --status",
+    "test":    "npm run test:instructions && npm run test:hooks",
+    "test:instructions": "bash test/claude-instructions.sh",
+    "test:hooks": "bash test/hooks-integration.sh",
+    "test:cli": "bash test/cli-smoke.sh"
   },
   "optionalDependencies": {
     "better-sqlite3": "^9.0.0"

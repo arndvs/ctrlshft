@@ -446,12 +446,12 @@ _test "blocks piped install" 2 \
 _test "blocks cat secrets/.env.secrets" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"cat secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
-    "secrets file"
+    "protected secrets"
 
 _test "blocks cat ~/dotfiles/secrets/.env.secrets" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"cat ~/dotfiles/secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
-    "secrets file"
+    "protected secrets"
 
 _test "blocks echo credential with digits in var name" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"echo $AUTH0_TOKEN"}}' \
@@ -486,7 +486,7 @@ _test "blocks command env (command prefix bypass)" 2 \
 _test "blocks command cat secrets file (command prefix bypass)" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"command cat secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
-    "secrets file"
+    "protected secrets"
 
 _test "blocks env echo credential (env prefix bypass)" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"env echo $SECRET_KEY"}}' \
@@ -506,12 +506,12 @@ _test "blocks env with assignments before printenv" 2 \
 _test "blocks env cat secrets file (env prefix bypass)" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"env cat secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
-    "secrets file"
+    "protected secrets"
 
 _test "blocks env with assignments before cat secrets file" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"env FOO=bar cat secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
-    "secrets file"
+    "protected secrets"
 
 # --- env flag bypass vectors ---
 _test "blocks env -i echo credential (env -i bypass)" 2 \
@@ -533,17 +533,17 @@ _test "blocks env --null (bare env dump with long flag)" 2 \
 _test "blocks less secrets file" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"less secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
-    "secrets file"
+    "protected secrets"
 
 _test "blocks head secrets file" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"head ~/dotfiles/secrets/.env"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
-    "secrets file"
+    "protected secrets"
 
 _test "blocks tail secrets file" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"tail secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
-    "secrets file"
+    "protected secrets"
 
 echo ""
 
@@ -578,10 +578,14 @@ _test "skips non-scaffold commands" 0 \
     '{"tool_name":"Bash","tool_input":{"command":"npm test"}}' \
     "$HOOKS_DIR/plan-quality-gate.sh"
 
+# Hermetic: run inside an empty temp repo so the no-plan-file path is deterministic
+# (the real repo has working/active/ plans that would otherwise be picked up).
+_setup_test_repo
 _test "warns on mkdir without plan (info, exit 0)" 0 \
-    '{"tool_name":"Bash","tool_input":{"command":"mkdir -p src/new-module"}}' \
+    "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"mkdir -p src/new-module\"},\"cwd\":\"$TEST_REPO\"}" \
     "$HOOKS_DIR/plan-quality-gate.sh" \
     "No plan file"
+_teardown_test_repo
 
 echo ""
 
@@ -673,7 +677,7 @@ _teardown_test_repo
 _test "blocks env-wrapped cat secrets file" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"env cat secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
-    "secrets file"
+    "protected secrets"
 
 echo ""
 

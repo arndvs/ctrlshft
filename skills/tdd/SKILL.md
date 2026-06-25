@@ -38,3 +38,8 @@ Once the test is green and the code is clean, commit. One test + its implementat
 - If combining with tracer bullets: one test per vertical slice, one slice at a time.
 - Auto-detect the test runner from the workspace (package.json scripts, pytest, phpunit, etc.).
 - If no test runner exists, tell the user and ask how to run tests.
+
+## Strictness
+
+- **Source after red — always.** For behavior with a clear contract, the failing test comes FIRST. Writing the source fix first and adding a test afterward is regression coverage, not TDD — do not relabel it as TDD.
+- **Spike exception (the only one):** if you genuinely need to explore before you can describe the contract, declare the spike up front, keep the scratch work isolated, discard it, then TDD the real implementation from red. An undeclared spike is just skipping TDD.
