@@ -128,8 +128,17 @@ _assert_eq "$EC" 0 "--dry-run exits 0"
 # --force overwrites edited template
 echo "USER DRIFT" > "$repo/working/active/README.md"
 _run "$repo" bash "$INIT" --force
-grep -qF "USER DRIFT" "$repo/working/active/README.md" \
-    && _fail "--force overwrites edited README" "content still drifted" || _ok "--force overwrites edited README"
+_readme="$repo/working/active/README.md"
+# grep exit codes: 0 = marker present (still drifted), 1 = marker absent
+# (overwritten — the only pass), 2+ = read error. A bare `! grep` would accept
+# the error case as success, so require the file to exist, be non-empty and
+# readable, and grep to be exactly 1.
+grep -qF "USER DRIFT" "$_readme" 2>/dev/null; _grep_ec=$?
+if [[ -s "$_readme" && -r "$_readme" && "$_grep_ec" -eq 1 ]]; then
+    _ok "--force overwrites edited README"
+else
+    _fail "--force overwrites edited README" "missing/empty/unreadable or marker remains (grep exit $_grep_ec)"
+fi
 
 # refuses outside a git repo
 nongit=$(_new_tmp)
