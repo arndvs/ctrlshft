@@ -312,23 +312,27 @@ _wait_for_promotion() {
     return 0
 }
 
-# _dependent_promoted <issue_number> — true if agent:queued gone and agent:implement present.
+# _dependent_promoted <issue_number> — true if the promote-queued workflow promoted
+# the dependent. Verified via the durable promotion COMMENT, not the transient
+# agent:implement label: promotion immediately triggers agent-implement-issue.yml,
+# which consumes agent:implement within seconds, so a label check races the cascade.
 _dependent_promoted() {
-    local num="$1" labels_json
-    labels_json="$(gh issue view "$num" -R "$REPO" --json labels --jq '[.labels[].name]' 2>/dev/null || echo '[]')"
-    LABELS_JSON="$labels_json" "$PY_BIN" - <<'PY'
-import json
-import os
-import sys
-labels = set(json.loads(os.environ["LABELS_JSON"]))
-if "agent:queued" in labels:
-    print("still-queued: " + ", ".join(sorted(labels)))
-    sys.exit(1)
-if "agent:implement" not in labels:
-    print("not-implemented: " + ", ".join(sorted(labels)))
-    sys.exit(1)
-print("promoted: " + ", ".join(sorted(labels)))
-PY
+    local num="$1" comments
+    comments="$(gh issue view "$num" -R "$REPO" --json comments --jq '[.comments[].body] | join("\n---\n")' 2>/dev/null || echo '')"
+    if printf '%s' "$comments" | grep -qiE 'Promotion failed'; then
+        echo "promotion failed (AGENT_PAT could not add agent:implement)"
+        return 1
+    fi
+    if printf '%s' "$comments" | grep -qiE 'promoting from .*agent:queued.* to .*agent:implement'; then
+        echo "promoted (promotion comment present)"
+        return 0
+    fi
+    if printf '%s' "$comments" | grep -qiE 'Refused to promote'; then
+        echo "refused to promote (see issue comment)"
+        return 1
+    fi
+    echo "no promotion comment found"
+    return 1
 }
 
 # ── Exercise each disposable pair ─────────────────────────────────────────────
