@@ -607,6 +607,15 @@ except:
         bash "$DOTFILES/bin/smoke-sandcastle-promote-queued.sh" "$@"
         ;;
 
+    # ── smoke-sandcastle-pr-path ───────────────────────────────────────
+    smoke-sandcastle-pr-path|sandcastle-pr-path-smoke)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-pr-path.sh" ]]; then
+            red "smoke-sandcastle-pr-path.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-pr-path.sh" "$@"
+        ;;
+
     # ── lifecycle-audit ───────────────────────────────────────────────────────
     lifecycle-audit|la)
         if [[ ! -f "$DOTFILES/bin/artifact-lifecycle-audit.sh" ]]; then
@@ -791,6 +800,8 @@ except:
         echo "                          [--list] [--dry-run] [--allow-side-effects]"
         echo "  ctrl smoke-sandcastle-promote-queued  test queued-promotion unblocking"
         echo "                          [--pairs N] [--dry-run] [--allow-side-effects]"
+        echo "  ctrl smoke-sandcastle-pr-path  test PR-path automations (update/fix/merge)"
+        echo "                          [--confirm-merge] [--dry-run] [--allow-side-effects]"
         echo ""
         echo "  Lifecycle"
         echo "  ──────────────────────────────────────────────────────────────"

@@ -31,6 +31,8 @@ For exercising schedule-backed workflows on-demand, use `ctrl smoke-sandcastle-s
 
 For the queued-promotion dependency-unblocking slice, use `ctrl smoke-sandcastle-promote-queued`. It creates disposable blocker/dependent issue pairs, links them with the native GitHub "blocked by" dependency, labels each dependent `agent:queued`, and closes the blocker to trigger `agent-promote-queued.yml`. It verifies the promotion run succeeded and the dependent lost `agent:queued` and gained `agent:implement`, repeating across at least two disposable pairs (`--pairs`, default 2), then cleans up the issues plus any branch/PR a cascading `agent-implement-issue.yml` raised. Requires `AGENT_PAT`; live runs require `--allow-side-effects`, and `--dry-run` previews without creating artifacts.
 
+For the PR-path state-machine slice, use `ctrl smoke-sandcastle-pr-path`. It opens a disposable same-repository PR (created hermetically through the GitHub API, so the local pre-commit hook never runs), then labels it `agent:update-branch` and `agent:fix` in turn — proving each automation green when its `pull_request_target` workflow run completes with conclusion `success` — before cleaning up the PR and branch. The `agent:merge` path is destructive and runs only with explicit `--confirm-merge`. The update-branch and fix-pr-feedback workflows execute agent code, so live runs require the hosted Copilot proxy to be reachable from Actions; `--dry-run` previews without creating artifacts and `--allow-side-effects` is required for live runs.
+
 ## Global setup
 
 | Requirement | Purpose |
