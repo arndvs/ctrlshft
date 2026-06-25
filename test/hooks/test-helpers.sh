@@ -149,7 +149,7 @@ make_tmp_repo() {
     git -C "$tmp_dir" config user.email "test@test.com"
     git -C "$tmp_dir" config user.name "Test"
     touch "$tmp_dir/README.md"
-    git -C "$tmp_dir" add . && git -C "$tmp_dir" commit -m "init" --quiet 2>/dev/null
+    git -C "$tmp_dir" add . && git -C "$tmp_dir" -c core.hooksPath=/dev/null commit -m "init" --quiet 2>/dev/null
     TMP_REPOS+=("$tmp_dir")
     echo "$tmp_dir"
 }

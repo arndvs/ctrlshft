@@ -131,7 +131,7 @@ if [[ $_afk_mode -eq 1 ]]; then
             return 0
         fi
         # Not in env — check .env.secrets file
-        if [[ -f "$_secrets_file" ]] && grep -q "^${var}=.\+" "$_secrets_file" 2>/dev/null; then
+        if [[ -f "$_secrets_file" ]] && grep -Eq "^${var}=.+" "$_secrets_file" 2>/dev/null; then
             green "  ✓ $var (configured in .env.secrets)"
             return 0
         fi
@@ -258,6 +258,12 @@ else
 fi
 
 if bash "$HOME/dotfiles/bin/validate-remotes.sh"; then
+    :
+else
+    _fail=1
+fi
+
+if bash "$HOME/dotfiles/bin/validate-git-hooks.sh"; then
     :
 else
     _fail=1

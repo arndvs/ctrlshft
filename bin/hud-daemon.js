@@ -59,10 +59,19 @@ const getArg = (flag, def) => {
 const HTTP_PORT = parseInt(getArg('--port', '7823'));
 const WS_PORT   = parseInt(getArg('--ws-port', '7822'));
 const DEBUG     = args.includes('--debug');
+const PROJECT_TTL_MS = parsePositiveInt(process.env.HUD_PROJECT_TTL_HOURS, 168) * 60 * 60 * 1000;
+const MAX_PROJECTS = parsePositiveInt(process.env.HUD_MAX_PROJECTS, 100);
 
 const log  = (...a) => console.log(`[ctrlshft]`, new Date().toLocaleTimeString(), ...a);
 const dbg  = (...a) => DEBUG && console.log(`[debug]`, ...a);
 const warn = (...a) => console.warn(`[ctrlshft WARN]`, ...a);
+
+fs.mkdirSync(WORKING, { recursive: true });
+
+function parsePositiveInt(raw, fallback) {
+    const parsed = Number.parseInt(raw || '', 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
 
 // ── Concurrency guard (same mkdir pattern as afk.sh) ──────────────────────────
 try {
@@ -75,6 +84,14 @@ try {
     throw e;
 }
 process.on('exit', () => { try { fs.rmdirSync(LOCK_DIR); } catch { } });
+
+function writePidFile() {
+    try {
+        fs.writeFileSync(PID_FILE, `${process.pid}\n`, 'utf8');
+    } catch (e) {
+        warn('Could not write PID file:', e.message);
+    }
+}
 
 // ── SQLite setup ──────────────────────────────────────────────────────────────
 let db = null;
@@ -187,6 +204,7 @@ function getOrCreateSession(projectId, projectPath, contexts, source) {
     if (sessions.has(projectId)) {
         const s = sessions.get(projectId);
         if (contexts?.length) s.contexts = contexts;
+        s.last_seen = new Date().toISOString();
         // Un-dismiss if new events arrive for a previously dismissed project
         if (dismissedProjects.has(projectId)) {
             dismissedProjects.delete(projectId);
@@ -206,6 +224,7 @@ function getOrCreateSession(projectId, projectPath, contexts, source) {
         project_path: projectPath || projectId,
         ide,
         started_at:   now,
+        last_seen:    now,
         contexts:     contexts || ['general'],
         source:       source || 'pipe',
         complianceRate: null,
@@ -238,6 +257,23 @@ function getOrCreateSession(projectId, projectPath, contexts, source) {
     return session;
 }
 
+function pruneProjectState() {
+    if (sessions.size <= MAX_PROJECTS) return;
+
+    const projects = [...sessions.entries()]
+        .sort(([, a], [, b]) => String(a.last_seen || a.started_at).localeCompare(String(b.last_seen || b.started_at)));
+
+    while (projects.length > MAX_PROJECTS) {
+        const [projectId, session] = projects.shift();
+        sessions.delete(projectId);
+        eventBuffers.delete(projectId);
+        complianceData.delete(projectId);
+        violationsMap.delete(projectId);
+        loadedFilesMap.delete(session.id);
+        dbg('Pruned inactive project:', projectId);
+    }
+}
+
 // ── Event processing ──────────────────────────────────────────────────────────
 function processLine(raw, source) {
     const line = raw.trim();
@@ -258,7 +294,12 @@ function processLine(raw, source) {
         }
         // "TYPE|project|path|contexts|message" — pipe format
         else if (line.includes('|')) {
-            const [type, project, projectPath, contexts, ...rest] = line.split('|');
+            const parts = line.split('|');
+            if (parts.length < 4) {
+                dbg('Malformed pipe line:', line.substring(0, 80));
+                return;
+            }
+            const [type, project, projectPath, contexts, ...rest] = parts;
             event = {
                 type: type.trim().toLowerCase(),
                 project: project.trim(),
@@ -312,6 +353,7 @@ function processLine(raw, source) {
     if (buf.length > 500) buf.shift();
     eventBuffers.set(projectId, buf);
     totalEventCount++;
+    pruneProjectState();
 
     // Side effects
     if (event.type === 'read')               handleRead(session, event);
@@ -323,6 +365,14 @@ function processLine(raw, source) {
     // Broadcast
     broadcast({ type: 'event', projectId, sessionId: session.id, event: stored,
                 session: publicSession(session) });
+}
+
+function processLineSafe(raw, source) {
+    try {
+        processLine(raw, source);
+    } catch (e) {
+        warn('Event dropped:', e.message);
+    }
 }
 
 function handleRead(session, event) {
@@ -489,6 +539,52 @@ function getAllProjectsPublic() {
     return out;
 }
 
+function deleteProjectState(projectId) {
+    const session = sessions.get(projectId);
+    sessions.delete(projectId);
+    eventBuffers.delete(projectId);
+    complianceData.delete(projectId);
+    violationsMap.delete(projectId);
+
+    if (session) {
+        loadedFilesMap.delete(session.id);
+    }
+    for (const [sessionId, files] of loadedFilesMap.entries()) {
+        if (files.some(f => f.project_id === projectId)) {
+            loadedFilesMap.delete(sessionId);
+        }
+    }
+}
+
+function lastEventTimestamp(projectId, session) {
+    const buf = eventBuffers.get(projectId) || [];
+    const last = buf[buf.length - 1];
+    const raw = last?.timestamp || session?.started_at || startedAt;
+    const ms = Date.parse(raw);
+    return Number.isFinite(ms) ? ms : 0;
+}
+
+function pruneInMemoryState() {
+    const now = Date.now();
+    const cutoff = now - PROJECT_TTL_MS;
+
+    for (const [projectId, session] of sessions.entries()) {
+        if (lastEventTimestamp(projectId, session) < cutoff) {
+            deleteProjectState(projectId);
+        }
+    }
+
+    if (sessions.size <= MAX_PROJECTS) return;
+
+    const oldest = [...sessions.entries()]
+        .map(([projectId, session]) => ({ projectId, lastEvent: lastEventTimestamp(projectId, session) }))
+        .sort((a, b) => a.lastEvent - b.lastEvent);
+
+    for (const entry of oldest.slice(0, sessions.size - MAX_PROJECTS)) {
+        deleteProjectState(entry.projectId);
+    }
+}
+
 // ── Named pipe listener ───────────────────────────────────────────────────────
 function startPipeListener() {
     // Create FIFO if it doesn't exist (Linux/macOS only)
@@ -515,7 +611,7 @@ function startPipeListener() {
                 buf += chunk.toString();
                 const lines = buf.split('\n');
                 buf = lines.pop();
-                lines.forEach(l => { if (l.trim()) processLine(l, 'pipe'); });
+                lines.forEach(l => { if (l.trim()) processLineSafe(l, 'pipe'); });
             });
 
             socket.on('end',   () => { socket.destroy(); setTimeout(openPipe, 50); });
@@ -538,7 +634,7 @@ function startJsonlWatcher() {
     try {
         const content = fs.readFileSync(JSONL_PATH, 'utf8');
         const lines   = content.split('\n').filter(Boolean);
-        lines.forEach(l => processLine(l, 'jsonl'));
+        lines.forEach(l => processLineSafe(l, 'jsonl'));
         lastSize = content.length;
     } catch { /* file doesn't exist yet */ }
 
@@ -553,12 +649,15 @@ function startJsonlWatcher() {
             if (stat.size > lastSize) {
                 const fd  = fs.openSync(JSONL_PATH, 'r');
                 const buf = Buffer.alloc(stat.size - lastSize);
-                fs.readSync(fd, buf, 0, buf.length, lastSize);
-                fs.closeSync(fd);
+                try {
+                    fs.readSync(fd, buf, 0, buf.length, lastSize);
+                } finally {
+                    fs.closeSync(fd);
+                }
                 lastSize = stat.size;
 
                 buf.toString('utf8').split('\n').filter(Boolean)
-                   .forEach(l => processLine(l, 'jsonl'));
+                   .forEach(l => processLineSafe(l, 'jsonl'));
             }
         } catch { }
 
@@ -819,6 +918,7 @@ function startHttpServer() {
         if (req.method === 'DELETE' && url.pathname.startsWith('/api/projects/')) {
             const projectId = decodeURIComponent(url.pathname.split('/')[3]);
             dismissedProjects.add(projectId);
+            deleteProjectState(projectId);
             saveDismissed();
             log('Dismissed project:', projectId);
             res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -889,6 +989,7 @@ ws.onmessage = e => { const d=JSON.parse(e.data); if(d.type==='event') console.l
 
 // ── Heartbeat ─────────────────────────────────────────────────────────────────
 setInterval(() => {
+    pruneInMemoryState();
     broadcast({ type: 'heartbeat', uptime: process.uptime(), sessions: sessions.size, clients: wsClients.size });
     dbg(`heartbeat — sessions:${sessions.size} clients:${wsClients.size} uptime:${Math.round(process.uptime())}s`);
 }, 30000);
@@ -897,7 +998,7 @@ setInterval(() => {
 function shutdown(sig) {
     log('Shutdown:', sig);
     if (db) {
-        try { db.prepare("UPDATE sessions SET ended_at=?, status='ended' WHERE ended_at IS NULL")
+        try { db.prepare("UPDATE sessions SET ended_at=? WHERE ended_at IS NULL")
                 .run(new Date().toISOString()); } catch { }
         db.close();
     }
@@ -915,10 +1016,9 @@ process.on('uncaughtException', err => { warn('Uncaught:', err.message); dbg(err
 process.on('unhandledRejection', err => { warn('Unhandled rejection:', err); });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-fs.mkdirSync(WORKING, { recursive: true });
-
 log('ctrl+shft compliance daemon starting');
 log('Dotfiles:', DOTFILES);
+writePidFile();
 
 initDb();
 loadDismissed();

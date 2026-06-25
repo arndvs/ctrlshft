@@ -43,6 +43,11 @@ if [[ -f "apps/mobile/app.config.ts" ]] || [[ -f "apps/mobile/app.config.js" ]];
         contexts="$contexts,expo"
     fi
 fi
+if compgen -G "metro.config.*" > /dev/null; then
+    if [[ "$contexts" != *"react-native"* ]]; then
+        contexts="$contexts,react-native"
+    fi
+fi
 
 # --- React (non-Next, non-Native) ---
 # Must come AFTER react-native check — both match "react" in package.json
@@ -70,6 +75,33 @@ if [[ -f "sanity.config.ts" ]] || [[ -f "sanity.config.js" ]] || [[ -f "sanity.c
     contexts="$contexts,sanity"
 fi
 
+# --- Better Auth ---
+_dc_has_better_auth=false
+while IFS= read -r _dc_pkg; do
+    if grep -qE '"better-auth"[[:space:]]*:' "$_dc_pkg" 2>/dev/null; then
+        _dc_has_better_auth=true
+        break
+    fi
+done < <(find . -maxdepth 4 \
+    \( -path './node_modules' -o -path './.git' -o -path './dist' -o -path './build' -o -path './.next' \) -prune -o \
+    -name package.json -type f -print 2>/dev/null)
+
+if [[ "$_dc_has_better_auth" != true ]]; then
+    while IFS= read -r _dc_auth_file; do
+        if grep -q 'better-auth' "$_dc_auth_file" 2>/dev/null; then
+            _dc_has_better_auth=true
+            break
+        fi
+    done < <(find . -maxdepth 5 \
+        \( -path './node_modules' -o -path './.git' -o -path './dist' -o -path './build' -o -path './.next' \) -prune -o \
+        -type f \( -name 'auth.ts' -o -name 'auth.tsx' -o -name 'auth.js' -o -name 'auth.jsx' -o -name 'auth-client.ts' -o -name 'auth-client.js' \) -print 2>/dev/null)
+fi
+
+if [[ "$_dc_has_better_auth" == true ]]; then
+    contexts="$contexts,better-auth"
+fi
+unset _dc_has_better_auth _dc_pkg _dc_auth_file
+
 # --- Prisma ---
 if [[ -f "prisma/schema.prisma" ]]; then
     contexts="$contexts,prisma"
@@ -95,7 +127,8 @@ fi
 _dc_cmd_dir="${CMD_DIR:-$HOME/cmd}"
 # Expand ~ if present
 _dc_cmd_dir="${_dc_cmd_dir/#\~/$HOME}"
-if [[ -n "$_dc_cmd_dir" ]] && [[ "$PWD" == "$_dc_cmd_dir"* ]] && [[ -f "$_dc_cmd_dir/CLAUDE.md" ]]; then
+_dc_cmd_dir="${_dc_cmd_dir%/}"
+if [[ -n "$_dc_cmd_dir" ]] && { [[ "$PWD" == "$_dc_cmd_dir" ]] || [[ "$PWD" == "$_dc_cmd_dir"/* ]]; } && [[ -f "$_dc_cmd_dir/CLAUDE.md" ]]; then
     contexts="$contexts,cmd"
 fi
 unset _dc_cmd_dir

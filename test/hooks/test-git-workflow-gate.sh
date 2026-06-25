@@ -200,7 +200,7 @@ POST_COMMIT_HOOK="hooks/git-post-commit.sh"
 REPO=$(make_tmp_repo)
 git -C "$REPO" checkout -b feat/nag-test --quiet 2>/dev/null
 echo "change" >> "$REPO/README.md"
-git -C "$REPO" add . && git -C "$REPO" commit -m "feat: test commit" --quiet 2>/dev/null
+git -C "$REPO" add . && git -C "$REPO" -c core.hooksPath=/dev/null commit -m "feat: test commit" --quiet 2>/dev/null
 
 run_hook "$POST_COMMIT_HOOK" "$(make_posttooluse_json 'git commit -m "feat: test"' "$REPO" 0)"
 # No upstream configured → should exit silently

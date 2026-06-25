@@ -10,19 +10,16 @@ set -euo pipefail
 #
 # Secrets configured:
 #
-#   1. CLAUDE_CODE_OAUTH_TOKEN
-#      OAuth token used by Claude Code inside GitHub Actions.
-#
-#   2. LITELLM_BASE_URL
+#   1. LITELLM_BASE_URL
 #      Base URL for the LiteLLM proxy that routes model traffic
 #      to GitHub Copilot.
 #
-#   3. LITELLM_MASTER_KEY
+#   2. LITELLM_MASTER_KEY
 #      Auth token for the LiteLLM proxy.
 #
-#   4. AGENT_PAT  (optional but recommended)
+#   3. AGENT_PAT
 #      A GitHub Personal Access Token (classic) with repo scope.
-#      Used for label mutations that trigger downstream workflows
+#      Required for label mutations that trigger downstream workflows
 #      (GITHUB_TOKEN cannot trigger other workflow runs).
 #
 #      Create at: https://github.com/settings/tokens
@@ -74,10 +71,6 @@ set_secret() {
   echo ""
 }
 
-set_secret "CLAUDE_CODE_OAUTH_TOKEN" \
-  "OAuth token for Claude Code in GitHub Actions." \
-  "Use the same token value expected by the Claude Code action."
-
 set_secret "LITELLM_BASE_URL" \
   "Base URL for the LiteLLM proxy that routes Claude-compatible traffic to GitHub Copilot." \
   "Use the HTTPS URL for your LiteLLM proxy, without an Anthropic API key."
@@ -87,7 +80,7 @@ set_secret "LITELLM_MASTER_KEY" \
   "Use the proxy master key expected by your LiteLLM deployment."
 
 set_secret "AGENT_PAT" \
-  "GitHub PAT (classic) with repo scope." \
+  "GitHub PAT (classic) with repo scope; required for label handoffs that trigger downstream workflows." \
   "Create at: https://github.com/settings/tokens — scope: repo"
 
 # --- Verify ---

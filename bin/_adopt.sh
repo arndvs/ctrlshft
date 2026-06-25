@@ -337,32 +337,23 @@ adopt_extract_skills() {
             local skill_dir="$DOTFILES/skills/_local/$_project"
             mkdir -p "$skill_dir"
 
-            cat > "$skill_dir/SKILL.md" << SKILLEOF
----
-name: ${_project}
-description: "TODO: Describe when to invoke this skill and what it does. Be specific."
----
-
-# ${_project}
-
-> Imported from \`$f\` on $(date '+%Y-%m-%d').
-> Review and restructure into the standard skill format.
-> Delete sections that are context rather than procedure.
-
-## When to invoke
-
-TODO: What triggers this skill?
-
-## Method
-
-TODO: Step-by-step procedure.
-
----
-
-<!-- IMPORTED CONTENT — review and restructure below this line -->
-
-$(cat "$f")
-SKILLEOF
+            {
+                printf '%s\n' '---'
+                printf 'name: %s\n' "$_project"
+                printf '%s\n' 'description: "TODO: Describe when to invoke this skill and what it does. Be specific."'
+                printf '%s\n\n' '---'
+                printf '# %s\n\n' "$_project"
+                printf '> Imported from `%s` on %s.\n' "$f" "$(date '+%Y-%m-%d')"
+                printf '%s\n' '> Review and restructure into the standard skill format.'
+                printf '%s\n\n' '> Delete sections that are context rather than procedure.'
+                printf '%s\n\n' '## When to invoke'
+                printf '%s\n\n' 'TODO: What triggers this skill?'
+                printf '%s\n\n' '## Method'
+                printf '%s\n\n' 'TODO: Step-by-step procedure.'
+                printf '%s\n\n' '---'
+                printf '%s\n\n' '<!-- IMPORTED CONTENT — review and restructure below this line -->'
+                cat "$f"
+            } > "$skill_dir/SKILL.md"
 
             green "    Created stub: $skill_dir/SKILL.md"
             yellow "    Review and restructure — the imported content is a starting point, not a finished skill"

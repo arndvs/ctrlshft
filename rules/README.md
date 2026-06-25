@@ -21,6 +21,7 @@ Rules use YAML frontmatter with a `paths` field (list of globs). When the agent 
 | `tailwind-shadcn.md` | `**/*.{tsx,jsx}` | shadcn CSS variables, class grouping, mobile-first, component variants |
 | `terminal-workarounds.md` | `**/bin/**`, `**/*.sh`, `**/*.bash` | VS Code heredoc workarounds, background server output redirect |
 | `test-conventions.md` | `**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`, `**/services/**` | describe/it structure, one assertion per behavior, mock at boundaries |
+| `tooling-conventions.md` | `bin/**`, `hooks/**`, `shft/**/*.sh`, `test/**/*.sh`, `**/*.sh`, `**/*.bash`, `package.json` | CLI verified by real-command tests, prefer existing tooling, sign-off for new deps |
 | `typescript-conventions.md` | `**/*.{ts,tsx}` | Object params, `satisfies`, explicit interfaces, `noUncheckedIndexedAccess` |
 
 ## Adding a Rule

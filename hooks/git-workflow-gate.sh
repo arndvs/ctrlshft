@@ -53,7 +53,7 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # the child shell command string contains a git invocation, so safety gates
 # cannot be bypassed via `bash -c 'git ...'` or `sh -lc 'git ...'`.
 WRAPPER_PREFIX='(sudo([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+|command[[:space:]]+|builtin[[:space:]]+|env([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]=][^[:space:]]*)?)*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+)*'
-COMMAND_BOUNDARY='((^|;|&&|\|\||\||\(|{|\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
+COMMAND_BOUNDARY='((^|[;|({`]|&&|\|\||\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
 ASSIGNMENT_PREFIX='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'
 TOP_LEVEL_GIT="${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git[[:space:]]"
 NESTED_SHELL_GIT="${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}(bash|sh|dash|ksh|zsh)([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?)*[[:space:]]+-[[:alnum:]]*c[[:alnum:]]*[[:space:]]+.*git[[:space:]]"
@@ -192,7 +192,7 @@ fi
 # Include wrapper prefixes so `sudo -E git --git-dir=...` is also caught.
 # Also treat shell control keywords as command boundaries, so
 # `if true; then git --git-dir=/other status; fi` is detected.
-if echo "$COMMAND" | grep -qE '(^|;|&&|\|\||\||\(|{|\$\(|[[:space:]]+(then|do|else))[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'git[^;&|]*(--git-dir(=|[[:space:]]+)|--work-tree(=|[[:space:]]+))'; then
+if echo "$COMMAND" | grep -qE '(^|[;|({`]|&&|\|\||\$\(|[[:space:]]+(then|do|else))[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'git[^;&|]*(--git-dir(=|[[:space:]]+)|--work-tree(=|[[:space:]]+))'; then
     _deny "🚫 Don't use git --git-dir or --work-tree in commands. Use the tool call's cwd field so git-workflow-gate can validate the correct repository."
 fi
 
@@ -201,7 +201,7 @@ fi
 # and assignment-bearing `env ... git` wrappers, so harmless mentions in other
 # commands (for example `echo GIT_DIR=/tmp && git status`) are not falsely denied
 # while repo-override forms like `env GIT_DIR=/other git status` are blocked.
-if echo "$COMMAND" | grep -qE '(^|;|&&|\|\||\||\(|{|\$\(|[[:space:]]+(then|do|else))[[:space:]]*(([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*(GIT_DIR|GIT_WORK_TREE)=[^[:space:]]*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+'"$WRAPPER_PREFIX"'git([[:space:]]|$)|([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'env([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]=][^[:space:]]*)?)*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+(GIT_DIR|GIT_WORK_TREE)=[^[:space:]]*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+git([[:space:]]|$))'; then
+if echo "$COMMAND" | grep -qE '(^|[;|({`]|&&|\|\||\$\(|[[:space:]]+(then|do|else))[[:space:]]*(([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*(GIT_DIR|GIT_WORK_TREE)=[^[:space:]]*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+'"$WRAPPER_PREFIX"'git([[:space:]]|$)|([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'env([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]=][^[:space:]]*)?)*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+(GIT_DIR|GIT_WORK_TREE)=[^[:space:]]*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+git([[:space:]]|$))'; then
     _deny "🚫 Don't set GIT_DIR or GIT_WORK_TREE as environment variables. Use the tool call's cwd field so git-workflow-gate can validate the correct repository."
 fi
 
@@ -209,7 +209,7 @@ fi
 # Only block when -C appears in the global-options slot (before the subcommand).
 # Global options are flag-like tokens (starting with -); the subcommand is the first
 # non-flag word after 'git'. Skip non-C flags (and their optional values) to reach -C.
-if echo "$COMMAND" | grep -qE '(^|;|&&|\|\||\||\(|{|\$\(|[[:space:]]+(then|do|else))[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'git([[:space:]]+-[^C[:space:]][^[:space:]]*([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+-C[[:space:]]'; then
+if echo "$COMMAND" | grep -qE '(^|[;|({`]|&&|\|\||\$\(|[[:space:]]+(then|do|else))[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'git([[:space:]]+-[^C[:space:]][^[:space:]]*([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+-C[[:space:]]'; then
     _deny "🚫 Don't use git -C in commands. Use the tool call's cwd field so git-workflow-gate can validate the correct repository."
 fi
 
@@ -224,7 +224,7 @@ GIT_OPTS='([[:space:]]+(-[a-zA-Z]([[:space:]]+[^-[:space:]][^[:space:]]*)?|--[a-
 # Anchors to shell command boundaries (^, ;, &&, ||, |) and shell control
 # keywords (then/do/else) so that quoted git commands don't match.
 # Uses the same WRAPPER_PREFIX as the initial detector for consistency.
-CMD_GIT="((^|;|&&|\\|\\||\\||\(|{|\\\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*${WRAPPER_PREFIX}git"
+CMD_GIT="((^|[;|({\`]|&&|\\|\\||\\\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*${WRAPPER_PREFIX}git"
 
 # ============================================================
 # GATE 0: Block cd + git command chains (&&, ;, or ||)
@@ -233,9 +233,12 @@ CMD_GIT="((^|;|&&|\\|\\||\\||\(|{|\\\$\()[[:space:]]*|(^|[[:space:]])(then|do|el
 # Catches cd anywhere before a later git command in the same chain,
 # not just immediately adjacent (e.g. cd /repo && true && git commit).
 # Anchored to command boundaries so 'echo cd /tmp' or 'echo git status' don't false-positive.
-if echo "$COMMAND" | grep -qE '(^|;|&&|\|\||\||\(|{|\$\(|[[:space:]]+(then|do|else))[[:space:]]*cd[[:space:]]+("[^"]*"|'\''[^'\'']*'\''|[^[:space:];|&]+)' && \
-   echo "$COMMAND" | grep -qE "(^|;|&&|\\|\\||\\||\\(|{|\\$\\(|[[:space:]]+(then|do|else))[[:space:]]*cd[[:space:]].*([;&]|\\|\\||&&).*${CMD_GIT}"; then
-    _deny "🚫 Don't chain cd && git commands. Use the cwd parameter on the tool call instead — cd chains leak shell state."
+# Single-char separators use a character class [;|({]; a lone `{` alternative
+# broke alternation anchoring under this grep build (matched 'cd' mid-word).
+CD_COMMAND='(^|[;|({]|&&|\|\||\$\(|[[:space:]]+(then|do|else))[[:space:]]*(cd|pushd)[[:space:]]+("[^"]*"|'\''[^'\'']*'\''|[^[:space:];|&]+)'
+CD_CHAIN_TO_GIT="${CD_COMMAND}([[:space:]]*(&&|;|\\|\\|)[[:space:]]*[^;&|]+)*[[:space:]]*(&&|;|\\|\\|)[[:space:]]*${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git([[:space:]]|$)"
+if echo "$COMMAND" | grep -qE "$CD_CHAIN_TO_GIT"; then
+    _deny "🚫 Don't chain cd/pushd && git commands. Use the cwd parameter on the tool call instead — directory-change chains leak shell state."
 fi
 
 # ============================================================
@@ -341,7 +344,12 @@ if echo "$COMMAND" | grep -qE "${CMD_GIT}${GIT_OPTS}[[:space:]]+push([[:space:]]
         [[ -z "$_seg" ]] && continue
         # Strip leading shell control keywords so anchored check works on
         # segments like "then git push --force" after splitting on ;/&&/||.
-        _seg=$(echo "$_seg" | sed -E 's/^(\(|[{]|\$\()[[:space:]]*//; s/^(then|do|else)[[:space:]]+//')
+        # Strip leading AND trailing substitution/group delimiter RUNS so wrapped
+        # invocations — $(…), `…`, (…), <(…), >(…), ${ …; }, and stacked forms
+        # like $(( $(git push --force) )) — all normalize to a bare git push.
+        # The anchored ^…git guard below still requires git to be the real command,
+        # so bare/assignment/wrapper git invocations are unaffected.
+        _seg=$(echo "$_seg" | sed -E 's/^[[:space:]$<>(){}`]+//; s/[[:space:])}`]+$//; s/^(then|do|else)[[:space:]]+//')
         # Skip segments where git isn't the actual command (e.g. echo "git push")
         if ! echo "$_seg" | grep -qE '^([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'"$WRAPPER_PREFIX"'git[[:space:]]'; then
             continue

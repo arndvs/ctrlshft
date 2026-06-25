@@ -9,22 +9,15 @@ set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
-EXPECTED_ORIGIN="https://github.com/arndvs/dotfiles-private.git"
-EXPECTED_PUBLIC="https://github.com/arndvs/ctrlshft.git"
+EXPECTED_ORIGIN="$CTRLSHFT_PRIVATE_REMOTE_URL"
+EXPECTED_PUBLIC="$CTRLSHFT_PUBLIC_REMOTE_URL"
 DISABLED_PUSHURL="DISABLED"
 
 _fail=0
 _warn=0
 
 normalize_url() {
-    local url="$1"
-    case "$url" in
-        git@github.com:arndvs/dotfiles-private.git) printf '%s\n' "$EXPECTED_ORIGIN" ;;
-        git@github.com:arndvs/ctrlshft.git) printf '%s\n' "$EXPECTED_PUBLIC" ;;
-        https://github.com/arndvs/dotfiles-private) printf '%s\n' "$EXPECTED_ORIGIN" ;;
-        https://github.com/arndvs/ctrlshft) printf '%s\n' "$EXPECTED_PUBLIC" ;;
-        *) printf '%s\n' "$url" ;;
-    esac
+    normalize_ctrlshft_remote_url "$1"
 }
 
 remote_url() {
@@ -88,6 +81,36 @@ check_push_default() {
     esac
 }
 
+check_protected_branch_upstreams() {
+    local branch branch_remote branch_merge remote_target
+    local protected_branches=(main master dev develop)
+    local bad=0
+
+    for branch in "${protected_branches[@]}"; do
+        if ! git show-ref --verify --quiet "refs/heads/$branch"; then
+            continue
+        fi
+
+        branch_remote="$(git config --get "branch.$branch.remote" 2>/dev/null || true)"
+        branch_merge="$(git config --get "branch.$branch.merge" 2>/dev/null || true)"
+
+        [[ -z "$branch_remote" ]] && continue
+
+        remote_target="$(remote_url "$branch_remote")"
+        if [[ "$branch_remote" == "public" ]] || [[ "$branch_remote" == "upstream" ]] || [[ "$(normalize_url "$remote_target")" == "$EXPECTED_PUBLIC" ]]; then
+            red "  ✗ protected branch '$branch' tracks public remote '$branch_remote' (${branch_merge:-no merge ref})"
+            red "    Fix: git branch --set-upstream-to origin/$branch $branch"
+            bad=1
+        fi
+    done
+
+    if [[ $bad -eq 0 ]]; then
+        green "  ✓ Protected branches do not track public remotes"
+    else
+        _fail=1
+    fi
+}
+
 check_public_push_disabled() {
     local push_urls
     push_urls="$(git config --get-all remote.public.pushurl 2>/dev/null || true)"
@@ -128,6 +151,23 @@ is_private_checkout() {
     return 1
 }
 
+check_public_content_sanitization() {
+    local matches
+    echo
+    echo "Content Sanitization:"
+
+    matches="$(git grep -nIE '(git@github\.com:|https://github\.com/)arndvs/dotfiles-private(\.git)?' -- ':!bin/validate-remotes.sh' 2>/dev/null || true)"
+    if [[ -n "$matches" ]]; then
+        red "  ✗ dotfiles-private URL references found in tracked files"
+        while IFS= read -r line; do
+            red "    $line"
+        done <<< "$matches"
+        _fail=1
+    else
+        green "  ✓ No dotfiles-private URLs in tracked files"
+    fi
+}
+
 echo "Repository Remote Topology:"
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -143,13 +183,15 @@ fi
 
 if ! is_private_checkout; then
     green "  ✓ Public/fork checkout detected; private dotfiles remote topology check skipped"
-    exit 0
+    check_public_content_sanitization
+    exit $_fail
 fi
 
 check_remote_url origin "$EXPECTED_ORIGIN" "private canonical"
 check_remote_url public "$EXPECTED_PUBLIC" "public sanitized"
 check_no_ctrlshft_upstream
 check_push_default
+check_protected_branch_upstreams
 check_public_push_disabled
 
 if [[ $_fail -eq 0 ]] && [[ $_warn -eq 0 ]]; then

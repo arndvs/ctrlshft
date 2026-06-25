@@ -31,7 +31,7 @@ while [[ $# -gt 0 ]]; do
             echo "Checks:"
             echo "  CONFIG   install shape, config JSON, vendored drift, package manager"
             echo "  SYNTAX   installed agent workflow YAML shape"
-            echo "  SECRETS  CLAUDE_CODE_OAUTH_TOKEN, LITELLM_BASE_URL, LITELLM_MASTER_KEY, AGENT_PAT"
+            echo "  SECRETS  LITELLM_BASE_URL, LITELLM_MASTER_KEY, AGENT_PAT"
             echo "  PERMS    workflow permissions blocks"
             echo ""
             echo "Options:"
@@ -199,18 +199,18 @@ PY
 
 _check_required_secrets() {
     local missing=()
-    local required=(CLAUDE_CODE_OAUTH_TOKEN LITELLM_BASE_URL LITELLM_MASTER_KEY AGENT_PAT)
+    local required=(LITELLM_BASE_URL LITELLM_MASTER_KEY AGENT_PAT)
     local repo_slug=""
 
     for secret in "${required[@]}"; do
-        if [[ -n "${!secret:-}" ]]; then
+        if _secret_available "$secret"; then
             continue
         fi
         missing+=("$secret")
     done
 
     if [[ ${#missing[@]} -eq 0 ]]; then
-        _pass_class "SECRETS" "Required secrets are present in environment"
+        _pass_class "SECRETS" "Required secrets are present in environment or run-with-secrets"
         return 0
     fi
 
@@ -248,6 +248,29 @@ _check_required_secrets() {
     fi
 
     _fail_class "SECRETS" "Missing required secrets: ${missing[*]}"
+}
+
+_secret_available() {
+    local secret="$1"
+    local runner="$DOTFILES/bin/run-with-secrets.sh"
+    local output=""
+    local status=0
+
+    if [[ -n "${!secret:-}" ]]; then
+        return 0
+    fi
+    if [[ ! -x "$runner" ]]; then
+        return 1
+    fi
+
+    output="$("$runner" bash -c 'var="$1"; [[ -n "${!var:-}" ]] || exit 3' _ "$secret" 2>&1 >/dev/null)" || status=$?
+    if [[ "$status" -eq 0 ]]; then
+        return 0
+    fi
+    if [[ "$status" -ne 3 ]] && [[ -n "$output" ]]; then
+        printf '%s\n' "$output" >&2
+    fi
+    return 1
 }
 
 _check_engine() {

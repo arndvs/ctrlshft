@@ -524,6 +524,35 @@ assert_contains "AFK worktrees are ignored" "working/runtime/afk-worktrees" "$_g
 _run_with_secrets_syntax=$(grep -n 'expected KEY=value assignment' bin/run-with-secrets.sh || true)
 assert_contains "run-with-secrets validates assignment syntax" "expected KEY=value assignment" "$_run_with_secrets_syntax"
 
+echo
+echo "run-with-secrets --only — filters injected credentials"
+echo "────────────────────────────────────────────────"
+
+_fake_home="$TMP/fake-home"
+mkdir -p "$_fake_home/dotfiles/secrets"
+cat > "$_fake_home/dotfiles/secrets/.env.secrets" <<'EOF'
+GITHUB_APP_ID=dummy-app-id
+GITHUB_APP_INSTALLATION_ID=12345
+GITHUB_APP_PRIVATE_KEY_B64=dummy-private-key
+GITHUB_TOKEN=dummy-pat
+GITHUB_PACKAGE_REGISTRY_TOKEN=dummy-package-pat
+EOF
+
+_only_output=$(env -u GITHUB_TOKEN -u GITHUB_PACKAGE_REGISTRY_TOKEN HOME="$_fake_home" \
+    bin/run-with-secrets.sh --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
+    bash -c '[[ -n "${GITHUB_APP_ID:-}" ]] && [[ -n "${GITHUB_APP_INSTALLATION_ID:-}" ]] && [[ -n "${GITHUB_APP_PRIVATE_KEY_B64:-}" ]] && [[ -z "${GITHUB_TOKEN:-}" ]] && [[ -z "${GITHUB_PACKAGE_REGISTRY_TOKEN:-}" ]] && printf OK' \
+    2>&1 || true)
+assert_eq "--only injects App creds without PATs" "OK" "$_only_output"
+
+_afk_validate_call=$(extract_function shft/shft _validate_afk)
+assert_contains "shft AFK validation requests only App creds" "--only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64" "$_afk_validate_call"
+
+_afk_app_secret_calls=$(grep -n 'GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64' shft/afk.sh || true)
+assert_contains "afk validation/mint requests only App creds" "GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64" "$_afk_app_secret_calls"
+
+_afk_env_decl=$(grep -n '_afk_env=(env' shft/afk.sh || true)
+assert_contains "afk clears package PAT before Claude" "-u GITHUB_PACKAGE_REGISTRY_TOKEN" "$_afk_env_decl"
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Summary
 echo

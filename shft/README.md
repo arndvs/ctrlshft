@@ -189,10 +189,11 @@ Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is
 
 Required GitHub Actions secrets:
 
-- `CLAUDE_CODE_OAUTH_TOKEN` — authenticates Claude Code inside workflows
 - `LITELLM_BASE_URL` — points Claude-compatible model traffic at the LiteLLM proxy backed by GitHub Copilot
 - `LITELLM_MASTER_KEY` — authenticates workflow calls to the LiteLLM proxy
 - `AGENT_PAT` — optional but recommended; label mutations made with `GITHUB_TOKEN` do not trigger downstream workflows, so `AGENT_PAT` is needed for chains such as `agent:implement` → `agent:review` and PRD sub-issue chaining
+
+For hosted GitHub Actions, see [the EC2 hosted proxy runbook](docs/hosted-proxy-ec2-runbook.md). Sandcastle expects an HTTPS reverse proxy endpoint (for example Caddy or nginx) while the LiteLLM app port remains bound to localhost on the proxy host.
 
 ### Structured output and validation
 

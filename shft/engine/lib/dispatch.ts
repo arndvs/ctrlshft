@@ -1,4 +1,6 @@
 import type { CliArgs } from "./parse-cli-args.js";
+import { outputDirPath } from "./shell-helpers.js";
+import { join } from "node:path";
 
 export type WorkflowRunner = (opts: { args: CliArgs; repoDir: string; templatesDir: string }) => Promise<void>;
 
@@ -44,9 +46,9 @@ const workflows: Record<string, WorkflowRunner> = {
     const { runWritePr } = await import("../workflows/write-pr.js");
     const result = await runWritePr({ issueNumber: args.issue, issueTitle: args.issueTitle, branch: args.branch, repoDir, templatesDir });
     const fs = await import("node:fs");
-    const outputDir = process.env["OUTPUT_DIR"] ?? "/tmp";
-    fs.writeFileSync(`${outputDir}/pr_title.txt`, result.prTitle);
-    fs.writeFileSync(`${outputDir}/pr_description.txt`, result.prDescription);
+    const outputDir = outputDirPath();
+    fs.writeFileSync(join(outputDir, "pr_title.txt"), result.prTitle);
+    fs.writeFileSync(join(outputDir, "pr_description.txt"), result.prDescription);
   },
 
   "write-prd-pr": async ({ args, repoDir, templatesDir }) => {
@@ -55,9 +57,9 @@ const workflows: Record<string, WorkflowRunner> = {
     const { runWritePr } = await import("../workflows/write-pr.js");
     const result = await runWritePr({ prdNumber: args.prdNumber, prdTitle: args.prdTitle, repoDir, templatesDir });
     const fs = await import("node:fs");
-    const outputDir = process.env["OUTPUT_DIR"] ?? "/tmp";
-    fs.writeFileSync(`${outputDir}/pr_title.txt`, result.prTitle);
-    fs.writeFileSync(`${outputDir}/pr_description.txt`, result.prDescription);
+    const outputDir = outputDirPath();
+    fs.writeFileSync(join(outputDir, "pr_title.txt"), result.prTitle);
+    fs.writeFileSync(join(outputDir, "pr_description.txt"), result.prDescription);
   },
 
   "update-branch": async ({ args, repoDir, templatesDir }) => {
@@ -67,9 +69,9 @@ const workflows: Record<string, WorkflowRunner> = {
     const { runUpdateBranch } = await import("../workflows/update-branch.js");
     const result = await runUpdateBranch({ prNumber: args.pr, branch: args.branch, baseRef: args.baseRef, repoDir, templatesDir });
     const fs = await import("node:fs");
-    const outputDir = process.env["OUTPUT_DIR"] ?? "/tmp";
-    fs.writeFileSync(`${outputDir}/comment.md`, result.comment);
-    fs.writeFileSync(`${outputDir}/should_push.txt`, result.shouldPush ? "true" : "false");
+    const outputDir = outputDirPath();
+    fs.writeFileSync(join(outputDir, "comment.md"), result.comment);
+    fs.writeFileSync(join(outputDir, "should_push.txt"), result.shouldPush ? "true" : "false");
   },
 
   "implement-prd": async ({ args, repoDir, templatesDir }) => {
@@ -94,19 +96,17 @@ const workflows: Record<string, WorkflowRunner> = {
     const { runArchitectureReview } = await import("../workflows/architecture-review.js");
     const result = await runArchitectureReview({ repoDir, templatesDir });
     const fs = await import("node:fs");
-    const outputDir = process.env["OUTPUT_DIR"] ?? "/tmp";
-    fs.writeFileSync(`${outputDir}/architecture_review_output.json`, JSON.stringify(result, null, 2));
+    const outputDir = outputDirPath();
+    fs.writeFileSync(join(outputDir, "architecture_review_output.json"), JSON.stringify(result, null, 2));
     if (result.status === "proposed") {
-      fs.writeFileSync(`${outputDir}/prd_title.txt`, result.title);
-      fs.writeFileSync(`${outputDir}/prd_body.md`, result.body);
+      fs.writeFileSync(join(outputDir, "prd_title.txt"), result.title);
+      fs.writeFileSync(join(outputDir, "prd_body.md"), result.body);
     }
   },
 
   "check-stale-prs": async ({ repoDir }) => {
-    const { execFileSync } = await import("node:child_process");
-    const repo = process.env["GITHUB_REPOSITORY"];
-    if (!repo) throw new Error("GITHUB_REPOSITORY environment variable is required");
-    execFileSync("gh", ["pr", "list", "--state", "open", "--json", "number,title,updatedAt", "-R", repo], { cwd: repoDir, stdio: "inherit" });
+    const { runCheckStalePrs } = await import("../workflows/check-stale-prs.js");
+    runCheckStalePrs({ repoDir });
   },
 };
 

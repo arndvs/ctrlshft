@@ -11,6 +11,17 @@ Claude Code hooks are **JSON configuration** in `~/.claude/settings.json`, not s
 
 Bootstrap symlinks `hooks/` → `~/.claude/hooks/`. The hook configuration lives in `dotfiles/.claude/settings.json` (the source of truth), which `ctrl bootstrap` deploys directly to `~/.claude/settings.json`.
 
+## Git Hook Dispatchers
+
+Global Git hooks live in `git-hooks/` and are installed by bootstrap with `git config --global core.hooksPath ~/dotfiles/git-hooks`.
+
+- `git-hooks/pre-commit` is the canonical feedback-loop dispatcher. It delegates to project hooks first, then runs typecheck/tests from `package.json` when no project hook exists.
+- `git-hooks/generic-hook` is the canonical no-fallback dispatcher for hooks that only delegate to project-local hooks.
+- `git-hooks/commit-msg`, `git-hooks/post-commit`, and `git-hooks/prepare-commit-msg` must keep the executable body of `generic-hook` byte-identical after the header comments.
+- `git-hooks/pre-push` has a public-promotion guard before the generic delegation tail; its public ctrl+shft URL matching uses the shared `normalize_ctrlshft_remote_url` helper in `bin/_lib.sh`, the same helper used by `bin/validate-remotes.sh`.
+
+Run `bash bin/validate-git-hooks.sh` after editing `git-hooks/`. Bootstrap and `validate-env.sh` run the same check so copied dispatchers cannot silently drift.
+
 ## Hooks
 
 | Script | Event | Matcher | Behavior |

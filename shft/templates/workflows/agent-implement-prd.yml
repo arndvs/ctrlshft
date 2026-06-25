@@ -177,7 +177,6 @@ jobs:
         if: steps.shape.outputs.mode == 'run'
         id: implement
         env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
           BRANCH: ${{ steps.branch.outputs.name }}
@@ -196,14 +195,6 @@ jobs:
           BRANCH: ${{ steps.branch.outputs.name }}
         run: git push origin "$BRANCH"
 
-      - name: Close completed sub-issue
-        if: steps.shape.outputs.mode == 'run' && success()
-        env:
-          SUB_ISSUE_NUMBER: ${{ steps.shape.outputs.next_open_number }}
-        run: |
-          commit_sha=$(git rev-parse HEAD)
-          gh issue close "$SUB_ISSUE_NUMBER" --comment "Implemented in ${commit_sha}. Part of #${PRD_NUMBER}."
-
       - name: Check whether a PR already exists for this branch
         if: steps.shape.outputs.mode == 'run' && success()
         id: pr_lookup
@@ -217,7 +208,6 @@ jobs:
       - name: Write PR title and description (only when opening a new PR)
         if: steps.shape.outputs.mode == 'run' && success() && steps.pr_lookup.outputs.existing_pr == ''
         env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
           OUTPUT_DIR: ${{ runner.temp }}
@@ -252,14 +242,29 @@ jobs:
             echo "created=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Close completed sub-issue
+        if: steps.shape.outputs.mode == 'run' && success()
+        env:
+          SUB_ISSUE_NUMBER: ${{ steps.shape.outputs.next_open_number }}
+        run: |
+          commit_sha=$(git rev-parse HEAD)
+          gh issue close "$SUB_ISSUE_NUMBER" --comment "Implemented in ${commit_sha}. Part of #${PRD_NUMBER}."
+
       - name: Re-check remaining open sub-issues
         if: steps.shape.outputs.mode == 'run' && success()
         id: remaining
+        env:
+          SUB_ISSUE_NUMBER: ${{ steps.shape.outputs.next_open_number }}
         run: |
           set -euo pipefail
-          remaining=$(gh api "repos/${GH_REPO}/issues/${PRD_NUMBER}/sub_issues" \
-            --jq '[.[] | select(.state == "open")] | length' 2>/dev/null || echo "0")
-          echo "count=$remaining" >> "$GITHUB_OUTPUT"
+          if remaining=$(gh api "repos/${GH_REPO}/issues/${PRD_NUMBER}/sub_issues" \
+            --jq '[.[] | select(.state == "open" and (.number | tostring) != env.SUB_ISSUE_NUMBER)] | length'); then
+            echo "count=$remaining" >> "$GITHUB_OUTPUT"
+          else
+            status=$?
+            echo "Failed to re-check remaining open sub-issues (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
+            exit "$status"
+          fi
 
       - name: Chain — re-label PRD to pick up next sub-issue
         if: steps.shape.outputs.mode == 'run' && success() && steps.remaining.outputs.count != '0'

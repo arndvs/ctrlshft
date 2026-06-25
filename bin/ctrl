@@ -553,6 +553,24 @@ except:
         bash "$DOTFILES/bin/preflight-sandcastle.sh" "$@"
         ;;
 
+    # ── validate-public-promotion ────────────────────────────────────────────
+    validate-public-promotion|public-promotion)
+        if [[ ! -f "$DOTFILES/bin/validate-public-promotion.sh" ]]; then
+            red "validate-public-promotion.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/validate-public-promotion.sh" "$@"
+        ;;
+
+    # ── preflight-public-promotion ───────────────────────────────────────────
+    preflight-public-promotion|public-promotion-preflight)
+        if [[ ! -f "$DOTFILES/bin/preflight-public-promotion.sh" ]]; then
+            red "preflight-public-promotion.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/preflight-public-promotion.sh" "$@"
+        ;;
+
     # ── smoke-sandcastle-dispatch ────────────────────────────────────────────
     smoke-sandcastle-dispatch|sandcastle-dispatch-smoke)
         if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-dispatch.sh" ]]; then
@@ -569,6 +587,42 @@ except:
             exit 1
         fi
         bash "$DOTFILES/bin/smoke-sandcastle-issue-labels.sh" "$@"
+        ;;
+
+    # ── smoke-sandcastle-scheduled ───────────────────────────────────────────
+    smoke-sandcastle-scheduled|sandcastle-scheduled-smoke)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-scheduled.sh" ]]; then
+            red "smoke-sandcastle-scheduled.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-scheduled.sh" "$@"
+        ;;
+
+    # ── smoke-sandcastle-promote-queued ──────────────────────────────────────
+    smoke-sandcastle-promote-queued|sandcastle-promote-queued-smoke)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-promote-queued.sh" ]]; then
+            red "smoke-sandcastle-promote-queued.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-promote-queued.sh" "$@"
+        ;;
+
+    # ── smoke-sandcastle-pr-path ───────────────────────────────────────
+    smoke-sandcastle-pr-path|sandcastle-pr-path-smoke)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-pr-path.sh" ]]; then
+            red "smoke-sandcastle-pr-path.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-pr-path.sh" "$@"
+        ;;
+
+    # ── sandcastle-wire-secrets ──────────────────────────────────────────────
+    sandcastle-wire-secrets|wire-secrets)
+        if [[ ! -f "$DOTFILES/bin/sandcastle-wire-secrets.sh" ]]; then
+            red "sandcastle-wire-secrets.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/sandcastle-wire-secrets.sh" "$@"
         ;;
 
     # ── lifecycle-audit ───────────────────────────────────────────────────────
@@ -743,10 +797,22 @@ except:
         echo "                          [--dry-run]"
         echo "  ctrl preflight-sandcastle validate drift, workflows, engine, secrets"
         echo "                          [--skip-drift] [--skip-engine] [--skip-github]"
+        echo "  ctrl validate-public-promotion"
+        echo "                          block private-only paths before public push"
+        echo "  ctrl preflight-public-promotion --range RANGE"
+        echo "                          validate candidate commits before public push"
         echo "  ctrl smoke-sandcastle-dispatch trigger safe workflow_dispatch smoke"
         echo "                          [--workflow FILE] [--ref REF] [--dry-run]"
         echo "  ctrl smoke-sandcastle-issue-labels trigger disposable issue-label smoke"
         echo "                          [--dry-run] [--allow-side-effects]"
+        echo "  ctrl smoke-sandcastle-scheduled  run schedule-backed workflows on-demand"
+        echo "                          [--list] [--dry-run] [--allow-side-effects]"
+        echo "  ctrl smoke-sandcastle-promote-queued  test queued-promotion unblocking"
+        echo "                          [--pairs N] [--dry-run] [--allow-side-effects]"
+        echo "  ctrl smoke-sandcastle-pr-path  test PR-path automations (update/fix/merge)"
+        echo "                          [--confirm-merge] [--dry-run] [--allow-side-effects]"
+        echo "  ctrl sandcastle-wire-secrets  set hosted-proxy Actions secrets from .env.secrets"
+        echo "                          [--repo OWNER/REPO] [--dry-run]"
         echo ""
         echo "  Lifecycle"
         echo "  ──────────────────────────────────────────────────────────────"

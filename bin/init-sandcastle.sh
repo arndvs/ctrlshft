@@ -17,6 +17,7 @@ MODEL="claude-opus-4-6"
 PM="pnpm"
 SANDBOX="none"
 FORCE=false
+NO_ARTIFACTS=false
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -26,8 +27,12 @@ while [[ $# -gt 0 ]]; do
         --pm)      PM="$2"; shift 2 ;;
         --sandbox) SANDBOX="$2"; shift 2 ;;
         --force)   FORCE=true; shift ;;
+        --no-artifacts) NO_ARTIFACTS=true; shift ;;
         --help|-h)
-            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--force]"
+            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--no-artifacts] [--force]"
+            echo ""
+            echo "Also scaffolds the artifact lifecycle (working/, plans/, docs/) by calling"
+            echo "'ctrl init-artifacts --gitignore'. Pass --no-artifacts to skip it."
             echo ""
             echo "Sandbox modes: only 'none' is currently supported by the TypeScript engine."
             exit 0
@@ -89,7 +94,7 @@ const fs = require("fs");
 const pkg = JSON.parse(fs.readFileSync(process.env.ENGINE_PACKAGE, "utf8"));
 pkg.scripts = {
   ...pkg.scripts,
-  test: 'echo "Vendored Sandcastle engine excludes test files; run pnpm run typecheck to validate runtime sources."',
+  test: 'echo "Vendored Sandcastle engine excludes test files; run the repo typecheck script (for example, pnpm run typecheck) to validate runtime sources."',
 };
 
 process.stdout.write(`${JSON.stringify(pkg, null, 2)}\n`);
@@ -261,6 +266,21 @@ case "$PM" in
     *)    red "Unexpected package manager after validation: $PM"; exit 1 ;;
 esac
 
+# ── 12. Scaffold artifact lifecycle (additive; opt out with --no-artifacts) ──
+# Delegates to the shared lifecycle scaffold rather than owning lifecycle files
+# here, so Sandcastle does not become the owner of the lifecycle concept.
+if [[ "$NO_ARTIFACTS" != true ]]; then
+    echo "  Scaffolding artifact lifecycle..."
+    if [[ -f "$DOTFILES/bin/init-artifacts.sh" ]]; then
+        bash "$DOTFILES/bin/init-artifacts.sh" --gitignore \
+            || yellow "    lifecycle scaffold reported issues — run 'ctrl init-artifacts' manually"
+    else
+        yellow "    init-artifacts.sh not found — skipping lifecycle scaffold"
+    fi
+else
+    yellow "  Skipping artifact lifecycle scaffold (--no-artifacts)"
+fi
+
 echo ""
 green "Sandcastle initialized!"
 echo ""
@@ -268,25 +288,22 @@ echo ""
 # ── Checklist ─────────────────────────────────────────────────────────────────
 echo "  Next steps:"
 echo "  ─────────────────────────────────────────────────────────"
-echo "  1. Add repo secret: CLAUDE_CODE_OAUTH_TOKEN"
-echo "     (GitHub → Settings → Secrets → Actions)"
+echo "  1. Add repo secrets: LITELLM_BASE_URL and LITELLM_MASTER_KEY"
+echo "     Required to route model traffic through the Claude-compatible LiteLLM proxy."
 echo ""
-echo "  2. Add repo secrets: LITELLM_BASE_URL and LITELLM_MASTER_KEY"
-echo "     (Required to route model traffic through LiteLLM → GitHub Copilot.)"
+echo "  2. Add repo secret: AGENT_PAT"
+echo "     Required for label changes to trigger downstream workflows."
+echo "     GITHUB_TOKEN-created labels do not fire follow-up workflow runs."
 echo ""
-echo "  3. (Optional) Add repo secret: AGENT_PAT"
-echo "     Needed for label changes to trigger downstream workflows."
-echo "     Without it, the agent:implement → agent:review chain won't fire."
+echo "  3. Review sandcastle.config.json and adjust values"
 echo ""
-echo "  4. Review sandcastle.config.json and adjust values"
+echo "  4. Add project-specific prompt overrides in .sandcastle/prompts/"
 echo ""
-echo "  5. Add project-specific prompt overrides in .sandcastle/prompts/"
+echo "  5. Update .sandcastle/CODING_STANDARDS.md with your conventions"
 echo ""
-echo "  6. Update .sandcastle/CODING_STANDARDS.md with your conventions"
+echo "  6. Create a CONTEXT.md at the repo root (optional but recommended)"
 echo ""
-echo "  7. Create a CONTEXT.md at the repo root (optional but recommended)"
-echo ""
-echo "  8. Commit the generated files:"
+echo "  7. Commit the generated files:"
 echo "     git add .github/workflows/agent-*.yml .github/copilot-setup-steps.yml"
 echo "     git add .sandcastle/ sandcastle.config.json"
 echo "     git commit -m 'feat: initialize Sandcastle agent platform'"
