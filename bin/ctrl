@@ -616,6 +616,15 @@ except:
         bash "$DOTFILES/bin/smoke-sandcastle-pr-path.sh" "$@"
         ;;
 
+    # ── sandcastle-wire-secrets ──────────────────────────────────────────────
+    sandcastle-wire-secrets|wire-secrets)
+        if [[ ! -f "$DOTFILES/bin/sandcastle-wire-secrets.sh" ]]; then
+            red "sandcastle-wire-secrets.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/sandcastle-wire-secrets.sh" "$@"
+        ;;
+
     # ── lifecycle-audit ───────────────────────────────────────────────────────
     lifecycle-audit|la)
         if [[ ! -f "$DOTFILES/bin/artifact-lifecycle-audit.sh" ]]; then
@@ -802,6 +811,8 @@ except:
         echo "                          [--pairs N] [--dry-run] [--allow-side-effects]"
         echo "  ctrl smoke-sandcastle-pr-path  test PR-path automations (update/fix/merge)"
         echo "                          [--confirm-merge] [--dry-run] [--allow-side-effects]"
+        echo "  ctrl sandcastle-wire-secrets  set hosted-proxy Actions secrets from .env.secrets"
+        echo "                          [--repo OWNER/REPO] [--dry-run]"
         echo ""
         echo "  Lifecycle"
         echo "  ──────────────────────────────────────────────────────────────"

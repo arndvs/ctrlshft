@@ -95,6 +95,7 @@ _test "ctrl smoke-sandcastle-issue-labels help" ctrl smoke-sandcastle-issue-labe
 _test "ctrl smoke-sandcastle-scheduled help" ctrl smoke-sandcastle-scheduled --help
 _test "ctrl smoke-sandcastle-promote-queued help" ctrl smoke-sandcastle-promote-queued --help
 _test "ctrl smoke-sandcastle-pr-path help" ctrl smoke-sandcastle-pr-path --help
+_test "ctrl sandcastle-wire-secrets help" ctrl sandcastle-wire-secrets --help
 
 # HUD subcommands that need daemon running
 _skip "ctrl hud start"          "starts daemon"
