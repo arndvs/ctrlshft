@@ -9,9 +9,10 @@
     "dev":     "node bin/hud-daemon.js --debug",
     "stop":    "bash bin/start-hud.sh --stop",
     "status":  "bash bin/start-hud.sh --status",
-    "test":    "npm run test:instructions && npm run test:hooks",
+    "test":    "npm run test:instructions && npm run test:hooks && npm run test:lifecycle",
     "test:instructions": "bash test/claude-instructions.sh",
     "test:hooks": "bash test/hooks-integration.sh",
+    "test:lifecycle": "bash test/lifecycle.sh",
     "test:cli": "bash test/cli-smoke.sh"
   },
   "optionalDependencies": {
