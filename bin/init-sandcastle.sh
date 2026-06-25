@@ -17,6 +17,7 @@ MODEL="claude-opus-4-6"
 PM="pnpm"
 SANDBOX="none"
 FORCE=false
+NO_ARTIFACTS=false
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -26,8 +27,12 @@ while [[ $# -gt 0 ]]; do
         --pm)      PM="$2"; shift 2 ;;
         --sandbox) SANDBOX="$2"; shift 2 ;;
         --force)   FORCE=true; shift ;;
+        --no-artifacts) NO_ARTIFACTS=true; shift ;;
         --help|-h)
-            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--force]"
+            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--no-artifacts] [--force]"
+            echo ""
+            echo "Also scaffolds the artifact lifecycle (working/, plans/, docs/) by calling"
+            echo "'ctrl init-artifacts --gitignore'. Pass --no-artifacts to skip it."
             echo ""
             echo "Sandbox modes: only 'none' is currently supported by the TypeScript engine."
             exit 0
@@ -260,6 +265,21 @@ case "$PM" in
     npm)  (cd .sandcastle/engine && npm install 2>/dev/null) || yellow "    npm install failed — run manually in .sandcastle/engine/" ;;
     *)    red "Unexpected package manager after validation: $PM"; exit 1 ;;
 esac
+
+# ── 12. Scaffold artifact lifecycle (additive; opt out with --no-artifacts) ──
+# Delegates to the shared lifecycle scaffold rather than owning lifecycle files
+# here, so Sandcastle does not become the owner of the lifecycle concept.
+if [[ "$NO_ARTIFACTS" != true ]]; then
+    echo "  Scaffolding artifact lifecycle..."
+    if [[ -f "$DOTFILES/bin/init-artifacts.sh" ]]; then
+        bash "$DOTFILES/bin/init-artifacts.sh" --gitignore \
+            || yellow "    lifecycle scaffold reported issues — run 'ctrl init-artifacts' manually"
+    else
+        yellow "    init-artifacts.sh not found — skipping lifecycle scaffold"
+    fi
+else
+    yellow "  Skipping artifact lifecycle scaffold (--no-artifacts)"
+fi
 
 echo ""
 green "Sandcastle initialized!"
