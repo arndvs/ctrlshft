@@ -434,5 +434,12 @@ if [[ -f "$TEMPLATES/copilot-setup-steps.yml" ]]; then
     fi
 fi
 
+# Refresh the source version stamp to reflect the re-vendored source
+SOURCE_SHA="$(git -C "$DOTFILES" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)"
+cat > .sandcastle/.sandcastle-version <<VEREOF
+sourceSha=$SOURCE_SHA
+vendoredAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+VEREOF
+
 echo ""
 green "Updated $updated file(s)."

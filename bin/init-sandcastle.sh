@@ -167,6 +167,14 @@ done
 
 echo "    .sandcastle/engine/ (vendored)"
 
+# ── 4b. Write source version stamp (provenance + staleness detection) ────────
+SOURCE_SHA="$(git -C "$DOTFILES" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)"
+cat > .sandcastle/.sandcastle-version <<VEREOF
+sourceSha=$SOURCE_SHA
+vendoredAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+VEREOF
+echo "    .sandcastle/.sandcastle-version ($SOURCE_SHA)"
+
 # ── 5. Create run.ts dispatcher ──────────────────────────────────────────────
 echo "  Creating dispatcher..."
 cp "$TEMPLATES/run.ts" .sandcastle/run.ts
