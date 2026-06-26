@@ -167,22 +167,6 @@ echo "Checking helper scripts and hooks..."
 check_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
 check_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
 
-# 7. Optional sandbox template
-SANDBOX="none"
-if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
-    SANDBOX=$(node -e "
-        try {
-            const c = JSON.parse(require('fs').readFileSync('sandcastle.config.json','utf8'));
-            console.log(c.sandbox || 'none');
-        } catch { console.log('none'); }
-    " 2>/dev/null || echo "none")
-fi
-
-if [[ "$SANDBOX" == "docker" || -d ".sandcastle/sandbox" ]]; then
-    echo "Checking sandbox template..."
-    check_dir_files "$TEMPLATES/sandbox" ".sandcastle/sandbox" "sandbox"
-fi
-
 # 8. Workflow YAMLs — need to resolve {{DEFAULT_BRANCH}} before comparing
 echo "Checking workflow YAMLs..."
 
@@ -416,11 +400,6 @@ apply_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "te
 apply_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
 apply_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
 chmod +x .sandcastle/scripts/*.sh .sandcastle/hooks/*.sh 2>/dev/null || true
-
-# Optional sandbox template
-if [[ "$SANDBOX" == "docker" || -d ".sandcastle/sandbox" ]]; then
-    apply_dir_files "$TEMPLATES/sandbox" ".sandcastle/sandbox" "sandbox"
-fi
 
 # Workflow YAMLs
 for tmpl in "$TEMPLATES/workflows/"*.yml; do

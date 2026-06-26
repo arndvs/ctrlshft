@@ -87,7 +87,6 @@ ctrl update-sandcastle --dry-run
 - `.sandcastle/engine/package.json` and `tsconfig.json`
 - `.sandcastle/templates/prompts/` and `extractions/`
 - `.sandcastle/scripts/` and `hooks/`
-- `.sandcastle/sandbox/` when the directory exists
 - `.github/workflows/agent-*.yml`
 - `.github/copilot-setup-steps.yml`
 
