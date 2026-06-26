@@ -188,6 +188,7 @@ echo "Checking workflow YAMLs..."
 
 # Read baseBranch from config (default: main)
 BASE_BRANCH="main"
+PROXY="true"
 if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
     BASE_BRANCH=$(node -e "
         try {
@@ -195,6 +196,12 @@ if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
             console.log(c.baseBranch || 'main');
         } catch { console.log('main'); }
     " 2>/dev/null || echo "main")
+    PROXY=$(node -e "
+        try {
+            const c = JSON.parse(require('fs').readFileSync('sandcastle.config.json','utf8'));
+            console.log(c.proxy === false ? 'false' : 'true');
+        } catch { console.log('true'); }
+    " 2>/dev/null || echo "true")
 fi
 
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
@@ -215,6 +222,28 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
         DIFF_OUTPUT+=$'\n'
     fi
 done
+
+# 8b. Proxy monitoring workflows (only when proxy mode is enabled in config)
+if [[ "$PROXY" == "true" ]]; then
+    echo "Checking proxy monitoring workflows..."
+    for tmpl in "$TEMPLATES/workflows-proxy/"*.yml; do
+        [[ ! -f "$tmpl" ]] && continue
+        fname="$(basename "$tmpl")"
+        vendored=".github/workflows/$fname"
+        if [[ ! -f "$vendored" ]]; then
+            DRIFTED_FILES+=("workflows/$fname (new — not installed)")
+            DIFF_OUTPUT+="$(printf '\n── workflows/%s (new template) ──\n' "$fname")"
+            continue
+        fi
+        resolved_tmpl=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+        if ! echo "$resolved_tmpl" | diff -q "$vendored" - &>/dev/null; then
+            DRIFTED_FILES+=("workflows/$fname")
+            DIFF_OUTPUT+="$(printf '\n── workflows/%s ──\n' "$fname")"
+            DIFF_OUTPUT+="$(echo "$resolved_tmpl" | diff -u "$vendored" - --label "installed/$fname" --label "template/$fname" 2>/dev/null || true)"
+            DIFF_OUTPUT+=$'\n'
+        fi
+    done
+fi
 
 # 9. copilot-setup-steps.yml
 echo "Checking copilot-setup-steps.yml..."
@@ -403,6 +432,19 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
         apply_resolved "$resolved" "$dst" "workflows/$fname"
     fi
 done
+
+# Proxy monitoring workflows (only when proxy mode is enabled in config)
+if [[ "$PROXY" == "true" ]]; then
+    for tmpl in "$TEMPLATES/workflows-proxy/"*.yml; do
+        [[ ! -f "$tmpl" ]] && continue
+        fname="$(basename "$tmpl")"
+        dst=".github/workflows/$fname"
+        resolved=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+        if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
+            apply_resolved "$resolved" "$dst" "workflows/$fname"
+        fi
+    done
+fi
 
 # copilot-setup-steps.yml
 if [[ -f "$TEMPLATES/copilot-setup-steps.yml" ]]; then

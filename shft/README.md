@@ -174,8 +174,10 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 | `agent-architecture-review.yml` | `schedule`, `workflow_dispatch` | Creates `source:architecture-review` PRD issues |
 | `agent-promote-queued.yml` | `issues:closed` | Promotes unblocked `agent:queued` issues |
 | `agent-check-stale-prs.yml` | `schedule`, `workflow_dispatch` | Scheduled maintenance |
+| `sandcastle-ci.yml` | `push`/`pull_request` on `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck); always vendored |
+| `proxy-canary.yml` (in `workflows-proxy/`) | `schedule`, `workflow_dispatch` | Proxy health probe; vendored only with `--with-proxy` (the default) |
 
-Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--branch` or `sandcastle.config.json`.
+Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--branch` or `sandcastle.config.json`. Proxy monitors live in `workflows-proxy/` and are vendored only when `--with-proxy` is set (the default); pass `--no-proxy` to skip them.
 
 The canonical dogfood smoke-test contract for these templates is documented in `shft/docs/full-smoke-matrix.md`.
 
