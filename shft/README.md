@@ -50,7 +50,7 @@ Sandcastle is the CI-triggered AFK agent platform extracted under `shft/`. It st
 Run this from the target repository root:
 
 ```bash
-ctrl init-sandcastle --branch main --model claude-opus-4-6 --pm pnpm --sandbox none
+ctrl init-sandcastle --branch main --model claude-opus-4-6 --sandbox none
 ```
 
 `ctrl init-sandcastle` is a stamp-and-own installer. It copies files into the target repo instead of symlinking them, which keeps GitHub Actions independent of `~/dotfiles`:

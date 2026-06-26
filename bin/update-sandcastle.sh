@@ -188,7 +188,6 @@ echo "Checking workflow YAMLs..."
 
 # Read baseBranch from config (default: main)
 BASE_BRANCH="main"
-PM="pnpm"
 if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
     BASE_BRANCH=$(node -e "
         try {
@@ -196,12 +195,6 @@ if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
             console.log(c.baseBranch || 'main');
         } catch { console.log('main'); }
     " 2>/dev/null || echo "main")
-    PM=$(node -e "
-        try {
-            const c = JSON.parse(require('fs').readFileSync('sandcastle.config.json','utf8'));
-            console.log(c.packageManager || 'pnpm');
-        } catch { console.log('pnpm'); }
-    " 2>/dev/null || echo "pnpm")
 fi
 
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
@@ -214,7 +207,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
         continue
     fi
     # Resolve template variables for comparison
-    resolved_tmpl=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" -e "s/{{PACKAGE_MANAGER}}/$PM/g" "$tmpl")
+    resolved_tmpl=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
     if ! echo "$resolved_tmpl" | diff -q "$vendored" - &>/dev/null; then
         DRIFTED_FILES+=("workflows/$fname")
         DIFF_OUTPUT+="$(printf '\n── workflows/%s ──\n' "$fname")"
@@ -226,7 +219,7 @@ done
 # 9. copilot-setup-steps.yml
 echo "Checking copilot-setup-steps.yml..."
 if [[ -f "$TEMPLATES/copilot-setup-steps.yml" ]] && [[ -f ".github/copilot-setup-steps.yml" ]]; then
-    resolved_copilot=$(sed "s/{{PACKAGE_MANAGER}}/$PM/g" "$TEMPLATES/copilot-setup-steps.yml")
+    resolved_copilot=$(cat "$TEMPLATES/copilot-setup-steps.yml")
     if ! echo "$resolved_copilot" | diff -q ".github/copilot-setup-steps.yml" - &>/dev/null; then
         DRIFTED_FILES+=("copilot-setup-steps.yml")
         DIFF_OUTPUT+="$(printf '\n── copilot-setup-steps.yml ──\n')"
@@ -405,7 +398,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
     [[ ! -f "$tmpl" ]] && continue
     fname="$(basename "$tmpl")"
     dst=".github/workflows/$fname"
-    resolved=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" -e "s/{{PACKAGE_MANAGER}}/$PM/g" "$tmpl")
+    resolved=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
     if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
         apply_resolved "$resolved" "$dst" "workflows/$fname"
     fi
@@ -414,7 +407,7 @@ done
 # copilot-setup-steps.yml
 if [[ -f "$TEMPLATES/copilot-setup-steps.yml" ]]; then
     dst=".github/copilot-setup-steps.yml"
-    resolved=$(sed "s/{{PACKAGE_MANAGER}}/$PM/g" "$TEMPLATES/copilot-setup-steps.yml")
+    resolved=$(cat "$TEMPLATES/copilot-setup-steps.yml")
     if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
         apply_resolved "$resolved" "$dst" "copilot-setup-steps.yml"
     fi

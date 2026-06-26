@@ -62,7 +62,7 @@ The full dogfood smoke-test contract for these workflows lives in `shft/docs/ful
 | `agent-check-stale-prs.yml` | Schedule | Finds stale PRs needing attention |
 | `agent-promote-queued.yml` | Issue closed | Unblocks queued issues when dependencies close |
 
-Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` and `{{PACKAGE_MANAGER}}` into `.github/workflows/agent-*.yml`; publishing or installing raw templates without that substitution produces broken workflows.
+Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` into `.github/workflows/agent-*.yml` (the `pnpm install --frozen-lockfile` step is baked directly into the templates); publishing or installing raw templates without that substitution produces broken workflows.
 
 ### Workflow security contract
 

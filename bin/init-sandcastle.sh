@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # init-sandcastle.sh — Scaffold a complete Sandcastle setup in any repo.
 #
-# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--force]
+# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--force]
 #
 # Copies workflow YAMLs, vendors engine code, creates config, sets up prompt
 # directory, creates GitHub labels, and prints a checklist of manual steps.
@@ -14,7 +14,7 @@ source "$DOTFILES/bin/_lib.sh"
 # ── Defaults ──────────────────────────────────────────────────────────────────
 BRANCH="main"
 MODEL="claude-opus-4-6"
-PM="pnpm"
+
 SANDBOX="none"
 FORCE=false
 NO_ARTIFACTS=false
@@ -24,12 +24,11 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --branch)  BRANCH="$2"; shift 2 ;;
         --model)   MODEL="$2"; shift 2 ;;
-        --pm)      PM="$2"; shift 2 ;;
         --sandbox) SANDBOX="$2"; shift 2 ;;
         --force)   FORCE=true; shift ;;
         --no-artifacts) NO_ARTIFACTS=true; shift ;;
         --help|-h)
-            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--no-artifacts] [--force]"
+            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-artifacts] [--force]"
             echo ""
             echo "Also scaffolds the artifact lifecycle (working/, plans/, docs/) by calling"
             echo "'ctrl init-artifacts --gitignore'. Pass --no-artifacts to skip it."
@@ -41,11 +40,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ── Validate PM ───────────────────────────────────────────────────────────────
-case "$PM" in
-    npm|pnpm|yarn|bun) ;;
-    *) red "Invalid package manager: $PM (must be npm, pnpm, yarn, or bun)"; exit 1 ;;
-esac
 
 # ── Validate sandbox ─────────────────────────────────────────────────────────
 case "$SANDBOX" in
@@ -112,14 +106,13 @@ mkdir -p .sandcastle/prompts
 echo "  Installing workflow YAMLs..."
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
     fname="$(basename "$tmpl")"
-    sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" -e "s/{{PACKAGE_MANAGER}}/$PM/g" "$tmpl" > ".github/workflows/$fname"
+    sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" "$tmpl" > ".github/workflows/$fname"
     echo "    .github/workflows/$fname"
 done
 
 # ── 3. Copy copilot-setup-steps.yml ──────────────────────────────────────────
 echo "  Installing copilot-setup-steps.yml..."
-sed "s/{{PACKAGE_MANAGER}}/$PM/g" "$TEMPLATES/copilot-setup-steps.yml" \
-    > ".github/copilot-setup-steps.yml"
+cp "$TEMPLATES/copilot-setup-steps.yml" ".github/copilot-setup-steps.yml"
 echo "    .github/copilot-setup-steps.yml"
 
 # ── 4. Vendor engine code ────────────────────────────────────────────────────
@@ -189,7 +182,7 @@ if [[ ! -f "sandcastle.config.json" ]]; then
   "codingStandards": ".sandcastle/CODING_STANDARDS.md",
   "contextDoc": "CONTEXT.md",
   "adrDir": "docs/adr",
-  "packageManager": "$PM"
+  "packageManager": "pnpm"
 }
 CONFIGEOF
     echo "    sandcastle.config.json"
@@ -258,13 +251,7 @@ fi
 
 # ── 11. Install engine dependencies ──────────────────────────────────────────
 echo "  Installing engine dependencies..."
-case "$PM" in
-    pnpm) (cd .sandcastle/engine && pnpm install 2>/dev/null) || yellow "    pnpm install failed — run manually in .sandcastle/engine/" ;;
-    yarn) (cd .sandcastle/engine && yarn install 2>/dev/null) || yellow "    yarn install failed — run manually in .sandcastle/engine/" ;;
-    bun)  (cd .sandcastle/engine && bun install 2>/dev/null) || yellow "    bun install failed — run manually in .sandcastle/engine/" ;;
-    npm)  (cd .sandcastle/engine && npm install 2>/dev/null) || yellow "    npm install failed — run manually in .sandcastle/engine/" ;;
-    *)    red "Unexpected package manager after validation: $PM"; exit 1 ;;
-esac
+(cd .sandcastle/engine && pnpm install --frozen-lockfile 2>/dev/null) || yellow "    pnpm install failed — run manually in .sandcastle/engine/"
 
 # ── 12. Scaffold artifact lifecycle (additive; opt out with --no-artifacts) ──
 # Delegates to the shared lifecycle scaffold rather than owning lifecycle files
