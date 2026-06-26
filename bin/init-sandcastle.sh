@@ -251,7 +251,11 @@ fi
 
 # ── 11. Install engine dependencies ──────────────────────────────────────────
 echo "  Installing engine dependencies..."
-(cd .sandcastle/engine && pnpm install --frozen-lockfile 2>/dev/null) || yellow "    pnpm install failed — run manually in .sandcastle/engine/"
+if ! (cd .sandcastle/engine && pnpm install --frozen-lockfile); then
+    red "    pnpm install failed in .sandcastle/engine/ — engine dependencies are required to run agents."
+    red "    Fix the error above, then re-run: (cd .sandcastle/engine && pnpm install --frozen-lockfile)"
+    exit 1
+fi
 
 # ── 12. Scaffold artifact lifecycle (additive; opt out with --no-artifacts) ──
 # Delegates to the shared lifecycle scaffold rather than owning lifecycle files
