@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # init-sandcastle.sh — Scaffold a complete Sandcastle setup in any repo.
 #
-# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--force]
+# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-proxy] [--force]
 #
 # Copies workflow YAMLs, vendors engine code, creates config, sets up prompt
 # directory, creates GitHub labels, and prints a checklist of manual steps.
@@ -14,25 +14,31 @@ source "$DOTFILES/bin/_lib.sh"
 # ── Defaults ──────────────────────────────────────────────────────────────────
 BRANCH="main"
 MODEL="claude-opus-4-6"
-PM="pnpm"
 SANDBOX="none"
 FORCE=false
 NO_ARTIFACTS=false
+WITH_PROXY=true
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --branch)  BRANCH="$2"; shift 2 ;;
         --model)   MODEL="$2"; shift 2 ;;
-        --pm)      PM="$2"; shift 2 ;;
         --sandbox) SANDBOX="$2"; shift 2 ;;
+        --with-proxy) WITH_PROXY=true; shift ;;
+        --no-proxy)   WITH_PROXY=false; shift ;;
         --force)   FORCE=true; shift ;;
         --no-artifacts) NO_ARTIFACTS=true; shift ;;
         --help|-h)
-            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--pm pnpm] [--sandbox none] [--no-artifacts] [--force]"
+            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-proxy] [--no-artifacts] [--force]"
             echo ""
             echo "Also scaffolds the artifact lifecycle (working/, plans/, docs/) by calling"
             echo "'ctrl init-artifacts --gitignore'. Pass --no-artifacts to skip it."
+            echo ""
+            echo "Proxy: agents route through a LiteLLM->Copilot proxy by default (--with-proxy)."
+            echo "Pass --no-proxy to skip vendoring the proxy-canary monitor (records proxy=false"
+            echo "in sandcastle.config.json). Agents still read LITELLM_* secrets until the"
+            echo "proxy-optional auth toggle lands (tracked separately)."
             echo ""
             echo "Sandbox modes: only 'none' is currently supported by the TypeScript engine."
             exit 0
@@ -41,11 +47,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ── Validate PM ───────────────────────────────────────────────────────────────
-case "$PM" in
-    npm|pnpm|yarn|bun) ;;
-    *) red "Invalid package manager: $PM (must be npm, pnpm, yarn, or bun)"; exit 1 ;;
-esac
 
 # ── Validate sandbox ─────────────────────────────────────────────────────────
 case "$SANDBOX" in
@@ -112,15 +113,27 @@ mkdir -p .sandcastle/prompts
 echo "  Installing workflow YAMLs..."
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
     fname="$(basename "$tmpl")"
-    sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" -e "s/{{PACKAGE_MANAGER}}/$PM/g" "$tmpl" > ".github/workflows/$fname"
+    sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" "$tmpl" > ".github/workflows/$fname"
     echo "    .github/workflows/$fname"
 done
 
 # ── 3. Copy copilot-setup-steps.yml ──────────────────────────────────────────
 echo "  Installing copilot-setup-steps.yml..."
-sed "s/{{PACKAGE_MANAGER}}/$PM/g" "$TEMPLATES/copilot-setup-steps.yml" \
-    > ".github/copilot-setup-steps.yml"
+cp "$TEMPLATES/copilot-setup-steps.yml" ".github/copilot-setup-steps.yml"
 echo "    .github/copilot-setup-steps.yml"
+
+# ── 3b. Copy proxy monitoring workflows (only with --with-proxy) ─────────────
+if [[ "$WITH_PROXY" == true ]]; then
+    echo "  Installing proxy monitoring workflows..."
+    for tmpl in "$TEMPLATES/workflows-proxy/"*.yml; do
+        [[ -f "$tmpl" ]] || continue
+        fname="$(basename "$tmpl")"
+        sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" "$tmpl" > ".github/workflows/$fname"
+        echo "    .github/workflows/$fname"
+    done
+else
+    yellow "  Skipping proxy monitoring workflows (--no-proxy)"
+fi
 
 # ── 4. Vendor engine code ────────────────────────────────────────────────────
 echo "  Vendoring engine code..."
@@ -153,6 +166,14 @@ for f in "$ENGINE/workflows/"*.ts; do
 done
 
 echo "    .sandcastle/engine/ (vendored)"
+
+# ── 4b. Write source version stamp (provenance + staleness detection) ────────
+SOURCE_SHA="$(git -C "$DOTFILES" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)"
+cat > .sandcastle/.sandcastle-version <<VEREOF
+sourceSha=$SOURCE_SHA
+vendoredAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+VEREOF
+echo "    .sandcastle/.sandcastle-version ($SOURCE_SHA)"
 
 # ── 5. Create run.ts dispatcher ──────────────────────────────────────────────
 echo "  Creating dispatcher..."
@@ -189,7 +210,8 @@ if [[ ! -f "sandcastle.config.json" ]]; then
   "codingStandards": ".sandcastle/CODING_STANDARDS.md",
   "contextDoc": "CONTEXT.md",
   "adrDir": "docs/adr",
-  "packageManager": "$PM"
+  "packageManager": "pnpm",
+  "proxy": $WITH_PROXY
 }
 CONFIGEOF
     echo "    sandcastle.config.json"
@@ -258,13 +280,11 @@ fi
 
 # ── 11. Install engine dependencies ──────────────────────────────────────────
 echo "  Installing engine dependencies..."
-case "$PM" in
-    pnpm) (cd .sandcastle/engine && pnpm install 2>/dev/null) || yellow "    pnpm install failed — run manually in .sandcastle/engine/" ;;
-    yarn) (cd .sandcastle/engine && yarn install 2>/dev/null) || yellow "    yarn install failed — run manually in .sandcastle/engine/" ;;
-    bun)  (cd .sandcastle/engine && bun install 2>/dev/null) || yellow "    bun install failed — run manually in .sandcastle/engine/" ;;
-    npm)  (cd .sandcastle/engine && npm install 2>/dev/null) || yellow "    npm install failed — run manually in .sandcastle/engine/" ;;
-    *)    red "Unexpected package manager after validation: $PM"; exit 1 ;;
-esac
+if ! (cd .sandcastle/engine && pnpm install --frozen-lockfile); then
+    red "    pnpm install failed in .sandcastle/engine/ — engine dependencies are required to run agents."
+    red "    Fix the error above, then re-run: (cd .sandcastle/engine && pnpm install --frozen-lockfile)"
+    exit 1
+fi
 
 # ── 12. Scaffold artifact lifecycle (additive; opt out with --no-artifacts) ──
 # Delegates to the shared lifecycle scaffold rather than owning lifecycle files
@@ -304,7 +324,7 @@ echo ""
 echo "  6. Create a CONTEXT.md at the repo root (optional but recommended)"
 echo ""
 echo "  7. Commit the generated files:"
-echo "     git add .github/workflows/agent-*.yml .github/copilot-setup-steps.yml"
+echo "     git add .github/workflows/ .github/copilot-setup-steps.yml"
 echo "     git add .sandcastle/ sandcastle.config.json"
 echo "     git commit -m 'feat: initialize Sandcastle agent platform'"
 echo ""
