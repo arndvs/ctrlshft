@@ -167,28 +167,12 @@ echo "Checking helper scripts and hooks..."
 check_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
 check_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
 
-# 7. Optional sandbox template
-SANDBOX="none"
-if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
-    SANDBOX=$(node -e "
-        try {
-            const c = JSON.parse(require('fs').readFileSync('sandcastle.config.json','utf8'));
-            console.log(c.sandbox || 'none');
-        } catch { console.log('none'); }
-    " 2>/dev/null || echo "none")
-fi
-
-if [[ "$SANDBOX" == "docker" || -d ".sandcastle/sandbox" ]]; then
-    echo "Checking sandbox template..."
-    check_dir_files "$TEMPLATES/sandbox" ".sandcastle/sandbox" "sandbox"
-fi
-
 # 8. Workflow YAMLs — need to resolve {{DEFAULT_BRANCH}} before comparing
 echo "Checking workflow YAMLs..."
 
 # Read baseBranch from config (default: main)
 BASE_BRANCH="main"
-PM="pnpm"
+PROXY="true"
 if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
     BASE_BRANCH=$(node -e "
         try {
@@ -196,12 +180,12 @@ if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
             console.log(c.baseBranch || 'main');
         } catch { console.log('main'); }
     " 2>/dev/null || echo "main")
-    PM=$(node -e "
+    PROXY=$(node -e "
         try {
             const c = JSON.parse(require('fs').readFileSync('sandcastle.config.json','utf8'));
-            console.log(c.packageManager || 'pnpm');
-        } catch { console.log('pnpm'); }
-    " 2>/dev/null || echo "pnpm")
+            console.log(c.proxy === false ? 'false' : 'true');
+        } catch { console.log('true'); }
+    " 2>/dev/null || echo "true")
 fi
 
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
@@ -214,7 +198,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
         continue
     fi
     # Resolve template variables for comparison
-    resolved_tmpl=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" -e "s/{{PACKAGE_MANAGER}}/$PM/g" "$tmpl")
+    resolved_tmpl=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
     if ! echo "$resolved_tmpl" | diff -q "$vendored" - &>/dev/null; then
         DRIFTED_FILES+=("workflows/$fname")
         DIFF_OUTPUT+="$(printf '\n── workflows/%s ──\n' "$fname")"
@@ -223,10 +207,32 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
     fi
 done
 
+# 8b. Proxy monitoring workflows (only when proxy mode is enabled in config)
+if [[ "$PROXY" == "true" ]]; then
+    echo "Checking proxy monitoring workflows..."
+    for tmpl in "$TEMPLATES/workflows-proxy/"*.yml; do
+        [[ ! -f "$tmpl" ]] && continue
+        fname="$(basename "$tmpl")"
+        vendored=".github/workflows/$fname"
+        if [[ ! -f "$vendored" ]]; then
+            DRIFTED_FILES+=("workflows/$fname (new — not installed)")
+            DIFF_OUTPUT+="$(printf '\n── workflows/%s (new template) ──\n' "$fname")"
+            continue
+        fi
+        resolved_tmpl=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+        if ! echo "$resolved_tmpl" | diff -q "$vendored" - &>/dev/null; then
+            DRIFTED_FILES+=("workflows/$fname")
+            DIFF_OUTPUT+="$(printf '\n── workflows/%s ──\n' "$fname")"
+            DIFF_OUTPUT+="$(echo "$resolved_tmpl" | diff -u "$vendored" - --label "installed/$fname" --label "template/$fname" 2>/dev/null || true)"
+            DIFF_OUTPUT+=$'\n'
+        fi
+    done
+fi
+
 # 9. copilot-setup-steps.yml
 echo "Checking copilot-setup-steps.yml..."
 if [[ -f "$TEMPLATES/copilot-setup-steps.yml" ]] && [[ -f ".github/copilot-setup-steps.yml" ]]; then
-    resolved_copilot=$(sed "s/{{PACKAGE_MANAGER}}/$PM/g" "$TEMPLATES/copilot-setup-steps.yml")
+    resolved_copilot=$(cat "$TEMPLATES/copilot-setup-steps.yml")
     if ! echo "$resolved_copilot" | diff -q ".github/copilot-setup-steps.yml" - &>/dev/null; then
         DRIFTED_FILES+=("copilot-setup-steps.yml")
         DIFF_OUTPUT+="$(printf '\n── copilot-setup-steps.yml ──\n')"
@@ -395,30 +401,45 @@ apply_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
 apply_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
 chmod +x .sandcastle/scripts/*.sh .sandcastle/hooks/*.sh 2>/dev/null || true
 
-# Optional sandbox template
-if [[ "$SANDBOX" == "docker" || -d ".sandcastle/sandbox" ]]; then
-    apply_dir_files "$TEMPLATES/sandbox" ".sandcastle/sandbox" "sandbox"
-fi
-
 # Workflow YAMLs
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
     [[ ! -f "$tmpl" ]] && continue
     fname="$(basename "$tmpl")"
     dst=".github/workflows/$fname"
-    resolved=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" -e "s/{{PACKAGE_MANAGER}}/$PM/g" "$tmpl")
+    resolved=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
     if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
         apply_resolved "$resolved" "$dst" "workflows/$fname"
     fi
 done
 
+# Proxy monitoring workflows (only when proxy mode is enabled in config)
+if [[ "$PROXY" == "true" ]]; then
+    for tmpl in "$TEMPLATES/workflows-proxy/"*.yml; do
+        [[ ! -f "$tmpl" ]] && continue
+        fname="$(basename "$tmpl")"
+        dst=".github/workflows/$fname"
+        resolved=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+        if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
+            apply_resolved "$resolved" "$dst" "workflows/$fname"
+        fi
+    done
+fi
+
 # copilot-setup-steps.yml
 if [[ -f "$TEMPLATES/copilot-setup-steps.yml" ]]; then
     dst=".github/copilot-setup-steps.yml"
-    resolved=$(sed "s/{{PACKAGE_MANAGER}}/$PM/g" "$TEMPLATES/copilot-setup-steps.yml")
+    resolved=$(cat "$TEMPLATES/copilot-setup-steps.yml")
     if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
         apply_resolved "$resolved" "$dst" "copilot-setup-steps.yml"
     fi
 fi
+
+# Refresh the source version stamp to reflect the re-vendored source
+SOURCE_SHA="$(git -C "$DOTFILES" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)"
+cat > .sandcastle/.sandcastle-version <<VEREOF
+sourceSha=$SOURCE_SHA
+vendoredAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+VEREOF
 
 echo ""
 green "Updated $updated file(s)."
