@@ -44,19 +44,18 @@ export function postReview(opts: PostReviewOpts): PostReviewResult {
     return { postedInlineComments: 0, postedReplies: 0, droppedComments: 0, droppedReplies: 0 };
   }
 
-  const headSha = execFileSync("gh", ["pr", "view", prNumber, "--json", "headRefOid", "--jq", ".headRefOid"], {
-    encoding: "utf8",
-    cwd,
-    stdio: ["ignore", "pipe", "pipe"],
-  }).trim();
-
-  const diffOutput = (() => {
-    try {
-      return execFileSync("gh", ["pr", "diff", prNumber], { encoding: "utf8", cwd, stdio: ["ignore", "pipe", "pipe"] });
-    } catch {
-      return "";
-    }
-  })();
+  // Only fetch + parse the PR diff when there are inline comments to validate against it.
+  // Reply-only runs skip the gh pr diff round-trip entirely.
+  const diffOutput =
+    inlineComments.length > 0
+      ? (() => {
+          try {
+            return execFileSync("gh", ["pr", "diff", prNumber], { encoding: "utf8", cwd, stdio: ["ignore", "pipe", "pipe"] });
+          } catch {
+            return "";
+          }
+        })()
+      : "";
   const diffLines = parseDiffLineAnchors(diffOutput);
 
   const validInlineComments = inlineComments.filter((c) => {
@@ -93,6 +92,12 @@ export function postReview(opts: PostReviewOpts): PostReviewResult {
   if (skipEmptyReview && validInlineComments.length === 0 && !effectiveReviewBody) {
     // No review to post — just do thread replies
   } else {
+    // Fetch the head SHA only now that we know a review will actually be posted.
+    const headSha = execFileSync("gh", ["pr", "view", prNumber, "--json", "headRefOid", "--jq", ".headRefOid"], {
+      encoding: "utf8",
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
     const reviewPayload = JSON.stringify({
       commit_id: headSha,
       event: "COMMENT",
