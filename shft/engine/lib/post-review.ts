@@ -85,13 +85,18 @@ export function postReview(opts: PostReviewOpts): PostReviewResult {
   const droppedComments = inlineComments.length - validInlineComments.length;
   const droppedReplies = threadReplies.length - validReplies.length;
 
-  if (skipEmptyReview && validInlineComments.length === 0 && !opts.reviewBody) {
+  // Compute the review body after validation so the fallback only appears when
+  // at least one inline comment survived — avoids posting a placeholder-only review.
+  const effectiveReviewBody =
+    opts.reviewBody ?? (validInlineComments.length > 0 ? "Addressed review feedback." : undefined);
+
+  if (skipEmptyReview && validInlineComments.length === 0 && !effectiveReviewBody) {
     // No review to post — just do thread replies
   } else {
     const reviewPayload = JSON.stringify({
       commit_id: headSha,
       event: "COMMENT",
-      body: opts.reviewBody ?? "",
+      body: effectiveReviewBody ?? "",
       comments: validInlineComments.map((c) => ({ path: c.path, line: c.line, side: c.side, body: c.body })),
     });
 
