@@ -189,6 +189,10 @@ cp -R "$TEMPLATES/extractions" .sandcastle/templates/
 echo "    .sandcastle/templates/prompts/"
 echo "    .sandcastle/templates/extractions/"
 
+# Vendor the label definitions so labels-sync.yml can reconcile from a local source.
+cp "$TEMPLATES/labels.json" .sandcastle/labels.json
+echo "    .sandcastle/labels.json"
+
 # ── 7. Copy helper scripts and hooks ─────────────────────────────────────────
 echo "  Installing helper scripts and hooks..."
 rm -rf .sandcastle/scripts .sandcastle/hooks
