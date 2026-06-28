@@ -39,7 +39,7 @@ For the PR-path state-machine slice, use `ctrl smoke-sandcastle-pr-path`. It ope
 |-------------|---------|
 | Initialized Sandcastle repo | Provides `.github/workflows/agent-*.yml`, `.sandcastle/run.ts`, vendored engine, prompts, scripts, and `sandcastle.config.json`. |
 | Default branch configured | Workflows check out the stamped default branch value resolved from `{{DEFAULT_BRANCH}}`. Dotfiles dogfood uses `dev`. |
-| Labels installed | Required labels include `Sandcastle`, `agent:review`, `agent:plan`, `agent:implement`, `agent:implement-prd`, `agent:fix`, `agent:update-branch`, `agent:merge`, `agent:queued`, `agent:blocked`, `agent:in-progress`, `agent:pr-open`, and `source:architecture-review`. |
+| Labels installed | Required labels include `Sandcastle`, `agent:review`, `agent:implement`, `agent:implement-prd`, `agent:fix`, `agent:update-branch`, `agent:merge`, `agent:queued`, `agent:blocked`, `agent:in-progress`, `agent:pr-open`, and `source:architecture-review`. |
 | Secrets configured | `LITELLM_BASE_URL`, `LITELLM_MASTER_KEY`, and `AGENT_PAT`. `GITHUB_TOKEN` is provided by Actions. |
 | Package manager available | Workflows enable Corepack and install `.sandcastle/engine` dependencies with the configured package manager. |
 | GitHub CLI available | Workflow steps use `gh` for issue, PR, label, and GraphQL operations. |

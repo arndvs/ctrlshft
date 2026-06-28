@@ -1,23 +1,32 @@
 # Triage Labels
 
 Labels used by the Sandcastle state machine. Created automatically by `ctrl init-sandcastle`.
+The agent-facing contract — the two human gates, `AGENT_PAT`, and how local skills hand off to the
+pipeline — is [`instructions/sandcastle-pipeline.instructions.md`](../../instructions/sandcastle-pipeline.instructions.md).
+
+State lives on **two objects**: the **issue** carries state up to `agent:pr-open`; the **PR** carries
+the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`). "Applied by" is what writes
+the label; "Triggers" is the workflow the label fires (`—` = inert state marker). Chaining writes use
+`AGENT_PAT`, since `GITHUB_TOKEN` label writes do not re-trigger workflows.
 
 ## State machine labels
 
-| Label | Color | Trigger | Next state |
-|-------|-------|---------|------------|
-| `Sandcastle` | `#7057ff` | Human applies to issue | `agent:review` |
-| `agent:review` | `#0075ca` | `agent-plan-issue.yml` | `agent:implement` |
-| `agent:plan` | `#006b75` | none (state-tracking label) | `agent:implement` |
-| `agent:implement` | `#e4e669` | `agent-implement-issue.yml` | `agent:pr-open` |
-| `agent:pr-open` | `#1d76db` | PR opened by agent | `agent:merge` or `agent:fix` |
-| `agent:fix` | `#d93f0b` | `agent-fix-pr-feedback.yml` | `agent:pr-open` |
-| `agent:merge` | `#0e8a16` | `agent-merge-pr.yml` | Issue closed |
-| `agent:blocked` | `#b60205` | Any workflow (on failure) | Human intervention |
-| `agent:queued` | `#c5def5` | Human applies | `agent:implement` (when deps close) |
-| `agent:in-progress` | `#fbca04` | Any active workflow | Removed on completion |
-| `agent:update-branch` | `#5319e7` | `agent-update-branch.yml` | Branch updated |
-| `agent:implement-prd` | `#d4c5f9` | `agent-implement-prd.yml` | Sub-issue created + implemented |
+| Label | Color | Applied by | Triggers | Next state |
+|-------|-------|------------|----------|------------|
+| `Sandcastle` | `#7057ff` | Human (start gate) | `agent-review-issue.yml` | `agent:review` |
+| `agent:review` | `#0075ca` | `agent-review-issue.yml` *(AGENT_PAT)* | `agent-plan-issue.yml` | `agent:implement` |
+| `agent:implement` | `#e4e669` | `agent-plan-issue.yml` / `agent-promote-queued.yml` / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-issue.yml` | `agent:pr-open` |
+| `agent:pr-open` | `#1d76db` | `agent-implement-issue.yml` | — | Verdict gate on the PR |
+| `agent:fix` | `#d93f0b` | Human (verdict gate, on PR) | `agent-fix-pr-feedback.yml` | PR re-reviewed |
+| `agent:merge` | `#0e8a16` | Human (verdict gate, on PR) | `agent-merge-pr.yml` | Issue closed |
+| `agent:update-branch` | `#5319e7` | Human (on PR) | `agent-update-branch.yml` | Branch updated |
+| `agent:implement-prd` | `#d4c5f9` | Human / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | Sub-issue created + implemented |
+| `agent:queued` | `#c5def5` | Human / skills (e.g. prd-to-issues) | `agent-promote-queued.yml` (on blocker close) | `agent:implement` when deps clear |
+| `agent:in-progress` | `#fbca04` | Any active workflow | — | Removed on completion |
+| `agent:blocked` | `#b60205` | Any workflow (on failure) | — | Human intervention |
+
+There is no `agent:plan` label — `agent-plan-issue.yml` promotes `agent:review` → `agent:implement`
+directly.
 
 ## Source labels
 
@@ -28,18 +37,22 @@ Labels used by the Sandcastle state machine. Created automatically by `ctrl init
 ## State transitions
 
 ```
-Human applies "Sandcastle"
-  → agent:review (review workflow gathers context)
-    → agent:implement (plan workflow runs and promotes)
-      → agent:pr-open (PR awaiting review)
-        → agent:fix (if review comments)
-          → agent:pr-open (cycle until approved)
-        → agent:merge (checks pass, approved)
-          → closed
+Human applies "Sandcastle" (start gate)
+  → agent-review-issue.yml       → agent:review
+    → agent-plan-issue.yml       → agent:implement
+      → agent-implement-issue.yml → agent:pr-open   (PR opened; issue awaits the verdict gate)
+
+Verdict gate — human applies one of these to the PR:
+  agent:fix    → agent-fix-pr-feedback.yml  → pushes fixes, PR re-reviewed (repeat as needed)
+  agent:merge  → agent-merge-pr.yml         → PR merged → issue closed
+
+On issue close:
+  agent-promote-queued.yml → each agent:queued dependent whose native blockers are all closed
+                           → agent:implement
 
 At any point:
-  → agent:blocked (needs human input)
-  → agent:queued (waiting for dependency issues to close)
+  → agent:blocked (failure / needs human input)
+  → agent:queued  (waiting for native blocking dependencies to close)
 ```
 
 ## Label creation
