@@ -7,6 +7,11 @@ description: "Address GitHub Copilot review comments on the active PR by triagin
 
 Output "Read Review PR Copilot skill." to chat to acknowledge you read this file.
 
+> **Two paths, one policy.** This skill is the **local-interactive** path (you, in VS Code, with Confirm
+> prompts). Its unattended **CI** twin is the `agent:fix` workflow → `shft/engine/workflows/address-review.ts`,
+> which runs the same triage on a labeled PR. Both score comments with the canonical
+> `shft/engine/lib/score-comment.ts` — change tier/keyword policy there, not duplicated here.
+
 ## When to use
 
 Use whenever Copilot has left review comments on a pull request and the user wants to address them. Trigger phrases: "address the review comments", "address review", "address copilot review", "fix the PR comments", "clean up review feedback", "address PR feedback", "re-request review". Also trigger proactively when the active PR has unresolved Copilot review threads and the user asks to commit or ship.
