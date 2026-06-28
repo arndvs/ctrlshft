@@ -293,6 +293,8 @@ describe("scoreComment", () => {
         "\\bparameter[\\s-]type\\b",
         "\\berror model\\b",
       ]);
+      // Pin flags too — a dropped case-insensitive flag would slip past a source-only check.
+      expect(FORCED_CONFIRM_PATTERNS.every((r) => r.flags === "i")).toBe(true);
     });
 
     it.each([

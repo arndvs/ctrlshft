@@ -34,8 +34,8 @@ the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`).
 | `agent:blocked` | any workflow on failure | — | needs human intervention |
 | `source:architecture-review` | `agent-architecture-review.yml` | — (proposal marker) | human triages → `Sandcastle`/`agent:implement-prd` |
 
-There is no `agent:plan` label. Plan promotion happens inside `agent-plan-issue.yml`
-(`agent:review` → `agent:implement` directly).
+There is no separate planning-state label — `agent-plan-issue.yml` promotes
+`agent:review` → `agent:implement` directly.
 
 ## The two human gates
 

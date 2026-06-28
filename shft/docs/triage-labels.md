@@ -25,7 +25,7 @@ the label; "Triggers" is the workflow the label fires (`—` = inert state marke
 | `agent:in-progress` | `#fbca04` | Any active workflow | — | Removed on completion |
 | `agent:blocked` | `#b60205` | Any workflow (on failure) | — | Human intervention |
 
-There is no `agent:plan` label — `agent-plan-issue.yml` promotes `agent:review` → `agent:implement`
+There is no separate planning-state label — `agent-plan-issue.yml` promotes `agent:review` → `agent:implement`
 directly.
 
 ## Source labels
