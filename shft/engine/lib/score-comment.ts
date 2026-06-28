@@ -22,8 +22,9 @@ const VAGUE_PATTERNS = [
 
 // Forced-confirm keywords — floor the tier at "confirm" even when the arithmetic
 // yields "auto", because these signal a behavior/contract change that needs explicit
-// human approval. Kept in sync with the review-pr-copilot skill's Forced-Confirm list;
-// score-comment.test.ts pins this set and fails if the two drift.
+// human approval. score-comment.test.ts pins this regex set, so any edit here fails the test until
+// the pin is updated; keep the review-pr-copilot skill's Forced-Confirm prose list in sync by hand
+// (the test guards the code set, not the prose).
 export const FORCED_CONFIRM_PATTERNS = [
   /\brefactor\b/i,
   /\balign\b/i,

@@ -53,7 +53,8 @@ them or auto-apply their labels without explicit intent.
 Labels applied with the default `GITHUB_TOKEN` **do not trigger** other workflows (a GitHub security
 constraint that prevents recursive Actions). Every label write that must chain to the next stage is
 therefore applied with `GH_TOKEN="$AGENT_PAT"`. State-marker writes (`agent:in-progress`,
-`agent:pr-open`, `agent:blocked`) use the default token because nothing keys off them.
+`agent:pr-open`, `agent:blocked`) don't *require* `AGENT_PAT` — nothing keys off them, so it doesn't
+matter which token they run with (in practice the workflows reuse `AGENT_PAT || GITHUB_TOKEN`).
 
 `AGENT_PAT` is a classic PAT with `repo` scope (private repos) or equivalent fine-grained
 issue/PR/content scopes. If it is missing, the first chaining hop fails closed → the issue lands in
