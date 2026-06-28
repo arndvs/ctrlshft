@@ -161,6 +161,7 @@ done
 echo "Checking runtime templates..."
 check_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 check_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
+check_file "$TEMPLATES/labels.json" ".sandcastle/labels.json" "labels.json"
 
 # 6. Helper scripts and hooks
 echo "Checking helper scripts and hooks..."
@@ -395,6 +396,7 @@ done
 # Runtime prompt and extraction templates
 apply_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 apply_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
+apply_file "$TEMPLATES/labels.json" ".sandcastle/labels.json" "labels.json"
 
 # Helper scripts and hooks
 apply_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"

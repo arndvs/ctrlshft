@@ -3,7 +3,7 @@
  *
  * Triggered by the `agent:fix` label (agent-fix-pr-feedback.yml). This is the automated twin of the
  * local-interactive `review-pr-copilot` skill; both triage comments with the canonical scorer in
- * ./lib/score-comment.ts. Keep tier/keyword policy in that scorer so the two paths stay aligned.
+ * ../lib/score-comment.ts. Keep tier/keyword policy in that scorer so the two paths stay aligned.
  */
 import path from "node:path";
 import { execFileSync } from "node:child_process";
