@@ -56,13 +56,16 @@ Skip threads where `isResolved == true` or `isOutdated == true`. **Build a map o
 
 ### 2. Score each comment + triage
 
-Score every comment 0–100 using observable signals, not vibes:
+Score every comment 0–100 using observable signals, not vibes. The canonical scorer is
+`shft/engine/lib/score-comment.ts` (used unattended by the `agent:fix` workflow); this table mirrors
+it. The forced-confirm keyword set is pinned by `score-comment.test.ts` — keep the two in sync when
+editing either.
 
 **Positive signals** (add):
 - `+20` Comment is specific — cites exact line and exact change
 - `+25` Fix is mechanical — rename, add guard, add type, fix typo, add missing await
 - `+15` Touches ≤1 file and ≤10 lines
-- `+15` Touched code has test coverage
+- `+15` Touched code has test coverage — **local-only**; the CI scorer can't compute coverage from comment metadata, so `score-comment.ts` omits this signal by design
 - `+10` No public API / exported type signature change
 - `+15` Copilot quoted the existing code or proposed a concrete replacement
 
@@ -104,6 +107,8 @@ If a comment has a clear approach but you don't want to do it now, the answer is
 - "rename" of an exported symbol or public API
 
 PR #50 commit `c6c4bed` autofixed an "align error semantics" ask without a Confirm prompt — it was a behavior change masked as a refactor. Auto tier was wrong; the keyword should have forced Confirm.
+
+This keyword list is enforced in code by `FORCED_CONFIRM_PATTERNS` in `shft/engine/lib/score-comment.ts` and pinned by `score-comment.test.ts`. When you add or remove a keyword here, update both so the local (skill) and unattended (`agent:fix`) paths stay aligned.
 
 **Show your work.** For every comment, print the signal arithmetic before the score — never just declare a number. List every applicable signal you considered; if no signals apply on one side, say so explicitly (e.g. `no negative signals applied`). If you cannot explain the arithmetic at all, you are vibing; stop and re-read the comment. Do not invent signals just to show one on each side.
 
