@@ -4,6 +4,17 @@
 # Exit: 0 if all pass, 1 if any fail.
 set -euo pipefail
 
+# Hermetic git env. Git exports GIT_DIR/GIT_WORK_TREE when it invokes hooks (e.g.
+# this suite running under the pre-commit hook), and the interactive cd-hook can
+# pollute them too. Those env vars OVERRIDE `git -C "$TEST_REPO"`, which made the
+# fixture below operate on the REAL repo — leaking a `test-feature` branch, moving
+# HEAD, and even flipping core.bare=true. Unset them so every fixture git op
+# targets its own temp repo regardless of the caller's environment. Guard with
+# `2>/dev/null || true` so a readonly var can't abort the suite under `set -e`;
+# var set mirrors test/lifecycle.sh for consistency across test suites.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR \
+      GIT_OBJECT_DIRECTORY GIT_NAMESPACE 2>/dev/null || true
+
 PASS=0
 FAIL=0
 FAILURES=()
