@@ -5,6 +5,12 @@
 
 set -euo pipefail
 
+# Hermetic git env: git exports GIT_DIR/GIT_WORK_TREE when invoking hooks and the
+# cd-hook can pollute them, which would override `git -C "$repo"` and hijack the
+# temp-repo fixtures onto the real repo. Unset them (mirrors test/lifecycle.sh).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR \
+      GIT_OBJECT_DIRECTORY GIT_NAMESPACE 2>/dev/null || true
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PREFLIGHT="$ROOT/bin/preflight-public-promotion.sh"
 TMP_ROOT="$ROOT/working/tmp/public-promotion-preflight-test"
