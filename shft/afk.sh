@@ -140,8 +140,15 @@ source "$SCRIPT_DIR/_proxy_env.sh" "afk"
 # (WSL2 has no host network access; MSYS/Windows has no Docker Linux sandbox)
 if grep -qi microsoft /proc/version 2>/dev/null || [[ "$(uname -o 2>/dev/null)" == "Msys" ]]; then
     _CLAUDE_CMD=(claude)
+    # No container sandbox on this platform: AFK runs claude with
+    # --dangerously-skip-permissions and deny-rule hooks ONLY (no defense-in-depth).
+    # Record it in run-state so the HUD / `shft status` keep an audit trail per run.
+    _run_state_set "sandboxed" "false"
+    echo "WARNING: AFK running WITHOUT a container sandbox (WSL/MSYS) — deny-rule hooks apply, but no defense-in-depth." >&2
+    _log_afk "sandbox unavailable (WSL/MSYS) — running claude unsandboxed"
 else
     _CLAUDE_CMD=(srt claude)
+    _run_state_set "sandboxed" "true"
 fi
 
 for i in $(seq 1 "$MAX_ITERATIONS"); do
