@@ -76,7 +76,12 @@ class _WebhookBase(unittest.TestCase):
         self.addCleanup(p_hud.stop)
         self.enqueue.return_value = True
 
+        # Never used as a context manager, so the app's lifespan (Config.from_env
+        # + init_db) never runs — the globals set above stand in for it. Close the
+        # client after each test to release its transport/thread and avoid
+        # ResourceWarnings accumulating across the suite.
         self.client = TestClient(wh.app)
+        self.addCleanup(self.client.close)
 
     def _sign(self, body: bytes) -> str:
         return "sha256=" + hmac.new(_SECRET.encode(), body, hashlib.sha256).hexdigest()
