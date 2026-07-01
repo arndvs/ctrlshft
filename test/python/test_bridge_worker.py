@@ -54,16 +54,29 @@ class TestBuildSubprocessEnv(unittest.TestCase):
         self.assertIn("x-access-token:ghs_test@github.com", env["GIT_CONFIG_KEY_0"])
 
     def test_prepends_local_bin_to_path(self):
-        # USERPROFILE set too so ~ expands consistently on Windows (uses
-        # USERPROFILE) and POSIX (uses HOME); compute local_bin inside the same
-        # patched env the code sees.
+        # worker.py runs only on POSIX (it uses os.killpg/SIGKILL), so it joins
+        # PATH with a literal ':' — pin that exact contract rather than a loose
+        # startswith. USERPROFILE is set so ~ expands the same way the code sees
+        # it on Windows (USERPROFILE) and POSIX (HOME).
         home = "/home/x"
         with mock.patch.dict(os.environ, {"HOME": home, "USERPROFILE": home,
                                           "PATH": "/usr/bin"}, clear=True):
             local_bin = os.path.expanduser("~/.local/bin")
             env = self._build()
-        self.assertTrue(env["PATH"].startswith(local_bin))
-        self.assertIn("/usr/bin", env["PATH"])
+        self.assertEqual(env["PATH"], f"{local_bin}:/usr/bin")
+
+    def test_does_not_duplicate_local_bin_when_already_present(self):
+        # The else branch: when ~/.local/bin is already on PATH (membership
+        # tested via split(':')), PATH is returned unchanged — no duplicate
+        # prepend. This locks in the ':' separator from the other direction.
+        home = "/home/x"
+        with mock.patch.dict(os.environ, {"HOME": home, "USERPROFILE": home,
+                                          "PATH": "/tmp"}, clear=True):
+            local_bin = os.path.expanduser("~/.local/bin")
+        with mock.patch.dict(os.environ, {"HOME": home, "USERPROFILE": home,
+                                          "PATH": f"{local_bin}:/usr/bin"}, clear=True):
+            env = self._build()
+        self.assertEqual(env["PATH"], f"{local_bin}:/usr/bin")
 
     def test_does_not_leak_unsafe_env(self):
         with mock.patch.dict(os.environ, {"HOME": "/home/x", "PATH": "/usr/bin",
@@ -111,15 +124,21 @@ class TestRunSubprocess(unittest.TestCase):
         killpg.assert_not_called()
 
     def test_timeout_sigterm_kills_process_group(self):
-        # First wait times out; the post-SIGTERM wait succeeds → one killpg (SIGTERM).
+        # First wait times out; the post-SIGTERM wait succeeds → exactly one
+        # killpg targeting the child's process group (pid 4321) with SIGTERM (15)
+        # — not the bare pid, and not SIGKILL. Asserting the args (not just the
+        # count) is what makes this test enforce SIGTERM-first behavior.
         proc = _proc(wait_side_effect=[subprocess.TimeoutExpired("cmd", 1), None])
         raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
-        self.assertEqual(killpg.call_count, 1)
+        killpg.assert_called_once_with(4321, 15)
         emit.assert_any_call("bridge.job.failed", reason="subprocess_timeout")
 
     def test_timeout_escalates_to_sigkill(self):
-        # Initial wait + the SIGTERM wait both time out → SIGTERM then SIGKILL.
+        # Initial wait + the SIGTERM wait both time out → ordered escalation:
+        # SIGTERM (15) then SIGKILL (9) on the same process group, no extra or
+        # reordered calls. The exact call list catches double-SIGKILL or
+        # SIGKILL-before-SIGTERM regressions that a bare count would miss.
         proc = _proc(wait_side_effect=[
             subprocess.TimeoutExpired("cmd", 1),
             subprocess.TimeoutExpired("cmd", 1),
@@ -127,7 +146,9 @@ class TestRunSubprocess(unittest.TestCase):
         ])
         raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
-        self.assertEqual(killpg.call_count, 2)
+        self.assertEqual(
+            killpg.call_args_list, [mock.call(4321, 15), mock.call(4321, 9)]
+        )
 
 
 class TestDispatch(unittest.TestCase):
@@ -144,25 +165,30 @@ class TestDispatch(unittest.TestCase):
         return captured["cmd"]
 
     def test_address_review_cmd(self):
+        # Pin the exact executable + argument ordering the engine expects, not
+        # just membership — a reordered, renamed, or dropped argv must fail here.
+        engine_main = str(Path("/df") / "shft" / "engine" / "main.ts")
         cmd = self._capture_cmd(
             _dispatch_address_review, pr_number=7, iteration_num=2, max_iterations=3
         )
-        self.assertIn("address-review", cmd)
-        self.assertIn("--pr", cmd)
-        self.assertIn("7", cmd)
-        self.assertIn("--round", cmd)
-        self.assertIn("2", cmd)
+        self.assertEqual(cmd, [
+            "npx", "tsx", engine_main,
+            "--workflow", "address-review",
+            "--repo", str(Path("/ws")),
+            "--pr", "7",
+            "--round", "2",
+            "--max-rounds", "3",
+        ])
 
     def test_shft_afk_cmd_with_issue(self):
+        shft_bin = str(Path("/df") / "shft" / "shft")
         cmd = self._capture_cmd(_dispatch_shft_afk, tracking_number=42)
-        self.assertIn("afk", cmd)
-        self.assertIn("--issue", cmd)
-        self.assertIn("42", cmd)
+        self.assertEqual(cmd, [shft_bin, "afk", "1", "--issue", "42"])
 
     def test_shft_afk_cmd_without_issue(self):
+        shft_bin = str(Path("/df") / "shft" / "shft")
         cmd = self._capture_cmd(_dispatch_shft_afk, tracking_number=None)
-        self.assertIn("afk", cmd)
-        self.assertNotIn("--issue", cmd)
+        self.assertEqual(cmd, [shft_bin, "afk", "1"])
 
 
 if __name__ == "__main__":
