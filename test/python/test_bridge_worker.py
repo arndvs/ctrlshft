@@ -135,11 +135,11 @@ class TestRunSubprocess(unittest.TestCase):
         killpg.assert_not_called()
 
     def test_timeout_sigterm_kills_process_group(self):
-        # First wait times out; the post-SIGTERM wait succeeds → exactly one
-        # killpg targeting the child's process group (pid 4321) with SIGTERM (15)
-        # — not the bare pid, and not SIGKILL. Asserting the args (not just the
-        # count) is what makes this test enforce SIGTERM-first behavior.
-        proc = _proc(wait_side_effect=[subprocess.TimeoutExpired("cmd", 1), None])
+        # First wait times out; the post-SIGTERM wait returns rc 0 (Popen.wait()
+        # returns an int) → exactly one killpg targeting the child's process
+        # group (pid 4321) with SIGTERM (15), not the bare pid and not SIGKILL.
+        # Asserting the args (not just the count) enforces SIGTERM-first behavior.
+        proc = _proc(wait_side_effect=[subprocess.TimeoutExpired("cmd", 1), 0])
         raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
         killpg.assert_called_once_with(4321, 15)
@@ -153,7 +153,7 @@ class TestRunSubprocess(unittest.TestCase):
         proc = _proc(wait_side_effect=[
             subprocess.TimeoutExpired("cmd", 1),
             subprocess.TimeoutExpired("cmd", 1),
-            None,
+            0,  # post-SIGKILL wait returns rc 0 (Popen.wait() returns an int)
         ])
         raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
