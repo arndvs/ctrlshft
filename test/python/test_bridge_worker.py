@@ -99,7 +99,7 @@ def _proc(returncode=0, wait_side_effect=None, pid=4321):
 class TestRunSubprocess(unittest.TestCase):
     def _run(self, proc):
         emit = mock.MagicMock()
-        with mock.patch("bridge.worker.subprocess.Popen", return_value=proc), \
+        with mock.patch("bridge.worker.subprocess.Popen", return_value=proc) as popen, \
                 mock.patch("bridge.worker.os.getpgid", return_value=proc.pid, create=True), \
                 mock.patch("bridge.worker.os.killpg", create=True) as killpg, \
                 mock.patch("bridge.worker.signal.SIGKILL", 9, create=True):
@@ -110,6 +110,7 @@ class TestRunSubprocess(unittest.TestCase):
                     raised = None
                 except RuntimeError as e:
                     raised = e
+        self.popen = popen
         return raised, killpg, emit
 
     def test_success_emits_and_no_raise(self):
@@ -117,6 +118,16 @@ class TestRunSubprocess(unittest.TestCase):
         self.assertIsNone(raised)
         killpg.assert_not_called()
         emit.assert_any_call("bridge.job.shft_completed", exit_code=0)
+
+    def test_popen_starts_new_session(self):
+        # start_new_session=True puts the child in its own process group, so the
+        # killpg() timeout cleanup targets the child's group — not the worker's
+        # own group (which would signal the worker itself). Pin the full call so
+        # a regression dropping the flag is caught here.
+        self._run(_proc(returncode=0))
+        self.popen.assert_called_once_with(
+            ["shft", "afk", "1"], cwd=".", env={}, start_new_session=True
+        )
 
     def test_nonzero_exit_raises(self):
         raised, killpg, emit = self._run(_proc(returncode=1))
