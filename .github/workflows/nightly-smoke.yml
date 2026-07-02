@@ -1,0 +1,79 @@
+name: "Nightly Smoke"
+
+# Runs the full Sandcastle smoke harness + reporting aggregator on a schedule.
+# Publishes JSON + markdown artifacts and surfaces failures in the step summary.
+
+on:
+  schedule:
+    # 06:00 UTC daily (midnight CST)
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Number of recent runs per workflow to inspect"
+        required: false
+        default: "5"
+      mode:
+        description: "Smoke mode — read-only queries only (no destructive steps)"
+        required: false
+        default: "report-only"
+        type: choice
+        options:
+          - report-only
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  smoke-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate smoke report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOTFILES: ${{ github.workspace }}
+          LIMIT: ${{ inputs.limit || '5' }}
+        run: |
+          chmod +x bin/smoke-sandcastle-report.sh
+          bash bin/smoke-sandcastle-report.sh \
+            --repo "${{ github.repository }}" \
+            --limit "$LIMIT" \
+            --json > report.json
+          bash bin/smoke-sandcastle-report.sh \
+            --repo "${{ github.repository }}" \
+            --limit "$LIMIT" \
+            --md > report.md
+
+      - name: Surface report in step summary
+        run: cat report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report-${{ github.run_number }}
+          path: |
+            report.json
+            report.md
+          retention-days: 30
+
+      - name: Check for failures
+        run: |
+          fail_count=$(python3 -c "
+          import json, sys
+          with open('report.json') as f:
+              data = json.load(f)
+          print(data['summary']['fail'])
+          ")
+          if [[ "$fail_count" -gt 0 ]]; then
+            echo "::warning::$fail_count workflow(s) have recent failures — see report artifact"
+          fi
