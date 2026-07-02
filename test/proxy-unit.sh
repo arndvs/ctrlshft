@@ -569,9 +569,10 @@ _probe_sse_has_content() {
 import json, sys
 rv = 'no'
 for l in open(sys.argv[1]):
-    if l.startswith('data: ') and l.strip() != 'data: [DONE]':
+    if l.startswith('data:') and l.rstrip('\r\n') not in ('data: [DONE]', 'data:[DONE]'):
+        raw = l[5:].lstrip(' ')
         try:
-            d = json.loads(l[6:])
+            d = json.loads(raw)
             if d.get('type') == 'content_block_delta' and d.get('delta', {}).get('text'):
                 rv = 'yes'
                 break
@@ -644,6 +645,13 @@ event: content_block_delta
 data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": ""}}
 SSE
 assert_eq "SSE with empty-text delta → has=no" "no" "$(_probe_sse_has_content "$_CANARY_TMP/sse-empty-delta.txt")"
+
+# Fixture 8: SSE with data: (no space after colon) — valid per SSE spec
+cat > "$_CANARY_TMP/sse-nospace.txt" <<'SSE'
+event: content_block_delta
+data:{"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "pong"}}
+SSE
+assert_eq "SSE data: without space → has=yes" "yes" "$(_probe_sse_has_content "$_CANARY_TMP/sse-nospace.txt")"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Summary

@@ -77,20 +77,21 @@ jobs:
                 # Non-SSE path is unchanged (backwards-compatible with stream:false).
                 if head -c 128 /tmp/msg.json | grep -qE '^(event:|data:)'; then
                   has=$(python3 - /tmp/msg.json <<'PY' 2>/dev/null || echo no
-import json, sys
-rv = 'no'
-for l in open(sys.argv[1]):
-    if l.startswith('data: ') and l.strip() != 'data: [DONE]':
-        try:
-            d = json.loads(l[6:])
-            if d.get('type') == 'content_block_delta' and d.get('delta', {}).get('text'):
-                rv = 'yes'
-                break
-        except Exception:
-            pass
-print(rv)
-PY
-)
+          import json, sys
+          rv = 'no'
+          for l in open(sys.argv[1]):
+              if l.startswith('data:') and l.rstrip('\r\n') not in ('data: [DONE]', 'data:[DONE]'):
+                  raw = l[5:].lstrip(' ')
+                  try:
+                      d = json.loads(raw)
+                      if d.get('type') == 'content_block_delta' and d.get('delta', {}).get('text'):
+                          rv = 'yes'
+                          break
+                  except Exception:
+                      pass
+          print(rv)
+          PY
+                  )
                   echo "completion attempt $i/$attempts: 200 SSE${has:+ (content=$has)}"
                 else
                   # Non-streaming JSON path — a non-JSON, non-SSE 200 is a hard bug.
