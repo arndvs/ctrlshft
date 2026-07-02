@@ -31,6 +31,14 @@ const workflows: Record<string, WorkflowRunner> = {
     await runAddressReview({ prNumber: args.pr, repoDir, round: 1, maxRounds: 3 });
   },
 
+  "address-review": async ({ args, repoDir }) => {
+    if (!args.pr) throw new Error("address-review requires --pr <number>");
+    const round = parseRequiredPositiveInt(args.round, "--round");
+    const maxRounds = parseRequiredPositiveInt(args.maxRounds, "--max-rounds");
+    const { runAddressReview } = await import("../workflows/address-review.js");
+    await runAddressReview({ prNumber: args.pr, repoDir, round, maxRounds });
+  },
+
   "merge-pr": async ({ args, repoDir }) => {
     if (!args.pr) throw new Error("merge-pr requires --pr <number>");
     const { execFileSync } = await import("node:child_process");
@@ -114,4 +122,13 @@ export const WORKFLOW_NAMES = Object.keys(workflows);
 
 export function resolveWorkflow(name: string): WorkflowRunner | undefined {
   return workflows[name];
+}
+
+function parseRequiredPositiveInt(value: string | undefined, flag: string): number {
+  if (!value) throw new Error(`address-review requires ${flag} <number>`);
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`${flag} must be a positive integer`);
+  }
+  return parsed;
 }
