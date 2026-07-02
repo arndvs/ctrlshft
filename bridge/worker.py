@@ -342,15 +342,13 @@ def _reap_orphaned_workspaces(cfg: Config) -> None:
             ).fetchall()
         }
 
+    active_paths = {workspace.workspace_path(root, claim_key) for claim_key in active_keys}
     for child in root.iterdir():
+        if child.is_symlink():
+            continue
         if not child.is_dir():
             continue
-        # Reconstruct claim_key from directory name (owner--repo--prN → owner/repo#N)
-        parts = child.name.split("--")
-        if len(parts) != 3 or not parts[2].startswith("pr"):
-            continue
-        claim_key = f"{parts[0]}/{parts[1]}#{parts[2][2:]}"
-        if claim_key not in active_keys:
+        if child not in active_paths:
             try:
                 shutil.rmtree(child)
                 logger.info("Reaped orphaned workspace: %s", child)
