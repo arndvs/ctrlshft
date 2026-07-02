@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as child_process from "node:child_process";
+import { tmpdir } from "node:os";
 
 /**
  * Integration test for the pipeline label linter.
@@ -14,18 +15,17 @@ const TSX_CLI_PATH = path.join(
   import.meta.dirname,
   "..",
   "node_modules",
-  "tsx",
-  "dist",
-  "cli.mjs",
+  ".bin",
+  process.platform === "win32" ? "tsx.cmd" : "tsx",
 );
 
 let fixtureCounter = 0;
 
 function makeFixtureDir(): string {
   fixtureCounter++;
-  const dir = path.join(import.meta.dirname, `__fixtures_${fixtureCounter}_${Date.now()}`);
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
+  return fs.mkdtempSync(
+    path.join(tmpdir(), `sandcastle-pipeline-labels-${fixtureCounter}-`),
+  );
 }
 
 function writeFixture(dir: string, name: string, content: string): string {
@@ -38,20 +38,24 @@ function cleanFixtureDir(dir: string): void {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
+function quoteShellArg(arg: string): string {
+  return `"${arg.replaceAll('"', '\\"')}"`;
+}
+
 function runLinter(dir: string): { code: number; stdout: string; stderr: string } {
+  const args = [LINTER_PATH, "--workflows-dir", dir];
+  const command = process.platform === "win32"
+    ? [TSX_CLI_PATH, ...args].map(quoteShellArg).join(" ")
+    : TSX_CLI_PATH;
   const result = child_process.spawnSync(
-    process.execPath,
-    [
-      TSX_CLI_PATH,
-      LINTER_PATH,
-      "--workflows-dir",
-      dir,
-    ],
+    command,
+    process.platform === "win32" ? [] : args,
     {
       cwd: path.resolve(import.meta.dirname, ".."),
       encoding: "utf8",
       timeout: 30_000,
       env: { ...process.env, NODE_NO_WARNINGS: "1" },
+      shell: process.platform === "win32",
     },
   );
   return {
