@@ -13,6 +13,8 @@ on:
       - "package.json"
       - ".github/workflows/pr-auto-copilot-review.yml"
       - ".github/workflows/integrity.yml"
+      - ".github/workflows/agent-*.yml"
+      - "shft/engine/lib/pipeline-states.ts"
   push:
     branches:
       - dev
@@ -30,6 +32,8 @@ on:
       - "package.json"
       - ".github/workflows/pr-auto-copilot-review.yml"
       - ".github/workflows/integrity.yml"
+      - ".github/workflows/agent-*.yml"
+      - "shft/engine/lib/pipeline-states.ts"
 
 jobs:
   integrity:
@@ -76,3 +80,13 @@ jobs:
         run: |
           set -euo pipefail
           bash test/config-consistency.sh
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Lint pipeline label transitions
+        run: |
+          set -euo pipefail
+          npx --yes tsx shft/engine/lib/lint-pipeline-labels.ts

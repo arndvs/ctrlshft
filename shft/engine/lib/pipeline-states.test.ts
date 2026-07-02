@@ -1,0 +1,229 @@
+import { describe, it, expect } from "vitest";
+import {
+  validateTransition,
+  LABELS,
+  MUTUAL_EXCLUSIONS,
+  TRANSITIONS,
+} from "./pipeline-states.js";
+
+describe("pipeline-states", () => {
+  describe("LABELS catalogue", () => {
+    it("every label has at least one applicable object type", () => {
+      for (const [name, def] of Object.entries(LABELS)) {
+        expect(def.appliesTo.length, `${name} appliesTo is empty`).toBeGreaterThan(0);
+      }
+    });
+
+    it("all transition targets exist in the catalogue", () => {
+      for (const [from, toSet] of TRANSITIONS) {
+        expect(LABELS[from], `source "${from}" not in LABELS`).toBeDefined();
+        for (const to of toSet) {
+          expect(LABELS[to], `target "${to}" not in LABELS`).toBeDefined();
+        }
+      }
+    });
+
+    it("mutual exclusions reference valid labels", () => {
+      for (const [a, b] of MUTUAL_EXCLUSIONS) {
+        expect(LABELS[a], `exclusion member "${a}" not in LABELS`).toBeDefined();
+        expect(LABELS[b], `exclusion member "${b}" not in LABELS`).toBeDefined();
+      }
+    });
+  });
+
+  describe("object-type constraints", () => {
+    it("rejects agent:implement on a PR", () => {
+      const result = validateTransition([], { add: ["agent:implement"] }, "pr");
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toContain("cannot be applied to a pr");
+    });
+
+    it("rejects agent:fix on an issue", () => {
+      const result = validateTransition([], { add: ["agent:fix"] }, "issue");
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toContain("cannot be applied to a issue");
+    });
+
+    it("accepts agent:in-progress on both issue and PR", () => {
+      expect(
+        validateTransition([], { add: ["agent:in-progress"] }, "issue").valid,
+      ).toBe(true);
+      expect(
+        validateTransition([], { add: ["agent:in-progress"] }, "pr").valid,
+      ).toBe(true);
+    });
+
+    it("accepts Sandcastle on an issue", () => {
+      const result = validateTransition([], { add: ["Sandcastle"] }, "issue");
+      expect(result.valid).toBe(true);
+    });
+
+    it("rejects Sandcastle on a PR", () => {
+      const result = validateTransition([], { add: ["Sandcastle"] }, "pr");
+      expect(result.valid).toBe(false);
+    });
+  });
+
+  describe("mutual exclusions", () => {
+    it("rejects adding agent:in-progress when agent:blocked is present", () => {
+      const result = validateTransition(
+        ["agent:blocked"],
+        { add: ["agent:in-progress"] },
+        "issue",
+      );
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toContain("Mutual exclusion");
+    });
+
+    it("allows agent:in-progress after removing agent:blocked", () => {
+      const result = validateTransition(
+        ["agent:blocked"],
+        { remove: ["agent:blocked"], add: ["agent:in-progress"] },
+        "issue",
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it("rejects agent:fix and agent:merge coexisting", () => {
+      const result = validateTransition(
+        ["agent:fix"],
+        { add: ["agent:merge"] },
+        "pr",
+      );
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toContain("Mutual exclusion");
+    });
+
+    it("rejects agent:implement and agent:queued coexisting", () => {
+      const result = validateTransition(
+        ["agent:queued"],
+        { add: ["agent:implement"] },
+        "issue",
+      );
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toContain("Mutual exclusion");
+    });
+
+    it("allows agent:implement after removing agent:queued", () => {
+      const result = validateTransition(
+        ["agent:queued"],
+        { remove: ["agent:queued"], add: ["agent:implement"] },
+        "issue",
+        "agent:queued",
+      );
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe("transition legality", () => {
+    it("accepts the full happy path: Sandcastle → review → implement → pr-open", () => {
+      // Step 1: Sandcastle → agent:review
+      const r1 = validateTransition(
+        ["Sandcastle"],
+        { remove: ["Sandcastle"], add: ["agent:review"] },
+        "issue",
+        "Sandcastle",
+      );
+      expect(r1.valid).toBe(true);
+
+      // Step 2: agent:review → agent:implement
+      const r2 = validateTransition(
+        ["agent:review"],
+        { remove: ["agent:review"], add: ["agent:implement"] },
+        "issue",
+        "agent:review",
+      );
+      expect(r2.valid).toBe(true);
+
+      // Step 3: agent:implement → agent:pr-open
+      const r3 = validateTransition(
+        ["agent:implement"],
+        { remove: ["agent:implement"], add: ["agent:pr-open"] },
+        "issue",
+        "agent:implement",
+      );
+      expect(r3.valid).toBe(true);
+    });
+
+    it("rejects an undeclared transition", () => {
+      const result = validateTransition(
+        ["Sandcastle"],
+        { add: ["agent:pr-open"] },
+        "issue",
+        "Sandcastle",
+      );
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toContain("not declared");
+    });
+
+    it("allows state markers regardless of trigger", () => {
+      const result = validateTransition(
+        ["Sandcastle"],
+        { add: ["agent:in-progress"] },
+        "issue",
+        "Sandcastle",
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it("allows agent:blocked as state marker with any trigger", () => {
+      const result = validateTransition(
+        [],
+        { add: ["agent:blocked"] },
+        "issue",
+        "agent:review",
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it("accepts agent:queued → agent:implement promotion", () => {
+      const result = validateTransition(
+        ["agent:queued"],
+        { remove: ["agent:queued"], add: ["agent:implement"] },
+        "issue",
+        "agent:queued",
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it("accepts agent:implement-prd self-loop", () => {
+      const result = validateTransition(
+        ["agent:implement-prd"],
+        { add: ["agent:implement-prd"] },
+        "issue",
+        "agent:implement-prd",
+      );
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe("unknown labels", () => {
+    it("warns about unknown labels but does not reject", () => {
+      const result = validateTransition(
+        [],
+        { add: ["totally-unknown-label"] },
+        "issue",
+      );
+      expect(result.valid).toBe(true);
+      expect(result.warnings.length).toBe(1);
+      expect(result.warnings[0]).toContain("Unknown label");
+    });
+  });
+
+  describe("no-op / empty proposals", () => {
+    it("accepts an empty proposal", () => {
+      const result = validateTransition(["Sandcastle"], {}, "issue");
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("accepts remove-only proposals", () => {
+      const result = validateTransition(
+        ["agent:in-progress"],
+        { remove: ["agent:in-progress"] },
+        "issue",
+      );
+      expect(result.valid).toBe(true);
+    });
+  });
+});
