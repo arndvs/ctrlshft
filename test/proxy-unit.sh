@@ -653,6 +653,19 @@ data:{"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta",
 SSE
 assert_eq "SSE data: without space → has=yes" "yes" "$(_probe_sse_has_content "$_CANARY_TMP/sse-nospace.txt")"
 
+# Fixture 9: SSE stream starting with a : keep-alive comment line (SSE spec §9.2)
+# The head|grep gate must detect this as SSE so it doesn't fall through to the
+# JSON branch and hard-fail on a healthy stream:true proxy.
+cat > "$_CANARY_TMP/sse-keepalive.txt" <<'SSE'
+: keep-alive
+
+event: content_block_delta
+data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "pong"}}
+SSE
+assert_eq "SSE starting with : keep-alive → detected as SSE" "sse" \
+    "$(head -c 128 "$_CANARY_TMP/sse-keepalive.txt" | grep -qE '^(event:|data:|:)' && echo sse || echo json)"
+assert_eq "SSE starting with : keep-alive → has=yes" "yes" "$(_probe_sse_has_content "$_CANARY_TMP/sse-keepalive.txt")"
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Summary
 echo

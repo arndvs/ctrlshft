@@ -75,7 +75,7 @@ jobs:
                 # with "event:" or "data:" lines and is not valid JSON; parse
                 # content_block_delta events instead of d.get('content').
                 # Non-SSE path is unchanged (backwards-compatible with stream:false).
-                if head -c 128 /tmp/msg.json | grep -qE '^(event:|data:)'; then
+                if head -c 128 /tmp/msg.json | grep -qE '^(event:|data:|:)'; then
                   has=$(python3 - /tmp/msg.json <<'PY' 2>/dev/null || echo no
           import json, sys
           rv = 'no'
