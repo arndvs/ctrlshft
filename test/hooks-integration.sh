@@ -771,9 +771,13 @@ _assert() {
 }
 
 # WRAPPER_PREFIX is assigned in exactly one file, and that file is _hooklib.sh.
+# Match the assignment after start-of-line OR whitespace so re-introductions via
+# `export WRAPPER_PREFIX=`, `readonly WRAPPER_PREFIX=`, `local WRAPPER_PREFIX=`,
+# or an indented assignment are caught too — not only column-1. `$WRAPPER_PREFIX`
+# usage and the pointer comment lack the trailing `=`, so they never match.
 _wrapper_prefix_defined_once() {
     local files
-    files=$(grep -rl --include='*.sh' '^WRAPPER_PREFIX=' "$HOOKS_DIR" 2>/dev/null || true)
+    files=$(grep -rlE --include='*.sh' '(^|[[:space:]])WRAPPER_PREFIX=' "$HOOKS_DIR" 2>/dev/null || true)
     [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
 }
 _assert "WRAPPER_PREFIX defined only in _hooklib.sh" _wrapper_prefix_defined_once
