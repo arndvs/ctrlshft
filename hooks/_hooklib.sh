@@ -13,6 +13,9 @@
 #
 # Provides:
 #   WRAPPER_PREFIX — canonical command-wrapper regex.
+#   COMMAND_BOUNDARY — command-start regex without backtick boundaries.
+#   COMMAND_BOUNDARY_WITH_BACKTICK — command-start regex for hooks that
+#       already treated backticks as command boundaries before extraction.
 #
 # Keep this file dependency-free (POSIX shell + the tools hooks already require)
 # and side-effect-free (definitions only).
@@ -55,12 +58,16 @@ _deny() {
 # ── COMMAND_BOUNDARY / ASSIGNMENT_PREFIX ─────────────────────────────────────
 # Shared regex fragments for anchoring pattern detection to shell command
 # boundaries. A "command boundary" is any position where a new command can
-# start: start of string (^), after shell separators (; | ( { backtick),
-# after compound operators (&& || $(), or after control keywords (then/do/else).
-# Includes backtick as a command-substitution form alongside $( — the superset
-# ensures `sudo \`cmd\`` and `cmd; \`migrate\`` bypass attempts are caught.
+# start: start of string (^), after shell separators (; | ( {), after compound
+# operators (&& || $(), or after control keywords (then/do/else).
+#
+# COMMAND_BOUNDARY intentionally excludes backticks to preserve hooks that did
+# not treat legacy command substitution as a boundary before the extraction.
+# Use COMMAND_BOUNDARY_WITH_BACKTICK only for hooks that already had that
+# broader behavior.
 #
 # SECURITY-CRITICAL: changing these constants affects every hook that detects
 # command patterns. Test with bash test/hooks-integration.sh after any edit.
-COMMAND_BOUNDARY='((^|[;|({`]|&&|\|\||\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
+COMMAND_BOUNDARY='((^|[;|({]|&&|\|\||\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
+COMMAND_BOUNDARY_WITH_BACKTICK='((^|[;|({`]|&&|\|\||\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
 ASSIGNMENT_PREFIX='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'

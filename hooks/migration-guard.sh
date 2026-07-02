@@ -29,7 +29,8 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 [[ -z "$COMMAND" ]] && exit 0
 
 # WRAPPER_PREFIX, COMMAND_BOUNDARY, ASSIGNMENT_PREFIX, and _deny are
-# provided by _hooklib.sh (sourced above) — canonical copies.
+# provided by _hooklib.sh (sourced above) — canonical copies. COMMAND_BOUNDARY
+# preserves this hook's pre-extraction boundary behavior by excluding backticks.
 
 MIGRATION_PATTERN='(prisma[[:space:]]+migrate[[:space:]]+(deploy|dev)|prisma[[:space:]]+db[[:space:]]+push|artisan[[:space:]]+migrate|knex[[:space:]]+migrate|db-migrate[[:space:]]+up|typeorm[[:space:]]+migration:run|drizzle-kit[[:space:]]+push)'
 

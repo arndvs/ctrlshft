@@ -56,10 +56,11 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # Nested shell wrappers using -c/-lc are also treated as git commands when
 # the child shell command string contains a git invocation, so safety gates
 # cannot be bypassed via `bash -c 'git ...'` or `sh -lc 'git ...'`.
-# WRAPPER_PREFIX, COMMAND_BOUNDARY, ASSIGNMENT_PREFIX, _deny, and _timeout
-# are provided by _hooklib.sh (sourced above) — canonical copies.
-TOP_LEVEL_GIT="${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git[[:space:]]"
-NESTED_SHELL_GIT="${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}(bash|sh|dash|ksh|zsh)([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?)*[[:space:]]+-[[:alnum:]]*c[[:alnum:]]*[[:space:]]+.*git[[:space:]]"
+# WRAPPER_PREFIX, command-boundary fragments, ASSIGNMENT_PREFIX, _deny, and
+# _timeout are provided by _hooklib.sh (sourced above) — canonical copies.
+# This hook already treated backticks as boundaries before the extraction.
+TOP_LEVEL_GIT="${COMMAND_BOUNDARY_WITH_BACKTICK}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git[[:space:]]"
+NESTED_SHELL_GIT="${COMMAND_BOUNDARY_WITH_BACKTICK}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}(bash|sh|dash|ksh|zsh)([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?)*[[:space:]]+-[[:alnum:]]*c[[:alnum:]]*[[:space:]]+.*git[[:space:]]"
 if ! echo "$COMMAND" | grep -qE "$TOP_LEVEL_GIT|$NESTED_SHELL_GIT"; then
     exit 0
 fi
