@@ -1,7 +1,7 @@
 /**
  * Sandcastle label pipeline — typed transition table.
  *
- * Single source of truth for the label state machine described in
+ * Canonical typed transition table for the label state machine described in
  * instructions/sandcastle-pipeline.instructions.md. Every agent-*.yml
  * workflow's label operations must conform to this table.
  */
@@ -14,7 +14,7 @@ export type ObjectType = "issue" | "pr";
 export interface LabelDef {
   /** Which object types this label may legally appear on. */
   appliesTo: readonly ObjectType[];
-  /** If true, this is a transient state marker, not a pipeline stage. */
+  /** If true, this label does not participate in transition legality. */
   stateMarker?: boolean;
 }
 
