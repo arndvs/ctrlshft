@@ -2,17 +2,17 @@
  * lint-pipeline-labels.ts — Static linter for agent-*.yml label transitions.
  *
  * Parses workflow YAML files, extracts `--add-label` / `--remove-label`
- * operations, and validates each against the pipeline-states transition table.
+ * operations, and validates added labels against pipeline object-type constraints.
  *
  * Usage:
- *   npx tsx shft/engine/lib/lint-pipeline-labels.ts [--workflows-dir .github/workflows]
+ *   pnpm exec tsx shft/engine/lib/lint-pipeline-labels.ts [--workflows-dir .github/workflows]
  *
  * Exit 0 if all transitions are valid; exit 1 on violations.
  */
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { LABELS, MUTUAL_EXCLUSIONS } from "./pipeline-states.js";
+import { LABELS } from "./pipeline-states.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,22 +36,71 @@ const LABEL_RE =
   /gh\s+(?:issue|pr)\s+edit\b.*?--(add|remove)-label\s+"([^"]+)"/g;
 const OBJECT_TYPE_RE = /gh\s+(issue|pr)\s+edit/;
 
+interface LogicalLine {
+  text: string;
+  startLine: number;
+  lineStarts: number[];
+}
+
+function logicalLines(lines: string[]): LogicalLine[] {
+  const logical: LogicalLine[] = [];
+  let text = "";
+  let startLine = 1;
+  let lineStarts: number[] = [];
+
+  function flush(): void {
+    if (text.length === 0) return;
+    logical.push({ text, startLine, lineStarts });
+    text = "";
+    lineStarts = [];
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i]!;
+    const trimmedRight = rawLine.trimEnd();
+    const continues = trimmedRight.endsWith("\\");
+    const segment = continues ? trimmedRight.slice(0, -1) : rawLine;
+
+    if (text.length === 0) {
+      startLine = i + 1;
+    } else {
+      text += " ";
+    }
+
+    lineStarts.push(text.length);
+    text += segment;
+
+    if (!continues) flush();
+  }
+
+  flush();
+  return logical;
+}
+
+function lineForIndex(logical: LogicalLine, index: number): number {
+  let offset = 0;
+  for (let i = 0; i < logical.lineStarts.length; i++) {
+    if (logical.lineStarts[i]! <= index) offset = i;
+  }
+  return logical.startLine + offset;
+}
+
 function extractLabelOps(filePath: string): LabelOp[] {
   const content = fs.readFileSync(filePath, "utf8");
   const lines = content.split("\n");
   const ops: LabelOp[] = [];
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
+  for (const logical of logicalLines(lines)) {
     // Reset lastIndex for global regex
     LABEL_RE.lastIndex = 0;
     let match: RegExpExecArray | null;
-    while ((match = LABEL_RE.exec(line)) !== null) {
-      const objectMatch = OBJECT_TYPE_RE.exec(line);
+    while ((match = LABEL_RE.exec(logical.text)) !== null) {
+      const objectMatch = OBJECT_TYPE_RE.exec(logical.text);
       const objectType = objectMatch?.[1] === "pr" ? "pr" : "issue";
+      const labelFlagIndex = match.index + match[0].lastIndexOf("--");
       ops.push({
         file: path.basename(filePath),
-        line: i + 1,
+        line: lineForIndex(logical, labelFlagIndex),
         action: match[1] as "add" | "remove",
         label: match[2]!,
         objectType: objectType as "issue" | "pr",
@@ -85,12 +134,6 @@ function validateOps(ops: LabelOp[]): Violation[] {
       });
     }
   }
-
-  // Check for mutual exclusions within the same file (adds without
-  // intervening removes — a heuristic; full runtime checking is in
-  // the shell wrapper).
-  // This is intentionally conservative: we only flag if both members
-  // of an exclusion pair are added in the same step (same line group).
 
   return violations;
 }

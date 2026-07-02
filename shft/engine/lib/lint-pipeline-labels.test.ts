@@ -10,6 +10,14 @@ import * as child_process from "node:child_process";
  */
 
 const LINTER_PATH = path.join(import.meta.dirname, "lint-pipeline-labels.ts");
+const TSX_CLI_PATH = path.join(
+  import.meta.dirname,
+  "..",
+  "node_modules",
+  "tsx",
+  "dist",
+  "cli.mjs",
+);
 
 let fixtureCounter = 0;
 
@@ -32,19 +40,18 @@ function cleanFixtureDir(dir: string): void {
 
 function runLinter(dir: string): { code: number; stdout: string; stderr: string } {
   const result = child_process.spawnSync(
-    "npx",
+    process.execPath,
     [
-      "tsx",
+      TSX_CLI_PATH,
       LINTER_PATH,
       "--workflows-dir",
       dir,
     ],
     {
-      cwd: path.resolve(import.meta.dirname, "../../.."),
+      cwd: path.resolve(import.meta.dirname, ".."),
       encoding: "utf8",
       timeout: 30_000,
       env: { ...process.env, NODE_NO_WARNINGS: "1" },
-      shell: true,
     },
   );
   return {
@@ -132,6 +139,34 @@ jobs:
     cleanFixtureDir(dir);
     expect(result.stdout).toContain("❌");
     expect(result.stdout).toContain("agent:fix");
+    expect(result.code).toBe(1);
+  });
+
+  it("parses backslash-continued label operations", () => {
+    const dir = makeFixtureDir();
+    writeFixture(
+      dir,
+      "agent-multiline-test.yml",
+      `name: "Agent: Test Multiline"
+on:
+  pull_request_target:
+    types: [labeled]
+jobs:
+  bad:
+    steps:
+      - name: Bad multiline transition
+        run: |
+          GH_TOKEN="$TOKEN" gh pr edit "$N" \\
+            --add-label "agent:implement" \\
+            -R example/repo
+`,
+    );
+
+    const result = runLinter(dir);
+    cleanFixtureDir(dir);
+    expect(result.stdout).toContain("❌");
+    expect(result.stdout).toContain("agent:implement");
+    expect(result.stdout).toContain("agent-multiline-test.yml:11");
     expect(result.code).toBe(1);
   });
 });
