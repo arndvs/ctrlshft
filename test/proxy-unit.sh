@@ -615,14 +615,14 @@ assert_eq "SSE with no content_block_delta → has=no" "no" "$(_probe_sse_has_co
 
 # Fixture 3: SSE detection via head|grep (the gate before calling the Python fn)
 assert_eq "SSE body detected by head|grep" "sse" \
-    "$(head -c 128 "$_CANARY_TMP/sse-content.txt" | grep -qE '^(event:|data:)' && echo sse || echo json)"
+    "$(head -c 128 "$_CANARY_TMP/sse-content.txt" | grep -qE '^(event:|data:|:)' && echo sse || echo json)"
 
 # Fixture 4: JSON body NOT detected as SSE
 _FIXTURE_JSON="$_CANARY_TMP/json-content.json"
 printf '%s\n' '{"id":"msg_03","content":[{"type":"text","text":"pong"}]}' \
     > "$_FIXTURE_JSON"
 assert_eq "JSON body not detected as SSE" "json" \
-    "$(head -c 128 "$_FIXTURE_JSON" | grep -qE '^(event:|data:)' && echo sse || echo json)"
+    "$(head -c 128 "$_FIXTURE_JSON" | grep -qE '^(event:|data:|:)' && echo sse || echo json)"
 
 # Fixture 5: JSON body correctly classifies as has=yes (original path, backwards compat)
 # Uses python3 - "$path" so the path is an argv (works on Windows POSIX paths).
@@ -637,7 +637,7 @@ assert_eq "JSON body with content → has=yes" "yes" "$_json_has"
 # Fixture 6: malformed body (non-JSON, non-SSE) not mistaken for SSE
 printf 'GARBAGE NOT JSON OR SSE\n' > "$_CANARY_TMP/bad.txt"
 assert_eq "malformed body not detected as SSE" "json" \
-    "$(head -c 128 "$_CANARY_TMP/bad.txt" | grep -qE '^(event:|data:)' && echo sse || echo json)"
+    "$(head -c 128 "$_CANARY_TMP/bad.txt" | grep -qE '^(event:|data:|:)' && echo sse || echo json)"
 
 # Fixture 7: SSE with only empty-text deltas (text='') → still has=no (not truthy)
 cat > "$_CANARY_TMP/sse-empty-delta.txt" <<'SSE'
