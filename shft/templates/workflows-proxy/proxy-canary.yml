@@ -92,18 +92,17 @@ jobs:
           print(rv)
           PY
                   )
-                  echo "completion attempt $i/$attempts: 200 SSE${has:+ (content=$has)}"
+                  [ "$has" = "yes" ] && echo "completion attempt $i/$attempts: 200 SSE with content ✓" || echo "completion attempt $i/$attempts: 200 SSE — empty content"
                 else
                   # Non-streaming JSON path — a non-JSON, non-SSE 200 is a hard bug.
                   if ! python3 -c "import json; json.load(open('/tmp/msg.json'))" 2>/dev/null; then
                     hard="200 but response body was not valid JSON — proxy/upstream serving malformed completions"; break
                   fi
                   has=$(python3 -c "import json; d=json.load(open('/tmp/msg.json')); print('yes' if d.get('content') else 'no')" 2>/dev/null || echo no)
-                  echo "completion attempt $i/$attempts: 200 JSON${has:+ (content=$has)}"
+                  [ "$has" = "yes" ] && echo "completion attempt $i/$attempts: 200 JSON with content ✓" || echo "completion attempt $i/$attempts: 200 JSON — empty content"
                 fi
                 if [ "$has" = "yes" ]; then got=yes; break; fi
-                empty_seen=yes
-                echo "  retrying (empty content)..." ;;
+                empty_seen=yes ;;
               401|403) hard="auth error HTTP $code${etype:+ (type=$etype)} — master key likely wrong/mismatched"; break ;;
               400)     hard="HTTP 400${etype:+ (type=$etype)} — e.g. no_db_connection / bad request"; break ;;
               000)     hard="connection failed — proxy unreachable"; break ;;
