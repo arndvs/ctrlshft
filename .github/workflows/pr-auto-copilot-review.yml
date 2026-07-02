@@ -1,0 +1,45 @@
+name: "PR: request Copilot review"
+
+# Deterministic, repo-side guarantee that every non-draft PR gets a Copilot
+# review requested — independent of which agent opened it (Sandcastle Actions,
+# local Claude Code, or the VS Code Copilot agent). The Claude Code PostToolUse
+# hook (gh-pr-auto-copilot-review.sh) only covers PRs opened *under Claude Code*;
+# this workflow covers the rest.
+#
+# Note: PRs opened by the default GITHUB_TOKEN do not trigger workflows, so the
+# agent workflows create PRs with AGENT_PAT (which does trigger this).
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  request-copilot-review:
+    # Copilot reviews ready PRs only — skip drafts.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Copilot review (idempotent, non-fatal)
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Skip if Copilot is already a requested reviewer (avoid duplicates).
+          already=$(gh api "repos/$REPO/pulls/$PR" \
+            --jq '[.requested_reviewers[]?.login] | any(test("copilot"; "i"))' 2>/dev/null || echo "false")
+          if [ "$already" = "true" ]; then
+            echo "Copilot review already requested on #$PR — nothing to do."
+            exit 0
+          fi
+          # Non-fatal: forks and repos without the reviewer app return 422; don't fail the run.
+          if gh api --method POST "repos/$REPO/pulls/$PR/requested_reviewers" \
+               -f "reviewers[]=copilot-pull-request-reviewer" >/dev/null 2>&1; then
+            echo "Requested Copilot review on #$PR."
+          else
+            echo "Copilot reviewer unavailable on #$PR (fork or app not installed) — skipping."
+          fi
