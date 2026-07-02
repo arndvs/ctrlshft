@@ -1,10 +1,56 @@
 import { describe, it, expect } from "vitest";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import {
   validateTransition,
   LABELS,
   MUTUAL_EXCLUSIONS,
   TRANSITIONS,
 } from "./pipeline-states.js";
+
+interface MarkdownStateRow {
+  label: string;
+  nextLabels: string[];
+}
+
+const CONTRACT_PATH = path.resolve(
+  import.meta.dirname,
+  "../../..",
+  "instructions",
+  "sandcastle-pipeline.instructions.md",
+);
+
+function extractBacktickedLabels(cell: string): string[] {
+  return [...cell.matchAll(/`([^`]+)`/g)].map((match) => match[1]!);
+}
+
+function extractMarkdownStateRows(): MarkdownStateRow[] {
+  const markdown = fs.readFileSync(CONTRACT_PATH, "utf8");
+  const lines = markdown.split(/\r?\n/);
+  const headerIndex = lines.findIndex((line) =>
+    line.trim() === "| Label | Applied by | Triggers | → Next state |"
+  );
+
+  if (headerIndex === -1) {
+    throw new Error(`State machine table not found in ${CONTRACT_PATH}`);
+  }
+
+  const rows: MarkdownStateRow[] = [];
+  for (const line of lines.slice(headerIndex + 2)) {
+    if (!line.trim().startsWith("|")) break;
+
+    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+    const [label] = extractBacktickedLabels(cells[0] ?? "");
+    if (!label) continue;
+
+    rows.push({
+      label,
+      nextLabels: extractBacktickedLabels(cells[3] ?? ""),
+    });
+  }
+
+  return rows;
+}
 
 describe("pipeline-states", () => {
   describe("LABELS catalogue", () => {
@@ -27,6 +73,19 @@ describe("pipeline-states", () => {
       for (const [a, b] of MUTUAL_EXCLUSIONS) {
         expect(LABELS[a], `exclusion member "${a}" not in LABELS`).toBeDefined();
         expect(LABELS[b], `exclusion member "${b}" not in LABELS`).toBeDefined();
+      }
+    });
+
+    it("stays aligned with the markdown label contract", () => {
+      const rows = extractMarkdownStateRows();
+      const rowByLabel = new Map(rows.map((row) => [row.label, row]));
+
+      expect([...rowByLabel.keys()].sort()).toEqual(Object.keys(LABELS).sort());
+
+      for (const [from, targets] of TRANSITIONS) {
+        const row = rowByLabel.get(from);
+        expect(row, `missing markdown row for transition source "${from}"`).toBeDefined();
+        expect(row!.nextLabels.sort()).toEqual([...targets].sort());
       }
     });
   });
