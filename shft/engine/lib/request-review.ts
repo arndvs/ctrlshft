@@ -32,9 +32,14 @@ export function requestCopilotReview(opts: { owner: string; repo: string; prNumb
   }
 
   try {
+    // Use `gh pr edit --add-reviewer` (GraphQL requestReviews under the hood),
+    // NOT the REST `/requested_reviewers` reviewers[] endpoint — the latter 422s
+    // on the Copilot APP ("may only be requested from collaborators"), which made
+    // this request silently no-op. The pr-auto-copilot-review workflow uses the
+    // same mechanism for the same reason.
     execFileSync(
       "gh",
-      ["api", "--method", "POST", `repos/${owner}/${repo}/pulls/${prNumber}/requested_reviewers`, "-f", "reviewers[]=copilot-pull-request-reviewer"],
+      ["pr", "edit", prNumber, "--repo", `${owner}/${repo}`, "--add-reviewer", "copilot-pull-request-reviewer"],
       { encoding: "utf8", cwd, stdio: ["ignore", "pipe", "pipe"] },
     );
     console.log(`Requested Copilot review on PR #${prNumber}`);
