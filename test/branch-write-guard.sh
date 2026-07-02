@@ -94,7 +94,7 @@ fi
 # A human applies this out-of-band; its ABSENCE must not fail CI/offline runs.
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
     _rs_json=$(gh api repos/arndvs/dotfiles-private/rulesets 2>/dev/null || true)
-    if printf '%s' "$_rs_json" | grep -q 'Upgrade to GitHub Pro\|"status": *"403"'; then
+    if printf '%s' "$_rs_json" | grep -qE 'Upgrade to GitHub Pro|"status": *"403"'; then
         skip "rulesets unavailable on this plan (private repo needs GitHub Pro) — local guard is primary"
     else
         _rs=$(printf '%s' "$_rs_json" | jq '[.[]? | select(.target=="branch")] | length' 2>/dev/null || echo err)

@@ -42,6 +42,12 @@ fi
 # including agents whose Claude Code PreToolUse hooks never fire (e.g. the VS Code
 # Copilot agent). Scoped to the dotfiles-private origin so other repos on this
 # machine are unaffected. Human break-glass: CTRL_ALLOW_MAIN_PUSH=1.
+#
+# Stdin handling: git passes "<local-ref> <lsha> <remote-ref> <rsha>" lines on
+# stdin. Buffer all lines upfront so the while-read guard can check them without
+# consuming stdin that delegated hooks (.husky/pre-push, .git/hooks/pre-push)
+# also need. After the guard, restore stdin before the delegation section below.
+REFS_INPUT=$(cat)
 if is_private_ctrlshft_remote_url "$REMOTE_URL" && [[ "${CTRL_ALLOW_MAIN_PUSH:-}" != "1" ]]; then
     while read -r _ _ _remote_ref _; do
         case "$_remote_ref" in
@@ -59,8 +65,10 @@ MSG
                 exit 1
                 ;;
         esac
-    done
+    done <<< "$REFS_INPUT"
 fi
+# Restore stdin from the buffered content so delegation hooks see the ref lines.
+exec 0<<< "$REFS_INPUT"
 
 # ── 1. Delegate to Husky if present ──────────────────────────────────────────
 if [[ -f ".husky/$HOOK_NAME" ]] && [[ -x ".husky/$HOOK_NAME" ]]; then
