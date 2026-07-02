@@ -32,6 +32,7 @@ jobs:
           # Skip if Copilot is already a requested reviewer (avoid duplicates).
           already=$(gh api "repos/$REPO/pulls/$PR" \
             --jq '[.requested_reviewers[]?.login] | map(select(. != null)) | any(test("^(Copilot|copilot-pull-request-reviewer)(\\[bot\\])?$"; "i"))' 2>/dev/null || echo "false")
+          if [ "$already" = "true" ]; then
             echo "Copilot review already requested on #$PR — nothing to do."
             exit 0
           fi

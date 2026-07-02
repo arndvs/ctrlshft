@@ -96,12 +96,44 @@ fi
 # The Claude hook only covers PRs opened under Claude Code; this workflow is the
 # deterministic guarantee for every other PR (Sandcastle Actions, VS Code, etc).
 # Assert it exists and actually requests Copilot on pull_request events.
+_wf=".github/workflows/pr-auto-copilot-review.yml"
 if [ -f "$_wf" ] \
     && grep -qE '^[[:space:]]*pull_request:' "$_wf" \
     && grep -qE 'gh[[:space:]]+pr[[:space:]]+edit' "$_wf" \
     && grep -qE -- '--add-reviewer[[:space:]]+copilot-pull-request-reviewer' "$_wf"; then
+    ok "pr-auto-copilot-review.yml requests Copilot on pull_request (gh pr edit --add-reviewer)"
 else
     bad "pr-auto-copilot-review.yml missing/incomplete — repo-side auto-review guarantee not enforced"
+fi
+
+# ── Invariant 4b — the workflow's embedded shell must actually parse ─────────
+# A grep can't tell the run: script is syntactically valid — an autofix that
+# deleted an `if … then` left an orphan `fi` the greps above happily pass while
+# bash -n rejects it (the workflow then silently exits 0 without ever requesting
+# Copilot). Extract each run: block and bash -n it. Skipped (not failed) when
+# python3+PyYAML is unavailable; CI (ubuntu) ships both, so it runs where it counts.
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml' >/dev/null 2>&1; then
+    if python3 - "$_wf" <<'PY' 2>/dev/null
+import sys, subprocess, yaml
+doc = yaml.safe_load(open(sys.argv[1])) or {}
+broken = False
+for job in (doc.get("jobs") or {}).values():
+    for step in (job.get("steps") or []):
+        script = step.get("run")
+        if not script:
+            continue
+        # Pass bytes (not text=True): on Windows text mode rewrites \n->\r\n, which
+        # makes bash see "then\r" and wrongly reject a valid script. Bytes keep LF.
+        res = subprocess.run(["bash", "-n"], input=script.encode(), stderr=subprocess.DEVNULL)
+        if res.returncode != 0:
+            broken = True
+sys.exit(1 if broken else 0)
+PY
+    then
+        ok "pr-auto-copilot-review.yml run: scripts parse (bash -n)"
+    else
+        bad "pr-auto-copilot-review.yml has a run: script that FAILS bash -n (broken shell)"
+    fi
 fi
 
 echo ""
