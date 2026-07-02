@@ -5,7 +5,13 @@ on:
       - "global.instructions.md"
       - "CLAUDE.base.md"
       - "bin/validate-symlinks.sh"
+      - "bin/drift-detect.sh"
       - "skills/**"
+      - ".claude/settings.json"
+      - "hooks/**"
+      - "test/config-consistency.sh"
+      - "package.json"
+      - ".github/workflows/pr-auto-copilot-review.yml"
       - ".github/workflows/integrity.yml"
   push:
     branches:
@@ -16,7 +22,13 @@ on:
       - "global.instructions.md"
       - "CLAUDE.base.md"
       - "bin/validate-symlinks.sh"
+      - "bin/drift-detect.sh"
       - "skills/**"
+      - ".claude/settings.json"
+      - "hooks/**"
+      - "test/config-consistency.sh"
+      - "package.json"
+      - ".github/workflows/pr-auto-copilot-review.yml"
       - ".github/workflows/integrity.yml"
 
 jobs:
@@ -59,3 +71,8 @@ jobs:
         run: |
           set -euo pipefail
           bash bin/validate-symlinks.sh --ci
+
+      - name: Config consistency (fail loud on source-of-truth drift)
+        run: |
+          set -euo pipefail
+          bash test/config-consistency.sh
