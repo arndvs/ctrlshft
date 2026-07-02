@@ -843,10 +843,16 @@ _assert "ASSIGNMENT_PREFIX defined only in _hooklib.sh" _assignment_prefix_defin
 # (directly via _deny or inline jq). The old schema is a silent contract
 # divergence — both exit 2, but the JSON payload differs.
 _no_old_deny_schema() {
-    local matches
+    local match matches
     matches=$(find "$HOOKS_DIR" -name '*.sh' ! -name '_hooklib.sh' \
         -exec grep -l '"decision"[[:space:]]*:[[:space:]]*"block"' {} + 2>/dev/null || true)
-    [[ -z "$matches" ]]
+    if [[ -n "$matches" ]]; then
+        echo "Hooks using old decision:block schema:" >&2
+        while IFS= read -r match; do
+            [[ -n "$match" ]] && printf '  %s\n' "${match#"$HOOKS_DIR"/}" >&2
+        done <<< "$matches"
+        return 1
+    fi
 }
 _assert "no hook uses old decision:block schema" _no_old_deny_schema
 
