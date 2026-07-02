@@ -24,8 +24,16 @@ done
 
 # ── Targets to check ─────────────────────────────────────────────────────────
 
+# ~/.claude/settings.json is deployed by bootstrap from .claude/settings.json
+# (NOT hooks/settings-hooks.json, which is a hooks-only reference fragment).
+# Compare against the ACTUAL deploy source so this stays a trustworthy signal —
+# the old mapping diffed the full deployed file against a fragment and therefore
+# ALWAYS reported drift, which trained everyone to ignore it (and let the real
+# dropped-hook drift hide in the noise). Source-side parity between
+# .claude/settings.json and hooks/settings-hooks.json is enforced separately by
+# test/config-consistency.sh.
 declare -A TARGETS=(
-    ["$HOME/.claude/settings.json"]="hooks/settings-hooks.json"
+    ["$HOME/.claude/settings.json"]=".claude/settings.json"
     ["$HOME/.claude/CLAUDE.md"]="CLAUDE.md"
 )
 
