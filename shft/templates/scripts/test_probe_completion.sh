@@ -9,7 +9,7 @@
 #
 # Covers: hard errors, empty-content/degraded, non-JSON 200, SSE content,
 # SSE empty, success, retry exhaustion, misconfiguration, non-numeric inputs,
-# JSON escaping, retries=0, keep-alive SSE streams.
+# JSON escaping, retries=0, keep-alive SSE streams, output sanitization.
 #
 # Usage: bash test_probe_completion.sh  (from any directory)
 set -euo pipefail
@@ -161,6 +161,16 @@ SSE_NOSPACE='event: content_block_delta
 data:{"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "pong"}}'
 s=$(run_probe 200 "$SSE_NOSPACE")
 [ "$s" = "ok" ] && pass "200 SSE data: without space → ok" || fail "200 SSE data: no space: expected ok, got '$s'"
+
+# ── 14. Output values sanitize CR/LF before key=value emission ────────────────
+out=$(STUB_HTTP_CODE=400 STUB_BODY='{"error":{"type":"bad\nstatus=ok\rhttp_code=200"}}' \
+    PROBE_BASE_URL="http://proxy.test" PROBE_AUTH_TOKEN="t" PROBE_MODEL="m" \
+    PATH="$STUB_DIR:$PATH" bash "$PROBE" 2>/dev/null)
+status_lines=$(printf '%s\n' "$out" | grep -c '^status=' || true)
+detail_lines=$(printf '%s\n' "$out" | grep -c '^detail=.*status=ok.*http_code=200' || true)
+[ "$status_lines" -eq 1 ] && [ "$detail_lines" -eq 1 ] \
+  && pass "CR/LF in upstream error type cannot inject output keys" \
+  || fail "CR/LF sanitization: expected one status line and flattened detail, got: $out"
 
 echo ""
 printf "  \033[32m%d passed\033[0m  \033[31m%d failed\033[0m\n" "$PASS" "$FAIL"

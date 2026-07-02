@@ -55,15 +55,26 @@ status=""
 detail=""
 http_code="000"
 
+sanitize_output_value() {
+  local value="${1:-}"
+  value="${value//$'\r'/ }"
+  value="${value//$'\n'/ }"
+  printf '%s' "$value"
+}
+
 emit() {
-  printf 'status=%s\n'   "$status"
-  printf 'detail=%s\n'   "$detail"
-  printf 'http_code=%s\n' "$http_code"
+  local safe_status safe_detail safe_http_code
+  safe_status="$(sanitize_output_value "$status")"
+  safe_detail="$(sanitize_output_value "$detail")"
+  safe_http_code="$(sanitize_output_value "$http_code")"
+  printf 'status=%s\n'   "$safe_status"
+  printf 'detail=%s\n'   "$safe_detail"
+  printf 'http_code=%s\n' "$safe_http_code"
   if [ -n "${GITHUB_OUTPUT:-}" ]; then
     {
-      printf 'status=%s\n'   "$status"
-      printf 'detail=%s\n'   "$detail"
-      printf 'http_code=%s\n' "$http_code"
+      printf 'status=%s\n'   "$safe_status"
+      printf 'detail=%s\n'   "$safe_detail"
+      printf 'http_code=%s\n' "$safe_http_code"
     } >> "$GITHUB_OUTPUT"
   fi
 }
