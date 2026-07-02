@@ -96,10 +96,12 @@ fi
 # The Claude hook only covers PRs opened under Claude Code; this workflow is the
 # deterministic guarantee for every other PR (Sandcastle Actions, VS Code, etc).
 # Assert it exists and actually requests Copilot on pull_request events.
+_wf=".github/workflows/pr-auto-copilot-review.yml"
 if [ -f "$_wf" ] \
     && grep -qE '^[[:space:]]*pull_request:' "$_wf" \
     && grep -qE 'gh[[:space:]]+pr[[:space:]]+edit' "$_wf" \
     && grep -qE -- '--add-reviewer[[:space:]]+copilot-pull-request-reviewer' "$_wf"; then
+    ok "pr-auto-copilot-review.yml requests Copilot on pull_request (gh pr edit --add-reviewer)"
 else
     bad "pr-auto-copilot-review.yml missing/incomplete — repo-side auto-review guarantee not enforced"
 fi
