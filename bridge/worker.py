@@ -356,6 +356,23 @@ def _reap_orphaned_workspaces(cfg: Config) -> None:
                 logger.warning("Failed to reap workspace: %s", child, exc_info=True)
 
 
+def _cleanup_workspace_after_job(cfg: Config, job: db.Job, worker_id: str) -> None:
+    workspace_path = workspace.workspace_path(cfg.workspaces_root, job.claim_key)
+    existed = workspace_path.exists()
+    workspace.cleanup(cfg.workspaces_root, job.claim_key)
+    if existed:
+        try:
+            hud.emit(
+                cfg.hud_script,
+                "bridge.workspace.cleaned",
+                project=job.repo_full_name,
+                workspace_id=job.claim_key,
+                worker_id=worker_id,
+            )
+        except Exception:
+            logger.warning("HUD cleanup event failed for %s", job.claim_key, exc_info=True)
+
+
 def run(worker_id: str) -> None:
     cfg = Config.from_env()
     cfg.require_github_app()  # Worker needs GitHub App credentials — fail fast
@@ -413,14 +430,7 @@ def run(worker_id: str) -> None:
         finally:
             # Workspace cleanup — prevents unbounded disk growth.
             try:
-                workspace.cleanup(cfg.workspaces_root, job.claim_key)
-                hud.emit(
-                    cfg.hud_script,
-                    "bridge.workspace.cleaned",
-                    project=job.repo_full_name,
-                    workspace_id=job.claim_key,
-                    worker_id=worker_id,
-                )
+                _cleanup_workspace_after_job(cfg, job, worker_id)
             except Exception:
                 logger.warning("Workspace cleanup failed for %s", job.claim_key, exc_info=True)
 

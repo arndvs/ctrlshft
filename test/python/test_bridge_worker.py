@@ -24,6 +24,7 @@ from unittest import mock
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+import bridge.worker as worker_module
 from bridge.worker import (
     _build_subprocess_env,
     _dispatch_address_review,
@@ -341,6 +342,83 @@ class TestProcessJob(unittest.TestCase):
 
         with db.connect(self.db_path) as conn:
             self.assertEqual(db.read_iteration(conn, "org/repo#7"), 0)
+
+    def test_run_cleans_once_after_processed_job(self):
+        cfg = self._cfg()
+        job = self._claimed_job()
+
+        with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
+                mock.patch.object(cfg, "require_github_app"), \
+                mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker.db.init_db"), \
+                mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
+                mock.patch("bridge.worker.db.claim_next_job", side_effect=[job, None]), \
+                mock.patch("bridge.worker._process_job"), \
+                mock.patch("bridge.worker.db.mark_done"), \
+                mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
+                mock.patch("bridge.worker.time.sleep", side_effect=KeyboardInterrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                worker_module.run("worker-1")
+
+        cleanup.assert_called_once_with(cfg, job, "worker-1")
+
+    def test_run_does_not_cleanup_or_emit_cleaned_when_no_job_claimed(self):
+        cfg = self._cfg()
+
+        with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
+                mock.patch.object(cfg, "require_github_app"), \
+                mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker.db.init_db"), \
+                mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
+                mock.patch("bridge.worker.db.claim_next_job", return_value=None), \
+                mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
+                mock.patch("bridge.worker.hud.emit") as emit, \
+                mock.patch("bridge.worker.time.sleep", side_effect=KeyboardInterrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                worker_module.run("worker-1")
+
+        cleanup.assert_not_called()
+        self.assertFalse(
+            any(call.args[1] == "bridge.workspace.cleaned" for call in emit.call_args_list)
+        )
+
+
+class TestCleanupWorkspaceAfterJob(unittest.TestCase):
+    def test_missing_workspace_does_not_emit_cleaned_event(self):
+        cfg = mock.MagicMock()
+        cfg.hud_script = Path("/hud")
+        cfg.workspaces_root = Path("/workspaces")
+        job = mock.MagicMock()
+        job.repo_full_name = "org/repo"
+        job.claim_key = "org/repo#7"
+
+        with mock.patch("bridge.worker.workspace.cleanup") as cleanup, \
+                mock.patch("bridge.worker.workspace.workspace_path", return_value=Path("/workspaces/org--repo--pr7")), \
+                mock.patch("bridge.worker.hud.emit") as emit:
+            worker_module._cleanup_workspace_after_job(cfg, job, "worker-1")
+
+        cleanup.assert_called_once_with(Path("/workspaces"), "org/repo#7")
+        emit.assert_not_called()
+
+    def test_hud_emit_failure_does_not_report_cleanup_failure(self):
+        cfg = mock.MagicMock()
+        cfg.hud_script = Path("/hud")
+        cfg.workspaces_root = Path("/workspaces")
+        job = mock.MagicMock()
+        job.repo_full_name = "org/repo"
+        job.claim_key = "org/repo#7"
+        workspace_path = mock.MagicMock()
+        workspace_path.exists.return_value = True
+
+        with mock.patch("bridge.worker.workspace.cleanup") as cleanup, \
+                mock.patch("bridge.worker.workspace.workspace_path", return_value=workspace_path), \
+                mock.patch("bridge.worker.hud.emit", side_effect=RuntimeError("hud failed")), \
+                mock.patch("bridge.worker.logger.warning") as warning:
+            worker_module._cleanup_workspace_after_job(cfg, job, "worker-1")
+
+        cleanup.assert_called_once_with(Path("/workspaces"), "org/repo#7")
+        warning.assert_called_once()
+        self.assertIn("HUD cleanup event failed", warning.call_args.args[0])
 
 
 if __name__ == "__main__":
