@@ -777,7 +777,9 @@ _assert() {
 # usage and the pointer comment lack the trailing `=`, so they never match.
 _wrapper_prefix_defined_once() {
     local files
-    files=$(grep -rlE --include='*.sh' '(^|[[:space:]])WRAPPER_PREFIX=' "$HOOKS_DIR" 2>/dev/null || true)
+    # find + -exec keeps this portable: `grep --include` is a GNU extension that
+    # BSD grep (macOS) rejects, which would fail the guard even when the invariant holds.
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])WRAPPER_PREFIX=' {} + 2>/dev/null || true)
     [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
 }
 _assert "WRAPPER_PREFIX defined only in _hooklib.sh" _wrapper_prefix_defined_once
@@ -791,7 +793,7 @@ _wrapper_prefix_consumers_source_lib() {
         # comment or string (e.g. the "provided by _hooklib.sh" pointer comment),
         # which would let a hook that references but never sources the library pass.
         grep -qE '^[[:space:]]*(source|\.)[[:space:]]+[^#]*_hooklib\.sh' "$hook" || return 1
-    done < <(grep -rl --include='*.sh' 'WRAPPER_PREFIX' "$HOOKS_DIR" 2>/dev/null || true)
+    done < <(find "$HOOKS_DIR" -name '*.sh' -exec grep -l 'WRAPPER_PREFIX' {} + 2>/dev/null || true)
     return 0
 }
 _assert "hooks using WRAPPER_PREFIX source _hooklib.sh" _wrapper_prefix_consumers_source_lib
