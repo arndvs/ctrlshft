@@ -49,7 +49,9 @@ normalize_ctrlshft_remote_url() {
 is_public_ctrlshft_remote_url() {
     [[ "$(normalize_ctrlshft_remote_url "${1:-}")" == "$CTRLSHFT_PUBLIC_REMOTE_URL" ]]
 }
-
+is_private_ctrlshft_remote_url() {
+    [[ "$(normalize_ctrlshft_remote_url "${1:-}")" == "$CTRLSHFT_PRIVATE_REMOTE_URL" ]]
+}
 # ── Python discovery ──────────────────────────────────────────────────────────
 # Sets PYTHON to the best available Python binary (venv first, then system).
 # Requires VENV_DIR to be set. Returns 1 if no Python found.
