@@ -164,6 +164,31 @@ class TestBumpIteration(unittest.TestCase):
             self.assertEqual(v, 1)
 
 
+class TestReadIteration(unittest.TestCase):
+    def setUp(self):
+        self.db_path, self._tmpdir = _make_db()
+
+    def tearDown(self):
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_read_returns_zero_for_unknown_key(self):
+        with db.connect(self.db_path) as conn:
+            self.assertEqual(db.read_iteration(conn, "unknown/repo#99"), 0)
+
+    def test_read_returns_current_after_bumps(self):
+        with db.connect(self.db_path) as conn:
+            db.bump_iteration(conn, "org/repo#1")
+            db.bump_iteration(conn, "org/repo#1")
+            self.assertEqual(db.read_iteration(conn, "org/repo#1"), 2)
+
+    def test_read_does_not_increment(self):
+        with db.connect(self.db_path) as conn:
+            db.bump_iteration(conn, "org/repo#5")
+            db.read_iteration(conn, "org/repo#5")
+            db.read_iteration(conn, "org/repo#5")
+            self.assertEqual(db.read_iteration(conn, "org/repo#5"), 1)
+
+
 class TestRequeueStaleClaims(unittest.TestCase):
     def setUp(self):
         self.db_path, self._tmpdir = _make_db()
