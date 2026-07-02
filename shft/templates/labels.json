@@ -1,7 +1,6 @@
 [
   { "name": "Sandcastle", "color": "7057ff", "description": "Entry point — triggers agent review pipeline" },
   { "name": "agent:review", "color": "0075ca", "description": "Agent is reviewing the issue" },
-  { "name": "agent:plan", "color": "006b75", "description": "Agent has planned the implementation" },
   { "name": "agent:implement", "color": "e4e669", "description": "Agent is implementing the issue" },
   { "name": "agent:pr-open", "color": "1d76db", "description": "Agent has opened a PR for review" },
   { "name": "agent:merge", "color": "0e8a16", "description": "Agent should merge the PR" },

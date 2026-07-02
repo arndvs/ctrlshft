@@ -48,10 +48,10 @@ describe("postReview", () => {
   });
 
   it("posts valid comments and returns correct counts", () => {
-    // headSha fetch
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
-    // diff fetch
+    // diff fetch (inline comments present → fetched first)
     mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);
+    // headSha fetch (only once a review will actually be posted)
+    mockExecFileSync.mockReturnValueOnce("abc123\n");
     // review POST
     mockExecFileSync.mockReturnValueOnce("{}");
 
@@ -103,8 +103,9 @@ describe("postReview", () => {
   });
 
   it("drops inline comments targeting lines not in diff hunks", () => {
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
+    // diff first (inline comments present), then headSha, then review POST
     mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);
+    mockExecFileSync.mockReturnValueOnce("abc123\n");
     mockExecFileSync.mockReturnValueOnce("{}");
 
     const result = postReview({
@@ -145,9 +146,9 @@ describe("postReview", () => {
   });
 
   it("posts valid thread replies via GraphQL", () => {
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
-    mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);
-    mockExecFileSync.mockReturnValueOnce("{}");
+    // No inline comments → diff fetch skipped. headSha + review POST (reviewBody present), then reply.
+    mockExecFileSync.mockReturnValueOnce("abc123\n"); // headSha
+    mockExecFileSync.mockReturnValueOnce("{}"); // review POST
     // Thread reply POST
     mockExecFileSync.mockReturnValueOnce("");
 
@@ -166,7 +167,7 @@ describe("postReview", () => {
     expect(result.droppedReplies).toBe(0);
 
     // Verify GraphQL call
-    const replyCall = mockExecFileSync.mock.calls[3]!;
+    const replyCall = mockExecFileSync.mock.calls[2]!;
     const args = replyCall[1] as string[];
     expect(args).toContain("graphql");
     expect(args.some((a) => a.includes("PRRT_thread1"))).toBe(true);
@@ -209,8 +210,6 @@ describe("postReview", () => {
   });
 
   it("still posts thread replies when the review is skipped (no body, no inline)", () => {
-    mockExecFileSync.mockReturnValueOnce("abc123\n"); // headSha
-    mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF); // diff
     mockExecFileSync.mockReturnValueOnce(""); // reply POST
 
     const result = postReview({
@@ -223,14 +222,13 @@ describe("postReview", () => {
     });
 
     expect(result.postedReplies).toBe(1);
-    // headSha + diff + reply POST = 3 calls; the review POST itself is skipped.
-    expect(mockExecFileSync).toHaveBeenCalledTimes(3);
+    // Reply-only path: diff, headSha, and the review POST are all skipped — just the reply.
+    expect(mockExecFileSync).toHaveBeenCalledTimes(1);
   });
 
   it("posts an empty review when skipEmptyReview is explicitly false", () => {
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
-    mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);
-    mockExecFileSync.mockReturnValueOnce("{}");
+    mockExecFileSync.mockReturnValueOnce("abc123\n"); // headSha
+    mockExecFileSync.mockReturnValueOnce("{}"); // review POST
 
     const result = postReview({
       prNumber: "42",
@@ -242,15 +240,15 @@ describe("postReview", () => {
     });
 
     expect(result.postedInlineComments).toBe(0);
-    // 3 calls: headSha + diff + review POST (empty body).
-    expect(mockExecFileSync).toHaveBeenCalledTimes(3);
+    // No inline comments → diff fetch skipped. headSha + review POST (empty body) = 2 calls.
+    expect(mockExecFileSync).toHaveBeenCalledTimes(2);
   });
 
   it("handles empty diff gracefully — drops all inline comments", () => {
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
-    // Diff fetch fails
+    // Diff fetch (first, since inline comments are present) fails
     mockExecFileSync.mockImplementationOnce(() => { throw new Error("no diff"); });
-    mockExecFileSync.mockReturnValueOnce("{}");
+    mockExecFileSync.mockReturnValueOnce("abc123\n"); // headSha
+    mockExecFileSync.mockReturnValueOnce("{}"); // review POST
 
     const result = postReview({
       prNumber: "42",

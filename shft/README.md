@@ -184,7 +184,7 @@ The canonical dogfood smoke-test contract for these templates is documented in `
 
 Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is authenticated and can resolve the current GitHub repository. In local-only repos with no remote, init skips label creation and prints the manual command to run after adding a remote. The label state machine uses:
 
-- Entry/control labels: `Sandcastle`, `agent:review`, `agent:plan`, `agent:implement`, `agent:implement-prd`, `agent:fix`, `agent:update-branch`, `agent:merge`
+- Entry/control labels: `Sandcastle`, `agent:review`, `agent:implement`, `agent:implement-prd`, `agent:fix`, `agent:update-branch`, `agent:merge`
 - Status labels: `agent:in-progress`, `agent:pr-open`, `agent:queued`, `agent:blocked`
 - Provenance labels: `source:architecture-review`
 

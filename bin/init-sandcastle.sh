@@ -189,6 +189,10 @@ cp -R "$TEMPLATES/extractions" .sandcastle/templates/
 echo "    .sandcastle/templates/prompts/"
 echo "    .sandcastle/templates/extractions/"
 
+# Vendor the label definitions so labels-sync.yml can reconcile from a local source.
+cp "$TEMPLATES/labels.json" .sandcastle/labels.json
+echo "    .sandcastle/labels.json"
+
 # ── 7. Copy helper scripts and hooks ─────────────────────────────────────────
 echo "  Installing helper scripts and hooks..."
 rm -rf .sandcastle/scripts .sandcastle/hooks
@@ -286,6 +290,31 @@ if ! (cd .sandcastle/engine && pnpm install --frozen-lockfile); then
     exit 1
 fi
 
+# ── 11b. Secrets preflight ───────────────────────────────────────────────────
+# Warn (never fail) if required Actions secrets are missing. Names only — gh never
+# exposes secret values. A missing AGENT_PAT is the most common cause of "every issue
+# lands in agent:blocked", so surface it now instead of at first workflow run.
+echo "  Checking repo secrets..."
+required_secrets=(AGENT_PAT)
+if [[ "$WITH_PROXY" == true ]]; then
+    required_secrets+=(LITELLM_BASE_URL LITELLM_MASTER_KEY)
+fi
+# Resolve owner/repo from origin so this works regardless of how many remotes exist
+# (gh's bare `secret list` errors when multiple remotes are present).
+repo_slug="$(git remote get-url origin 2>/dev/null | sed -E 's#^(git@[^:]+:|https?://[^/]+/)##; s#\.git$##')"
+if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1 && [[ -n "$repo_slug" ]] && gh repo view "$repo_slug" &>/dev/null 2>&1; then
+    existing_secrets="$(gh secret list -R "$repo_slug" 2>/dev/null | awk 'NF {print $1}')"
+    for secret in "${required_secrets[@]}"; do
+        if grep -qx "$secret" <<<"$existing_secrets"; then
+            echo "    Present: $secret"
+        else
+            yellow "    Missing: $secret — workflows needing it fail closed (issues land in agent:blocked)"
+        fi
+    done
+else
+    yellow "    Skipped secret check (gh not authenticated or no GitHub repo resolved)"
+fi
+
 # ── 12. Scaffold artifact lifecycle (additive; opt out with --no-artifacts) ──
 # Delegates to the shared lifecycle scaffold rather than owning lifecycle files
 # here, so Sandcastle does not become the owner of the lifecycle concept.
@@ -311,7 +340,7 @@ echo "  ────────────────────────
 echo "  1. Add repo secrets: LITELLM_BASE_URL and LITELLM_MASTER_KEY"
 echo "     Required to route model traffic through the Claude-compatible LiteLLM proxy."
 echo ""
-echo "  2. Add repo secret: AGENT_PAT"
+echo "  2. Add repo secret: AGENT_PAT  (the 'Checking repo secrets' step above flags it if missing)"
 echo "     Required for label changes to trigger downstream workflows."
 echo "     GITHUB_TOKEN-created labels do not fire follow-up workflow runs."
 echo ""
