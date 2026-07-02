@@ -10,6 +10,10 @@
 set -Eeuo pipefail
 trap 'exit 0' ERR  # fail-open: any error → allow
 
+# Shared hook library (WRAPPER_PREFIX) — sourced after set/trap so this hook's
+# fail-open mode governs a missing/broken library.
+source "$(dirname "${BASH_SOURCE[0]}")/_hooklib.sh"
+
 if ! command -v jq &>/dev/null; then
     exit 0
 fi
@@ -34,7 +38,7 @@ EXIT_CODE=$(echo "$INPUT" | jq -r '.tool_result.exit_code // .tool_result.exitCo
 # Dangerous flags (-C/--git-dir/--work-tree) are handled below.
 # Also matches wrapper forms: sudo git push, command git push, env FOO=bar git push.
 GIT_OPTS='([[:space:]]+(-[a-zA-Z]([[:space:]]+[^-[:space:]][^[:space:]]*)?|--[a-z][a-z-]*(=[^[:space:]]+)?))*'
-WRAPPER_PREFIX='(sudo([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+|command[[:space:]]+|builtin[[:space:]]+|env([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]=][^[:space:]]*)?)*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+)*'
+# WRAPPER_PREFIX is provided by _hooklib.sh (sourced above) — canonical copy.
 if ! echo "$COMMAND" | grep -qE "(^|;|&&|\|\||\|)[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*${WRAPPER_PREFIX}git${GIT_OPTS}[[:space:]]+push([[:space:]]|\$)"; then
     exit 0
 fi

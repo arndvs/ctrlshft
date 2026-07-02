@@ -758,6 +758,38 @@ _test "blocks env-wrapped cat secrets file" 2 \
     "protected secrets"
 
 echo ""
+echo "── _hooklib.sh shared-library guards (issue #169) ──"
+
+# WRAPPER_PREFIX is security-critical and must have exactly one definition
+# (hooks/_hooklib.sh). A re-introduced inline copy could drift and reopen a
+# wrapper-bypass in one hook with no signal. These static assertions fail the
+# suite if that canonical-copy invariant is broken.
+_assert() {
+    local label="$1"; shift
+    if "$@"; then PASS=$((PASS + 1)); green "$label"
+    else FAIL=$((FAIL + 1)); FAILURES+=("$label"); red "$label"; fi
+}
+
+# WRAPPER_PREFIX is assigned in exactly one file, and that file is _hooklib.sh.
+_wrapper_prefix_defined_once() {
+    local files
+    files=$(grep -rl --include='*.sh' '^WRAPPER_PREFIX=' "$HOOKS_DIR" 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "WRAPPER_PREFIX defined only in _hooklib.sh" _wrapper_prefix_defined_once
+
+# Every hook that references WRAPPER_PREFIX also sources _hooklib.sh.
+_wrapper_prefix_consumers_source_lib() {
+    local hook
+    while IFS= read -r hook; do
+        [[ "$hook" == "$HOOKS_DIR/_hooklib.sh" ]] && continue
+        grep -q '_hooklib.sh' "$hook" || return 1
+    done < <(grep -rl --include='*.sh' 'WRAPPER_PREFIX' "$HOOKS_DIR" 2>/dev/null || true)
+    return 0
+}
+_assert "hooks using WRAPPER_PREFIX source _hooklib.sh" _wrapper_prefix_consumers_source_lib
+
+echo ""
 
 # ─── Summary ─────────────────────────────────────────────────────────────────
 echo "═══════════════════════════════"
