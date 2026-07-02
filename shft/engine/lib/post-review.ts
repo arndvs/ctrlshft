@@ -55,7 +55,14 @@ export function postReview(opts: PostReviewOpts): PostReviewResult {
             // Surface the underlying gh failure (stderr/message) so auth/repo/network issues are
             // actionable instead of silently swallowed.
             const e = err as { stderr?: unknown };
-            const stderr = typeof e.stderr === "string" ? e.stderr.trim() : "";
+            // execFileSync often attaches stderr as a Buffer even when encoding is
+            // set, so decode that case too rather than dropping the actionable detail.
+            const stderr =
+              typeof e.stderr === "string"
+                ? e.stderr.trim()
+                : Buffer.isBuffer(e.stderr)
+                  ? e.stderr.toString("utf8").trim()
+                  : "";
             const detail = stderr || (err instanceof Error ? err.message : String(err));
             console.warn(
               `${prefix} Failed to fetch PR diff — all inline comments will be dropped as "file not in diff". Check gh auth / PR state.${detail ? ` Details: ${detail}` : ""}`,
