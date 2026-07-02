@@ -3,11 +3,9 @@
 # probe_completion.sh — probe a single model for a real completion through the
 # proxy and classify the outcome as ok / degraded / fail.
 #
-# Shared by .github/workflows/proxy-canary.yml (maps degraded -> warn, no page)
-# and .github/workflows/model-health.yml (maps degraded -> broken). Encapsulates
-# the retry loop, curl construction, JSON parsing, SSE detection, and hard-error
-# vs empty-content classification — including the non-JSON-200 detection that
-# previously lived only in proxy-canary (model-health silently lacked it).
+# Shared by .github/workflows/proxy-canary.yml. Encapsulates the retry loop,
+# curl construction, JSON parsing, SSE detection, and hard-error vs
+# empty-content classification.
 #
 # The script ALWAYS exits 0 and reports the outcome via output variables, so a
 # caller can distinguish "the probe says fail" (status=fail) from "the probe
