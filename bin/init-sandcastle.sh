@@ -83,6 +83,21 @@ if [[ ! -d "$ENGINE" ]]; then
     exit 1
 fi
 
+# Render a workflow template with variable + auth-mode substitution.
+# Proxy mode (default): keeps LITELLM_* env vars (routes through the proxy).
+# No-proxy mode:        replaces them with a direct ANTHROPIC_API_KEY secret.
+render_workflow() {
+    local tmpl="$1"
+    if [[ "$WITH_PROXY" == false ]]; then
+        sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" \
+            -e '/ANTHROPIC_BASE_URL:.*LITELLM_BASE_URL/d' \
+            -e 's/ANTHROPIC_AUTH_TOKEN: ${{ secrets\.LITELLM_MASTER_KEY }}/ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}/' \
+            "$tmpl"
+    else
+        sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" "$tmpl"
+    fi
+}
+
 render_vendored_engine_package() {
     if ! command -v node &>/dev/null; then
         red "Node.js is required to render .sandcastle/engine/package.json."
@@ -113,7 +128,7 @@ mkdir -p .sandcastle/prompts
 echo "  Installing workflow YAMLs..."
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
     fname="$(basename "$tmpl")"
-    sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" "$tmpl" > ".github/workflows/$fname"
+    render_workflow "$tmpl" > ".github/workflows/$fname"
     echo "    .github/workflows/$fname"
 done
 
@@ -128,7 +143,7 @@ if [[ "$WITH_PROXY" == true ]]; then
     for tmpl in "$TEMPLATES/workflows-proxy/"*.yml; do
         [[ -f "$tmpl" ]] || continue
         fname="$(basename "$tmpl")"
-        sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" "$tmpl" > ".github/workflows/$fname"
+        render_workflow "$tmpl" > ".github/workflows/$fname"
         echo "    .github/workflows/$fname"
     done
 else
@@ -298,6 +313,8 @@ echo "  Checking repo secrets..."
 required_secrets=(AGENT_PAT)
 if [[ "$WITH_PROXY" == true ]]; then
     required_secrets+=(LITELLM_BASE_URL LITELLM_MASTER_KEY)
+else
+    required_secrets+=(ANTHROPIC_API_KEY)
 fi
 # Resolve owner/repo from origin so this works regardless of how many remotes exist
 # (gh's bare `secret list` errors when multiple remotes are present).
@@ -337,8 +354,14 @@ echo ""
 # ── Checklist ─────────────────────────────────────────────────────────────────
 echo "  Next steps:"
 echo "  ─────────────────────────────────────────────────────────"
-echo "  1. Add repo secrets: LITELLM_BASE_URL and LITELLM_MASTER_KEY"
-echo "     Required to route model traffic through the Claude-compatible LiteLLM proxy."
+if [[ "$WITH_PROXY" == true ]]; then
+    echo "  1. Add repo secrets: LITELLM_BASE_URL and LITELLM_MASTER_KEY"
+    echo "     Required to route model traffic through the Claude-compatible LiteLLM proxy."
+    echo "     (Or run: ctrl sandcastle-wire-secrets)"
+else
+    echo "  1. Add repo secret: ANTHROPIC_API_KEY"
+    echo "     Direct Anthropic API key — no proxy required."
+fi
 echo ""
 echo "  2. Add repo secret: AGENT_PAT  (the 'Checking repo secrets' step above flags it if missing)"
 echo "     Required for label changes to trigger downstream workflows."
