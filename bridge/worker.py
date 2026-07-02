@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -102,18 +103,13 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
         emit("bridge.job.done", reason="no_threads_no_issue")
         return
 
-    # Iteration cap (uses claim_keys table — fixes H-4).
+    # Iteration cap check (read-only — fixes iteration-burn-on-failure).
     with db.connect(cfg.db_path) as conn:
-        iteration_num = db.bump_iteration(conn, job.claim_key)
-        # Keep the job row's iteration in sync for observability
-        conn.execute(
-            "UPDATE jobs SET iteration = ? WHERE id = ?",
-            (iteration_num, job.id),
-        )
-    emit("bridge.job.iteration", iteration=iteration_num)
+        current_iteration = db.read_iteration(conn, job.claim_key)
+    emit("bridge.job.iteration", iteration=current_iteration)
 
-    if iteration_num > cfg.max_iterations:
-        emit("bridge.loop.cap_exceeded", iteration=iteration_num)
+    if current_iteration >= cfg.max_iterations:
+        emit("bridge.loop.cap_exceeded", iteration=current_iteration)
         if existing:
             try:
                 github.add_label(
@@ -229,7 +225,7 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
             ws_path=ws_path,
             env=env,
             pr_number=job.pr_number,
-            iteration_num=iteration_num,
+            iteration_num=current_iteration + 1,
             max_iterations=cfg.max_iterations,
             emit=emit,
         )
@@ -241,6 +237,14 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
             env=env,
             tracking_number=tracking_number,
             emit=emit,
+        )
+
+    # Bump iteration AFTER successful dispatch (fixes iteration-burn-on-failure).
+    with db.connect(cfg.db_path) as conn:
+        iteration_num = db.bump_iteration(conn, job.claim_key)
+        conn.execute(
+            "UPDATE jobs SET iteration = ? WHERE id = ?",
+            (iteration_num, job.id),
         )
 
 
@@ -321,6 +325,39 @@ def _dispatch_shft_afk(cfg: Config, ws_path, env: dict[str, str], tracking_numbe
     _run_subprocess(cmd, cwd=str(ws_path), env=env, emit=emit)
 
 
+def _reap_orphaned_workspaces(cfg: Config) -> None:
+    """Remove workspace directories with no queued/claimed jobs.
+
+    Called once at startup to reclaim disk from a previous crash.
+    """
+    root = cfg.workspaces_root
+    if not root.exists():
+        return
+
+    with db.connect(cfg.db_path) as conn:
+        active_keys = {
+            row[0]
+            for row in conn.execute(
+                "SELECT DISTINCT claim_key FROM jobs WHERE status IN ('queued', 'claimed')"
+            ).fetchall()
+        }
+
+    for child in root.iterdir():
+        if not child.is_dir():
+            continue
+        # Reconstruct claim_key from directory name (owner--repo--prN → owner/repo#N)
+        parts = child.name.split("--")
+        if len(parts) != 3 or not parts[2].startswith("pr"):
+            continue
+        claim_key = f"{parts[0]}/{parts[1]}#{parts[2][2:]}"
+        if claim_key not in active_keys:
+            try:
+                shutil.rmtree(child)
+                logger.info("Reaped orphaned workspace: %s", child)
+            except Exception:
+                logger.warning("Failed to reap workspace: %s", child, exc_info=True)
+
+
 def run(worker_id: str) -> None:
     cfg = Config.from_env()
     cfg.require_github_app()  # Worker needs GitHub App credentials — fail fast
@@ -333,6 +370,9 @@ def run(worker_id: str) -> None:
         requeued = db.requeue_stale_claims(conn)
         if requeued:
             logger.info("Requeued %d stale claimed job(s)", requeued)
+
+    # Startup reaper: clean orphaned workspaces from previous runs.
+    _reap_orphaned_workspaces(cfg)
 
     logger.info(
         "Worker %s started, polling every %.1fs",
@@ -372,6 +412,19 @@ def run(worker_id: str) -> None:
                 pr_number=job.pr_number,
                 error=str(e),
             )
+        finally:
+            # Workspace cleanup — prevents unbounded disk growth.
+            try:
+                workspace.cleanup(cfg.workspaces_root, job.claim_key)
+                hud.emit(
+                    cfg.hud_script,
+                    "bridge.workspace.cleaned",
+                    project=job.repo_full_name,
+                    workspace_id=job.claim_key,
+                    worker_id=worker_id,
+                )
+            except Exception:
+                logger.warning("Workspace cleanup failed for %s", job.claim_key, exc_info=True)
 
 
 if __name__ == "__main__":
