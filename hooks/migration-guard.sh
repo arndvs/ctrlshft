@@ -28,11 +28,8 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
 [[ -z "$COMMAND" ]] && exit 0
 
-# --- Helper: deny output (JSON-safe via jq) ---
-_deny() {
-    jq -cn --arg reason "$1" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason}}' >&2
-    exit 2
-}
+# WRAPPER_PREFIX, COMMAND_BOUNDARY, ASSIGNMENT_PREFIX, and _deny are
+# provided by _hooklib.sh (sourced above) — canonical copies.
 
 MIGRATION_PATTERN='(prisma[[:space:]]+migrate[[:space:]]+(deploy|dev)|prisma[[:space:]]+db[[:space:]]+push|artisan[[:space:]]+migrate|knex[[:space:]]+migrate|db-migrate[[:space:]]+up|typeorm[[:space:]]+migration:run|drizzle-kit[[:space:]]+push)'
 
@@ -51,8 +48,6 @@ RUNNER_PREFIX="(npx${RUNNER_OPTS}[[:space:]]+|yarn(${RUNNER_OPT})*([[:space:]]+(
 # A nested shell like `bash -c 'npx prisma migrate deploy'` cannot be reliably
 # parsed for per-segment env-prefix checks. Deny and require direct invocation.
 # Anchored to command boundaries so mere mentions in echo/grep don't false-positive.
-COMMAND_BOUNDARY='((^|;|&&|\|\||\||\(|{|\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
-ASSIGNMENT_PREFIX='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'
 NESTED_SHELL_MIGRATION="${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}(bash|sh|dash|ksh|zsh)([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?)*[[:space:]]+-[[:alnum:]]*c[[:alnum:]]*[[:space:]]+"
 if echo "$COMMAND" | grep -qiE "${NESTED_SHELL_MIGRATION}.*${MIGRATION_PATTERN}"; then
     _deny "⚠️ Blocked: don't wrap migration commands in nested shells (bash -c, sh -c). Invoke the migration tool directly so the guard can validate the target database."

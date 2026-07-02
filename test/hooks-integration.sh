@@ -798,6 +798,38 @@ _wrapper_prefix_consumers_source_lib() {
 }
 _assert "hooks using WRAPPER_PREFIX source _hooklib.sh" _wrapper_prefix_consumers_source_lib
 
+# _timeout defined only in _hooklib.sh (slice 2, issue #169)
+_timeout_defined_once() {
+    local files
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^_timeout\(\)' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "_timeout defined only in _hooklib.sh" _timeout_defined_once
+
+# _deny defined only in _hooklib.sh (slice 2, issue #169)
+_deny_defined_once() {
+    local files
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^_deny\(\)' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "_deny defined only in _hooklib.sh" _deny_defined_once
+
+# COMMAND_BOUNDARY defined only in _hooklib.sh (slice 2, issue #169)
+_command_boundary_defined_once() {
+    local files
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^COMMAND_BOUNDARY=' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "COMMAND_BOUNDARY defined only in _hooklib.sh" _command_boundary_defined_once
+
+# ASSIGNMENT_PREFIX defined only in _hooklib.sh (slice 2, issue #169)
+_assignment_prefix_defined_once() {
+    local files
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^ASSIGNMENT_PREFIX=' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "ASSIGNMENT_PREFIX defined only in _hooklib.sh" _assignment_prefix_defined_once
+
 echo ""
 
 # ─── Summary ─────────────────────────────────────────────────────────────────

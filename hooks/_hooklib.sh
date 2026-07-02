@@ -31,3 +31,36 @@
 # every hook that detects command wrappers. Do NOT copy it back inline — the
 # hooks integration suite asserts it is defined only in this file.
 WRAPPER_PREFIX='(sudo([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+|command[[:space:]]+|builtin[[:space:]]+|env([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]=][^[:space:]]*)?)*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+)*'
+
+# ── _timeout ─────────────────────────────────────────────────────────────────
+# Portable timeout wrapper. macOS ships without GNU coreutils timeout.
+# Returns 1 when no timeout utility is available so callers that use
+# `if _timeout ...` gracefully skip bounded operations rather than hanging.
+_timeout() {
+    if command -v timeout &>/dev/null; then
+        timeout "$@"
+    else
+        return 1
+    fi
+}
+
+# ── _deny ─────────────────────────────────────────────────────────────────────
+# Standard output helper for PreToolUse fail-closed hooks.
+# Exits 2 (block) with a JSON permissionDecision payload on stderr.
+_deny() {
+    jq -cn --arg reason "$1" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason}}' >&2
+    exit 2
+}
+
+# ── COMMAND_BOUNDARY / ASSIGNMENT_PREFIX ─────────────────────────────────────
+# Shared regex fragments for anchoring pattern detection to shell command
+# boundaries. A "command boundary" is any position where a new command can
+# start: start of string (^), after shell separators (; | ( { backtick),
+# after compound operators (&& || $(), or after control keywords (then/do/else).
+# Includes backtick as a command-substitution form alongside $( — the superset
+# ensures `sudo \`cmd\`` and `cmd; \`migrate\`` bypass attempts are caught.
+#
+# SECURITY-CRITICAL: changing these constants affects every hook that detects
+# command patterns. Test with bash test/hooks-integration.sh after any edit.
+COMMAND_BOUNDARY='((^|[;|({`]|&&|\|\||\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
+ASSIGNMENT_PREFIX='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'
