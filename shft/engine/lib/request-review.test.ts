@@ -18,7 +18,7 @@ describe("requestCopilotReview", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
-  it("requests review from copilot via REST API", () => {
+  it("requests review from copilot via gh pr edit", () => {
     mockExecFileSync.mockReturnValueOnce("false"); // draft check
     mockExecFileSync.mockReturnValueOnce(""); // review request
 
@@ -26,7 +26,12 @@ describe("requestCopilotReview", () => {
 
     expect(mockExecFileSync).toHaveBeenCalledTimes(2);
     const reviewCall = mockExecFileSync.mock.calls[1]!;
-    expect(reviewCall[1]).toContain("repos/acme/widgets/pulls/42/requested_reviewers");
+    // Must go through `gh pr edit --add-reviewer` (GraphQL); the REST
+    // reviewers[] endpoint 422s the Copilot app and silently no-ops.
+    expect(reviewCall[1]).toEqual(
+      expect.arrayContaining(["pr", "edit", "--add-reviewer", "copilot-pull-request-reviewer"]),
+    );
+    expect(reviewCall[1]).not.toContain("requested_reviewers");
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Requested Copilot review"));
   });
 

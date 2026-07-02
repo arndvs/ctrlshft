@@ -36,10 +36,14 @@ jobs:
             echo "Copilot review already requested on #$PR — nothing to do."
             exit 0
           fi
-          # Non-fatal: forks and repos without the reviewer app return 422; don't fail the run.
-          if gh api --method POST "repos/$REPO/pulls/$PR/requested_reviewers" \
-               -f "reviewers[]=copilot-pull-request-reviewer" >/dev/null 2>&1; then
+          # Use `gh pr edit --add-reviewer` (GraphQL requestReviews), NOT the REST
+          # /requested_reviewers reviewers[] endpoint — the latter 422s on the
+          # Copilot APP ("may only be requested from collaborators") and silently
+          # no-ops. On failure surface a LOUD ::warning:: annotation (visible in
+          # the run summary) with the real error, rather than a silent skip.
+          # Non-fatal so fork PRs that legitimately can't request don't break CI.
+          if err=$(gh pr edit "$PR" -R "$REPO" --add-reviewer copilot-pull-request-reviewer 2>&1); then
             echo "Requested Copilot review on #$PR."
           else
-            echo "Copilot reviewer unavailable on #$PR (fork or app not installed) — skipping."
+            echo "::warning title=Copilot review not requested::#$PR — $err"
           fi
