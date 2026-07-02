@@ -60,7 +60,7 @@ Do not move Sandcastle to an EC2 self-hosted runner for this slice. Self-hosted 
 
 - Copilot OAuth is completed once on the host for the proxy runtime.
 - The Copilot cache directory must persist across process and host restarts.
-- Sandcastle Actions should not need `CLAUDE_CODE_OAUTH_TOKEN` in proxy mode. Keep any existing contract temporarily for compatibility, then remove or deprecate it in a follow-up once the hosted proxy smoke passes.
+- Sandcastle Actions do not need `CLAUDE_CODE_OAUTH_TOKEN` in proxy mode. **Follow-up resolved (#134):** the hosted-proxy smoke now passes and no agent workflow references `CLAUDE_CODE_OAUTH_TOKEN` — every workflow derives `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` from `secrets.LITELLM_BASE_URL` / `secrets.LITELLM_MASTER_KEY`. The LiteLLM proxy env is therefore the canonical runner auth contract, and the `CLAUDE_CODE_OAUTH_TOKEN` compatibility contract is deprecated (no workflow dependency remains).
 
 ---
 
