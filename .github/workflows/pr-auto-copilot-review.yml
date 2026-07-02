@@ -1,0 +1,55 @@
+name: "PR: request Copilot review"
+
+# Deterministic, repo-side guarantee that every non-draft PR gets a Copilot
+# review requested — independent of which agent opened it (Sandcastle Actions,
+# local Claude Code, or the VS Code Copilot agent). The Claude Code PostToolUse
+# hook (gh-pr-auto-copilot-review.sh) only covers PRs opened *under Claude Code*;
+# this workflow covers the rest.
+#
+# Note: PRs opened by the default GITHUB_TOKEN do not trigger workflows, so the
+# agent workflows create PRs with AGENT_PAT (which does trigger this).
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  request-copilot-review:
+    # Copilot reviews ready PRs only — skip drafts.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Copilot review (idempotent, non-fatal)
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Skip if Copilot is already a requested reviewer (avoid duplicates).
+          already=$(gh api "repos/$REPO/pulls/$PR" \
+            --jq '[.requested_reviewers[]?.login] | map(select(. != null)) | any(test("^(Copilot|copilot-pull-request-reviewer)(\\[bot\\])?$"; "i"))' 2>/dev/null || echo "false")
+          if [ "$already" = "true" ]; then
+            echo "Copilot review already requested on #$PR — nothing to do."
+            exit 0
+          fi
+          # Use `gh pr edit --add-reviewer` (GraphQL requestReviews), NOT the REST
+          # /requested_reviewers reviewers[] endpoint — the latter 422s on the
+          # Copilot APP ("may only be requested from collaborators") and silently
+          # no-ops. On failure surface a LOUD ::warning:: annotation (visible in
+          # the run summary) with the real error, rather than a silent skip.
+          # Non-fatal so fork PRs that legitimately can't request don't break CI.
+          if err=$(gh pr edit "$PR" -R "$REPO" --add-reviewer copilot-pull-request-reviewer 2>&1); then
+            echo "Requested Copilot review on #$PR."
+          else
+            # Escape for the ::warning:: workflow command (% first, then CR/LF) so
+            # the error text can't truncate the annotation or inject its own
+            # workflow commands.
+            err="${err//'%'/%25}"
+            err="${err//$'\r'/%0D}"
+            err="${err//$'\n'/%0A}"
+            echo "::warning title=Copilot review not requested::#$PR — $err"
+          fi

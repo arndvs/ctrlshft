@@ -199,6 +199,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"$HOME/.claude/hooks/gh-pr-auto-copilot-review.sh\""
+          },
+          {
+            "type": "command",
             "command": "\"$HOME/.claude/hooks/git-post-push.sh\""
           },
           {
