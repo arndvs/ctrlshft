@@ -27,10 +27,13 @@ describe("requestCopilotReview", () => {
     expect(mockExecFileSync).toHaveBeenCalledTimes(2);
     const reviewCall = mockExecFileSync.mock.calls[1]!;
     // Must go through `gh pr edit --add-reviewer` (GraphQL); the REST
-    // reviewers[] endpoint 422s the Copilot app and silently no-ops.
-    expect(reviewCall[1]).toEqual(
-      expect.arrayContaining(["pr", "edit", "--add-reviewer", "copilot-pull-request-reviewer"]),
-    );
+    // reviewers[] endpoint 422s the Copilot app and silently no-ops. Assert the
+    // full argv including the explicit --repo + PR number (the reason
+    // owner/repo/prNumber are passed) so it never silently relies on ambient cwd
+    // or drops the targeting.
+    expect(reviewCall[1]).toEqual([
+      "pr", "edit", "42", "--repo", "acme/widgets", "--add-reviewer", "copilot-pull-request-reviewer",
+    ]);
     expect(reviewCall[1]).not.toContain("requested_reviewers");
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Requested Copilot review"));
   });

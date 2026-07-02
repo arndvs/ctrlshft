@@ -45,5 +45,11 @@ jobs:
           if err=$(gh pr edit "$PR" -R "$REPO" --add-reviewer copilot-pull-request-reviewer 2>&1); then
             echo "Requested Copilot review on #$PR."
           else
+            # Escape for the ::warning:: workflow command (% first, then CR/LF) so
+            # the error text can't truncate the annotation or inject its own
+            # workflow commands.
+            err="${err//'%'/%25}"
+            err="${err//$'\r'/%0D}"
+            err="${err//$'\n'/%0A}"
             echo "::warning title=Copilot review not requested::#$PR — $err"
           fi
