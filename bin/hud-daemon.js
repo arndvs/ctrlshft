@@ -78,10 +78,27 @@ try {
     fs.mkdirSync(LOCK_DIR);
 } catch (e) {
     if (e.code === 'EEXIST') {
-        console.error('[ctrlshft] HUD daemon already running. Use --stop to stop it.');
-        process.exit(1);
+        // Check if the lock is stale (previous crash left it behind)
+        let reclaimed = false;
+        try {
+            const stalePid = fs.readFileSync(PID_FILE, 'utf8').trim();
+            if (stalePid) {
+                try { process.kill(parseInt(stalePid, 10), 0); } catch {
+                    // Process is dead — reclaim the stale lock
+                    warn('Reclaiming stale lock (PID', stalePid, 'is dead)');
+                    fs.rmdirSync(LOCK_DIR);
+                    fs.mkdirSync(LOCK_DIR);
+                    reclaimed = true;
+                }
+            }
+        } catch { /* no PID file or unreadable — lock is genuinely held */ }
+        if (!reclaimed) {
+            console.error('[ctrlshft] HUD daemon already running. Use --stop to stop it.');
+            process.exit(1);
+        }
+    } else {
+        throw e;
     }
-    throw e;
 }
 process.on('exit', () => { try { fs.rmdirSync(LOCK_DIR); } catch { } });
 
@@ -601,10 +618,19 @@ function startPipeListener() {
     }
 
     let buf = '';
+    let pipeReopening = false;
+
+    function scheduleReopen(delayMs) {
+        if (pipeReopening) return;
+        pipeReopening = true;
+        setTimeout(openPipe, delayMs);
+    }
 
     function openPipe() {
+        pipeReopening = false;
+        let fd;
         try {
-            const fd     = fs.openSync(PIPE_PATH, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+            fd = fs.openSync(PIPE_PATH, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
             const socket = new net.Socket({ fd, readable: true, writable: false });
 
             socket.on('data', chunk => {
@@ -614,10 +640,11 @@ function startPipeListener() {
                 lines.forEach(l => { if (l.trim()) processLineSafe(l, 'pipe'); });
             });
 
-            socket.on('end',   () => { socket.destroy(); setTimeout(openPipe, 50); });
-            socket.on('error', () => { socket.destroy(); setTimeout(openPipe, 500); });
-        } catch {
-            setTimeout(openPipe, 1000);
+            socket.on('end',   () => { socket.destroy(); scheduleReopen(50); });
+            socket.on('error', () => { socket.destroy(); scheduleReopen(500); });
+        } catch (e) {
+            if (fd !== undefined) try { fs.closeSync(fd); } catch { }
+            scheduleReopen(1000);
         }
     }
 
@@ -630,12 +657,15 @@ function startJsonlWatcher() {
     let lastSize = 0;
     let lastStateMtime = 0;
 
-    // Read any existing content first
+    // Read any existing content first, then truncate (boot rotation)
     try {
         const content = fs.readFileSync(JSONL_PATH, 'utf8');
         const lines   = content.split('\n').filter(Boolean);
         lines.forEach(l => processLineSafe(l, 'jsonl'));
-        lastSize = content.length;
+        // Truncate after ingestion — content is now in memory/SQLite
+        fs.writeFileSync(JSONL_PATH, '', 'utf8');
+        lastSize = 0;
+        log(`JSONL boot rotation: ingested ${lines.length} event(s), file truncated`);
     } catch { /* file doesn't exist yet */ }
 
     setInterval(() => {
@@ -658,6 +688,13 @@ function startJsonlWatcher() {
 
                 buf.toString('utf8').split('\n').filter(Boolean)
                    .forEach(l => processLineSafe(l, 'jsonl'));
+            }
+
+            // Size cap: truncate if over 10MB
+            if (lastSize > 10 * 1024 * 1024) {
+                fs.writeFileSync(JSONL_PATH, '', 'utf8');
+                lastSize = 0;
+                warn('JSONL file exceeded 10MB — truncated');
             }
         } catch { }
 
@@ -917,6 +954,11 @@ function startHttpServer() {
         // DELETE /api/projects/:id — dismiss a project from the HUD
         if (req.method === 'DELETE' && url.pathname.startsWith('/api/projects/')) {
             const projectId = decodeURIComponent(url.pathname.split('/')[3]);
+            // Cap dismissed set to MAX_PROJECTS — evict oldest (FIFO via iteration order)
+            if (dismissedProjects.size >= MAX_PROJECTS) {
+                const oldest = dismissedProjects.values().next().value;
+                dismissedProjects.delete(oldest);
+            }
             dismissedProjects.add(projectId);
             deleteProjectState(projectId);
             saveDismissed();
@@ -987,9 +1029,27 @@ ws.onmessage = e => { const d=JSON.parse(e.data); if(d.type==='event') console.l
 </script></body></html>`;
 }
 
+// ── Database pruning ──────────────────────────────────────────────────────────
+function pruneDatabase() {
+    if (!db) return;
+    const cutoff = new Date(Date.now() - PROJECT_TTL_MS).toISOString();
+    try {
+        const del = (table) =>
+            db.prepare(`DELETE FROM ${table} WHERE rowid IN (SELECT rowid FROM ${table} WHERE timestamp < ? LIMIT 1000)`)
+              .run(cutoff).changes;
+        const evicted = del('events') + del('violations');
+        // loaded_files uses read_at instead of timestamp
+        const lfDel = db.prepare(
+            'DELETE FROM loaded_files WHERE rowid IN (SELECT rowid FROM loaded_files WHERE read_at < ? LIMIT 1000)'
+        ).run(cutoff).changes;
+        if (evicted + lfDel > 0) dbg(`pruneDatabase: removed ${evicted + lfDel} stale rows`);
+    } catch (e) { dbg('pruneDatabase:', e.message); }
+}
+
 // ── Heartbeat ─────────────────────────────────────────────────────────────────
 setInterval(() => {
     pruneInMemoryState();
+    pruneDatabase();
     broadcast({ type: 'heartbeat', uptime: process.uptime(), sessions: sessions.size, clients: wsClients.size });
     dbg(`heartbeat — sessions:${sessions.size} clients:${wsClients.size} uptime:${Math.round(process.uptime())}s`);
 }, 30000);
@@ -1005,6 +1065,7 @@ function shutdown(sig) {
     wsClients.forEach(s => s.destroy());
     if (httpServer)  try { httpServer.close(); } catch { }
     if (wsServerRef) try { wsServerRef.close(); } catch { }
+    try { fs.unlinkSync(PIPE_PATH); } catch { }
     try { fs.rmdirSync(LOCK_DIR); } catch { }
     try { fs.unlinkSync(PID_FILE); } catch { }
     process.exit(0);
