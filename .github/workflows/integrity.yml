@@ -13,6 +13,9 @@ on:
       - "package.json"
       - ".github/workflows/pr-auto-copilot-review.yml"
       - ".github/workflows/integrity.yml"
+      - ".github/workflows/agent-*.yml"
+      - "shft/engine/lib/pipeline-states.ts"
+      - "shft/engine/lib/lint-pipeline-labels.ts"
   push:
     branches:
       - dev
@@ -30,6 +33,9 @@ on:
       - "package.json"
       - ".github/workflows/pr-auto-copilot-review.yml"
       - ".github/workflows/integrity.yml"
+      - ".github/workflows/agent-*.yml"
+      - "shft/engine/lib/pipeline-states.ts"
+      - "shft/engine/lib/lint-pipeline-labels.ts"
 
 jobs:
   integrity:
@@ -76,3 +82,19 @@ jobs:
         run: |
           set -euo pipefail
           bash test/config-consistency.sh
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install engine dependencies
+        run: |
+          corepack enable
+          cd shft/engine
+          pnpm install --frozen-lockfile
+
+      - name: Lint pipeline label transitions
+        run: |
+          set -euo pipefail
+          ./shft/engine/node_modules/.bin/tsx shft/engine/lib/lint-pipeline-labels.ts
