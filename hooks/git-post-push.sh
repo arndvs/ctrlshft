@@ -69,14 +69,7 @@ if echo "$BRANCH" | grep -qxE 'main|master|dev|develop'; then
     exit 0
 fi
 
-# Portable timeout (macOS may lack timeout)
-_timeout() {
-    if command -v timeout &>/dev/null; then
-        timeout "$@"
-    else
-        return 1  # Skip network calls when no timeout utility — avoid hangs
-    fi
-}
+# _timeout is provided by _hooklib.sh (sourced above) — canonical copy.
 
 # Check if a PR already exists for this branch (timeout after 5s)
 PR_COUNT=$(_timeout 5 gh pr list --head "$BRANCH" --state open --json number --jq 'length' 2>/dev/null || echo "")

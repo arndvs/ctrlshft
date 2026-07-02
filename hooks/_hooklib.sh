@@ -13,9 +13,12 @@
 #
 # Provides:
 #   WRAPPER_PREFIX — canonical command-wrapper regex.
+#   COMMAND_BOUNDARY — command-start regex without backtick boundaries.
+#   COMMAND_BOUNDARY_WITH_BACKTICK — command-start regex for hooks that
+#       already treated backticks as command boundaries before extraction.
 #
-# Keep this file dependency-free (POSIX shell + the tools hooks already require)
-# and side-effect-free (definitions only).
+# Keep this Bash hook library free of new external dependencies (beyond the
+# tools hooks already require) and side-effect-free (definitions only).
 
 # ── WRAPPER_PREFIX ────────────────────────────────────────────────────────────
 # Canonical command-wrapper prefix regex (POSIX ERE). Fail-closed hooks anchor
@@ -31,3 +34,40 @@
 # every hook that detects command wrappers. Do NOT copy it back inline — the
 # hooks integration suite asserts it is defined only in this file.
 WRAPPER_PREFIX='(sudo([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+|command[[:space:]]+|builtin[[:space:]]+|env([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]=][^[:space:]]*)?)*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+)*'
+
+# ── _timeout ─────────────────────────────────────────────────────────────────
+# Portable timeout wrapper. macOS ships without GNU coreutils timeout.
+# Returns 1 when no timeout utility is available so callers that use
+# `if _timeout ...` gracefully skip bounded operations rather than hanging.
+_timeout() {
+    if command -v timeout &>/dev/null; then
+        timeout "$@"
+    else
+        return 1
+    fi
+}
+
+# ── _deny ─────────────────────────────────────────────────────────────────────
+# Standard output helper for PreToolUse fail-closed hooks.
+# Exits 2 (block) with a JSON permissionDecision payload on stderr.
+_deny() {
+    jq -cn --arg reason "$1" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason}}' >&2
+    exit 2
+}
+
+# ── COMMAND_BOUNDARY / ASSIGNMENT_PREFIX ─────────────────────────────────────
+# Shared regex fragments for anchoring pattern detection to shell command
+# boundaries. A "command boundary" is any position where a new command can
+# start: start of string (^), after shell separators (; | ( {), after compound
+# operators (&& || $(), or after control keywords (then/do/else).
+#
+# COMMAND_BOUNDARY intentionally excludes backticks to preserve hooks that did
+# not treat legacy command substitution as a boundary before the extraction.
+# Use COMMAND_BOUNDARY_WITH_BACKTICK only for hooks that already had that
+# broader behavior.
+#
+# SECURITY-CRITICAL: changing these constants affects every hook that detects
+# command patterns. Test with bash test/hooks-integration.sh after any edit.
+COMMAND_BOUNDARY='((^|[;|({]|&&|\|\||\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
+COMMAND_BOUNDARY_WITH_BACKTICK='((^|[;|({`]|&&|\|\||\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
+ASSIGNMENT_PREFIX='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'

@@ -33,11 +33,7 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # --- Pattern: wrapper command prefix (sudo, env, command, builtin) ---
 # WRAPPER_PREFIX is provided by _hooklib.sh (sourced above) — canonical copy.
 
-# --- Helper: deny output (JSON-safe via jq) ---
-_deny() {
-    jq -cn --arg reason "$1" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason}}' >&2
-    exit 2
-}
+# _deny is provided by _hooklib.sh (sourced above) — canonical copy.
 
 # Block commands that print credentials to stdout
 # Handles leading env assignments plus sudo/command/builtin prefixes

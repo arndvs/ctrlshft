@@ -10,6 +10,10 @@
 set -Eeuo pipefail
 trap 'exit 0' ERR  # fail-open: any error → allow
 
+# Shared hook library (_timeout, WRAPPER_PREFIX, etc.) — sourced after set/trap
+# so this hook's fail-open mode governs a missing/broken library.
+source "$(dirname "${BASH_SOURCE[0]}")/_hooklib.sh"
+
 # Consume stdin (required by hook protocol)
 cat > /dev/null
 
@@ -28,14 +32,7 @@ for candidate in main master dev develop; do
 done
 [[ -z "$DEFAULT_BRANCH" ]] && exit 0
 
-# Portable timeout (macOS may lack timeout)
-_timeout() {
-    if command -v timeout &>/dev/null; then
-        timeout "$@"
-    else
-        return 124  # Skip network calls when no timeout utility — avoid hangs
-    fi
-}
+# _timeout is provided by _hooklib.sh (sourced above) — canonical copy.
 
 # Fetch to ensure we have latest remote state (timeout 10s, fail silently)
 _timeout 10 git fetch origin "$DEFAULT_BRANCH" --quiet 2>/dev/null || true

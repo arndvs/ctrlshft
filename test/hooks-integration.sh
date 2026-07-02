@@ -798,6 +798,46 @@ _wrapper_prefix_consumers_source_lib() {
 }
 _assert "hooks using WRAPPER_PREFIX source _hooklib.sh" _wrapper_prefix_consumers_source_lib
 
+# _timeout defined only in _hooklib.sh (slice 2, issue #169)
+_timeout_defined_once() {
+    local files
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^[[:space:]]*(function[[:space:]]+)?_timeout[[:space:]]*(\(\)[[:space:]]*)?\{' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "_timeout defined only in _hooklib.sh" _timeout_defined_once
+
+# _deny defined only in _hooklib.sh (slice 2, issue #169)
+_deny_defined_once() {
+    local files
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^[[:space:]]*(function[[:space:]]+)?_deny[[:space:]]*(\(\)[[:space:]]*)?\{' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "_deny defined only in _hooklib.sh" _deny_defined_once
+
+# COMMAND_BOUNDARY defined only in _hooklib.sh (slice 2, issue #169)
+_command_boundary_defined_once() {
+    local files
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])COMMAND_BOUNDARY=' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "COMMAND_BOUNDARY defined only in _hooklib.sh" _command_boundary_defined_once
+
+# COMMAND_BOUNDARY_WITH_BACKTICK defined only in _hooklib.sh (slice 2, issue #169)
+_command_boundary_with_backtick_defined_once() {
+    local files
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])COMMAND_BOUNDARY_WITH_BACKTICK=' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "COMMAND_BOUNDARY_WITH_BACKTICK defined only in _hooklib.sh" _command_boundary_with_backtick_defined_once
+
+# ASSIGNMENT_PREFIX defined only in _hooklib.sh (slice 2, issue #169)
+_assignment_prefix_defined_once() {
+    local files
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])ASSIGNMENT_PREFIX=' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "ASSIGNMENT_PREFIX defined only in _hooklib.sh" _assignment_prefix_defined_once
+
 echo ""
 
 # ─── Summary ─────────────────────────────────────────────────────────────────
