@@ -35,13 +35,13 @@ describe("pipeline-states", () => {
     it("rejects agent:implement on a PR", () => {
       const result = validateTransition([], { add: ["agent:implement"] }, "pr");
       expect(result.valid).toBe(false);
-      expect(result.errors[0]).toContain("cannot be applied to a pr");
+      expect(result.errors[0]).toContain("cannot be applied to pr");
     });
 
     it("rejects agent:fix on an issue", () => {
       const result = validateTransition([], { add: ["agent:fix"] }, "issue");
       expect(result.valid).toBe(false);
-      expect(result.errors[0]).toContain("cannot be applied to a issue");
+      expect(result.errors[0]).toContain("cannot be applied to issue");
     });
 
     it("accepts agent:in-progress on both issue and PR", () => {

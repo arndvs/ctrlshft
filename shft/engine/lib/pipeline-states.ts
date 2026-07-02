@@ -131,7 +131,7 @@ export function validateTransition(
     }
     if (!def.appliesTo.includes(objectType)) {
       errors.push(
-        `Label "${label}" cannot be applied to a ${objectType} (allowed: ${def.appliesTo.join(", ")}).`,
+        `Label "${label}" cannot be applied to ${objectType} (allowed: ${def.appliesTo.join(", ")}).`,
       );
     }
   }
