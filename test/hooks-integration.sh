@@ -758,6 +758,47 @@ _test "blocks env-wrapped cat secrets file" 2 \
     "protected secrets"
 
 echo ""
+echo "── _hooklib.sh shared-library guards (issue #169) ──"
+
+# WRAPPER_PREFIX is security-critical and must have exactly one definition
+# (hooks/_hooklib.sh). A re-introduced inline copy could drift and reopen a
+# wrapper-bypass in one hook with no signal. These static assertions fail the
+# suite if that canonical-copy invariant is broken.
+_assert() {
+    local label="$1"; shift
+    if "$@"; then PASS=$((PASS + 1)); green "$label"
+    else FAIL=$((FAIL + 1)); FAILURES+=("$label"); red "$label"; fi
+}
+
+# WRAPPER_PREFIX is assigned in exactly one file, and that file is _hooklib.sh.
+# Match the assignment after start-of-line OR whitespace so re-introductions via
+# `export WRAPPER_PREFIX=`, `readonly WRAPPER_PREFIX=`, `local WRAPPER_PREFIX=`,
+# or an indented assignment are caught too — not only column-1. `$WRAPPER_PREFIX`
+# usage and the pointer comment lack the trailing `=`, so they never match.
+_wrapper_prefix_defined_once() {
+    local files
+    # find + -exec keeps this portable: `grep --include` is a GNU extension that
+    # BSD grep (macOS) rejects, which would fail the guard even when the invariant holds.
+    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])WRAPPER_PREFIX=' {} + 2>/dev/null || true)
+    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+}
+_assert "WRAPPER_PREFIX defined only in _hooklib.sh" _wrapper_prefix_defined_once
+
+# Every hook that references WRAPPER_PREFIX also sources _hooklib.sh.
+_wrapper_prefix_consumers_source_lib() {
+    local hook
+    while IFS= read -r hook; do
+        [[ "$hook" == "$HOOKS_DIR/_hooklib.sh" ]] && continue
+        # Require an actual `source`/`.` statement, not a mere mention in a
+        # comment or string (e.g. the "provided by _hooklib.sh" pointer comment),
+        # which would let a hook that references but never sources the library pass.
+        grep -qE '^[[:space:]]*(source|\.)[[:space:]]+[^#]*_hooklib\.sh' "$hook" || return 1
+    done < <(find "$HOOKS_DIR" -name '*.sh' -exec grep -l 'WRAPPER_PREFIX' {} + 2>/dev/null || true)
+    return 0
+}
+_assert "hooks using WRAPPER_PREFIX source _hooklib.sh" _wrapper_prefix_consumers_source_lib
+
+echo ""
 
 # ─── Summary ─────────────────────────────────────────────────────────────────
 echo "═══════════════════════════════"

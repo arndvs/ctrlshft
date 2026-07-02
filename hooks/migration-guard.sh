@@ -14,6 +14,10 @@ _fail_closed() {
 }
 trap '_fail_closed' ERR
 
+# Shared hook library (WRAPPER_PREFIX) — sourced after set/trap so this hook's
+# fail-closed mode governs a missing/broken library.
+source "$(dirname "${BASH_SOURCE[0]}")/_hooklib.sh"
+
 if ! command -v jq &>/dev/null; then
     echo '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"migration-guard: jq is required but not found. Install jq."}}' >&2
     exit 2
@@ -41,8 +45,7 @@ RUNNER_OPT='[[:space:]]+--?[[:alnum:]][-[:alnum:]]*(=[^[:space:]]+)?([[:space:]]
 RUNNER_OPTS="(${RUNNER_OPT})*"
 RUNNER_PREFIX="(npx${RUNNER_OPTS}[[:space:]]+|yarn(${RUNNER_OPT})*([[:space:]]+(dlx|run))?(${RUNNER_OPT})*[[:space:]]+|pnpm(${RUNNER_OPT})*([[:space:]]+(dlx|exec|run))?(${RUNNER_OPT})*[[:space:]]+|bunx${RUNNER_OPTS}[[:space:]]+|php[[:space:]]+)?"
 
-# Wrapper prefix (simplified) — sudo, env, command, builtin with GNU-style options
-WRAPPER_PREFIX='(sudo([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+|command[[:space:]]+|builtin[[:space:]]+|env([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]=][^[:space:]]*)?)*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+)*'
+# WRAPPER_PREFIX is provided by _hooklib.sh (sourced above) — canonical copy.
 
 # --- Deny nested shell migration invocations outright ---
 # A nested shell like `bash -c 'npx prisma migrate deploy'` cannot be reliably
