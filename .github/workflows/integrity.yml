@@ -15,6 +15,7 @@ on:
       - ".github/workflows/integrity.yml"
       - ".github/workflows/agent-*.yml"
       - "shft/engine/lib/pipeline-states.ts"
+      - "shft/engine/lib/lint-pipeline-labels.ts"
   push:
     branches:
       - dev
@@ -34,6 +35,7 @@ on:
       - ".github/workflows/integrity.yml"
       - ".github/workflows/agent-*.yml"
       - "shft/engine/lib/pipeline-states.ts"
+      - "shft/engine/lib/lint-pipeline-labels.ts"
 
 jobs:
   integrity:
@@ -86,7 +88,13 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install engine dependencies
+        run: |
+          corepack enable
+          cd shft/engine
+          pnpm install --frozen-lockfile
+
       - name: Lint pipeline label transitions
         run: |
           set -euo pipefail
-          npx --yes tsx shft/engine/lib/lint-pipeline-labels.ts
+          ./shft/engine/node_modules/.bin/tsx shft/engine/lib/lint-pipeline-labels.ts
