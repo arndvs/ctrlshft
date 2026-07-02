@@ -17,8 +17,8 @@
 #   COMMAND_BOUNDARY_WITH_BACKTICK — command-start regex for hooks that
 #       already treated backticks as command boundaries before extraction.
 #
-# Keep this file dependency-free (POSIX shell + the tools hooks already require)
-# and side-effect-free (definitions only).
+# Keep this Bash hook library free of new external dependencies (beyond the
+# tools hooks already require) and side-effect-free (definitions only).
 
 # ── WRAPPER_PREFIX ────────────────────────────────────────────────────────────
 # Canonical command-wrapper prefix regex (POSIX ERE). Fail-closed hooks anchor
