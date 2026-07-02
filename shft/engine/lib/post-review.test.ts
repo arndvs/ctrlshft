@@ -124,6 +124,33 @@ describe("postReview", () => {
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("line not in diff hunks"));
   });
 
+  it("decodes a Buffer stderr from a failed gh pr diff into the warning detail", () => {
+    // execFileSync attaches stderr as a Buffer even with encoding set; the warning
+    // must surface its text, not drop it. First call (gh pr diff) throws, then the
+    // head SHA lookup and the review POST proceed.
+    const err = Object.assign(new Error("Command failed"), {
+      stderr: Buffer.from("gh: could not authenticate", "utf8"),
+    });
+    mockExecFileSync.mockImplementationOnce(() => {
+      throw err;
+    });
+    mockExecFileSync.mockReturnValueOnce("abc123\n");
+    mockExecFileSync.mockReturnValueOnce("{}");
+
+    postReview({
+      prNumber: "42",
+      cwd: "/repo",
+      prComments: basePrComments(),
+      inlineComments: [{ path: "src/app.ts", line: 2, side: "RIGHT", body: "x" }],
+      threadReplies: [],
+      reviewBody: "Review",
+    });
+
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining("gh: could not authenticate"),
+    );
+  });
+
   it("drops thread replies referencing unknown commentIds", () => {
     mockExecFileSync.mockReturnValueOnce("abc123\n");
     mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);

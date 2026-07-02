@@ -28,6 +28,10 @@ _fail_closed() {
 }
 trap '_fail_closed' ERR
 
+# Shared hook library (WRAPPER_PREFIX) — sourced after set/trap so this hook's
+# fail-closed mode governs a missing/broken library.
+source "$(dirname "${BASH_SOURCE[0]}")/_hooklib.sh"
+
 # --- Dependencies ---
 if ! command -v jq &>/dev/null; then
     echo '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"git-workflow-gate: jq is required but not found. Install jq to use git safety gates."}}' >&2
@@ -52,7 +56,7 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # Nested shell wrappers using -c/-lc are also treated as git commands when
 # the child shell command string contains a git invocation, so safety gates
 # cannot be bypassed via `bash -c 'git ...'` or `sh -lc 'git ...'`.
-WRAPPER_PREFIX='(sudo([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+|command[[:space:]]+|builtin[[:space:]]+|env([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?([[:space:]]+[^-[:space:]=][^[:space:]]*)?)*([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)*[[:space:]]+)*'
+# WRAPPER_PREFIX is provided by _hooklib.sh (sourced above) — canonical copy.
 COMMAND_BOUNDARY='((^|[;|({`]|&&|\|\||\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
 ASSIGNMENT_PREFIX='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'
 TOP_LEVEL_GIT="${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git[[:space:]]"
