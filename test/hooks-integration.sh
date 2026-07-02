@@ -783,7 +783,10 @@ _wrapper_prefix_consumers_source_lib() {
     local hook
     while IFS= read -r hook; do
         [[ "$hook" == "$HOOKS_DIR/_hooklib.sh" ]] && continue
-        grep -q '_hooklib.sh' "$hook" || return 1
+        # Require an actual `source`/`.` statement, not a mere mention in a
+        # comment or string (e.g. the "provided by _hooklib.sh" pointer comment),
+        # which would let a hook that references but never sources the library pass.
+        grep -qE '^[[:space:]]*(source|\.)[[:space:]]+[^#]*_hooklib\.sh' "$hook" || return 1
     done < <(grep -rl --include='*.sh' 'WRAPPER_PREFIX' "$HOOKS_DIR" 2>/dev/null || true)
     return 0
 }
