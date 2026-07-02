@@ -298,11 +298,11 @@ def _run_subprocess(cmd: list[str], cwd: str, env: dict[str, str], emit) -> None
 
 def _dispatch_address_review(cfg: Config, ws_path, env: dict[str, str], pr_number: int, iteration_num: int, max_iterations: int, emit) -> None:
     """Dispatch to the engine's address-review workflow."""
-    engine_main = str(cfg.dotfiles_root / "shft" / "engine" / "main.ts")
-    tsx_bin = str(cfg.dotfiles_root / "shft" / "engine" / "node_modules" / ".bin" / "tsx")
+    sandcastle_run = str(cfg.dotfiles_root / ".sandcastle" / "run.ts")
+    tsx_bin = str(cfg.dotfiles_root / ".sandcastle" / "engine" / "node_modules" / ".bin" / "tsx")
     cmd = [
-        tsx_bin, engine_main,
-        "--workflow", "address-review",
+        tsx_bin, sandcastle_run,
+        "address-review",
         "--repo", str(ws_path),
         "--pr", str(pr_number),
         "--round", str(iteration_num),
