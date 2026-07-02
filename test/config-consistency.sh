@@ -43,9 +43,14 @@ bad() { FAIL=$((FAIL + 1)); FAILURES+=("$1"); red "$1"; }
 # Set of hook script basenames referenced anywhere in a settings JSON's hooks
 # tree (any event, any matcher; ignores non-hook keys like permissions/theme,
 # and unwraps `bash -c '... script.py ...'` since we match the basename).
+# `(.hooks // {})` treats a missing hooks block as an empty set instead of a jq
+# error; `.command // empty` skips entries without a command. jq parse errors on
+# malformed JSON are deliberately NOT silenced (a broken settings file should
+# surface loudly). grep is made non-fatal so "this file has no hooks" yields an
+# empty set rather than a pipefail abort of the whole suite under `set -e`.
 hook_set() {
-    jq -r '.hooks | to_entries[] | .value[]? | .hooks[]? | .command' "$1" 2>/dev/null \
-        | grep -oE '[A-Za-z0-9_-]+\.(sh|py)' | sort -u
+    jq -r '(.hooks // {}) | to_entries[] | .value[]? | .hooks[]? | .command // empty' "$1" \
+        | { grep -oE '[A-Za-z0-9_-]+\.(sh|py)' || true; } | sort -u
 }
 
 echo "── config drift guards ──"
