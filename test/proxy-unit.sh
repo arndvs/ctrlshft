@@ -554,6 +554,98 @@ _afk_env_decl=$(grep -n '_afk_env=(env' shft/afk.sh || true)
 assert_contains "afk clears package PAT before Claude" "-u GITHUB_PACKAGE_REGISTRY_TOKEN" "$_afk_env_decl"
 
 # ══════════════════════════════════════════════════════════════════════════════
+# proxy-canary SSE classifier (#193)
+# Tests the response-body classifier logic from proxy-canary.yml using
+# in-process fixtures — no network, no daemon, no canary workflow needed.
+echo
+echo "── proxy-canary SSE classifier ──"
+
+_CANARY_TMP="$TMP/canary-classifier"
+mkdir -p "$_CANARY_TMP"
+
+# The SSE content-detection function (mirrors proxy-canary.yml 200 branch)
+_probe_sse_has_content() {
+    python3 - "$1" <<'PY' 2>/dev/null || echo no
+import json, sys
+rv = 'no'
+for l in open(sys.argv[1]):
+    if l.startswith('data: ') and l.strip() != 'data: [DONE]':
+        try:
+            d = json.loads(l[6:])
+            if d.get('type') == 'content_block_delta' and d.get('delta', {}).get('text'):
+                rv = 'yes'
+                break
+        except Exception:
+            pass
+print(rv)
+PY
+}
+
+# Fixture 1: SSE stream with a content_block_delta (stream:true proxy returning "pong")
+cat > "$_CANARY_TMP/sse-content.txt" <<'SSE'
+event: message_start
+data: {"type": "message_start", "message": {"id": "msg_01", "type": "message", "role": "assistant", "content": [], "model": "claude-3-5-sonnet-20241022", "stop_reason": null, "usage": {"input_tokens": 9, "output_tokens": 0}}}
+
+event: content_block_start
+data: {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}
+
+event: content_block_delta
+data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "pong"}}
+
+event: message_delta
+data: {"type": "message_delta", "delta": {"stop_reason": "end_turn"}}
+
+event: message_stop
+data: {"type": "message_stop"}
+
+data: [DONE]
+SSE
+assert_eq "SSE with content_block_delta text → has=yes" "yes" "$(_probe_sse_has_content "$_CANARY_TMP/sse-content.txt")"
+
+# Fixture 2: SSE stream but NO content deltas (empty-content / degraded case)
+cat > "$_CANARY_TMP/sse-empty.txt" <<'SSE'
+event: message_start
+data: {"type": "message_start", "message": {"id": "msg_02", "content": [], "model": "claude-3-5-sonnet-20241022"}}
+
+event: message_stop
+data: {"type": "message_stop"}
+SSE
+assert_eq "SSE with no content_block_delta → has=no" "no" "$(_probe_sse_has_content "$_CANARY_TMP/sse-empty.txt")"
+
+# Fixture 3: SSE detection via head|grep (the gate before calling the Python fn)
+assert_eq "SSE body detected by head|grep" "sse" \
+    "$(head -c 128 "$_CANARY_TMP/sse-content.txt" | grep -qE '^(event:|data:)' && echo sse || echo json)"
+
+# Fixture 4: JSON body NOT detected as SSE
+_FIXTURE_JSON="$_CANARY_TMP/json-content.json"
+printf '%s\n' '{"id":"msg_03","content":[{"type":"text","text":"pong"}]}' \
+    > "$_FIXTURE_JSON"
+assert_eq "JSON body not detected as SSE" "json" \
+    "$(head -c 128 "$_FIXTURE_JSON" | grep -qE '^(event:|data:)' && echo sse || echo json)"
+
+# Fixture 5: JSON body correctly classifies as has=yes (original path, backwards compat)
+# Uses python3 - "$path" so the path is an argv (works on Windows POSIX paths).
+_json_has=$(python3 - "$_FIXTURE_JSON" <<'PY' 2>/dev/null || echo no
+import json, sys
+d = json.load(open(sys.argv[1]))
+print('yes' if d.get('content') else 'no')
+PY
+)
+assert_eq "JSON body with content → has=yes" "yes" "$_json_has"
+
+# Fixture 6: malformed body (non-JSON, non-SSE) not mistaken for SSE
+printf 'GARBAGE NOT JSON OR SSE\n' > "$_CANARY_TMP/bad.txt"
+assert_eq "malformed body not detected as SSE" "json" \
+    "$(head -c 128 "$_CANARY_TMP/bad.txt" | grep -qE '^(event:|data:)' && echo sse || echo json)"
+
+# Fixture 7: SSE with only empty-text deltas (text='') → still has=no (not truthy)
+cat > "$_CANARY_TMP/sse-empty-delta.txt" <<'SSE'
+event: content_block_delta
+data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": ""}}
+SSE
+assert_eq "SSE with empty-text delta → has=no" "no" "$(_probe_sse_has_content "$_CANARY_TMP/sse-empty-delta.txt")"
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Summary
 echo
 echo "════════════════════════════════════════════════"
