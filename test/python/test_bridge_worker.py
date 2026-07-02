@@ -179,11 +179,12 @@ class TestDispatch(unittest.TestCase):
         # Pin the exact executable + argument ordering the engine expects, not
         # just membership — a reordered, renamed, or dropped argv must fail here.
         engine_main = str(Path("/df") / "shft" / "engine" / "main.ts")
+        tsx_bin = str(Path("/df") / "shft" / "engine" / "node_modules" / ".bin" / "tsx")
         cmd = self._capture_cmd(
             _dispatch_address_review, pr_number=7, iteration_num=2, max_iterations=3
         )
         self.assertEqual(cmd, [
-            "npx", "tsx", engine_main,
+            tsx_bin, engine_main,
             "--workflow", "address-review",
             "--repo", str(Path("/ws")),
             "--pr", "7",
