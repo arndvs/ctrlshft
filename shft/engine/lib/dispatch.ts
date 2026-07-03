@@ -1,6 +1,7 @@
 import type { CliArgs } from "./parse-cli-args.js";
 import { outputDirPath, shFileInherit } from "./shell-helpers.js";
 import { join } from "node:path";
+import { StructuredOutputError } from "@ai-hero/sandcastle";
 
 export type WorkflowRunner = (opts: { args: CliArgs; repoDir: string; templatesDir: string }) => Promise<void>;
 
@@ -121,6 +122,27 @@ export const WORKFLOW_NAMES = Object.keys(workflows);
 
 export function resolveWorkflow(name: string): WorkflowRunner | undefined {
   return workflows[name];
+}
+
+/** Wrap a workflow runner with centralised StructuredOutputError handling. */
+export async function runWorkflow(
+  name: string,
+  runner: WorkflowRunner,
+  opts: { args: CliArgs; repoDir: string; templatesDir: string },
+): Promise<void> {
+  try {
+    await runner(opts);
+  } catch (error) {
+    if (error instanceof StructuredOutputError) {
+      console.error(`[${name}] Failed: malformed agent output`);
+      console.error(`[${name}] Tag: <${error.tag}>`);
+      console.error(`[${name}] Raw matched: ${error.rawMatched ?? "(no match found)"}`);
+      if (error.cause) console.error(`[${name}] Cause:`, error.cause);
+      process.exitCode = 1;
+      return;
+    }
+    throw error;
+  }
 }
 
 function parseRequiredPositiveInt(value: string | undefined, flag: string): number {
