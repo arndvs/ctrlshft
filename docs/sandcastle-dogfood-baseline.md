@@ -80,11 +80,11 @@ Source: `SMOKE_SCRIPTS` array in `bin/smoke-sandcastle-report.sh`.
 
 **Any new red = P1 investigation.**
 
-A workflow that was previously passing and now fails requires immediate investigation. The nightly report surfaces failures as GitHub Actions warnings — monitor the step summary for changes.
+A workflow that was previously passing and now fails requires immediate investigation. The nightly smoke workflow emits a GitHub Actions warning annotation when failures are present; check that annotation/log output first, then use the step summary and report artifact for the detailed per-workflow breakdown.
 
 Acceptable failure modes:
 - A workflow that has never run (skip) — expected for newly added workflows
-- A workflow with a known, tracked issue — document in the report comment
+- A workflow with a known, tracked issue — document the expected failure in the tracking issue or PR thread, and mirror it in the verification notes below when certifying a run
 
 Unacceptable:
 - A previously-green workflow turning red with no associated PR or known cause
