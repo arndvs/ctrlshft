@@ -22,6 +22,7 @@ SUITES=(
   "hooks:test/hooks-integration.sh"
   "lifecycle:test/lifecycle.sh"
   "proxy-scripts:shft/templates/scripts/test_probe_completion.sh"
+  "smoke-coverage:test/sandcastle-smoke-coverage.sh"
 )
 
 # ── Temp dir for captured output ────────────────────────────────────────────
@@ -36,8 +37,8 @@ for entry in "${SUITES[@]}"; do
   label="${entry%%:*}"
   script="${entry#*:}"
 
-  # Allow skipping the heavyweight suite
-  if [[ "$label" == "hooks" && "${SKIP_SLOW_TESTS:-}" == "1" ]]; then
+  # Allow skipping heavyweight suites in pre-commit
+  if [[ "${SKIP_SLOW_TESTS:-}" == "1" && ( "$label" == "hooks" || "$label" == "proxy-scripts" ) ]]; then
     echo "⏭  Skipping $label (SKIP_SLOW_TESTS=1)"
     continue
   fi

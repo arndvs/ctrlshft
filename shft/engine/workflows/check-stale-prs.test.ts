@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("node:child_process", () => ({
-  execFileSync: vi.fn(),
+vi.mock("../lib/shell-helpers.js", () => ({
+  shFile: vi.fn(),
 }));
 
 vi.mock("node:fs", async () => {
@@ -12,10 +12,10 @@ vi.mock("node:fs", async () => {
   };
 });
 
-import { execFileSync } from "node:child_process";
+import { shFile } from "../lib/shell-helpers.js";
 import { runCheckStalePrs } from "./check-stale-prs.js";
 
-const mockExecFileSync = vi.mocked(execFileSync);
+const mockShFile = vi.mocked(shFile);
 
 describe("runCheckStalePrs", () => {
   const savedRepo = process.env.GITHUB_REPOSITORY;
@@ -24,7 +24,7 @@ describe("runCheckStalePrs", () => {
   beforeEach(() => {
     process.env.GITHUB_REPOSITORY = "acme/widgets";
     delete process.env.STALE_PR_DAYS;
-    mockExecFileSync.mockReset();
+    mockShFile.mockReset();
     vi.spyOn(console, "log").mockImplementation(() => {});
   });
 
@@ -37,17 +37,17 @@ describe("runCheckStalePrs", () => {
   });
 
   it("reports stale pull requests older than the threshold", () => {
-    mockExecFileSync.mockReturnValueOnce(JSON.stringify([
+    mockShFile.mockReturnValueOnce(JSON.stringify([
       { number: 1, title: "Old PR", updatedAt: "2026-05-30T00:00:00Z", url: "https://github.com/acme/widgets/pull/1", isDraft: false },
       { number: 2, title: "Fresh PR", updatedAt: "2026-06-14T00:00:00Z", url: "https://github.com/acme/widgets/pull/2", isDraft: true },
     ]));
 
     runCheckStalePrs({ repoDir: "/repo", now: new Date("2026-06-15T00:00:00Z"), staleDays: 14 });
 
-    expect(mockExecFileSync).toHaveBeenCalledWith(
+    expect(mockShFile).toHaveBeenCalledWith(
       "gh",
       ["pr", "list", "--state", "open", "--limit", "1000", "--json", "number,title,updatedAt,url,isDraft,author", "-R", "acme/widgets"],
-      { cwd: "/repo", encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      "/repo",
     );
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining("#1 Old PR"));
     expect(console.log).toHaveBeenCalledWith(expect.not.stringContaining("#2 Fresh PR"));
