@@ -25,7 +25,7 @@ paths:
 | Tier | Trigger | Env | Suites run |
 |------|---------|-----|------------|
 | Pre-commit | `git commit` (automatic) | `SKIP_SLOW_TESTS=1` | All except `hooks` and `proxy-scripts` (~6.5s) |
-| Full suite | `npm test` / CI | — | All 6 suites in parallel (~31s) |
+| Full suite | `npm test` / CI | — | All 7 suites in parallel (~31s) |
 | Single suite | `bash test/<suite>.sh` | — | One suite only |
 
 **Do NOT run `npm test` separately before committing when the hook is installed and `jq` is available.** The pre-commit hook already runs the fast suite in that environment. If hooks are disabled or `jq` is missing, run `npm test` manually.
