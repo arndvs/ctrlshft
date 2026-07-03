@@ -801,82 +801,64 @@ _assert() {
     else FAIL=$((FAIL + 1)); FAILURES+=("$label"); red "$label"; fi
 }
 
-# WRAPPER_PREFIX is assigned in exactly one file, and that file is _hooklib.sh.
-# Match the assignment after start-of-line OR whitespace so re-introductions via
-# `export WRAPPER_PREFIX=`, `readonly WRAPPER_PREFIX=`, `local WRAPPER_PREFIX=`,
-# or an indented assignment are caught too — not only column-1. `$WRAPPER_PREFIX`
-# usage and the pointer comment lack the trailing `=`, so they never match.
-_wrapper_prefix_defined_once() {
-    local files
-    # find + -exec keeps this portable: `grep --include` is a GNU extension that
-    # BSD grep (macOS) rejects, which would fail the guard even when the invariant holds.
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])WRAPPER_PREFIX=' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+# ── Single-pass file collection ──
+# Collect all hook *.sh files once; subsequent grep -l calls reuse this list
+# instead of spawning a separate find traversal per assertion.
+_HL_FILES=()
+while IFS= read -r -d '' _f; do
+    _HL_FILES+=("$_f")
+done < <(find "$HOOKS_DIR" -name '*.sh' -print0 2>/dev/null)
+
+# Helper: verify a pattern is defined in exactly _hooklib.sh (no other file).
+_defined_only_in_hooklib() {
+    local pattern="$1" result
+    [[ ${#_HL_FILES[@]} -eq 0 ]] && return 1
+    result=$(grep -lE -- "$pattern" "${_HL_FILES[@]}" 2>/dev/null || true)
+    [[ "$result" == "$HOOKS_DIR/_hooklib.sh" ]]
 }
-_assert "WRAPPER_PREFIX defined only in _hooklib.sh" _wrapper_prefix_defined_once
+
+_assert "WRAPPER_PREFIX defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '(^|[[:space:]])WRAPPER_PREFIX='
 
 # Every hook that references WRAPPER_PREFIX also sources _hooklib.sh.
 _wrapper_prefix_consumers_source_lib() {
     local hook
+    [[ ${#_HL_FILES[@]} -eq 0 ]] && return 0
     while IFS= read -r hook; do
+        [[ -z "$hook" ]] && continue
         [[ "$hook" == "$HOOKS_DIR/_hooklib.sh" ]] && continue
-        # Require an actual `source`/`.` statement, not a mere mention in a
-        # comment or string (e.g. the "provided by _hooklib.sh" pointer comment),
-        # which would let a hook that references but never sources the library pass.
         grep -qE '^[[:space:]]*(source|\.)[[:space:]]+[^#]*_hooklib\.sh' "$hook" || return 1
-    done < <(find "$HOOKS_DIR" -name '*.sh' -exec grep -l 'WRAPPER_PREFIX' {} + 2>/dev/null || true)
+    done < <(grep -l -- 'WRAPPER_PREFIX' "${_HL_FILES[@]}" 2>/dev/null || true)
     return 0
 }
 _assert "hooks using WRAPPER_PREFIX source _hooklib.sh" _wrapper_prefix_consumers_source_lib
 
-# _timeout defined only in _hooklib.sh (slice 2, issue #169)
-_timeout_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^[[:space:]]*(function[[:space:]]+)?_timeout[[:space:]]*(\(\)[[:space:]]*)?\{' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "_timeout defined only in _hooklib.sh" _timeout_defined_once
+_assert "_timeout defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '^[[:space:]]*(function[[:space:]]+)?_timeout[[:space:]]*(\(\)[[:space:]]*)?\{'
 
-# _deny defined only in _hooklib.sh (slice 2, issue #169)
-_deny_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^[[:space:]]*(function[[:space:]]+)?_deny[[:space:]]*(\(\)[[:space:]]*)?\{' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "_deny defined only in _hooklib.sh" _deny_defined_once
+_assert "_deny defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '^[[:space:]]*(function[[:space:]]+)?_deny[[:space:]]*(\(\)[[:space:]]*)?\{'
 
-# COMMAND_BOUNDARY defined only in _hooklib.sh (slice 2, issue #169)
-_command_boundary_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])COMMAND_BOUNDARY=' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "COMMAND_BOUNDARY defined only in _hooklib.sh" _command_boundary_defined_once
+_assert "COMMAND_BOUNDARY defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '(^|[[:space:]])COMMAND_BOUNDARY='
 
-# COMMAND_BOUNDARY_WITH_BACKTICK defined only in _hooklib.sh (slice 2, issue #169)
-_command_boundary_with_backtick_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])COMMAND_BOUNDARY_WITH_BACKTICK=' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "COMMAND_BOUNDARY_WITH_BACKTICK defined only in _hooklib.sh" _command_boundary_with_backtick_defined_once
+_assert "COMMAND_BOUNDARY_WITH_BACKTICK defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '(^|[[:space:]])COMMAND_BOUNDARY_WITH_BACKTICK='
 
-# ASSIGNMENT_PREFIX defined only in _hooklib.sh (slice 2, issue #169)
-_assignment_prefix_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])ASSIGNMENT_PREFIX=' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "ASSIGNMENT_PREFIX defined only in _hooklib.sh" _assignment_prefix_defined_once
+_assert "ASSIGNMENT_PREFIX defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '(^|[[:space:]])ASSIGNMENT_PREFIX='
 
 # No hook should use the old {"decision":"block"} schema (slice 3, issue #169).
 # All blocking hooks must use the hookSpecificOutput.permissionDecision schema
 # (directly via _deny or inline jq). The old schema is a silent contract
 # divergence — both exit 2, but the JSON payload differs.
 _no_old_deny_schema() {
-    local match matches
-    matches=$(find "$HOOKS_DIR" -name '*.sh' ! -name '_hooklib.sh' \
-        -exec grep -l '"decision"[[:space:]]*:[[:space:]]*"block"' {} + 2>/dev/null || true)
+    local match matches non_hooklib=()
+    for _f in "${_HL_FILES[@]}"; do
+        [[ "$(basename "$_f")" != "_hooklib.sh" ]] && non_hooklib+=("$_f")
+    done
+    [[ ${#non_hooklib[@]} -eq 0 ]] && return 0
+    matches=$(grep -l -- '"decision"[[:space:]]*:[[:space:]]*"block"' "${non_hooklib[@]}" 2>/dev/null || true)
     if [[ -n "$matches" ]]; then
         echo "Hooks using old decision:block schema:" >&2
         while IFS= read -r match; do
