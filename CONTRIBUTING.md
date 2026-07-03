@@ -28,14 +28,31 @@ Always clone to `~/dotfiles` — paths are hardcoded across the project.
 
 ## Testing
 
-```bash
-npm test              # full suite (all 6 test suites in parallel)
-npm run test:fast     # fast-path: skips hooks-integration (~10s vs ~90s)
-```
+### Entry points
 
-The pre-commit hook runs `test:fast` automatically — it sets `SKIP_SLOW_TESTS=1` so commits stay under 10 seconds. The full suite (including the heavyweight `hooks-integration` tests) runs via `npm test` and in CI.
+| Entry point | When it runs | What it does | Wall clock |
+|-------------|-------------|--------------|------------|
+| `git commit` | Automatic (pre-commit hook) | Runs `test:fast` with `SKIP_SLOW_TESTS=1` | ~6.5s |
+| `npm run test:fast` | Manual quick check | Same as pre-commit — skips `hooks` and `proxy-scripts` suites | ~6.5s |
+| `npm test` | Manual / CI | Full suite — all 6 test suites in parallel | ~31s |
+
+The pre-commit hook runs `test:fast` automatically, so **do not** run `npm test` separately before committing — the hook handles it. The full suite runs via `npm test` and in CI.
 
 Individual suites: `npm run test:hooks`, `npm run test:lifecycle`, etc.
+
+`SKIP_SLOW_TESTS=1` skips: `hooks-integration` and `proxy-scripts`.
+
+### Adding tests
+
+Tests live in `test/`. The two largest suites (`hooks-integration.sh` and `lifecycle.sh`) use a **parallel group pattern**:
+
+1. Write test functions as usual (using `_test "name" "command"` from the harness)
+2. Wrap related tests in a `_group_<name>()` function
+3. Add the group name to the `_GROUPS` array
+4. Each group runs in a background subshell — **no shared mutable state across groups**
+5. Use per-group temp directories for git repos and fixtures
+
+See the header comments in each test file for the group contract.
 
 ---
 

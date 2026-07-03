@@ -2,6 +2,26 @@
 # test/hooks-integration.sh — Integration tests for Claude Code hooks.
 # Usage: bash test/hooks-integration.sh
 # Exit: 0 if all pass, 1 if any fail.
+#
+# PARALLEL GROUP PATTERN
+# ──────────────────────
+# Tests are organized into _group_<name>() functions registered in _GROUPS.
+# Each group runs in a background subshell via the harness at the bottom of
+# this file. Groups MUST NOT share mutable state — each creates its own temp
+# directory, git repo, and gh shim. Results are written to per-group files
+# in $TMPDIR (pass count, fail count, failure messages) and aggregated after
+# `wait`.
+#
+# Current groups:
+#   _group_wg_basic      — workflow-gate: basic allow/block decisions
+#   _group_wg_format     — workflow-gate: formatting & flag permutations
+#   _group_wg_advanced   — workflow-gate: edge cases, env interactions
+#   _group_secret_guard  — secret-guard hook tests
+#   _group_migration_plan — migration-plan hook tests
+#   _group_post_push     — post-push hook tests
+#   _group_hooklib       — shared hook library tests
+#
+# To add a group: define _group_yourname(), add "yourname" to _GROUPS.
 set -euo pipefail
 
 # Hermetic git env. Git exports GIT_DIR/GIT_WORK_TREE when it invokes hooks (e.g.

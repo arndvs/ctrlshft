@@ -6,6 +6,20 @@
 #
 # Usage: bash test/lifecycle.sh
 # Exit: 0 if all pass, 1 if any fail.
+#
+# PARALLEL GROUP PATTERN
+# ──────────────────────
+# Tests are organized into _group_<name>() functions registered in _GROUPS.
+# Each group runs in a background subshell. Groups MUST NOT share mutable
+# state — each creates its own temp directories and git repos. Results are
+# written to per-group files and aggregated after `wait`.
+#
+# Current groups:
+#   _group_init   — init-artifacts, ignore/tracked lanes, plan discovery
+#   _group_update — update-artifacts tests
+#   _group_audit  — artifact-lifecycle-audit tests
+#
+# To add a group: define _group_yourname(), add "yourname" to _GROUPS.
 set -uo pipefail
 
 # When invoked from the pre-commit hook, git exports GIT_DIR / GIT_INDEX_FILE /
