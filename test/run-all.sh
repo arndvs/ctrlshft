@@ -37,8 +37,8 @@ for entry in "${SUITES[@]}"; do
   label="${entry%%:*}"
   script="${entry#*:}"
 
-  # Allow skipping the heavyweight suite
-  if [[ "$label" == "hooks" && "${SKIP_SLOW_TESTS:-}" == "1" ]]; then
+  # Allow skipping heavyweight suites in pre-commit
+  if [[ "${SKIP_SLOW_TESTS:-}" == "1" && ( "$label" == "hooks" || "$label" == "proxy-scripts" ) ]]; then
     echo "⏭  Skipping $label (SKIP_SLOW_TESTS=1)"
     continue
   fi

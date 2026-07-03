@@ -28,14 +28,31 @@ Always clone to `~/dotfiles` — paths are hardcoded across the project.
 
 ## Testing
 
-```bash
-npm test              # full suite (all 7 test suites in parallel)
-npm run test:fast     # fast-path: skips hooks-integration (~10s vs ~90s)
-```
+### Entry points
 
-The pre-commit hook runs `test:fast` automatically — it sets `SKIP_SLOW_TESTS=1` so commits stay under 10 seconds. The full suite (including the heavyweight `hooks-integration` tests) runs via `npm test` and in CI.
+| Entry point | When it runs | What it does | Wall clock |
+|-------------|-------------|--------------|------------|
+| `git commit` | Automatic when hooks are installed and `jq` is available | Runs the `test` script with `SKIP_SLOW_TESTS=1` and may execute `bash test/run-all.sh` directly | ~6.5s |
+| `npm run test:fast` | Manual quick check | Same as pre-commit — skips `hooks` and `proxy-scripts` suites | ~6.5s |
+| `npm test` | Manual / CI | Full suite — all 7 test suites in parallel | ~31s |
+
+The pre-commit hook usually runs the package `test` script with `SKIP_SLOW_TESTS=1`, so **do not** run `npm test` separately before committing when the hook is installed and `jq` is available — the hook handles the fast path. If hooks are disabled or `jq` is missing, run `npm test` manually. The full suite runs via `npm test` and in CI.
 
 Individual suites: `npm run test:hooks`, `npm run test:lifecycle`, etc.
+
+`SKIP_SLOW_TESTS=1` skips: `hooks-integration` and `proxy-scripts`.
+
+### Adding tests
+
+Tests live in `test/`. The two largest suites (`hooks-integration.sh` and `lifecycle.sh`) use a **parallel group pattern**:
+
+1. Write test functions using that suite's helpers (`_test` in `hooks-integration.sh`; `_run`/`_assert_eq` in `lifecycle.sh`)
+2. Wrap related tests in a `_group_<name>()` function
+3. Add the full function name (for example, `_group_init`) to the `_GROUPS` array
+4. Each group runs in a background subshell — **no shared mutable state across groups**
+5. Use per-group temp directories for git repos and fixtures
+
+See the header comments in each test file for the group contract.
 
 ---
 

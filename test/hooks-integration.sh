@@ -2,6 +2,26 @@
 # test/hooks-integration.sh — Integration tests for Claude Code hooks.
 # Usage: bash test/hooks-integration.sh
 # Exit: 0 if all pass, 1 if any fail.
+#
+# PARALLEL GROUP PATTERN
+# ──────────────────────
+# Tests are organized into _group_<name>() functions registered in _GROUPS.
+# Each group runs in a background subshell via the harness at the bottom of
+# this file. Groups MUST NOT share mutable state — each creates its own temp
+# directory, git repo, and gh shim. Results are written to per-group files
+# in $TMPDIR (pass count, fail count, failure messages) and aggregated after
+# `wait`.
+#
+# Current groups:
+#   _group_wg_basic      — workflow-gate: basic allow/block decisions
+#   _group_wg_format     — workflow-gate: formatting & flag permutations
+#   _group_wg_advanced   — workflow-gate: edge cases, env interactions
+#   _group_secret_guard  — secret-guard hook tests
+#   _group_migration_plan — migration-plan hook tests
+#   _group_post_push     — post-push hook tests
+#   _group_hooklib       — shared hook library tests
+#
+# To add a group: define _group_yourname(), add "_group_yourname" to _GROUPS.
 set -euo pipefail
 
 # Hermetic git env. Git exports GIT_DIR/GIT_WORK_TREE when it invokes hooks (e.g.
@@ -38,8 +58,7 @@ _setup_test_repo() {
     TEST_REPO=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
     _CLEANUP_DIRS+=("$TEST_REPO")
     git init -q "$TEST_REPO"
-    git -C "$TEST_REPO" config user.name "Test"
-    git -C "$TEST_REPO" config user.email "test@test"
+    printf '\n[user]\n\tname = Test\n\temail = test@test\n' >> "$TEST_REPO/.git/config"
     git -C "$TEST_REPO" checkout -q -b test-feature
     git -C "$TEST_REPO" commit -q --allow-empty -m "init"
 }
@@ -82,23 +101,29 @@ _test() {
 # --- Group functions (run in parallel subshells) ---
 
 # ─── git-workflow-gate.sh ─────────────────────────────────────────────────────
-_group_workflow_gate() {
-echo "── git-workflow-gate.sh ──"
-
-# Hermetic: stub gh so frozen-branch detection never hits the network.
-# Returns empty (no merged PR) so the check always passes through.
-_GWG_SHIM_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
-_CLEANUP_DIRS+=("$_GWG_SHIM_DIR")
-cat > "$_GWG_SHIM_DIR/gh" <<'SHIMEOF'
+# Hermetic gh shim setup — used by each workflow-gate sub-group.
+_setup_gh_shim() {
+    _GWG_SHIM_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+    _CLEANUP_DIRS+=("$_GWG_SHIM_DIR")
+    cat > "$_GWG_SHIM_DIR/gh" <<'SHIMEOF'
 #!/usr/bin/env bash
 # Stub: no merged PR found
 echo ""
 SHIMEOF
-chmod +x "$_GWG_SHIM_DIR/gh"
-_GWG_OLD_PATH="$PATH"
-export PATH="$_GWG_SHIM_DIR:$PATH"
+    chmod +x "$_GWG_SHIM_DIR/gh"
+    _GWG_OLD_PATH="$PATH"
+    export PATH="$_GWG_SHIM_DIR:$PATH"
+}
 
-# Set up temp repo so branch-dependent tests are deterministic
+_teardown_gh_shim() {
+    export PATH="$_GWG_OLD_PATH"
+    rm -rf "$_GWG_SHIM_DIR"
+}
+
+# --- Sub-group 1/3: basic commands + force push + cd/pushd + wrapper bypass ---
+_group_wg_basic() {
+echo "── git-workflow-gate.sh (1/3) ──"
+_setup_gh_shim
 _setup_test_repo
 
 _test "allows normal git command" 0 \
@@ -219,6 +244,17 @@ _test "blocks stacked-substitution force push" 2 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"\$(( \$(git push --force) ))\"},\"cwd\":\"$TEST_REPO\"}" \
     "$HOOKS_DIR/git-workflow-gate.sh" \
     "force-with-lease"
+
+_teardown_test_repo
+_teardown_gh_shim
+echo ""
+}
+
+# --- Sub-group 2/3: git -C/--git-dir + commit format variants + dirty tree ---
+_group_wg_format() {
+echo "── git-workflow-gate.sh (2/3) ──"
+_setup_gh_shim
+_setup_test_repo
 
 _test "blocks brace-funcsub force push" 2 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"\${ git push --force; }\"},\"cwd\":\"$TEST_REPO\"}" \
@@ -344,6 +380,17 @@ _test "blocks env git --git-dir=/other (env prefix + --git-dir)" 2 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"env git --git-dir=/other status\"},\"cwd\":\"$TEST_REPO\"}" \
     "$HOOKS_DIR/git-workflow-gate.sh" \
     "--git-dir"
+
+_teardown_test_repo
+_teardown_gh_shim
+echo ""
+}
+
+# --- Sub-group 3/3: echo false-positives + reset/clean/rebase + env bypass + protected branch ---
+_group_wg_advanced() {
+echo "── git-workflow-gate.sh (3/3) ──"
+_setup_gh_shim
+_setup_test_repo
 
 _test "allows conventional commit with apostrophe in double-quoted msg" 0 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git commit -m \\\"fix: handle 'quoted' value\\\"\"},\"cwd\":\"$TEST_REPO\"}" \
@@ -479,10 +526,7 @@ _test "warns on git reset --hard @ (HEAD alias)" 0 \
     "reset --hard HEAD"
 
 _teardown_test_repo
-
-export PATH="$_GWG_OLD_PATH"
-rm -rf "$_GWG_SHIM_DIR"
-
+_teardown_gh_shim
 echo ""
 }
 
@@ -884,7 +928,7 @@ echo ""
 _PAR_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
 _CLEANUP_DIRS+=("$_PAR_DIR")
 
-_GROUPS=(_group_workflow_gate _group_secret_guard _group_migration_plan _group_post_push _group_hooklib)
+_GROUPS=(_group_wg_basic _group_wg_format _group_wg_advanced _group_secret_guard _group_migration_plan _group_post_push _group_hooklib)
 _PIDS=()
 
 for _g in "${_GROUPS[@]}"; do
@@ -900,7 +944,13 @@ for _g in "${_GROUPS[@]}"; do
             printf '%s\n' "${FAILURES[@]+"${FAILURES[@]}"}" > "$_GRP_DIR/$_GRP_NAME.failures"
             _cleanup
         }
-        trap '_grp_exit' EXIT INT TERM
+        _grp_signal_exit() {
+            trap - EXIT INT TERM
+            _grp_exit
+            exit 130
+        }
+        trap '_grp_exit' EXIT
+        trap '_grp_signal_exit' INT TERM
         "$_g"
     ) > "$_PAR_DIR/$_g.out" 2>&1 &
     _PIDS+=($!)
