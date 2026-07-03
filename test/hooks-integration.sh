@@ -58,7 +58,7 @@ _setup_test_repo() {
     TEST_REPO=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
     _CLEANUP_DIRS+=("$TEST_REPO")
     git init -q "$TEST_REPO"
-    printf '[user]\n\tname = Test\n\temail = test@test\n' >> "$TEST_REPO/.git/config"
+    printf '\n[user]\n\tname = Test\n\temail = test@test\n' >> "$TEST_REPO/.git/config"
     git -C "$TEST_REPO" checkout -q -b test-feature
     git -C "$TEST_REPO" commit -q --allow-empty -m "init"
 }

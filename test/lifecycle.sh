@@ -65,7 +65,7 @@ _new_repo() {
     d=$(mktemp -d 2>/dev/null || mktemp -d -t lifecycle)
     _CLEANUP_DIRS+=("$d")
     git init -q "$d"
-    printf '[user]\n\temail = t@t\n\tname = t\n' >> "$d/.git/config"
+    printf '\n[user]\n\temail = t@t\n\tname = t\n' >> "$d/.git/config"
     echo "$d"
 }
 
