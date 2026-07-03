@@ -55,8 +55,7 @@ export function postReview(opts: PostReviewOpts): PostReviewResult {
             // Surface the underlying gh failure (stderr/message) so auth/repo/network issues are
             // actionable instead of silently swallowed.
             const e = err as { stderr?: unknown };
-            // execFileSync often attaches stderr as a Buffer even when encoding is
-            // set, so decode that case too rather than dropping the actionable detail.
+            // Decode Buffer stderr too rather than dropping the actionable detail.
             const stderr =
               typeof e.stderr === "string"
                 ? e.stderr.trim()
