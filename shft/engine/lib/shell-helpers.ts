@@ -39,7 +39,8 @@ export function sh(cmd: string, cwdOrOpts?: string | ShellOpts): string {
     cwd: opts?.cwd,
     timeout: opts?.timeout ?? DEFAULT_TIMEOUT_MS,
     maxBuffer: opts?.maxBuffer ?? DEFAULT_MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
+    input: opts?.input,
+    stdio: [opts?.input ? "pipe" : "ignore", "pipe", "pipe"],
   });
 }
 
@@ -60,7 +61,8 @@ export function shFileInherit(command: string, args: string[], cwdOrOpts?: strin
   execFileSync(command, args, {
     cwd: opts?.cwd,
     timeout: opts?.timeout ?? DEFAULT_TIMEOUT_MS,
-    stdio: "inherit",
+    input: opts?.input,
+    stdio: opts?.input ? ["pipe", "inherit", "inherit"] : "inherit",
   });
 }
 

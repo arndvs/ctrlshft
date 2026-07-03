@@ -79,8 +79,18 @@ describe("sh", () => {
     expect(result.trim()).toBeTruthy();
   });
 
+  it("forwards input to stdin", () => {
+    const result = sh("node -e \"process.stdin.pipe(process.stdout)\"", { input: "hello" });
+    expect(result).toBe("hello");
+  });
+
   it("throws ETIMEDOUT when command exceeds timeout", () => {
-    expect(() => sh('node -e "setTimeout(() => {}, 10000)"', { timeout: 500 })).toThrow();
+    try {
+      sh('node -e "setTimeout(() => {}, 10000)"', { timeout: 500 });
+      throw new Error("Expected command to time out");
+    } catch (err) {
+      expect(err).toMatchObject({ code: "ETIMEDOUT" });
+    }
   });
 });
 
@@ -111,6 +121,10 @@ describe("shFileInherit", () => {
 
   it("throws on failed command", () => {
     expect(() => shFileInherit("node", ["-e", "process.exit(1)"])).toThrow();
+  });
+
+  it("forwards input to stdin", () => {
+    expect(() => shFileInherit("node", ["-e", "process.stdin.resume(); process.stdin.on('end', () => process.exit(0));"], { input: "hello" })).not.toThrow();
   });
 });
 
