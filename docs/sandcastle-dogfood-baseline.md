@@ -9,7 +9,7 @@ Operational baseline for the Sandcastle dogfood test system — which workflows 
 
 ## How It Works
 
-The nightly smoke workflow runs daily at 06:00 UTC (midnight CST) and on `workflow_dispatch`. It queries the last N runs of every Sandcastle workflow, aggregates pass/fail/skip status, and publishes a report artifact (`report.json` + `report.md`) to the GitHub Actions run.
+The nightly smoke workflow runs daily at 06:00 UTC and on `workflow_dispatch`. It queries the last N runs of every Sandcastle workflow, aggregates pass/fail/skip status, and publishes a report artifact (`report.json` + `report.md`) to the GitHub Actions run.
 
 ### Running Manually
 
@@ -28,7 +28,7 @@ gh run list --workflow nightly-smoke.yml --limit 1
 
 Each run uploads a `smoke-report-N` artifact containing:
 
-- **report.json** — machine-readable results with `summary.pass`, `summary.fail`, `summary.skip` counts and per-workflow entries including `name`, `latest_url`, and `conclusion`
+- **report.json** — machine-readable results with `summary.pass`, `summary.fail`, `summary.skip` counts and per-workflow entries including `name`, `latest_url`, and `latest_conclusion`
 - **report.md** — human-readable markdown surfaced in the GitHub Actions step summary
 
 Artifacts are retained for 30 days.
