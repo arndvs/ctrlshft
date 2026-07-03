@@ -74,12 +74,12 @@ if [[ -f "package.json" ]]; then
         echo "pre-commit: running tests..."
         # Skip heavyweight suites in pre-commit; full suite runs via npm test / CI
         export SKIP_SLOW_TESTS=1
-        # Fast path: if test script is a plain bash command, eval it directly
+        # Fast path: if test script is a plain bash command, run it directly
         # to avoid npm startup overhead (~1-2s on Windows).
-        # Security: package.json is repo-controlled; npm test runs the same string.
         _test_script=$(jq -r '.scripts.test' package.json 2>/dev/null)
-        if [[ "$_test_script" == bash\ * ]]; then
-            eval "$_test_script" || exit 1
+        if [[ "$_test_script" =~ ^bash[[:space:]][A-Za-z0-9_./:-]+([[:space:]][A-Za-z0-9_./:=+-]+)*$ ]]; then
+            read -r -a _test_argv <<< "$_test_script"
+            "${_test_argv[@]}" || exit 1
         else
             case "$_pm" in
                 bun)  bun run test || exit 1 ;;

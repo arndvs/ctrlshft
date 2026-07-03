@@ -19,7 +19,7 @@
 #   _group_update — update-artifacts tests
 #   _group_audit  — artifact-lifecycle-audit tests
 #
-# To add a group: define _group_yourname(), add "yourname" to _GROUPS.
+# To add a group: define _group_yourname(), add "_group_yourname" to _GROUPS.
 set -uo pipefail
 
 # When invoked from the pre-commit hook, git exports GIT_DIR / GIT_INDEX_FILE /
@@ -267,7 +267,13 @@ for _g in "${_GROUPS[@]}"; do
             printf '%s\n' "${FAILURES[@]+"${FAILURES[@]}"}" > "$_GRP_DIR/$_GRP_NAME.failures"
             _cleanup
         }
-        trap '_grp_exit' EXIT INT TERM
+        _grp_signal_exit() {
+            trap - EXIT INT TERM
+            _grp_exit
+            exit 130
+        }
+        trap '_grp_exit' EXIT
+        trap '_grp_signal_exit' INT TERM
         "$_g"
     ) > "$_PAR_DIR/$_g.out" 2>&1 &
     _PIDS+=($!)
