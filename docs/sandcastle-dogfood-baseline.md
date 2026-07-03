@@ -9,9 +9,51 @@ workflows installed in this repository. It serves as the reference for
 regression detection and coverage gap analysis.
 
 - **Workflows tracked:** 16 (10 agent + 6 infrastructure)
-- **Smoke scripts:** 6 (5 active exercisers + 1 report aggregator)
+- **Smoke exerciser scripts:** 5
+- **Report aggregators:** 1 (`bin/smoke-sandcastle-report.sh`)
 - **Harness tests:** 6 (unit tests for each smoke script)
 - **Nightly cron:** `nightly-smoke.yml` runs daily at 06:00 UTC
+- **Regression policy:** any new red is a P1 investigation until explained or
+  fixed.
+
+## Verification Run
+
+Manual verification was dispatched with:
+
+```bash
+gh workflow run nightly-smoke.yml \
+  --ref agent/issue-43-slice-10-qa-certification-verify-dogfood-test-cove \
+  -f limit=20 \
+  -f mode=report-only
+```
+
+- **Run URL:** https://github.com/arndvs/dotfiles-private/actions/runs/28675321893
+- **Artifact:** `smoke-report-3` (`report.json` + `report.md`)
+- **Generated:** 2026-07-03T17:33:36Z
+- **Coverage:** 100.0% (16 / 16 workflows with runs)
+- **Runs inspected:** 252
+- **Observed pass/fail/skip:** 155 pass / 17 fail / 80 skip
+
+The report includes both success and failure paths:
+
+- **PASS example:** `Proxy Canary` latest run succeeded:
+  https://github.com/arndvs/dotfiles-private/actions/runs/28671699746
+- **FAIL example:** `Proxy Canary` scheduled run failed:
+  https://github.com/arndvs/dotfiles-private/actions/runs/28618083306
+
+Failure diagnostics are actionable from the run URL. The representative failed
+run above links to job `canary`, step `Mark the job failed`, and the preceding
+probe output reports:
+
+```text
+200 but response body was not valid JSON — proxy/upstream serving malformed completions
+Process completed with exit code 1.
+```
+
+The wider verification window also detected historical failures for `Agent:
+Architecture Review`, `Agent: Promote Queued`, and `Proxy Canary`. The latest
+run for each of those workflows is currently green, so the failures are baseline
+history rather than new regressions from this PR.
 
 ## Workflow Coverage Matrix
 
@@ -91,6 +133,32 @@ The `nightly-smoke.yml` workflow runs at 06:00 UTC daily and:
 2. Produces JSON + markdown report artifacts (30-day retention).
 3. Emits `::warning::` annotations when any workflow has recent failures.
 4. Publishes the markdown report to the GitHub Actions step summary.
+
+## Manual Operation
+
+Run the report-only nightly smoke check manually with:
+
+```bash
+gh workflow run nightly-smoke.yml -f limit=20 -f mode=report-only
+```
+
+After completion:
+
+```bash
+gh run list --workflow nightly-smoke.yml --limit 1
+gh run download <run-id> -n smoke-report-<run-number>
+```
+
+The artifact contains:
+
+- `report.json` — machine-readable summary with `summary.pass`,
+  `summary.fail`, `summary.skip`, `summary.coverage_pct`, and per-workflow
+  `latest_url` fields.
+- `report.md` — reviewer-readable table for the GitHub Actions summary.
+
+Expected steady-state behavior is **100% workflow coverage** and no unexplained
+new failures. Existing historical failures remain visible in the report window
+so regressions can be compared against this baseline.
 
 ## Reference
 
