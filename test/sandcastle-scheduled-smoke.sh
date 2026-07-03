@@ -3,6 +3,11 @@
 # Usage: bash test/sandcastle-scheduled-smoke.sh
 set -euo pipefail
 
+# Git hook exports override `git -C` inside temp repos, so clear them before
+# this harness creates fixtures.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR \
+      GIT_OBJECT_DIRECTORY GIT_NAMESPACE 2>/dev/null || true
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$ROOT/bin/smoke-sandcastle-scheduled.sh"
 TMP_ROOT="$ROOT/working/tmp/sandcastle-scheduled-smoke-test"
