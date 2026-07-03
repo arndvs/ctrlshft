@@ -386,6 +386,39 @@ class TestProcessJob(unittest.TestCase):
         )
         self.assertEqual(iteration_event["iteration"], address_review_event["round"])
 
+    def test_iteration_event_not_emitted_when_cap_exceeded(self):
+        cfg = self._cfg()
+        job = self._claimed_job()
+        thread = UnresolvedThread(
+            thread_id="thread-1",
+            url="https://example.test/thread",
+            path="bridge/worker.py",
+            line=1,
+            body="fix this",
+            diff_hunk=None,
+            author="copilot-pull-request-reviewer[bot]",
+        )
+        emit_calls = []
+
+        with db.connect(self.db_path) as conn:
+            for _ in range(cfg.max_iterations):
+                db.bump_iteration(conn, "org/repo#7")
+
+        def capture_emit(_hud_script, event, **extra):
+            emit_calls.append((event, extra))
+
+        with mock.patch("bridge.worker.hud.emit", side_effect=capture_emit), \
+                mock.patch("bridge.worker.github.mint_token", return_value=_TOKEN), \
+                mock.patch("bridge.worker.github.fetch_unresolved_copilot_threads", return_value=[thread]), \
+                mock.patch("bridge.worker.github.find_tracking_issue", return_value=None), \
+                mock.patch("bridge.worker._dispatch_address_review") as dispatch:
+            _process_job(cfg, job, "worker-1")
+
+        event_names = [event for event, _extra in emit_calls]
+        self.assertNotIn("bridge.job.iteration", event_names)
+        self.assertIn("bridge.loop.cap_exceeded", event_names)
+        dispatch.assert_not_called()
+
     def test_run_cleans_once_after_processed_job(self):
         cfg = self._cfg()
         job = self._claimed_job()
