@@ -34,7 +34,7 @@ Always clone to `~/dotfiles` — paths are hardcoded across the project.
 |-------------|-------------|--------------|------------|
 | `git commit` | Automatic when hooks are installed and `jq` is available | Runs the `test` script with `SKIP_SLOW_TESTS=1` and may execute `bash test/run-all.sh` directly | ~6.5s |
 | `npm run test:fast` | Manual quick check | Same as pre-commit — skips `hooks` and `proxy-scripts` suites | ~6.5s |
-| `npm test` | Manual / CI | Full suite — all 6 test suites in parallel | ~31s |
+| `npm test` | Manual / CI | Full suite — all 7 test suites in parallel | ~31s |
 
 The pre-commit hook usually runs the package `test` script with `SKIP_SLOW_TESTS=1`, so **do not** run `npm test` separately before committing when the hook is installed and `jq` is available — the hook handles the fast path. If hooks are disabled or `jq` is missing, run `npm test` manually. The full suite runs via `npm test` and in CI.
 

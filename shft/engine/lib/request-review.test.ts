@@ -1,31 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { requestCopilotReview } from "./request-review.js";
 
-vi.mock("node:child_process", () => ({
-  execFileSync: vi.fn(),
+vi.mock("./shell-helpers.js", () => ({
+  shFile: vi.fn(),
 }));
 
-import { execFileSync } from "node:child_process";
+import { shFile } from "./shell-helpers.js";
 
-const mockExecFileSync = vi.mocked(execFileSync);
+const mockShFile = vi.mocked(shFile);
 
 const baseOpts = { owner: "acme", repo: "widgets", prNumber: "42", cwd: "/repo" };
 
 describe("requestCopilotReview", () => {
   beforeEach(() => {
-    mockExecFileSync.mockReset();
+    mockShFile.mockReset();
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   it("requests review from copilot via gh pr edit", () => {
-    mockExecFileSync.mockReturnValueOnce("false"); // draft check
-    mockExecFileSync.mockReturnValueOnce(""); // review request
+    mockShFile.mockReturnValueOnce("false"); // draft check
+    mockShFile.mockReturnValueOnce(""); // review request
 
     requestCopilotReview(baseOpts);
 
-    expect(mockExecFileSync).toHaveBeenCalledTimes(2);
-    const reviewCall = mockExecFileSync.mock.calls[1]!;
+    expect(mockShFile).toHaveBeenCalledTimes(2);
+    const reviewCall = mockShFile.mock.calls[1]!;
     // Must go through `gh pr edit --add-reviewer` (GraphQL); the REST
     // reviewers[] endpoint 422s the Copilot app and silently no-ops. Assert the
     // full argv including the explicit --repo + PR number (the reason
@@ -39,17 +39,17 @@ describe("requestCopilotReview", () => {
   });
 
   it("skips when PR is a draft", () => {
-    mockExecFileSync.mockReturnValueOnce("true"); // draft check
+    mockShFile.mockReturnValueOnce("true"); // draft check
 
     requestCopilotReview(baseOpts);
 
-    expect(mockExecFileSync).toHaveBeenCalledOnce();
+    expect(mockShFile).toHaveBeenCalledOnce();
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining("draft"));
   });
 
   it("warns when copilot is not available as reviewer", () => {
-    mockExecFileSync.mockReturnValueOnce("false"); // draft check
-    mockExecFileSync.mockImplementationOnce(() => {
+    mockShFile.mockReturnValueOnce("false"); // draft check
+    mockShFile.mockImplementationOnce(() => {
       throw new Error("422 Reviews may only be requested from collaborators");
     });
 
@@ -59,8 +59,8 @@ describe("requestCopilotReview", () => {
   });
 
   it("warns on generic API error without crashing", () => {
-    mockExecFileSync.mockReturnValueOnce("false"); // draft check
-    mockExecFileSync.mockImplementationOnce(() => {
+    mockShFile.mockReturnValueOnce("false"); // draft check
+    mockShFile.mockImplementationOnce(() => {
       throw new Error("500 Internal Server Error");
     });
 
@@ -70,14 +70,14 @@ describe("requestCopilotReview", () => {
   });
 
   it("continues with review request when draft check fails", () => {
-    mockExecFileSync.mockImplementationOnce(() => {
+    mockShFile.mockImplementationOnce(() => {
       throw new Error("network error");
     });
-    mockExecFileSync.mockReturnValueOnce(""); // review request succeeds
+    mockShFile.mockReturnValueOnce(""); // review request succeeds
 
     requestCopilotReview(baseOpts);
 
-    expect(mockExecFileSync).toHaveBeenCalledTimes(2);
+    expect(mockShFile).toHaveBeenCalledTimes(2);
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Requested Copilot review"));
   });
 });
