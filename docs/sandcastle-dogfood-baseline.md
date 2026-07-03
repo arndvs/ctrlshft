@@ -26,7 +26,7 @@ gh run list --workflow nightly-smoke.yml --limit 1
 
 ### Where Artifacts Are Published
 
-Each run uploads a `smoke-report-N` artifact containing:
+Each run uploads a `smoke-report-${{ github.run_number }}` artifact containing:
 
 - **report.json** — machine-readable results with `summary.pass`, `summary.fail`, `summary.skip` counts and per-workflow entries including `name`, `latest_url`, and `latest_conclusion`
 - **report.md** — human-readable markdown surfaced in the GitHub Actions step summary
