@@ -107,7 +107,6 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
     with db.connect(cfg.db_path) as conn:
         current_iteration = db.read_iteration(conn, job.claim_key)
     next_iteration = current_iteration + 1
-    emit("bridge.job.iteration", iteration=next_iteration)
 
     if current_iteration >= cfg.max_iterations:
         emit("bridge.loop.cap_exceeded", iteration=current_iteration)
@@ -133,6 +132,8 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
                 ),
             )
         return
+
+    emit("bridge.job.iteration", iteration=next_iteration)
 
     # 4. Prepare workspace — fetch PR metadata via REST helper (fixes H-3).
     pr_meta = github.fetch_pr_metadata(
