@@ -28,7 +28,7 @@ paths:
 | Full suite | `npm test` / CI | — | All 6 suites in parallel (~31s) |
 | Single suite | `bash test/<suite>.sh` | — | One suite only |
 
-**Do NOT run `npm test` separately before committing.** The pre-commit hook already runs the fast suite. Running it manually first doubles the wait for no coverage gain.
+**Do NOT run `npm test` separately before committing when the hook is installed and `jq` is available.** The pre-commit hook already runs the fast suite in that environment. If hooks are disabled or `jq` is missing, run `npm test` manually.
 
 ### Parallel group contract
 
