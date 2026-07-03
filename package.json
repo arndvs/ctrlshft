@@ -10,6 +10,7 @@
     "stop":    "bash bin/start-hud.sh --stop",
     "status":  "bash bin/start-hud.sh --status",
     "test":    "bash test/run-all.sh",
+    "test:fast": "bash -c 'SKIP_SLOW_TESTS=1 bash test/run-all.sh'",
     "test:consistency": "bash test/config-consistency.sh",
     "test:branch-guard": "bash test/branch-write-guard.sh",
     "test:instructions": "bash test/claude-instructions.sh",

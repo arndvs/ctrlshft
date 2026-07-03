@@ -26,6 +26,19 @@ Always clone to `~/dotfiles` — paths are hardcoded across the project.
 
 ---
 
+## Testing
+
+```bash
+npm test              # full suite (all 6 test suites in parallel)
+npm run test:fast     # fast-path: skips hooks-integration (~10s vs ~90s)
+```
+
+The pre-commit hook runs `test:fast` automatically — it sets `SKIP_SLOW_TESTS=1` so commits stay under 10 seconds. The full suite (including the heavyweight `hooks-integration` tests) runs via `npm test` and in CI.
+
+Individual suites: `npm run test:hooks`, `npm run test:lifecycle`, etc.
+
+---
+
 ## Branch naming
 
 | Type | Pattern | Example |
