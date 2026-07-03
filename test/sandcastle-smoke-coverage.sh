@@ -70,7 +70,9 @@ else
 
     # Extract the SANDCASTLE_WORKFLOWS array entries from the report script.
     report_workflows="$TMP_ROOT/report-workflows.txt"
-    grep -E '^\s+"' "$report_script" | sed 's/^[[:space:]]*"//;s/"$//' | head -20 > "$report_workflows"
+    sed -n '/^SANDCASTLE_WORKFLOWS=(/,/^)$/p' "$report_script" \
+        | grep -E '^[[:space:]]+"' \
+        | sed 's/^[[:space:]]*"//;s/"$//' > "$report_workflows"
 
     for wf_file in "${installed_agent_workflows[@]}"; do
         # Derive the expected display name from the workflow file.
@@ -230,11 +232,11 @@ for smoke in "$ROOT"/bin/smoke-sandcastle-*.sh; do
 done
 
 # ── 7. QA baseline doc exists ────────────────────────────────────────────────
-baseline_doc="$ROOT/docs/qa/dogfood-baseline.md"
+baseline_doc="$ROOT/docs/sandcastle-dogfood-baseline.md"
 if [[ -f "$baseline_doc" ]]; then
     _record_pass "QA dogfood baseline document exists"
 else
-    _record_fail "QA dogfood baseline document exists" "expected docs/qa/dogfood-baseline.md"
+    _record_fail "QA dogfood baseline document exists" "expected docs/sandcastle-dogfood-baseline.md"
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
