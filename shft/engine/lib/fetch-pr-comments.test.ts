@@ -1,21 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("node:child_process", () => ({
-  execFileSync: vi.fn(),
-}));
-
 vi.mock("./shell-helpers.js", () => ({
   sh: vi.fn(),
   safeSh: vi.fn(),
+  shFile: vi.fn(),
 }));
 
-import { execFileSync } from "node:child_process";
-import { sh, safeSh } from "./shell-helpers.js";
+import { sh, safeSh, shFile } from "./shell-helpers.js";
 import { fetchPrComments, getOwnerRepo } from "./fetch-pr-comments.js";
 
 const mockSh = vi.mocked(sh);
 const mockSafeSh = vi.mocked(safeSh);
-const mockExecFileSync = vi.mocked(execFileSync);
+const mockShFile = vi.mocked(shFile);
 
 function buildThreadsPage(
   nodes: Array<{ id: string; isResolved: boolean; isOutdated: boolean; body: string; path?: string; line?: number }>,
@@ -76,7 +72,7 @@ describe("fetchPrComments", () => {
   beforeEach(() => {
     mockSh.mockReset();
     mockSafeSh.mockReset();
-    mockExecFileSync.mockReset();
+    mockShFile.mockReset();
   });
 
   it("rejects invalid PR numbers", () => {
@@ -97,7 +93,7 @@ describe("fetchPrComments", () => {
       false,
       null,
     );
-    mockExecFileSync.mockReturnValueOnce(singlePage);
+    mockShFile.mockReturnValueOnce(singlePage);
 
     const result = fetchPrComments({ prNumber: "99", cwd: "/repo" });
 
@@ -105,7 +101,7 @@ describe("fetchPrComments", () => {
     expect(result.issueNumber).toBe("42");
     expect(result.comments.review_threads).toHaveLength(1);
     expect(result.comments.review_threads[0]!.body).toBe("fix this");
-    expect(mockExecFileSync).toHaveBeenCalledOnce();
+    expect(mockShFile).toHaveBeenCalledOnce();
   });
 
   it("paginates multiple pages of review threads", () => {
@@ -126,17 +122,17 @@ describe("fetchPrComments", () => {
       false,
       null,
     );
-    mockExecFileSync.mockReturnValueOnce(page1).mockReturnValueOnce(page2);
+    mockShFile.mockReturnValueOnce(page1).mockReturnValueOnce(page2);
 
     const result = fetchPrComments({ prNumber: "99", cwd: "/repo" });
 
     expect(result.comments.review_threads).toHaveLength(2);
     expect(result.comments.review_threads[0]!.body).toBe("page 1 comment");
     expect(result.comments.review_threads[1]!.body).toBe("page 2 comment");
-    expect(mockExecFileSync).toHaveBeenCalledTimes(2);
+    expect(mockShFile).toHaveBeenCalledTimes(2);
 
     // Second call should include cursor
-    const secondCallArgs = mockExecFileSync.mock.calls[1]![1] as string[];
+    const secondCallArgs = mockShFile.mock.calls[1]![1] as string[];
     expect(secondCallArgs).toContain("cursor=cursor_abc");
   });
 
@@ -153,7 +149,7 @@ describe("fetchPrComments", () => {
       { id: "T2", isResolved: false, isOutdated: true, body: "outdated" },
       { id: "T3", isResolved: false, isOutdated: false, body: "active" },
     ]);
-    mockExecFileSync.mockReturnValueOnce(page);
+    mockShFile.mockReturnValueOnce(page);
 
     const result = fetchPrComments({ prNumber: "99", cwd: "/repo" });
 
@@ -178,7 +174,7 @@ describe("fetchPrComments", () => {
     mockSafeSh.mockReturnValue("Fix bug\n");
 
     const emptyThreads = buildThreadsPage([], false, null);
-    mockExecFileSync.mockReturnValueOnce(emptyThreads);
+    mockShFile.mockReturnValueOnce(emptyThreads);
 
     const result = fetchPrComments({ prNumber: "99", cwd: "/repo" });
 
