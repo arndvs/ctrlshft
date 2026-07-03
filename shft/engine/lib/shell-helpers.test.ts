@@ -84,6 +84,11 @@ describe("sh", () => {
     expect(result).toBe("hello");
   });
 
+  it("forwards empty string input to stdin", () => {
+    const result = sh("node -e \"process.stdin.on('end', () => console.log('done')); process.stdin.resume()\"", { input: "" });
+    expect(result.trim()).toBe("done");
+  });
+
   it("throws ETIMEDOUT when command exceeds timeout", () => {
     try {
       sh('node -e "setTimeout(() => {}, 10000)"', { timeout: 500 });
@@ -109,6 +114,11 @@ describe("shFile", () => {
     expect(result.trim()).toBeTruthy();
   });
 
+  it("forwards empty string input to stdin", () => {
+    const result = shFile("node", ["-e", "process.stdin.on('end', () => console.log('done')); process.stdin.resume()"], { input: "" });
+    expect(result.trim()).toBe("done");
+  });
+
   it("throws when command exceeds timeout", () => {
     expect(() => shFile("node", ["-e", "setTimeout(() => {}, 10000)"], { timeout: 500 })).toThrow();
   });
@@ -125,6 +135,10 @@ describe("shFileInherit", () => {
 
   it("forwards input to stdin", () => {
     expect(() => shFileInherit("node", ["-e", "process.stdin.resume(); process.stdin.on('end', () => process.exit(0));"], { input: "hello" })).not.toThrow();
+  });
+
+  it("accepts empty string input", () => {
+    expect(() => shFileInherit("node", ["-e", "process.stdin.resume(); process.stdin.on('end', () => process.exit(0));"], { input: "" })).not.toThrow();
   });
 });
 

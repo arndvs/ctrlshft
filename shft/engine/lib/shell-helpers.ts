@@ -34,35 +34,39 @@ export function outputDirPath(): string {
 
 export function sh(cmd: string, cwdOrOpts?: string | ShellOpts): string {
   const opts = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : cwdOrOpts;
+  const hasInput = opts?.input !== undefined;
   return execSync(cmd, {
     encoding: "utf8",
     cwd: opts?.cwd,
     timeout: opts?.timeout ?? DEFAULT_TIMEOUT_MS,
     maxBuffer: opts?.maxBuffer ?? DEFAULT_MAX_BUFFER,
     input: opts?.input,
-    stdio: [opts?.input ? "pipe" : "ignore", "pipe", "pipe"],
+    stdio: [hasInput ? "pipe" : "ignore", "pipe", "pipe"],
   });
 }
 
 export function shFile(command: string, args: string[], cwdOrOpts?: string | ShellOpts): string {
   const opts = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : cwdOrOpts;
+  const hasInput = opts?.input !== undefined;
   return execFileSync(command, args, {
     encoding: "utf8",
     cwd: opts?.cwd,
     timeout: opts?.timeout ?? DEFAULT_TIMEOUT_MS,
     maxBuffer: opts?.maxBuffer ?? DEFAULT_MAX_BUFFER,
     input: opts?.input,
-    stdio: [opts?.input ? "pipe" : "ignore", "pipe", "pipe"],
+    stdio: [hasInput ? "pipe" : "ignore", "pipe", "pipe"],
   });
 }
 
 export function shFileInherit(command: string, args: string[], cwdOrOpts?: string | ShellOpts): void {
   const opts = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : cwdOrOpts;
+  const hasInput = opts?.input !== undefined;
   execFileSync(command, args, {
     cwd: opts?.cwd,
     timeout: opts?.timeout ?? DEFAULT_TIMEOUT_MS,
+    maxBuffer: opts?.maxBuffer ?? DEFAULT_MAX_BUFFER,
     input: opts?.input,
-    stdio: opts?.input ? ["pipe", "inherit", "inherit"] : "inherit",
+    stdio: hasInput ? ["pipe", "inherit", "inherit"] : "inherit",
   });
 }
 
