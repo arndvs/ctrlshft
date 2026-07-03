@@ -781,7 +781,8 @@ done < <(find "$HOOKS_DIR" -name '*.sh' -print0 2>/dev/null)
 # Helper: verify a pattern is defined in exactly _hooklib.sh (no other file).
 _defined_only_in_hooklib() {
     local pattern="$1" result
-    result=$(grep -lE "$pattern" "${_HL_FILES[@]}" 2>/dev/null || true)
+    [[ ${#_HL_FILES[@]} -eq 0 ]] && return 1
+    result=$(grep -lE -- "$pattern" "${_HL_FILES[@]}" 2>/dev/null || true)
     [[ "$result" == "$HOOKS_DIR/_hooklib.sh" ]]
 }
 
@@ -791,10 +792,12 @@ _assert "WRAPPER_PREFIX defined only in _hooklib.sh" \
 # Every hook that references WRAPPER_PREFIX also sources _hooklib.sh.
 _wrapper_prefix_consumers_source_lib() {
     local hook
-    for hook in $(grep -l 'WRAPPER_PREFIX' "${_HL_FILES[@]}" 2>/dev/null || true); do
+    [[ ${#_HL_FILES[@]} -eq 0 ]] && return 0
+    while IFS= read -r hook; do
+        [[ -z "$hook" ]] && continue
         [[ "$hook" == "$HOOKS_DIR/_hooklib.sh" ]] && continue
         grep -qE '^[[:space:]]*(source|\.)[[:space:]]+[^#]*_hooklib\.sh' "$hook" || return 1
-    done
+    done < <(grep -l -- 'WRAPPER_PREFIX' "${_HL_FILES[@]}" 2>/dev/null || true)
     return 0
 }
 _assert "hooks using WRAPPER_PREFIX source _hooklib.sh" _wrapper_prefix_consumers_source_lib
@@ -823,7 +826,8 @@ _no_old_deny_schema() {
     for _f in "${_HL_FILES[@]}"; do
         [[ "$(basename "$_f")" != "_hooklib.sh" ]] && non_hooklib+=("$_f")
     done
-    matches=$(grep -l '"decision"[[:space:]]*:[[:space:]]*"block"' "${non_hooklib[@]}" 2>/dev/null || true)
+    [[ ${#non_hooklib[@]} -eq 0 ]] && return 0
+    matches=$(grep -l -- '"decision"[[:space:]]*:[[:space:]]*"block"' "${non_hooklib[@]}" 2>/dev/null || true)
     if [[ -n "$matches" ]]; then
         echo "Hooks using old decision:block schema:" >&2
         while IFS= read -r match; do
