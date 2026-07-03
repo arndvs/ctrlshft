@@ -79,11 +79,10 @@ _test() {
     green "$label"
 }
 
-echo ""
-echo "═══ Hook Integration Tests ═══"
-echo ""
+# --- Group functions (run in parallel subshells) ---
 
 # ─── git-workflow-gate.sh ─────────────────────────────────────────────────────
+_group_workflow_gate() {
 echo "── git-workflow-gate.sh ──"
 
 # Hermetic: stub gh so frozen-branch detection never hits the network.
@@ -485,8 +484,10 @@ export PATH="$_GWG_OLD_PATH"
 rm -rf "$_GWG_SHIM_DIR"
 
 echo ""
+}
 
 # ─── secret-guard.sh ─────────────────────────────────────────────────────────
+_group_secret_guard() {
 echo "── secret-guard.sh ──"
 
 _test "allows normal commands" 0 \
@@ -638,11 +639,11 @@ _test "blocks tail secrets file" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"tail secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
     "protected secrets"
-
 echo ""
+}
 
-
-# ─── migration-guard.sh ──────────────────────────────────────────────────────
+# ─── migration-guard.sh + plan-quality-gate.sh ───────────────────────────────
+_group_migration_plan() {
 echo "── migration-guard.sh ──"
 
 _test "allows non-migration commands" 0 \
@@ -680,10 +681,11 @@ _test "warns on mkdir without plan (info, exit 0)" 0 \
     "$HOOKS_DIR/plan-quality-gate.sh" \
     "No plan file"
 _teardown_test_repo
-
 echo ""
+}
 
-# ─── git-post-push.sh ────────────────────────────────────────────────────────
+# ─── git-post-push.sh + stale-branches + compaction-guard + regression ───────
+_group_post_push() {
 echo "── git-post-push.sh ──"
 
 _setup_test_repo
@@ -787,8 +789,11 @@ _test "blocks env-wrapped cat secrets file" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"env cat secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
     "protected secrets"
-
 echo ""
+}
+
+# ─── _hooklib.sh shared-library guards ───────────────────────────────────────
+_group_hooklib() {
 echo "── _hooklib.sh shared-library guards (issue #169) ──"
 
 # WRAPPER_PREFIX is security-critical and must have exactly one definition
@@ -868,10 +873,61 @@ _no_old_deny_schema() {
     fi
 }
 _assert "no hook uses old decision:block schema" _no_old_deny_schema
+echo ""
+}
 
+# ─── Parallel execution ─────────────────────────────────────────────────────
+echo ""
+echo "═══ Hook Integration Tests ═══"
 echo ""
 
-# ─── Summary ─────────────────────────────────────────────────────────────────
+_PAR_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_CLEANUP_DIRS+=("$_PAR_DIR")
+
+_GROUPS=(_group_workflow_gate _group_secret_guard _group_migration_plan _group_post_push _group_hooklib)
+_PIDS=()
+
+for _g in "${_GROUPS[@]}"; do
+    (
+        PASS=0; FAIL=0; FAILURES=()
+        _CLEANUP_DIRS=()
+        _GRP_NAME="$_g"
+        _GRP_DIR="$_PAR_DIR"
+        _grp_exit() {
+            set +e
+            echo "$PASS" > "$_GRP_DIR/$_GRP_NAME.pass"
+            echo "$FAIL" > "$_GRP_DIR/$_GRP_NAME.fail"
+            printf '%s\n' "${FAILURES[@]+"${FAILURES[@]}"}" > "$_GRP_DIR/$_GRP_NAME.failures"
+            _cleanup
+        }
+        trap '_grp_exit' EXIT INT TERM
+        "$_g"
+    ) > "$_PAR_DIR/$_g.out" 2>&1 &
+    _PIDS+=($!)
+done
+
+_kill_groups() {
+    for _pid in "${_PIDS[@]}"; do kill "$_pid" 2>/dev/null || true; done
+    wait
+    exit 1
+}
+trap '_kill_groups' INT TERM
+
+for _pid in "${_PIDS[@]}"; do
+    wait "$_pid" || true
+done
+
+# Replay output in order and aggregate results
+PASS=0; FAIL=0; FAILURES=()
+for _g in "${_GROUPS[@]}"; do
+    cat "$_PAR_DIR/$_g.out"
+    PASS=$((PASS + $(<"$_PAR_DIR/$_g.pass")))
+    FAIL=$((FAIL + $(<"$_PAR_DIR/$_g.fail")))
+    while IFS= read -r _f; do
+        [[ -n "$_f" ]] && FAILURES+=("$_f")
+    done < "$_PAR_DIR/$_g.failures"
+done
+
 echo "═══════════════════════════════"
 echo "  Results: $PASS passed, $FAIL failed"
 echo "═══════════════════════════════"
