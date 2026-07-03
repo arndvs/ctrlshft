@@ -56,21 +56,18 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # Nested shell wrappers using -c/-lc are also treated as git commands when
 # the child shell command string contains a git invocation, so safety gates
 # cannot be bypassed via `bash -c 'git ...'` or `sh -lc 'git ...'`.
-# WRAPPER_PREFIX is provided by _hooklib.sh (sourced above) — canonical copy.
-COMMAND_BOUNDARY='((^|[;|({`]|&&|\|\||\$\()[[:space:]]*|(^|[[:space:]])(then|do|else)[[:space:]]+)'
-ASSIGNMENT_PREFIX='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'
-TOP_LEVEL_GIT="${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git[[:space:]]"
-NESTED_SHELL_GIT="${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}(bash|sh|dash|ksh|zsh)([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?)*[[:space:]]+-[[:alnum:]]*c[[:alnum:]]*[[:space:]]+.*git[[:space:]]"
+# WRAPPER_PREFIX, command-boundary fragments, ASSIGNMENT_PREFIX, _deny, and
+# _timeout are provided by _hooklib.sh (sourced above) — canonical copies.
+# This hook already treated backticks as boundaries before the extraction.
+TOP_LEVEL_GIT="${COMMAND_BOUNDARY_WITH_BACKTICK}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git[[:space:]]"
+NESTED_SHELL_GIT="${COMMAND_BOUNDARY_WITH_BACKTICK}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}(bash|sh|dash|ksh|zsh)([[:space:]]+-[-a-zA-Z0-9]+(=[^[:space:]]+)?)*[[:space:]]+-[[:alnum:]]*c[[:alnum:]]*[[:space:]]+.*git[[:space:]]"
 if ! echo "$COMMAND" | grep -qE "$TOP_LEVEL_GIT|$NESTED_SHELL_GIT"; then
     exit 0
 fi
 
 # --- Helper: deny output (JSON-safe via jq) ---
-# Defined early so the nested-shell denial below can use it.
-_deny() {
-    jq -cn --arg reason "$1" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason}}' >&2
-    exit 2
-}
+# _deny is provided by _hooklib.sh (sourced above); defined early so the
+# nested-shell denial below can use it before later definitions in this file.
 
 # --- Deny nested shell git invocations outright ---
 # If the command contains NESTED_SHELL_GIT, the child shell string cannot be
@@ -83,16 +80,7 @@ if echo "$COMMAND" | grep -qE "$NESTED_SHELL_GIT"; then
 fi
 
 # --- Helper: portable timeout (macOS may lack timeout) ---
-# When no timeout utility is available, return failure so callers that
-# use `if _timeout ...` gracefully skip the bounded operation rather
-# than running it unbounded (which could hang a PreToolUse gate).
-_timeout() {
-    if command -v timeout &>/dev/null; then
-        timeout "$@"
-    else
-        return 1
-    fi
-}
+# _timeout is provided by _hooklib.sh (sourced above).
 
 # --- Helper: get repo root (for .ctrlshft config) ---
 _repo_root() {
@@ -162,8 +150,7 @@ _config_bool() {
     echo "$default"
 }
 
-# (NOTE: _deny is defined earlier, near line 63, so the nested-shell
-# denial can use it before this point in the file.)
+# (NOTE: _deny is provided by _hooklib.sh (sourced above).)
 
 # --- Helper: warn output (allow with context, JSON-safe via jq) ---
 _warn() {

@@ -23,12 +23,12 @@ the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`).
 |-------|------------|----------|--------------|
 | `Sandcastle` | **Human** (start gate) | `agent-review-issue.yml` | `agent:review` |
 | `agent:review` | `agent-review-issue.yml` *(AGENT_PAT)* | `agent-plan-issue.yml` | `agent:implement` |
-| `agent:implement` | `agent-plan-issue.yml` / `agent-promote-queued.yml` / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-issue.yml` | `agent:pr-open` |
+| `agent:implement` | `agent-plan-issue.yml` / `agent-promote-queued.yml` / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-issue.yml` | `agent:pr-open` / `agent:implement-prd` |
 | `agent:pr-open` | `agent-implement-issue.yml` | — (state marker on issue) | awaits **verdict gate** on the PR |
 | `agent:fix` | **Human** (verdict gate, on PR) | `agent-fix-pr-feedback.yml` | pushes fixes → PR re-reviewed |
 | `agent:merge` | **Human** (verdict gate, on PR) | `agent-merge-pr.yml` | PR merged → issue closed |
 | `agent:update-branch` | **Human** (on PR) | `agent-update-branch.yml` | branch updated |
-| `agent:implement-prd` | **Human** / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | sub-issue created + implemented |
+| `agent:implement-prd` | **Human** / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | `agent:implement-prd` / `agent:review` / `agent:implement` |
 | `agent:queued` | **Human** / skills | `agent-promote-queued.yml` (when a blocker closes) | `agent:implement` once deps clear |
 | `agent:in-progress` | any active workflow | — (state marker) | removed on completion |
 | `agent:blocked` | any workflow on failure | — | needs human intervention |

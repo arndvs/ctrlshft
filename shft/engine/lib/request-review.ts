@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { shFile } from "./shell-helpers.js";
 
 /**
  * Re-request a review from GitHub Copilot on a pull request.
@@ -15,11 +15,7 @@ export function requestCopilotReview(opts: { owner: string; repo: string; prNumb
 
   // Check if PR is a draft
   try {
-    const prJson = execFileSync("gh", ["pr", "view", prNumber, "--repo", `${owner}/${repo}`, "--json", "isDraft", "--jq", ".isDraft"], {
-      encoding: "utf8",
-      cwd,
-      stdio: ["ignore", "pipe", "pipe"],
-    }).trim();
+    const prJson = shFile("gh", ["pr", "view", prNumber, "--repo", `${owner}/${repo}`, "--json", "isDraft", "--jq", ".isDraft"], cwd).trim();
 
     if (prJson === "true") {
       console.log(`PR #${prNumber} is a draft — skipping Copilot review request`);
@@ -37,10 +33,10 @@ export function requestCopilotReview(opts: { owner: string; repo: string; prNumb
     // on the Copilot APP ("may only be requested from collaborators"), which made
     // this request silently no-op. The pr-auto-copilot-review workflow uses the
     // same mechanism for the same reason.
-    execFileSync(
+    shFile(
       "gh",
       ["pr", "edit", prNumber, "--repo", `${owner}/${repo}`, "--add-reviewer", "copilot-pull-request-reviewer"],
-      { encoding: "utf8", cwd, stdio: ["ignore", "pipe", "pipe"] },
+      cwd,
     );
     console.log(`Requested Copilot review on PR #${prNumber}`);
   } catch (err: unknown) {

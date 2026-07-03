@@ -1,0 +1,18 @@
+# CODEOWNERS — @arndvs owns the safety-critical guard surface.
+#
+# This is enforced on main only once the server ruleset requires code-owner
+# review (Phase 2, after the agent has a separate identity — see
+# bin/apply-branch-ruleset.sh). Until then it documents ownership and surfaces
+# the right reviewer on PRs that touch these paths.
+
+# The branch-write guards and their enforcement
+/git-hooks/                   @arndvs
+/hooks/                       @arndvs
+/.github/rulesets/            @arndvs
+/.github/workflows/           @arndvs
+/bin/apply-branch-ruleset.sh  @arndvs
+/test/branch-write-guard.sh   @arndvs
+
+# The agent constitution
+/global.instructions.md       @arndvs
+/CLAUDE.base.md               @arndvs

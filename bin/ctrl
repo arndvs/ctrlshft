@@ -616,6 +616,15 @@ except:
         bash "$DOTFILES/bin/smoke-sandcastle-pr-path.sh" "$@"
         ;;
 
+    # ── smoke-sandcastle-report ──────────────────────────────────────────────
+    smoke-sandcastle-report|sandcastle-report)
+        if [[ ! -f "$DOTFILES/bin/smoke-sandcastle-report.sh" ]]; then
+            red "smoke-sandcastle-report.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/smoke-sandcastle-report.sh" "$@"
+        ;;
+
     # ── sandcastle-wire-secrets ──────────────────────────────────────────────
     sandcastle-wire-secrets|wire-secrets)
         if [[ ! -f "$DOTFILES/bin/sandcastle-wire-secrets.sh" ]]; then

@@ -19,6 +19,15 @@ describe("parseCli", () => {
     expect(result.pr).toBe("99");
   });
 
+  it("parses address-review repo and round flags", () => {
+    const result = parseCli(["address-review", "--pr", "99", "--repo", "/work/repo", "--round", "2", "--max-rounds", "3"]);
+    expect(result.workflow).toBe("address-review");
+    expect(result.pr).toBe("99");
+    expect(result.repo).toBe("/work/repo");
+    expect(result.round).toBe("2");
+    expect(result.maxRounds).toBe("3");
+  });
+
   it("throws when no workflow name is provided", () => {
     expect(() => parseCli([])).toThrow("Missing workflow name");
   });

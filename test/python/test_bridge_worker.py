@@ -13,8 +13,10 @@ Run: python3 -m unittest discover -s test/python -p "test_bridge_worker.py" -v
 """
 
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -22,13 +24,17 @@ from unittest import mock
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+import bridge.worker as worker_module
 from bridge.worker import (
     _build_subprocess_env,
     _dispatch_address_review,
     _dispatch_shft_afk,
+    _process_job,
+    _reap_orphaned_workspaces,
     _run_subprocess,
 )
-from bridge.github import Token
+from bridge import db
+from bridge.github import PrMetadata, Token, UnresolvedThread
 
 _TOKEN = Token(value="ghs_test", expires_at="2026-01-01T00:00:00Z")
 
@@ -178,13 +184,14 @@ class TestDispatch(unittest.TestCase):
     def test_address_review_cmd(self):
         # Pin the exact executable + argument ordering the engine expects, not
         # just membership — a reordered, renamed, or dropped argv must fail here.
-        engine_main = str(Path("/df") / "shft" / "engine" / "main.ts")
+        sandcastle_run = str(Path("/df") / ".sandcastle" / "run.ts")
+        tsx_bin = str(Path("/df") / ".sandcastle" / "engine" / "node_modules" / ".bin" / "tsx")
         cmd = self._capture_cmd(
             _dispatch_address_review, pr_number=7, iteration_num=2, max_iterations=3
         )
         self.assertEqual(cmd, [
-            "npx", "tsx", engine_main,
-            "--workflow", "address-review",
+            tsx_bin, sandcastle_run,
+            "address-review",
             "--repo", str(Path("/ws")),
             "--pr", "7",
             "--round", "2",
@@ -200,6 +207,296 @@ class TestDispatch(unittest.TestCase):
         shft_bin = str(Path("/df") / "shft" / "shft")
         cmd = self._capture_cmd(_dispatch_shft_afk, tracking_number=None)
         self.assertEqual(cmd, [shft_bin, "afk", "1"])
+
+
+class TestReapOrphanedWorkspaces(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.db_path = self.root / "state.db"
+        self.workspaces_root = self.root / "workspaces"
+        db.init_db(self.db_path)
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _cfg(self):
+        cfg = mock.MagicMock()
+        cfg.db_path = self.db_path
+        cfg.workspaces_root = self.workspaces_root
+        return cfg
+
+    def test_reaper_deletes_inactive_workspace_with_separator_in_name(self):
+        inactive = self.workspaces_root / "org--name--repo--name--pr7"
+        inactive.mkdir(parents=True)
+
+        _reap_orphaned_workspaces(self._cfg())
+
+        self.assertFalse(inactive.exists())
+
+    def test_reaper_preserves_active_workspace(self):
+        active = self.workspaces_root / "org--repo--pr7"
+        active.mkdir(parents=True)
+        with db.connect(self.db_path) as conn:
+            db.enqueue(
+                conn,
+                delivery_id="d1",
+                event_type="pull_request_review",
+                repo_full_name="org/repo",
+                pr_number=7,
+                payload={},
+            )
+
+        _reap_orphaned_workspaces(self._cfg())
+
+        self.assertTrue(active.exists())
+
+    def test_reaper_skips_symlinks(self):
+        target = self.root / "outside"
+        target.mkdir()
+        link = self.workspaces_root / "org--repo--pr7"
+        self.workspaces_root.mkdir()
+        try:
+            link.symlink_to(target, target_is_directory=True)
+        except OSError:
+            child = mock.MagicMock()
+            child.is_dir.return_value = True
+            child.is_symlink.return_value = True
+            root = mock.MagicMock()
+            root.exists.return_value = True
+            root.iterdir.return_value = [child]
+            cfg = self._cfg()
+            cfg.workspaces_root = root
+            with mock.patch("bridge.worker.shutil.rmtree") as rmtree:
+                _reap_orphaned_workspaces(cfg)
+            rmtree.assert_not_called()
+            return
+
+        _reap_orphaned_workspaces(self._cfg())
+
+        self.assertTrue(link.exists())
+        self.assertTrue(target.exists())
+
+
+class TestProcessJob(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.db_path = self.root / "state.db"
+        db.init_db(self.db_path)
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _cfg(self):
+        cfg = mock.MagicMock()
+        cfg.db_path = self.db_path
+        cfg.hud_script = Path("/hud")
+        cfg.mint_script = Path("/mint")
+        cfg.max_iterations = 3
+        cfg.copilot_bot_login = "copilot-pull-request-reviewer[bot]"
+        cfg.workspaces_root = self.root / "workspaces"
+        return cfg
+
+    def _claimed_job(self):
+        with db.connect(self.db_path) as conn:
+            db.enqueue(
+                conn,
+                delivery_id="d1",
+                event_type="pull_request_review",
+                repo_full_name="org/repo",
+                pr_number=7,
+                payload={"review": {"html_url": "https://example.test/review"}},
+            )
+            return db.claim_next_job(conn, "worker-1")
+
+    def test_dispatch_failure_does_not_bump_iteration(self):
+        cfg = self._cfg()
+        job = self._claimed_job()
+        thread = UnresolvedThread(
+            thread_id="thread-1",
+            url="https://example.test/thread",
+            path="bridge/worker.py",
+            line=1,
+            body="fix this",
+            diff_hunk=None,
+            author="copilot-pull-request-reviewer[bot]",
+        )
+
+        with mock.patch("bridge.worker.hud.emit"), \
+                mock.patch("bridge.worker.github.mint_token", return_value=_TOKEN), \
+                mock.patch("bridge.worker.github.fetch_unresolved_copilot_threads", return_value=[thread]), \
+                mock.patch("bridge.worker.github.find_tracking_issue", return_value=None), \
+                mock.patch(
+                    "bridge.worker.github.fetch_pr_metadata",
+                    return_value=PrMetadata(
+                        head_ref="feature",
+                        head_repo_full_name="org/repo",
+                        title="Test PR",
+                        html_url="https://example.test/pr/7",
+                    ),
+                ), \
+                mock.patch("bridge.worker.workspace.prepare", return_value=self.root / "workspaces" / "org--repo--pr7"), \
+                mock.patch("bridge.worker.github.create_issue", return_value=42), \
+                mock.patch("bridge.worker._dispatch_address_review", side_effect=RuntimeError("dispatch failed")):
+            with self.assertRaises(RuntimeError):
+                _process_job(cfg, job, "worker-1")
+
+        with db.connect(self.db_path) as conn:
+            self.assertEqual(db.read_iteration(conn, "org/repo#7"), 0)
+
+    def test_iteration_event_matches_dispatched_round(self):
+        cfg = self._cfg()
+        job = self._claimed_job()
+        thread = UnresolvedThread(
+            thread_id="thread-1",
+            url="https://example.test/thread",
+            path="bridge/worker.py",
+            line=1,
+            body="fix this",
+            diff_hunk=None,
+            author="copilot-pull-request-reviewer[bot]",
+        )
+        emit_calls = []
+
+        def capture_emit(_hud_script, event, **extra):
+            emit_calls.append((event, extra))
+
+        with mock.patch("bridge.worker.hud.emit", side_effect=capture_emit), \
+                mock.patch("bridge.worker.github.mint_token", return_value=_TOKEN), \
+                mock.patch("bridge.worker.github.fetch_unresolved_copilot_threads", return_value=[thread]), \
+                mock.patch("bridge.worker.github.find_tracking_issue", return_value=None), \
+                mock.patch(
+                    "bridge.worker.github.fetch_pr_metadata",
+                    return_value=PrMetadata(
+                        head_ref="feature",
+                        head_repo_full_name="org/repo",
+                        title="Test PR",
+                        html_url="https://example.test/pr/7",
+                    ),
+                ), \
+                mock.patch("bridge.worker.workspace.prepare", return_value=self.root / "workspaces" / "org--repo--pr7"), \
+                mock.patch("bridge.worker.github.create_issue", return_value=42), \
+                mock.patch("bridge.worker._run_subprocess"):
+            _process_job(cfg, job, "worker-1")
+
+        iteration_event = next(
+            extra for event, extra in emit_calls if event == "bridge.job.iteration"
+        )
+        address_review_event = next(
+            extra for event, extra in emit_calls if event == "bridge.job.address_review"
+        )
+        self.assertEqual(iteration_event["iteration"], address_review_event["round"])
+
+    def test_iteration_event_not_emitted_when_cap_exceeded(self):
+        cfg = self._cfg()
+        job = self._claimed_job()
+        thread = UnresolvedThread(
+            thread_id="thread-1",
+            url="https://example.test/thread",
+            path="bridge/worker.py",
+            line=1,
+            body="fix this",
+            diff_hunk=None,
+            author="copilot-pull-request-reviewer[bot]",
+        )
+        emit_calls = []
+
+        with db.connect(self.db_path) as conn:
+            for _ in range(cfg.max_iterations):
+                db.bump_iteration(conn, "org/repo#7")
+
+        def capture_emit(_hud_script, event, **extra):
+            emit_calls.append((event, extra))
+
+        with mock.patch("bridge.worker.hud.emit", side_effect=capture_emit), \
+                mock.patch("bridge.worker.github.mint_token", return_value=_TOKEN), \
+                mock.patch("bridge.worker.github.fetch_unresolved_copilot_threads", return_value=[thread]), \
+                mock.patch("bridge.worker.github.find_tracking_issue", return_value=None), \
+                mock.patch("bridge.worker._dispatch_address_review") as dispatch:
+            _process_job(cfg, job, "worker-1")
+
+        event_names = [event for event, _extra in emit_calls]
+        self.assertNotIn("bridge.job.iteration", event_names)
+        self.assertIn("bridge.loop.cap_exceeded", event_names)
+        dispatch.assert_not_called()
+
+    def test_run_cleans_once_after_processed_job(self):
+        cfg = self._cfg()
+        job = self._claimed_job()
+
+        with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
+                mock.patch.object(cfg, "require_github_app"), \
+                mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker.db.init_db"), \
+                mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
+                mock.patch("bridge.worker.db.claim_next_job", side_effect=[job, None]), \
+                mock.patch("bridge.worker._process_job"), \
+                mock.patch("bridge.worker.db.mark_done"), \
+                mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
+                mock.patch("bridge.worker.time.sleep", side_effect=KeyboardInterrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                worker_module.run("worker-1")
+
+        cleanup.assert_called_once_with(cfg, job, "worker-1")
+
+    def test_run_does_not_cleanup_or_emit_cleaned_when_no_job_claimed(self):
+        cfg = self._cfg()
+
+        with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
+                mock.patch.object(cfg, "require_github_app"), \
+                mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker.db.init_db"), \
+                mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
+                mock.patch("bridge.worker.db.claim_next_job", return_value=None), \
+                mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
+                mock.patch("bridge.worker.hud.emit") as emit, \
+                mock.patch("bridge.worker.time.sleep", side_effect=KeyboardInterrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                worker_module.run("worker-1")
+
+        cleanup.assert_not_called()
+        self.assertFalse(
+            any(call.args[1] == "bridge.workspace.cleaned" for call in emit.call_args_list)
+        )
+
+
+class TestCleanupWorkspaceAfterJob(unittest.TestCase):
+    def test_missing_workspace_does_not_emit_cleaned_event(self):
+        cfg = mock.MagicMock()
+        cfg.hud_script = Path("/hud")
+        cfg.workspaces_root = Path("/workspaces")
+        job = mock.MagicMock()
+        job.repo_full_name = "org/repo"
+        job.claim_key = "org/repo#7"
+        workspace_path = mock.MagicMock()
+        workspace_path.exists.return_value = False
+
+        with mock.patch("bridge.worker.workspace.cleanup") as cleanup, \
+                mock.patch("bridge.worker.workspace.workspace_path", return_value=workspace_path), \
+                mock.patch("bridge.worker.hud.emit") as emit:
+            worker_module._cleanup_workspace_after_job(cfg, job, "worker-1")
+
+        cleanup.assert_called_once_with(Path("/workspaces"), "org/repo#7")
+        emit.assert_not_called()
+
+    def test_hud_emit_failure_does_not_report_cleanup_failure(self):
+        cfg = mock.MagicMock()
+        cfg.hud_script = Path("/hud")
+        cfg.workspaces_root = Path("/workspaces")
+        job = mock.MagicMock()
+        job.repo_full_name = "org/repo"
+        job.claim_key = "org/repo#7"
+        workspace_path = mock.MagicMock()
+        workspace_path.exists.return_value = True
+
+        with mock.patch("bridge.worker.workspace.cleanup") as cleanup, \
+                mock.patch("bridge.worker.workspace.workspace_path", return_value=workspace_path), \
+                mock.patch("bridge.worker.hud.emit", side_effect=RuntimeError("hud failed")), \
+                mock.patch("bridge.worker.logger.warning") as warning:
+            worker_module._cleanup_workspace_after_job(cfg, job, "worker-1")
+
+        cleanup.assert_called_once_with(Path("/workspaces"), "org/repo#7")
+        warning.assert_called_once()
+        self.assertIn("HUD cleanup event failed", warning.call_args.args[0])
 
 
 if __name__ == "__main__":

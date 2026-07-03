@@ -37,7 +37,13 @@ _HTTP_PORT="${HUD_PORT:-7823}"
 # Returns 0 (true) if the pipe exists, is a FIFO, and we're not on MSYS/Windows
 # where mkfifo creates POSIX pipes that have no reader.
 _can_use_pipe() {
-    [[ -p "$_PIPE" && "$(uname -o 2>/dev/null)" != "Msys" ]]
+    [[ -p "$_PIPE" && "$(uname -o 2>/dev/null)" != "Msys" ]] || return 1
+    # Verify daemon is actually alive — stale FIFO after crash would block writers
+    local _pid_file="$_WD/hud-daemon.pid"
+    [[ -f "$_pid_file" ]] || return 1
+    local _pid
+    _pid=$(cat "$_pid_file" 2>/dev/null) || return 1
+    kill -0 "$_pid" 2>/dev/null
 }
 
 # ── write_hud_event ─────────────────────────────────────────────────────

@@ -257,6 +257,18 @@ def bump_iteration(conn: sqlite3.Connection, claim_key: str) -> int:
     return row["current_iteration"]
 
 
+def read_iteration(conn: sqlite3.Connection, claim_key: str) -> int:
+    """Return the current iteration count without incrementing.
+
+    Returns 0 if no row exists yet (first time seeing this claim_key).
+    """
+    row = conn.execute(
+        "SELECT current_iteration FROM claim_keys WHERE claim_key = ?",
+        (claim_key,),
+    ).fetchone()
+    return row["current_iteration"] if row else 0
+
+
 def requeue_stale_claims(
     conn: sqlite3.Connection,
     timeout_seconds: int = 1800,

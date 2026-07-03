@@ -32,6 +32,14 @@ Output "Read global instructions." to chat to acknowledge you read this file.
 - Prefer clearing context and starting fresh over compacting. Repeated compaction leaves sediment — each round loses nuance and accumulates errors. When context is high, commit and start a new conversation. If you must compact (once per session max), pass summarization instructions describing what you're about to do next
 </general>
 
+<branch-protection>
+NEVER push or merge to a production branch (main/master) with an AI agent — this is enforced, not advisory.
+- Promotions to main happen ONLY through a human-reviewed pull request that a HUMAN merges. An agent MAY open a `dev → main` promotion PR, but must never `gh pr merge` it, `git push` to main, or `--force`/`--force-with-lease` main.
+- Work on `ai/*` feature branches → PR. An agent may merge feature → dev; a HUMAN merges dev → main.
+- Enforcement layers (do not attempt to bypass): a git-native `pre-push` hook blocks pushes to main on this repo (human break-glass only: `CTRL_ALLOW_MAIN_PUSH=1`); `test/branch-write-guard.sh` fails loud if that guard regresses; and the server-side ruleset in `.github/rulesets/main.json` is the unavoidable backstop.
+- If a corrective action seems to require writing to main (e.g. reverting a bad merge), STOP and ask the human — they perform it, or explicitly authorize the specific one-off.
+</branch-protection>
+
 <skill-context>
 If the ACTIVE_CONTEXTS environment variable is set (by ~/dotfiles/bin/detect-context.sh), use it as the authoritative context list. Otherwise, check the workspace for file signatures (next.config.*, composer.json, sanity.config.*, prisma/schema.prisma, etc.) before loading domain-specific skills. Do not load skills irrelevant to the current workspace context.
 </skill-context>

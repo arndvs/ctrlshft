@@ -2,18 +2,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { deferToIssue } from "./defer-to-issue.js";
 import type { ScoredComment } from "./types.js";
 
-vi.mock("node:child_process", () => ({
-  execFileSync: vi.fn(),
+vi.mock("./shell-helpers.js", () => ({
+  shFile: vi.fn(),
 }));
 
 vi.mock("./resolve-threads.js", () => ({
   resolveThread: vi.fn(),
 }));
 
-import { execFileSync } from "node:child_process";
+import { shFile } from "./shell-helpers.js";
 import { resolveThread } from "./resolve-threads.js";
 
-const mockExecFileSync = vi.mocked(execFileSync);
+const mockShFile = vi.mocked(shFile);
 const mockResolveThread = vi.mocked(resolveThread);
 
 const basePr = { prNumber: "42", owner: "acme", repo: "widgets", cwd: "/repo" };
@@ -33,7 +33,7 @@ function makeScoredComment(overrides?: Partial<ScoredComment>): ScoredComment {
 
 describe("deferToIssue", () => {
   beforeEach(() => {
-    mockExecFileSync.mockReset();
+    mockShFile.mockReset();
     mockResolveThread.mockReset();
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
@@ -42,7 +42,7 @@ describe("deferToIssue", () => {
     // First call: findExistingIssue returns empty array
     // Second call: issue create returns new issue
     // Third call: postThreadReply
-    mockExecFileSync
+    mockShFile
       .mockReturnValueOnce(JSON.stringify([]))
       .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
       .mockReturnValueOnce("");
@@ -52,14 +52,14 @@ describe("deferToIssue", () => {
     expect(result.issueNumber).toBe(99);
 
     // Verify issue creation call
-    const createCall = mockExecFileSync.mock.calls[1]!;
+    const createCall = mockShFile.mock.calls[1]!;
     expect(createCall[1]).toContain("--label");
     expect(createCall[1]).toContain("shft");
     expect(createCall[1]).toContain("hitl");
   });
 
   it("resolves the thread after creating the issue", () => {
-    mockExecFileSync
+    mockShFile
       .mockReturnValueOnce(JSON.stringify([]))
       .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
       .mockReturnValueOnce("");
@@ -73,26 +73,26 @@ describe("deferToIssue", () => {
     const scored = makeScoredComment({ comment: { path: "src/utils.ts", line: 10, body: "Short comment" } });
     const expectedTitle = "review: Short comment";
 
-    mockExecFileSync.mockReturnValueOnce(JSON.stringify([{ number: 50, url: "https://github.com/acme/widgets/issues/50", title: expectedTitle }]));
+    mockShFile.mockReturnValueOnce(JSON.stringify([{ number: 50, url: "https://github.com/acme/widgets/issues/50", title: expectedTitle }]));
     // Thread reply call
-    mockExecFileSync.mockReturnValueOnce("");
+    mockShFile.mockReturnValueOnce("");
 
     const result = deferToIssue({ scored, pr: basePr, threadId: "PRRT_dup", cwd: "/repo" });
 
     expect(result.issueNumber).toBe(50);
     // Should NOT have called issue create (only findExisting + threadReply)
-    expect(mockExecFileSync).toHaveBeenCalledTimes(2);
+    expect(mockShFile).toHaveBeenCalledTimes(2);
   });
 
   it("includes score breakdown in issue body", () => {
-    mockExecFileSync
+    mockShFile
       .mockReturnValueOnce(JSON.stringify([]))
       .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
       .mockReturnValueOnce("");
 
     deferToIssue({ scored: makeScoredComment(), pr: basePr, threadId: "PRRT_abc", cwd: "/repo" });
 
-    const createCall = mockExecFileSync.mock.calls[1]!;
+    const createCall = mockShFile.mock.calls[1]!;
     const bodyArg = (createCall[1] as string[])[(createCall[1] as string[]).indexOf("--body") + 1]!;
     expect(bodyArg).toContain("30/100");
     expect(bodyArg).toContain("vague language: -25");
@@ -100,7 +100,7 @@ describe("deferToIssue", () => {
   });
 
   it("posts a thread reply linking to the created issue", () => {
-    mockExecFileSync
+    mockShFile
       .mockReturnValueOnce(JSON.stringify([]))
       .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
       .mockReturnValueOnce("");
@@ -108,13 +108,13 @@ describe("deferToIssue", () => {
     deferToIssue({ scored: makeScoredComment(), pr: basePr, threadId: "PRRT_abc", cwd: "/repo" });
 
     // Third call is the thread reply
-    const replyCall = mockExecFileSync.mock.calls[2]!;
+    const replyCall = mockShFile.mock.calls[2]!;
     const args = replyCall[1] as string[];
     expect(args.some((a) => a.includes("Deferred to #99"))).toBe(true);
   });
 
   it("does not resolve the thread when posting the backlink fails", () => {
-    mockExecFileSync
+    mockShFile
       .mockReturnValueOnce(JSON.stringify([]))
       .mockReturnValueOnce("https://github.com/acme/widgets/issues/99\n")
       .mockImplementationOnce(() => {
