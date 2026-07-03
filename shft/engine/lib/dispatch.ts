@@ -6,7 +6,7 @@ import { StructuredOutputError } from "@ai-hero/sandcastle";
 export type WorkflowRunner = (opts: { args: CliArgs; repoDir: string; templatesDir: string }) => Promise<void>;
 
 const workflows: Record<string, WorkflowRunner> = {
-  "review-issue": async ({ args, repoDir, templatesDir }) => {
+  "review-issue": async ({ args, repoDir }) => {
     if (!args.issue) throw new Error("review-issue requires --issue <number>");
     const { runReviewIssue } = await import("../workflows/review-issue.js");
     runReviewIssue({ issueNumber: args.issue, repoDir });

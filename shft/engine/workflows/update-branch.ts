@@ -1,13 +1,13 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
-import { run, Output, claudeCode } from "@ai-hero/sandcastle";
+import { Output, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { runWithExtraction } from "../lib/run-with-extraction.js";
 import { UpdateBranchOutput } from "../schemas/update-branch-output.js";
 import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
-import { required, fail, sh, shFile, shFileInherit } from "../lib/shell-helpers.js";
+import { fail, sh, shFile, shFileInherit } from "../lib/shell-helpers.js";
 import { resolveDefaultExtractionsDir, resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
