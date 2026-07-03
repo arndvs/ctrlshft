@@ -29,7 +29,7 @@ Always clone to `~/dotfiles` — paths are hardcoded across the project.
 ## Testing
 
 ```bash
-npm test              # full suite (all 6 test suites in parallel)
+npm test              # full suite (all 7 test suites in parallel)
 npm run test:fast     # fast-path: skips hooks-integration (~10s vs ~90s)
 ```
 

@@ -1,0 +1,253 @@
+#!/usr/bin/env bash
+# test/sandcastle-smoke-coverage.sh — Verify every Sandcastle workflow has smoke
+# test coverage and the report aggregator inventory matches installed workflows.
+#
+# This is the structural QA gate: it ensures no workflow falls through the cracks
+# when new agent workflows are added. It checks:
+#   1. Every installed agent workflow is listed in the report aggregator.
+#   2. Every agent workflow maps to at least one smoke script or report path.
+#   3. The smoke matrix doc exists and references every workflow.
+#   4. The nightly cron workflow exists and can exercise the report.
+#
+# Usage: bash test/sandcastle-smoke-coverage.sh
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TMP_ROOT="$ROOT/working/tmp/sandcastle-smoke-coverage-test"
+
+PASS=0
+FAIL=0
+FAILURES=()
+
+cleanup() {
+    rm -rf "$TMP_ROOT"
+}
+trap cleanup EXIT
+
+_record_pass() {
+    local label="$1"
+    PASS=$((PASS + 1))
+    printf "  \033[32m✓\033[0m %s\n" "$label"
+}
+
+_record_fail() {
+    local label="$1"
+    local detail="$2"
+    FAIL=$((FAIL + 1))
+    FAILURES+=("$label — $detail")
+    printf "  \033[31m✗\033[0m %s — %s\n" "$label" "$detail"
+}
+
+echo
+echo "Sandcastle smoke coverage verification"
+echo "════════════════════════════════════════════════"
+
+rm -rf "$TMP_ROOT"
+mkdir -p "$TMP_ROOT"
+
+# ── 1. Installed agent workflows ─────────────────────────────────────────────
+# Collect every installed agent-* workflow file.
+installed_agent_workflows=()
+for wf in "$ROOT"/.github/workflows/agent-*.yml; do
+    [[ -f "$wf" ]] || continue
+    installed_agent_workflows+=("$(basename "$wf")")
+done
+
+if [[ ${#installed_agent_workflows[@]} -ge 10 ]]; then
+    _record_pass "at least 10 agent workflows installed (${#installed_agent_workflows[@]})"
+else
+    _record_fail "at least 10 agent workflows installed" "found ${#installed_agent_workflows[@]}"
+fi
+
+# ── 2. Report aggregator inventory completeness ──────────────────────────────
+# The report aggregator lists workflows by display name in SANDCASTLE_WORKFLOWS.
+# Map each installed agent workflow file to its display name and check presence.
+report_script="$ROOT/bin/smoke-sandcastle-report.sh"
+if [[ ! -f "$report_script" ]]; then
+    _record_fail "report aggregator script exists" "bin/smoke-sandcastle-report.sh not found"
+else
+    _record_pass "report aggregator script exists"
+
+    # Extract the SANDCASTLE_WORKFLOWS array entries from the report script.
+    report_workflows="$TMP_ROOT/report-workflows.txt"
+    sed -n '/^SANDCASTLE_WORKFLOWS=(/,/^)$/p' "$report_script" \
+        | grep -E '^[[:space:]]+"' \
+        | sed 's/^[[:space:]]*"//;s/"$//' > "$report_workflows"
+
+    for wf_file in "${installed_agent_workflows[@]}"; do
+        # Derive the expected display name from the workflow file.
+        wf_path="$ROOT/.github/workflows/$wf_file"
+        display_name="$(grep -E '^name:' "$wf_path" | head -1 | sed 's/^name:[[:space:]]*"//;s/"$//' | sed "s/^name:[[:space:]]*//")"
+        # Strip any remaining quotes
+        display_name="${display_name//\"/}"
+
+        if grep -qF "$display_name" "$report_workflows"; then
+            _record_pass "report tracks $wf_file ($display_name)"
+        else
+            _record_fail "report tracks $wf_file" "display name '$display_name' not in SANDCASTLE_WORKFLOWS"
+        fi
+    done
+fi
+
+# ── 3. Smoke script coverage per workflow ────────────────────────────────────
+# Each agent workflow should be referenced by at least one smoke script or
+# covered by the report aggregator's passive query.
+smoke_scripts=(
+    "$ROOT/bin/smoke-sandcastle-dispatch.sh"
+    "$ROOT/bin/smoke-sandcastle-issue-labels.sh"
+    "$ROOT/bin/smoke-sandcastle-pr-path.sh"
+    "$ROOT/bin/smoke-sandcastle-promote-queued.sh"
+    "$ROOT/bin/smoke-sandcastle-scheduled.sh"
+    "$ROOT/bin/smoke-sandcastle-report.sh"
+)
+
+# Coverage mapping: each workflow needs active coverage (a smoke script that
+# directly exercises it) OR passive coverage (the report aggregator queries its
+# run history). We track both.
+declare -A active_coverage
+declare -A passive_coverage
+
+for wf_file in "${installed_agent_workflows[@]}"; do
+    wf_stem="${wf_file%.yml}"
+    active_coverage[$wf_file]=""
+    passive_coverage[$wf_file]=""
+
+    # Check active coverage (smoke scripts that reference this workflow by file name)
+    for smoke in "${smoke_scripts[@]}"; do
+        [[ -f "$smoke" ]] || continue
+        smoke_base="$(basename "$smoke")"
+        if grep -qF "$wf_stem" "$smoke"; then
+            active_coverage[$wf_file]="${active_coverage[$wf_file]} $smoke_base"
+        fi
+    done
+
+    # Passive coverage: the report aggregator queries all 16 workflows by name
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    display_name="$(grep -E '^name:' "$wf_path" | head -1 | sed 's/^name:[[:space:]]*"//;s/"$//' | sed "s/^name:[[:space:]]*//")"
+    display_name="${display_name//\"/}"
+    if grep -qF "$display_name" "$report_script" 2>/dev/null; then
+        passive_coverage[$wf_file]="smoke-sandcastle-report.sh"
+    fi
+done
+
+active_count=0
+passive_only_count=0
+uncovered_count=0
+for wf_file in "${installed_agent_workflows[@]}"; do
+    active="${active_coverage[$wf_file]:-}"
+    passive="${passive_coverage[$wf_file]:-}"
+
+    if [[ -n "$active" ]]; then
+        active_count=$((active_count + 1))
+        _record_pass "$wf_file has active smoke coverage:${active}"
+    elif [[ -n "$passive" ]]; then
+        passive_only_count=$((passive_only_count + 1))
+        _record_pass "$wf_file has passive report coverage ($passive)"
+    else
+        uncovered_count=$((uncovered_count + 1))
+        _record_fail "$wf_file has smoke coverage" "no active or passive coverage found"
+    fi
+done
+
+echo ""
+echo "  Coverage summary: $active_count active, $passive_only_count passive-only, $uncovered_count uncovered"
+
+# ── 4. Smoke matrix documentation exists ─────────────────────────────────────
+matrix_doc="$ROOT/shft/docs/full-smoke-matrix.md"
+if [[ -f "$matrix_doc" ]]; then
+    _record_pass "full smoke matrix doc exists"
+
+    # Verify matrix references every installed agent workflow
+    matrix_missing=()
+    for wf_file in "${installed_agent_workflows[@]}"; do
+        wf_stem="${wf_file%.yml}"
+        if ! grep -qF "$wf_stem" "$matrix_doc"; then
+            matrix_missing+=("$wf_stem")
+        fi
+    done
+    if [[ ${#matrix_missing[@]} -eq 0 ]]; then
+        _record_pass "smoke matrix references all ${#installed_agent_workflows[@]} agent workflows"
+    else
+        _record_fail "smoke matrix references all agent workflows" "missing: ${matrix_missing[*]}"
+    fi
+else
+    _record_fail "full smoke matrix doc exists" "$matrix_doc not found"
+fi
+
+# ── 5. Nightly cron workflow exists and uses the report ──────────────────────
+nightly="$ROOT/.github/workflows/nightly-smoke.yml"
+if [[ -f "$nightly" ]]; then
+    _record_pass "nightly smoke workflow exists"
+
+    if grep -qE 'schedule:' "$nightly"; then
+        _record_pass "nightly workflow has schedule trigger"
+    else
+        _record_fail "nightly workflow has schedule trigger" "no schedule: found"
+    fi
+
+    if grep -q 'smoke-sandcastle-report' "$nightly"; then
+        _record_pass "nightly workflow runs the report aggregator"
+    else
+        _record_fail "nightly workflow runs the report aggregator" "no smoke-sandcastle-report reference"
+    fi
+
+    if grep -q 'upload-artifact' "$nightly"; then
+        _record_pass "nightly workflow uploads report artifacts"
+    else
+        _record_fail "nightly workflow uploads report artifacts" "no upload-artifact step"
+    fi
+else
+    _record_fail "nightly smoke workflow exists" "$nightly not found"
+fi
+
+# ── 6. Smoke test scripts exist for each smoke script ────────────────────────
+# Each bin/smoke-sandcastle-*.sh should have a corresponding test file.
+# Naming conventions vary (sandcastle-FOO-smoke.sh, sandcastle-FOO.sh, etc.),
+# so we use a broad glob to find any test file whose name contains the key stem.
+echo ""
+echo "  Smoke test harness coverage:"
+for smoke in "$ROOT"/bin/smoke-sandcastle-*.sh; do
+    [[ -f "$smoke" ]] || continue
+    smoke_base="$(basename "$smoke" .sh)"
+    # Extract the key stem: smoke-sandcastle-dispatch -> dispatch
+    key_stem="${smoke_base#smoke-sandcastle-}"
+
+    # Look for any test file matching *sandcastle*KEY_STEM*
+    # Also try without trailing 's' (issue-labels -> issue-label) for naming variants.
+    found_test=""
+    for pattern in "$key_stem" "${key_stem%s}"; do
+        for candidate in "$ROOT"/test/sandcastle-*"$pattern"*.sh; do
+            if [[ -f "$candidate" ]]; then
+                found_test="$(basename "$candidate")"
+                break 2
+            fi
+        done
+    done
+
+    if [[ -n "$found_test" ]]; then
+        _record_pass "test exists for $smoke_base ($found_test)"
+    else
+        _record_fail "test exists for $smoke_base" "no test/sandcastle-*${key_stem}*.sh found"
+    fi
+done
+
+# ── 7. QA baseline doc exists ────────────────────────────────────────────────
+baseline_doc="$ROOT/docs/sandcastle-dogfood-baseline.md"
+if [[ -f "$baseline_doc" ]]; then
+    _record_pass "QA dogfood baseline document exists"
+else
+    _record_fail "QA dogfood baseline document exists" "expected docs/sandcastle-dogfood-baseline.md"
+fi
+
+# ── Summary ───────────────────────────────────────────────────────────────────
+
+printf "\n  \033[32m%d passed\033[0m  \033[31m%d failed\033[0m\n" "$PASS" "$FAIL"
+
+if [[ ${#FAILURES[@]} -gt 0 ]]; then
+    echo
+    echo "Failures:"
+    for failure in "${FAILURES[@]}"; do
+        printf "  \033[31m✗\033[0m %s\n" "$failure"
+    done
+    exit 1
+fi

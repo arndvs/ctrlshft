@@ -22,6 +22,7 @@ SUITES=(
   "hooks:test/hooks-integration.sh"
   "lifecycle:test/lifecycle.sh"
   "proxy-scripts:shft/templates/scripts/test_probe_completion.sh"
+  "smoke-coverage:test/sandcastle-smoke-coverage.sh"
 )
 
 # ── Temp dir for captured output ────────────────────────────────────────────

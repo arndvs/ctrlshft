@@ -1,115 +1,168 @@
-# Sandcastle Dogfood Baseline
+# Dogfood Test Coverage Baseline
 
-Operational baseline for the Sandcastle dogfood test system — which workflows are covered, how they're tested, and when to investigate.
+Baseline recorded for Sandcastle QA certification (issue #43, Slice 10).
 
-> **Automation entry point:** `.github/workflows/nightly-smoke.yml`
-> **Report source:** `bin/smoke-sandcastle-report.sh`
+## Overview
 
----
+This document records the dogfood test coverage state for all Sandcastle
+workflows installed in this repository. It serves as the reference for
+regression detection and coverage gap analysis.
 
-## How It Works
-
-The nightly smoke workflow runs daily at 06:00 UTC and on `workflow_dispatch`. It queries the last N runs of every Sandcastle workflow, aggregates pass/fail/skip status, and publishes a report artifact (`report.json` + `report.md`) to the GitHub Actions run.
-
-### Running Manually
-
-```bash
-# Trigger via workflow_dispatch (default: last 5 runs per workflow)
-gh workflow run nightly-smoke.yml
-
-# With custom limit
-gh workflow run nightly-smoke.yml -f limit=10
-
-# Check the latest run
-gh run list --workflow nightly-smoke.yml --limit 1
-```
-
-### Where Artifacts Are Published
-
-Each run uploads a `smoke-report-<run-number>` artifact (defined in the workflow as `smoke-report-${{ github.run_number }}`) containing:
-
-- **report.json** — machine-readable results with `summary.pass`, `summary.fail`, `summary.skip` counts and per-workflow entries including `name`, `latest_url`, and `latest_conclusion`
-- **report.md** — human-readable markdown surfaced in the GitHub Actions step summary
-
-Artifacts are retained for 30 days.
-
----
-
-## Workflow Coverage
-
-All 16 Sandcastle-related workflows tracked by the smoke harness:
-
-| # | Workflow | Type |
-|---|----------|------|
-| 1 | Agent: Architecture Review | Agent workflow |
-| 2 | Agent: Check Stale PRs | Agent workflow |
-| 3 | Agent: Fix PR Feedback | Agent workflow |
-| 4 | Agent: Implement Issue | Agent workflow |
-| 5 | Agent: Implement PRD | Agent workflow |
-| 6 | Agent: Merge PR | Agent workflow |
-| 7 | Agent: Plan Issue | Agent workflow |
-| 8 | Agent: Promote Queued | Agent workflow |
-| 9 | Agent: Review Issue | Agent workflow |
-| 10 | Agent: Update Branch | Agent workflow |
-| 11 | Bridge Tests | CI |
-| 12 | Copilot | CI |
-| 13 | Integrity | CI |
-| 14 | PR: request Copilot review | Automation |
-| 15 | Proxy Canary | Monitoring |
-| 16 | Sandcastle CI | CI |
-
-Source: `SANDCASTLE_WORKFLOWS` array in `bin/smoke-sandcastle-report.sh`.
-
-## Smoke Scripts
-
-5 scripts that validate specific workflow coverage areas:
-
-| Script | Coverage Area |
-|--------|---------------|
-| `bin/smoke-sandcastle-dispatch.sh` | Workflow dispatch triggers |
-| `bin/smoke-sandcastle-issue-labels.sh` | Issue label automations |
-| `bin/smoke-sandcastle-pr-path.sh` | PR-triggered workflow paths |
-| `bin/smoke-sandcastle-promote-queued.sh` | Queue promotion workflow |
-| `bin/smoke-sandcastle-scheduled.sh` | Scheduled workflow execution |
-
-Source: `SMOKE_SCRIPTS` array in `bin/smoke-sandcastle-report.sh`.
-
----
-
-## Regression Policy
-
-**Any new red = P1 investigation.**
-
-A workflow that was previously passing and now fails requires immediate investigation. The nightly smoke workflow emits a GitHub Actions warning annotation when failures are present; check that annotation/log output first, then use the step summary and report artifact for the detailed per-workflow breakdown.
-
-Acceptable failure modes:
-- A workflow that has never run (skip) — expected for newly added workflows
-- A workflow with a known, tracked issue — document the expected failure in the tracking issue or PR thread, and mirror it in the verification notes below when certifying a run
-
-Unacceptable:
-- A previously-green workflow turning red with no associated PR or known cause
-- Silent failures (workflow runs but produces no output or wrong output)
-
----
+- **Workflows tracked:** 16 (10 agent + 6 infrastructure)
+- **Smoke/report scripts:** 6 (5 exercisers + 1 report aggregator)
+- **Report aggregators:** 1 (`bin/smoke-sandcastle-report.sh`)
+- **Harness tests:** 6 (unit tests for each smoke script)
+- **Nightly cron:** `nightly-smoke.yml` runs daily at 06:00 UTC
+- **Regression policy:** any new red is a P1 investigation until explained or
+  fixed.
 
 ## Verification Run
 
-<!-- Fill in after running the verification dispatch (issue #219) -->
+Manual verification was dispatched with:
 
-| Field | Value |
-|-------|-------|
-| Verification run URL | _pending_ |
-| Run date | _pending_ |
-| Pass count | _pending_ |
-| Fail count | _pending_ |
-| Skip count | _pending_ |
-| Coverage | _pending_ |
+```bash
+gh workflow run nightly-smoke.yml \
+  --ref agent/issue-43-slice-10-qa-certification-verify-dogfood-test-cove \
+  -f limit=20 \
+  -f mode=report-only
+```
 
----
+- **Run URL:** https://github.com/arndvs/dotfiles-private/actions/runs/28675321893
+- **Artifact:** `smoke-report-3` (`report.json` + `report.md`)
+- **Generated:** 2026-07-03T17:33:36Z
+- **Coverage:** 100.0% (16 / 16 workflows with runs)
+- **Runs inspected:** 252
+- **Observed pass/fail/skip:** 155 pass / 17 fail / 80 skip
 
-## References
+The report includes both success and failure paths:
 
-- [PRD: Full Sandcastle workflow dogfood test system](https://github.com/arndvs/dotfiles-private/issues/33)
-- [Slice 10: QA certification](https://github.com/arndvs/dotfiles-private/issues/43)
-- `.github/workflows/nightly-smoke.yml` — automation entry point
-- `bin/smoke-sandcastle-report.sh` — report generator
+- **PASS example:** `Proxy canary` latest run succeeded:
+  https://github.com/arndvs/dotfiles-private/actions/runs/28671699746
+- **FAIL example:** `Proxy canary` scheduled run failed:
+  https://github.com/arndvs/dotfiles-private/actions/runs/28618083306
+
+Failure diagnostics are actionable from the run URL. The representative failed
+run above links to job `canary`, step `Mark the job failed`, and the preceding
+probe output reports:
+
+```text
+200 but response body was not valid JSON — proxy/upstream serving malformed completions
+Process completed with exit code 1.
+```
+
+The wider verification window also detected historical failures for `Agent:
+Architecture Review`, `Agent: Promote Queued`, and `Proxy canary`. The latest
+run for each of those workflows is currently green, so the failures are baseline
+history rather than new regressions from this PR.
+
+## Workflow Coverage Matrix
+
+Each workflow is categorized by its coverage type:
+
+- **Active:** A smoke script directly triggers and verifies the workflow.
+- **Passive:** The report aggregator queries run history without triggering.
+- **Infrastructure:** CI/CD workflows exercised by normal development flow.
+
+### Agent Workflows (10)
+
+| Workflow | File | Coverage | Smoke Script |
+|----------|------|----------|--------------|
+| Architecture Review | `agent-architecture-review.yml` | Active | `smoke-sandcastle-scheduled.sh` |
+| Check Stale PRs | `agent-check-stale-prs.yml` | Active | `smoke-sandcastle-dispatch.sh` |
+| Fix PR Feedback | `agent-fix-pr-feedback.yml` | Active | `smoke-sandcastle-pr-path.sh` |
+| Implement Issue | `agent-implement-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh`, `smoke-sandcastle-promote-queued.sh` |
+| Implement PRD | `agent-implement-prd.yml` | Passive | `smoke-sandcastle-report.sh` (query only) |
+| Merge PR | `agent-merge-pr.yml` | Active | `smoke-sandcastle-pr-path.sh` |
+| Plan Issue | `agent-plan-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh` |
+| Promote Queued | `agent-promote-queued.yml` | Active | `smoke-sandcastle-promote-queued.sh` |
+| Review Issue | `agent-review-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh` |
+| Update Branch | `agent-update-branch.yml` | Active | `smoke-sandcastle-pr-path.sh` |
+
+### Infrastructure Workflows (6)
+
+| Workflow | File | Coverage | Notes |
+|----------|------|----------|-------|
+| Bridge Tests | `bridge-tests.yml` | Passive | Triggered by PR activity; queried by report aggregator |
+| Integrity | `integrity.yml` | Passive | Triggered by push to dev; queried by report aggregator |
+| Labels: Sync | `labels-sync.yml` | Passive | Triggered by label changes; queried by report aggregator |
+| PR: request Copilot review | `pr-auto-copilot-review.yml` | Passive | Triggered by PR open/ready; queried by report aggregator |
+| Proxy canary | `proxy-canary.yml` | Passive | Scheduled canary; queried by report aggregator |
+| Sandcastle CI | `sandcastle-ci.yml` | Passive | Triggered by push/PR; queried by report aggregator |
+
+## Smoke Scripts
+
+| Script | Purpose | Harness Test |
+|--------|---------|--------------|
+| `bin/smoke-sandcastle-dispatch.sh` | Safe workflow_dispatch trigger + wait | `test/sandcastle-dispatch-smoke.sh` |
+| `bin/smoke-sandcastle-issue-labels.sh` | Issue-label state machine (review -> plan -> implement) | `test/sandcastle-issue-label-smoke.sh` |
+| `bin/smoke-sandcastle-pr-path.sh` | PR-path state machine (update-branch, fix, merge) | `test/sandcastle-pr-path-smoke.sh` |
+| `bin/smoke-sandcastle-promote-queued.sh` | Dependency-unblocking promotion flow | `test/sandcastle-promote-queued-smoke.sh` |
+| `bin/smoke-sandcastle-scheduled.sh` | Schedule-equivalent dispatch for cron workflows | `test/sandcastle-scheduled-smoke.sh` |
+| `bin/smoke-sandcastle-report.sh` | Aggregate report across all 16 workflows | `test/sandcastle-report-smoke.sh` |
+
+## Coverage Verification
+
+The structural QA gate (`test/sandcastle-smoke-coverage.sh`) continuously verifies:
+
+1. Every installed agent workflow is listed in the report aggregator inventory.
+2. Every agent workflow maps to at least one smoke script or report path.
+3. The full smoke matrix doc (`shft/docs/full-smoke-matrix.md`) references every workflow.
+4. The nightly cron workflow exists, has a schedule trigger, and runs the report aggregator.
+5. Every smoke script has a corresponding harness test.
+6. This baseline document exists.
+
+## Known Gaps
+
+- **`agent-implement-prd.yml`** has passive coverage only. No active smoke script
+  creates a PRD fixture and exercises the sub-issue iteration loop. This is
+  acceptable for the initial baseline because PRD implementation is a complex
+  multi-issue workflow that requires careful fixture management. A dedicated
+  smoke script is tracked for future work.
+
+- **Infrastructure workflows** (Bridge Tests, Integrity, Labels: Sync, Proxy
+  canary, Sandcastle CI, PR: request Copilot review) are covered passively through the
+  report aggregator's run-history queries. They are exercised organically by
+  normal development flow (push, PR, schedule) and do not need dedicated smoke
+  fixtures.
+
+## Nightly Regression Detection
+
+The `nightly-smoke.yml` workflow runs at 06:00 UTC daily and:
+
+1. Executes `bin/smoke-sandcastle-report.sh` against live run data.
+2. Produces JSON + markdown report artifacts (30-day retention).
+3. Emits `::warning::` annotations when any workflow has recent failures.
+4. Publishes the markdown report to the GitHub Actions step summary.
+
+## Manual Operation
+
+Run the report-only nightly smoke check manually with:
+
+```bash
+gh workflow run nightly-smoke.yml -f limit=20 -f mode=report-only
+```
+
+After completion:
+
+```bash
+gh run list --workflow nightly-smoke.yml --limit 1
+gh run download <run-id> -n smoke-report-<run-number>
+```
+
+The artifact contains:
+
+- `report.json` — machine-readable summary with `summary.pass`,
+  `summary.fail`, `summary.skip`, `summary.coverage_pct`, and per-workflow
+  `latest_url` fields.
+- `report.md` — reviewer-readable table for the GitHub Actions summary.
+
+Expected steady-state behavior is **100% workflow coverage** and no unexplained
+new failures. Existing historical failures remain visible in the report window
+so regressions can be compared against this baseline.
+
+## Reference
+
+- Full smoke matrix contract: `shft/docs/full-smoke-matrix.md`
+- Report aggregator: `bin/smoke-sandcastle-report.sh`
+- Nightly workflow: `.github/workflows/nightly-smoke.yml`
+- QA certification issue: #43
