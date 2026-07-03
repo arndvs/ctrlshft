@@ -88,10 +88,10 @@ SANDCASTLE_WORKFLOWS=(
     "Agent: Review Issue"
     "Agent: Update Branch"
     "Bridge Tests"
-    "Copilot"
     "Integrity"
+    "Labels: Sync"
     "PR: request Copilot review"
-    "Proxy Canary"
+    "Proxy canary"
     "Sandcastle CI"
 )
 

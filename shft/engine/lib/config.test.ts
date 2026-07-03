@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { loadConfig, SandcastleConfig } from "./config.js";
+import { loadConfig } from "./config.js";
 
 describe("loadConfig", () => {
   let tempDir: string;

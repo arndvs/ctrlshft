@@ -9,6 +9,9 @@
 set -euo pipefail
 trap 'exit 0' ERR  # fail-open: any error → allow
 
+# _deny is provided by _hooklib.sh (sourced below).
+source "$(dirname "${BASH_SOURCE[0]}")/_hooklib.sh"
+
 if ! command -v jq &>/dev/null; then
     exit 0
 fi
@@ -30,14 +33,12 @@ MODIFIED_TS=$(git diff --name-only HEAD 2>/dev/null | grep -E '\.(ts|tsx)$' || t
 if [[ -f "package.json" ]] && jq -e '.scripts["typecheck"] // .scripts["type-check"]' package.json &>/dev/null; then
     OUTPUT=$(npm run --silent typecheck 2>&1) || {
         echo "$OUTPUT" >&2
-        echo '{"decision":"block","reason":"Type errors found. Fix before completing."}' >&2
-        exit 2
+        _deny "Type errors found. Fix before completing."
     }
 else
     OUTPUT=$(npx tsc --noEmit 2>&1) || {
         echo "$OUTPUT" >&2
-        echo '{"decision":"block","reason":"Type errors found. Fix before completing."}' >&2
-        exit 2
+        _deny "Type errors found. Fix before completing."
     }
 fi
 

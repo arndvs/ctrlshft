@@ -187,6 +187,14 @@ gh pr view <PR_NUMBER> -R <OWNER>/<REPO> --json reviewRequests,reviews
 gh api repos/<OWNER>/<REPO>/pulls/<PR_NUMBER> --jq '[.requested_reviewers[]?.login] | map(select(. != null)) | any(test("^(Copilot|copilot-pull-request-reviewer)(\\[bot\\])?$"; "i"))'
 ```
 
+In PowerShell, avoid `gh api --jq` quote escaping problems by parsing the REST JSON directly:
+
+```powershell
+$pull = gh api "repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>" | ConvertFrom-Json
+$logins = @($pull.requested_reviewers | ForEach-Object { $_.login })
+[bool]($logins | Where-Object { $_ -match '^(Copilot|copilot-pull-request-reviewer)(\[bot\])?$' })
+```
+
 5. If the REST payload also does not include a Copilot reviewer bot login, retry the reviewer request once with the explicit PR reviewer app login:
 
 ```bash

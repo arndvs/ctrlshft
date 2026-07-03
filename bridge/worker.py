@@ -106,7 +106,7 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
     # Iteration cap check (read-only — fixes iteration-burn-on-failure).
     with db.connect(cfg.db_path) as conn:
         current_iteration = db.read_iteration(conn, job.claim_key)
-    emit("bridge.job.iteration", iteration=current_iteration)
+    next_iteration = current_iteration + 1
 
     if current_iteration >= cfg.max_iterations:
         emit("bridge.loop.cap_exceeded", iteration=current_iteration)
@@ -132,6 +132,8 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
                 ),
             )
         return
+
+    emit("bridge.job.iteration", iteration=next_iteration)
 
     # 4. Prepare workspace — fetch PR metadata via REST helper (fixes H-3).
     pr_meta = github.fetch_pr_metadata(
@@ -225,7 +227,7 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
             ws_path=ws_path,
             env=env,
             pr_number=job.pr_number,
-            iteration_num=current_iteration + 1,
+            iteration_num=next_iteration,
             max_iterations=cfg.max_iterations,
             emit=emit,
         )
@@ -312,7 +314,7 @@ def _dispatch_address_review(cfg: Config, ws_path, env: dict[str, str], pr_numbe
         "--round", str(iteration_num),
         "--max-rounds", str(max_iterations),
     ]
-    emit("bridge.job.address_review", pr_number=pr_number, round=iteration_num)
+    emit("bridge.job.address_review", round=iteration_num)
     _run_subprocess(cmd, cwd=str(ws_path), env=env, emit=emit)
 
 
@@ -360,6 +362,23 @@ def _reap_orphaned_workspaces(cfg: Config) -> None:
                 logger.info("Reaped orphaned workspace: %s", child)
             except Exception:
                 logger.warning("Failed to reap workspace: %s", child, exc_info=True)
+
+
+def _cleanup_workspace_after_job(cfg: Config, job: db.Job, worker_id: str) -> None:
+    workspace_path = workspace.workspace_path(cfg.workspaces_root, job.claim_key)
+    existed = workspace_path.exists()
+    workspace.cleanup(cfg.workspaces_root, job.claim_key)
+    if existed:
+        try:
+            hud.emit(
+                cfg.hud_script,
+                "bridge.workspace.cleaned",
+                project=job.repo_full_name,
+                workspace_id=job.claim_key,
+                worker_id=worker_id,
+            )
+        except Exception:
+            logger.warning("HUD cleanup event failed for %s", job.claim_key, exc_info=True)
 
 
 def run(worker_id: str) -> None:
@@ -419,14 +438,7 @@ def run(worker_id: str) -> None:
         finally:
             # Workspace cleanup — prevents unbounded disk growth.
             try:
-                workspace.cleanup(cfg.workspaces_root, job.claim_key)
-                hud.emit(
-                    cfg.hud_script,
-                    "bridge.workspace.cleaned",
-                    project=job.repo_full_name,
-                    workspace_id=job.claim_key,
-                    worker_id=worker_id,
-                )
+                _cleanup_workspace_after_job(cfg, job, worker_id)
             except Exception:
                 logger.warning("Workspace cleanup failed for %s", job.claim_key, exc_info=True)
 
