@@ -79,7 +79,11 @@ if [[ -f "package.json" ]]; then
         _test_script=$(jq -r '.scripts.test' package.json 2>/dev/null)
         if [[ "$_test_script" =~ ^bash[[:space:]][A-Za-z0-9_./:][A-Za-z0-9_./:-]*([[:space:]][A-Za-z0-9_./:=+-]+)*$ ]]; then
             read -r -a _test_argv <<< "$_test_script"
-            "${_test_argv[@]}" || exit 1
+            if [[ -d "node_modules/.bin" ]]; then
+                PATH="$PWD/node_modules/.bin:$PATH" "${_test_argv[@]}" || exit 1
+            else
+                "${_test_argv[@]}" || exit 1
+            fi
         else
             case "$_pm" in
                 bun)  bun run test || exit 1 ;;
