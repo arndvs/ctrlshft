@@ -79,12 +79,24 @@ _test() {
     green "$label"
 }
 
-echo ""
-echo "═══ Hook Integration Tests ═══"
-echo ""
+# --- Group functions (run in parallel subshells) ---
 
 # ─── git-workflow-gate.sh ─────────────────────────────────────────────────────
+_group_workflow_gate() {
 echo "── git-workflow-gate.sh ──"
+
+# Hermetic: stub gh so frozen-branch detection never hits the network.
+# Returns empty (no merged PR) so the check always passes through.
+_GWG_SHIM_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_CLEANUP_DIRS+=("$_GWG_SHIM_DIR")
+cat > "$_GWG_SHIM_DIR/gh" <<'SHIMEOF'
+#!/usr/bin/env bash
+# Stub: no merged PR found
+echo ""
+SHIMEOF
+chmod +x "$_GWG_SHIM_DIR/gh"
+_GWG_OLD_PATH="$PATH"
+export PATH="$_GWG_SHIM_DIR:$PATH"
 
 # Set up temp repo so branch-dependent tests are deterministic
 _setup_test_repo
@@ -468,9 +480,14 @@ _test "warns on git reset --hard @ (HEAD alias)" 0 \
 
 _teardown_test_repo
 
+export PATH="$_GWG_OLD_PATH"
+rm -rf "$_GWG_SHIM_DIR"
+
 echo ""
+}
 
 # ─── secret-guard.sh ─────────────────────────────────────────────────────────
+_group_secret_guard() {
 echo "── secret-guard.sh ──"
 
 _test "allows normal commands" 0 \
@@ -622,11 +639,11 @@ _test "blocks tail secrets file" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"tail secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
     "protected secrets"
-
 echo ""
+}
 
-
-# ─── migration-guard.sh ──────────────────────────────────────────────────────
+# ─── migration-guard.sh + plan-quality-gate.sh ───────────────────────────────
+_group_migration_plan() {
 echo "── migration-guard.sh ──"
 
 _test "allows non-migration commands" 0 \
@@ -664,13 +681,27 @@ _test "warns on mkdir without plan (info, exit 0)" 0 \
     "$HOOKS_DIR/plan-quality-gate.sh" \
     "No plan file"
 _teardown_test_repo
-
 echo ""
+}
 
-# ─── git-post-push.sh ────────────────────────────────────────────────────────
+# ─── git-post-push.sh + stale-branches + compaction-guard + regression ───────
+_group_post_push() {
 echo "── git-post-push.sh ──"
 
 _setup_test_repo
+
+# Hermetic: stub gh for ALL post-push tests so none hit the network.
+# The shim returns "0" (no PRs) — tests that need specific gh output override it.
+GH_SHIM_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_CLEANUP_DIRS+=("$GH_SHIM_DIR")
+cat > "$GH_SHIM_DIR/gh" <<'SHIMEOF'
+#!/usr/bin/env bash
+# Stub: return empty PR list
+echo "0"
+SHIMEOF
+chmod +x "$GH_SHIM_DIR/gh"
+OLD_PATH="$PATH"
+export PATH="$GH_SHIM_DIR:$PATH"
 
 _test "skips non-push commands" 0 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git status\"},\"tool_result\":{\"stdout\":\"On branch main\"},\"cwd\":\"$TEST_REPO\"}" \
@@ -696,20 +727,6 @@ _test "skips git --no-pager -C /repo push (global opts before -C)" 0 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git --no-pager -C /other/repo push origin main\"},\"tool_result\":{\"stdout\":\"ok\"},\"cwd\":\"$TEST_REPO\"}" \
     "$HOOKS_DIR/git-post-push.sh"
 
-# Hermetic test: stub gh to return no PRs and verify reminder output
-# No guard on `command -v gh` — the shim provides gh for the test
-GH_SHIM_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
-_CLEANUP_DIRS+=("$GH_SHIM_DIR")
-cat > "$GH_SHIM_DIR/gh" <<'SHIMEOF'
-#!/usr/bin/env bash
-# Stub: return empty PR list
-echo "0"
-SHIMEOF
-chmod +x "$GH_SHIM_DIR/gh"
-
-OLD_PATH="$PATH"
-export PATH="$GH_SHIM_DIR:$PATH"
-
 _test "emits PR reminder when no PR exists (hermetic)" 0 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git push origin test-feature\"},\"tool_result\":{\"stdout\":\"ok\"},\"cwd\":\"$TEST_REPO\"}" \
     "$HOOKS_DIR/git-post-push.sh" \
@@ -725,9 +742,25 @@ echo ""
 # ─── stale-branches.sh ───────────────────────────────────────────────────────
 echo "── stale-branches.sh ──"
 
+# Hermetic: create a bare repo as "origin" and a clone so stale-branches.sh
+# can run git fetch against a local filesystem remote (no network).
+_STALE_BARE=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_STALE_WORK=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_CLEANUP_DIRS+=("$_STALE_BARE" "$_STALE_WORK")
+git init -q --bare "$_STALE_BARE"
+git clone -q "$_STALE_BARE" "$_STALE_WORK" 2>/dev/null
+git -C "$_STALE_WORK" config user.name "Test"
+git -C "$_STALE_WORK" config user.email "test@test"
+git -C "$_STALE_WORK" checkout -q -b dev
+git -C "$_STALE_WORK" commit -q --allow-empty -m "init"
+git -C "$_STALE_WORK" push -q origin dev 2>/dev/null
+
+pushd "$_STALE_WORK" > /dev/null
 _test "runs without error in git repo" 0 \
     '{}' \
     "$HOOKS_DIR/stale-branches.sh"
+popd > /dev/null
+rm -rf "$_STALE_BARE" "$_STALE_WORK"
 
 echo ""
 
@@ -756,8 +789,11 @@ _test "blocks env-wrapped cat secrets file" 2 \
     '{"tool_name":"Bash","tool_input":{"command":"env cat secrets/.env.secrets"}}' \
     "$HOOKS_DIR/secret-guard.sh" \
     "protected secrets"
-
 echo ""
+}
+
+# ─── _hooklib.sh shared-library guards ───────────────────────────────────────
+_group_hooklib() {
 echo "── _hooklib.sh shared-library guards (issue #169) ──"
 
 # WRAPPER_PREFIX is security-critical and must have exactly one definition
@@ -770,82 +806,64 @@ _assert() {
     else FAIL=$((FAIL + 1)); FAILURES+=("$label"); red "$label"; fi
 }
 
-# WRAPPER_PREFIX is assigned in exactly one file, and that file is _hooklib.sh.
-# Match the assignment after start-of-line OR whitespace so re-introductions via
-# `export WRAPPER_PREFIX=`, `readonly WRAPPER_PREFIX=`, `local WRAPPER_PREFIX=`,
-# or an indented assignment are caught too — not only column-1. `$WRAPPER_PREFIX`
-# usage and the pointer comment lack the trailing `=`, so they never match.
-_wrapper_prefix_defined_once() {
-    local files
-    # find + -exec keeps this portable: `grep --include` is a GNU extension that
-    # BSD grep (macOS) rejects, which would fail the guard even when the invariant holds.
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])WRAPPER_PREFIX=' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
+# ── Single-pass file collection ──
+# Collect all hook *.sh files once; subsequent grep -l calls reuse this list
+# instead of spawning a separate find traversal per assertion.
+_HL_FILES=()
+while IFS= read -r -d '' _f; do
+    _HL_FILES+=("$_f")
+done < <(find "$HOOKS_DIR" -name '*.sh' -print0 2>/dev/null)
+
+# Helper: verify a pattern is defined in exactly _hooklib.sh (no other file).
+_defined_only_in_hooklib() {
+    local pattern="$1" result
+    [[ ${#_HL_FILES[@]} -eq 0 ]] && return 1
+    result=$(grep -lE -- "$pattern" "${_HL_FILES[@]}" 2>/dev/null || true)
+    [[ "$result" == "$HOOKS_DIR/_hooklib.sh" ]]
 }
-_assert "WRAPPER_PREFIX defined only in _hooklib.sh" _wrapper_prefix_defined_once
+
+_assert "WRAPPER_PREFIX defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '(^|[[:space:]])WRAPPER_PREFIX='
 
 # Every hook that references WRAPPER_PREFIX also sources _hooklib.sh.
 _wrapper_prefix_consumers_source_lib() {
     local hook
+    [[ ${#_HL_FILES[@]} -eq 0 ]] && return 0
     while IFS= read -r hook; do
+        [[ -z "$hook" ]] && continue
         [[ "$hook" == "$HOOKS_DIR/_hooklib.sh" ]] && continue
-        # Require an actual `source`/`.` statement, not a mere mention in a
-        # comment or string (e.g. the "provided by _hooklib.sh" pointer comment),
-        # which would let a hook that references but never sources the library pass.
         grep -qE '^[[:space:]]*(source|\.)[[:space:]]+[^#]*_hooklib\.sh' "$hook" || return 1
-    done < <(find "$HOOKS_DIR" -name '*.sh' -exec grep -l 'WRAPPER_PREFIX' {} + 2>/dev/null || true)
+    done < <(grep -l -- 'WRAPPER_PREFIX' "${_HL_FILES[@]}" 2>/dev/null || true)
     return 0
 }
 _assert "hooks using WRAPPER_PREFIX source _hooklib.sh" _wrapper_prefix_consumers_source_lib
 
-# _timeout defined only in _hooklib.sh (slice 2, issue #169)
-_timeout_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^[[:space:]]*(function[[:space:]]+)?_timeout[[:space:]]*(\(\)[[:space:]]*)?\{' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "_timeout defined only in _hooklib.sh" _timeout_defined_once
+_assert "_timeout defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '^[[:space:]]*(function[[:space:]]+)?_timeout[[:space:]]*(\(\)[[:space:]]*)?\{'
 
-# _deny defined only in _hooklib.sh (slice 2, issue #169)
-_deny_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '^[[:space:]]*(function[[:space:]]+)?_deny[[:space:]]*(\(\)[[:space:]]*)?\{' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "_deny defined only in _hooklib.sh" _deny_defined_once
+_assert "_deny defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '^[[:space:]]*(function[[:space:]]+)?_deny[[:space:]]*(\(\)[[:space:]]*)?\{'
 
-# COMMAND_BOUNDARY defined only in _hooklib.sh (slice 2, issue #169)
-_command_boundary_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])COMMAND_BOUNDARY=' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "COMMAND_BOUNDARY defined only in _hooklib.sh" _command_boundary_defined_once
+_assert "COMMAND_BOUNDARY defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '(^|[[:space:]])COMMAND_BOUNDARY='
 
-# COMMAND_BOUNDARY_WITH_BACKTICK defined only in _hooklib.sh (slice 2, issue #169)
-_command_boundary_with_backtick_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])COMMAND_BOUNDARY_WITH_BACKTICK=' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "COMMAND_BOUNDARY_WITH_BACKTICK defined only in _hooklib.sh" _command_boundary_with_backtick_defined_once
+_assert "COMMAND_BOUNDARY_WITH_BACKTICK defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '(^|[[:space:]])COMMAND_BOUNDARY_WITH_BACKTICK='
 
-# ASSIGNMENT_PREFIX defined only in _hooklib.sh (slice 2, issue #169)
-_assignment_prefix_defined_once() {
-    local files
-    files=$(find "$HOOKS_DIR" -name '*.sh' -exec grep -lE '(^|[[:space:]])ASSIGNMENT_PREFIX=' {} + 2>/dev/null || true)
-    [[ "$files" == "$HOOKS_DIR/_hooklib.sh" ]]
-}
-_assert "ASSIGNMENT_PREFIX defined only in _hooklib.sh" _assignment_prefix_defined_once
+_assert "ASSIGNMENT_PREFIX defined only in _hooklib.sh" \
+    _defined_only_in_hooklib '(^|[[:space:]])ASSIGNMENT_PREFIX='
 
 # No hook should use the old {"decision":"block"} schema (slice 3, issue #169).
 # All blocking hooks must use the hookSpecificOutput.permissionDecision schema
 # (directly via _deny or inline jq). The old schema is a silent contract
 # divergence — both exit 2, but the JSON payload differs.
 _no_old_deny_schema() {
-    local match matches
-    matches=$(find "$HOOKS_DIR" -name '*.sh' ! -name '_hooklib.sh' \
-        -exec grep -l '"decision"[[:space:]]*:[[:space:]]*"block"' {} + 2>/dev/null || true)
+    local match matches non_hooklib=()
+    for _f in "${_HL_FILES[@]}"; do
+        [[ "$(basename "$_f")" != "_hooklib.sh" ]] && non_hooklib+=("$_f")
+    done
+    [[ ${#non_hooklib[@]} -eq 0 ]] && return 0
+    matches=$(grep -l -- '"decision"[[:space:]]*:[[:space:]]*"block"' "${non_hooklib[@]}" 2>/dev/null || true)
     if [[ -n "$matches" ]]; then
         echo "Hooks using old decision:block schema:" >&2
         while IFS= read -r match; do
@@ -855,10 +873,61 @@ _no_old_deny_schema() {
     fi
 }
 _assert "no hook uses old decision:block schema" _no_old_deny_schema
+echo ""
+}
 
+# ─── Parallel execution ─────────────────────────────────────────────────────
+echo ""
+echo "═══ Hook Integration Tests ═══"
 echo ""
 
-# ─── Summary ─────────────────────────────────────────────────────────────────
+_PAR_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_CLEANUP_DIRS+=("$_PAR_DIR")
+
+_GROUPS=(_group_workflow_gate _group_secret_guard _group_migration_plan _group_post_push _group_hooklib)
+_PIDS=()
+
+for _g in "${_GROUPS[@]}"; do
+    (
+        PASS=0; FAIL=0; FAILURES=()
+        _CLEANUP_DIRS=()
+        _GRP_NAME="$_g"
+        _GRP_DIR="$_PAR_DIR"
+        _grp_exit() {
+            set +e
+            echo "$PASS" > "$_GRP_DIR/$_GRP_NAME.pass"
+            echo "$FAIL" > "$_GRP_DIR/$_GRP_NAME.fail"
+            printf '%s\n' "${FAILURES[@]+"${FAILURES[@]}"}" > "$_GRP_DIR/$_GRP_NAME.failures"
+            _cleanup
+        }
+        trap '_grp_exit' EXIT INT TERM
+        "$_g"
+    ) > "$_PAR_DIR/$_g.out" 2>&1 &
+    _PIDS+=($!)
+done
+
+_kill_groups() {
+    for _pid in "${_PIDS[@]}"; do kill "$_pid" 2>/dev/null || true; done
+    wait
+    exit 1
+}
+trap '_kill_groups' INT TERM
+
+for _pid in "${_PIDS[@]}"; do
+    wait "$_pid" || true
+done
+
+# Replay output in order and aggregate results
+PASS=0; FAIL=0; FAILURES=()
+for _g in "${_GROUPS[@]}"; do
+    cat "$_PAR_DIR/$_g.out"
+    PASS=$((PASS + $(<"$_PAR_DIR/$_g.pass")))
+    FAIL=$((FAIL + $(<"$_PAR_DIR/$_g.fail")))
+    while IFS= read -r _f; do
+        [[ -n "$_f" ]] && FAILURES+=("$_f")
+    done < "$_PAR_DIR/$_g.failures"
+done
+
 echo "═══════════════════════════════"
 echo "  Results: $PASS passed, $FAIL failed"
 echo "═══════════════════════════════"
