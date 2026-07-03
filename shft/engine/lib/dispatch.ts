@@ -9,7 +9,7 @@ const workflows: Record<string, WorkflowRunner> = {
   "review-issue": async ({ args, repoDir }) => {
     if (!args.issue) throw new Error("review-issue requires --issue <number>");
     const { runReviewIssue } = await import("../workflows/review-issue.js");
-    runReviewIssue({ issueNumber: args.issue, repoDir });
+    await runReviewIssue({ issueNumber: args.issue, repoDir });
   },
 
   "plan-issue": async ({ args, repoDir, templatesDir }) => {
@@ -114,14 +114,15 @@ const workflows: Record<string, WorkflowRunner> = {
 
   "check-stale-prs": async ({ repoDir }) => {
     const { runCheckStalePrs } = await import("../workflows/check-stale-prs.js");
-    runCheckStalePrs({ repoDir });
+    await runCheckStalePrs({ repoDir });
   },
 };
 
 export const WORKFLOW_NAMES = Object.keys(workflows);
 
 export function resolveWorkflow(name: string): WorkflowRunner | undefined {
-  return workflows[name];
+  const runner = workflows[name];
+  return runner ? (opts) => runWorkflow(name, runner, opts) : undefined;
 }
 
 /** Wrap a workflow runner with centralised StructuredOutputError handling. */
