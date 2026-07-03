@@ -894,16 +894,24 @@ for _g in "${_GROUPS[@]}"; do
         _GRP_NAME="$_g"
         _GRP_DIR="$_PAR_DIR"
         _grp_exit() {
+            set +e
             echo "$PASS" > "$_GRP_DIR/$_GRP_NAME.pass"
             echo "$FAIL" > "$_GRP_DIR/$_GRP_NAME.fail"
             printf '%s\n' "${FAILURES[@]+"${FAILURES[@]}"}" > "$_GRP_DIR/$_GRP_NAME.failures"
             _cleanup
         }
-        trap '_grp_exit' EXIT
+        trap '_grp_exit' EXIT INT TERM
         "$_g"
     ) > "$_PAR_DIR/$_g.out" 2>&1 &
     _PIDS+=($!)
 done
+
+_kill_groups() {
+    for _pid in "${_PIDS[@]}"; do kill "$_pid" 2>/dev/null || true; done
+    wait
+    exit 1
+}
+trap '_kill_groups' INT TERM
 
 for _pid in "${_PIDS[@]}"; do
     wait "$_pid" || true
@@ -913,8 +921,8 @@ done
 PASS=0; FAIL=0; FAILURES=()
 for _g in "${_GROUPS[@]}"; do
     cat "$_PAR_DIR/$_g.out"
-    PASS=$((PASS + $(cat "$_PAR_DIR/$_g.pass")))
-    FAIL=$((FAIL + $(cat "$_PAR_DIR/$_g.fail")))
+    PASS=$((PASS + $(<"$_PAR_DIR/$_g.pass")))
+    FAIL=$((FAIL + $(<"$_PAR_DIR/$_g.fail")))
     while IFS= read -r _f; do
         [[ -n "$_f" ]] && FAILURES+=("$_f")
     done < "$_PAR_DIR/$_g.failures"
