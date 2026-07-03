@@ -85,12 +85,12 @@ if [[ "$1" == "run" && "${2:-}" == "list" ]]; then
     done
 
     case "$workflow" in
-        "Agent: Architecture Review"|"Agent: Check Stale PRs"|"Bridge Tests"|"Integrity"|"Sandcastle CI"|"Proxy Canary")
+        "Agent: Architecture Review"|"Agent: Check Stale PRs"|"Bridge Tests"|"Integrity"|"Labels: Sync"|"Sandcastle CI"|"Proxy canary")
             cat <<JSON
 [{"databaseId":100,"url":"https://github.com/owner/repo/actions/runs/100","status":"completed","conclusion":"success","createdAt":"2026-06-10T00:00:00Z","displayTitle":"$workflow","event":"push"}]
 JSON
             ;;
-        "Copilot"|"PR: request Copilot review")
+        "PR: request Copilot review")
             cat <<JSON
 [{"databaseId":200,"url":"https://github.com/owner/repo/actions/runs/200","status":"completed","conclusion":"success","createdAt":"2026-06-09T00:00:00Z","displayTitle":"$workflow","event":"pull_request"}]
 JSON
@@ -146,7 +146,7 @@ else
 fi
 
 # Validate JSON is parseable
-if python3 -c "import json; json.load(open('$json_output'))" 2>/dev/null; then
+if python3 -c "import json, sys; json.load(open(sys.argv[1]))" "$json_output" 2>/dev/null; then
     _record_pass "JSON output is valid JSON"
 else
     _record_fail "JSON output is valid JSON" "could not parse: $(head -5 "$json_output")"
@@ -155,14 +155,14 @@ fi
 # Check report structure
 if python3 -c "
 import json, sys
-with open('$json_output') as f:
+with open(sys.argv[1]) as f:
     report = json.load(f)
 required_keys = {'repo', 'generated_at', 'summary', 'smoke_scripts', 'workflows'}
 missing = required_keys - set(report.keys())
 if missing:
     print(f'missing keys: {missing}', file=sys.stderr)
     sys.exit(1)
-" 2>/dev/null; then
+" "$json_output" 2>/dev/null; then
     _record_pass "JSON report has required top-level keys"
 else
     _record_fail "JSON report has required top-level keys" "missing keys"
@@ -171,14 +171,14 @@ fi
 # Check summary fields
 if python3 -c "
 import json, sys
-with open('$json_output') as f:
+with open(sys.argv[1]) as f:
     s = json.load(f)['summary']
 required = {'total_workflows', 'covered_workflows', 'coverage_pct', 'total_runs_inspected', 'pass', 'fail', 'skip'}
 missing = required - set(s.keys())
 if missing:
     print(f'missing summary keys: {missing}', file=sys.stderr)
     sys.exit(1)
-" 2>/dev/null; then
+" "$json_output" 2>/dev/null; then
     _record_pass "JSON summary has required metric keys"
 else
     _record_fail "JSON summary has required metric keys" "missing summary keys"
@@ -187,12 +187,12 @@ fi
 # Check total_workflows equals 16
 if python3 -c "
 import json, sys
-with open('$json_output') as f:
+with open(sys.argv[1]) as f:
     s = json.load(f)['summary']
 if s['total_workflows'] != 16:
     print(f'total_workflows={s[\"total_workflows\"]}', file=sys.stderr)
     sys.exit(1)
-" 2>/dev/null; then
+" "$json_output" 2>/dev/null; then
     _record_pass "report tracks all 16 Sandcastle workflows"
 else
     _record_fail "report tracks all 16 Sandcastle workflows" "unexpected total_workflows count"
@@ -201,12 +201,12 @@ fi
 # Check covered_workflows > 0 (at least some have run data)
 if python3 -c "
 import json, sys
-with open('$json_output') as f:
+with open(sys.argv[1]) as f:
     s = json.load(f)['summary']
 if s['covered_workflows'] <= 0:
     print(f'covered_workflows={s[\"covered_workflows\"]}', file=sys.stderr)
     sys.exit(1)
-" 2>/dev/null; then
+" "$json_output" 2>/dev/null; then
     _record_pass "some workflows have run data (covered > 0)"
 else
     _record_fail "some workflows have run data (covered > 0)" "covered_workflows was 0"
@@ -215,7 +215,7 @@ fi
 # Check that per-workflow entries include expected fields
 if python3 -c "
 import json, sys
-with open('$json_output') as f:
+with open(sys.argv[1]) as f:
     workflows = json.load(f)['workflows']
 required = {'name', 'runs', 'latest_conclusion', 'latest_url', 'latest_date', 'pass', 'fail', 'skip'}
 for w in workflows:
@@ -223,7 +223,7 @@ for w in workflows:
     if missing:
         print(f'{w.get(\"name\",\"?\")} missing: {missing}', file=sys.stderr)
         sys.exit(1)
-" 2>/dev/null; then
+" "$json_output" 2>/dev/null; then
     _record_pass "per-workflow entries have required fields"
 else
     _record_fail "per-workflow entries have required fields" "missing per-workflow fields"
@@ -232,7 +232,7 @@ fi
 # Check workflows with zero runs are reported correctly
 if python3 -c "
 import json, sys
-with open('$json_output') as f:
+with open(sys.argv[1]) as f:
     workflows = json.load(f)['workflows']
 zero_run = [w for w in workflows if w['runs'] == 0]
 if len(zero_run) == 0:
@@ -242,7 +242,7 @@ for w in zero_run:
     if w['latest_conclusion'] is not None:
         print(f'{w[\"name\"]} has runs=0 but latest_conclusion={w[\"latest_conclusion\"]}', file=sys.stderr)
         sys.exit(1)
-" 2>/dev/null; then
+" "$json_output" 2>/dev/null; then
     _record_pass "zero-run workflows report null conclusion"
 else
     _record_fail "zero-run workflows report null conclusion" "unexpected state for zero-run workflows"
@@ -251,12 +251,12 @@ fi
 # Check failure detection
 if python3 -c "
 import json, sys
-with open('$json_output') as f:
+with open(sys.argv[1]) as f:
     s = json.load(f)['summary']
 if s['fail'] <= 0:
     print('expected at least one failure from Promote Queued stub', file=sys.stderr)
     sys.exit(1)
-" 2>/dev/null; then
+" "$json_output" 2>/dev/null; then
     _record_pass "report detects workflow failures"
 else
     _record_fail "report detects workflow failures" "expected fail > 0"
@@ -265,12 +265,12 @@ fi
 # Check smoke_scripts list
 if python3 -c "
 import json, sys
-with open('$json_output') as f:
+with open(sys.argv[1]) as f:
     scripts = json.load(f)['smoke_scripts']
 if len(scripts) < 5:
     print(f'expected >= 5 smoke scripts, got {len(scripts)}', file=sys.stderr)
     sys.exit(1)
-" 2>/dev/null; then
+" "$json_output" 2>/dev/null; then
     _record_pass "report lists smoke scripts (>= 5)"
 else
     _record_fail "report lists smoke scripts (>= 5)" "expected >= 5 smoke scripts"
