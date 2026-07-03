@@ -5,6 +5,8 @@ import { StructuredOutputError } from "@ai-hero/sandcastle";
 
 export type WorkflowRunner = (opts: { args: CliArgs; repoDir: string; templatesDir: string }) => Promise<void>;
 
+const MERGE_PR_TIMEOUT_MS = 30 * 60 * 1000;
+
 const workflows: Record<string, WorkflowRunner> = {
   "review-issue": async ({ args, repoDir }) => {
     if (!args.issue) throw new Error("review-issue requires --issue <number>");
@@ -44,7 +46,10 @@ const workflows: Record<string, WorkflowRunner> = {
     if (!args.pr) throw new Error("merge-pr requires --pr <number>");
     const repo = process.env["GITHUB_REPOSITORY"];
     if (!repo) throw new Error("GITHUB_REPOSITORY environment variable is required");
-    shFileInherit("gh", ["pr", "merge", args.pr, "--squash", "--delete-branch", "-R", repo], repoDir);
+    shFileInherit("gh", ["pr", "merge", args.pr, "--squash", "--delete-branch", "-R", repo], {
+      cwd: repoDir,
+      timeout: MERGE_PR_TIMEOUT_MS,
+    });
   },
 
   "write-pr": async ({ args, repoDir, templatesDir }) => {
