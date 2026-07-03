@@ -343,7 +343,13 @@ def _reap_orphaned_workspaces(cfg: Config) -> None:
         }
 
     active_paths = {workspace.workspace_path(root, claim_key) for claim_key in active_keys}
-    for child in root.iterdir():
+    try:
+        children = list(root.iterdir())
+    except OSError:
+        logger.warning("Failed to list workspace root for reaping: %s", root, exc_info=True)
+        return
+
+    for child in children:
         if child.is_symlink():
             continue
         if not child.is_dir():

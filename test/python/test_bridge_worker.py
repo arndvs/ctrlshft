@@ -275,6 +275,20 @@ class TestReapOrphanedWorkspaces(unittest.TestCase):
         self.assertTrue(link.exists())
         self.assertTrue(target.exists())
 
+    def test_reaper_logs_and_returns_when_workspace_root_listing_fails(self):
+        root = mock.MagicMock()
+        root.exists.return_value = True
+        root.iterdir.side_effect = OSError("permission denied")
+        cfg = self._cfg()
+        cfg.workspaces_root = root
+
+        with mock.patch("bridge.worker.logger.warning") as warning:
+            _reap_orphaned_workspaces(cfg)
+
+        warning.assert_called_once_with(
+            "Failed to list workspace root for reaping: %s", root, exc_info=True
+        )
+
 
 class TestProcessJob(unittest.TestCase):
     def setUp(self):
