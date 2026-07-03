@@ -9,7 +9,7 @@
     "dev":     "node bin/hud-daemon.js --debug",
     "stop":    "bash bin/start-hud.sh --stop",
     "status":  "bash bin/start-hud.sh --status",
-    "test":    "npm run test:consistency && npm run test:branch-guard && npm run test:instructions && npm run test:hooks && npm run test:lifecycle && npm run test:proxy-scripts",
+    "test":    "bash test/run-all.sh",
     "test:consistency": "bash test/config-consistency.sh",
     "test:branch-guard": "bash test/branch-write-guard.sh",
     "test:instructions": "bash test/claude-instructions.sh",
