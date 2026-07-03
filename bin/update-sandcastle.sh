@@ -189,6 +189,21 @@ if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
     " 2>/dev/null || echo "true")
 fi
 
+# Render a workflow template with variable + auth-mode substitution.
+# Mirrors the same function in init-sandcastle.sh so drift detection compares
+# the same output that init would have produced.
+render_workflow() {
+    local tmpl="$1"
+    if [[ "$PROXY" == "false" ]]; then
+        sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" \
+            -e '/ANTHROPIC_BASE_URL:.*LITELLM_BASE_URL/d' \
+            -e 's/ANTHROPIC_AUTH_TOKEN: ${{ secrets\.LITELLM_MASTER_KEY }}/ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}/' \
+            "$tmpl"
+    else
+        sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl"
+    fi
+}
+
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
     [[ ! -f "$tmpl" ]] && continue
     fname="$(basename "$tmpl")"
@@ -199,7 +214,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
         continue
     fi
     # Resolve template variables for comparison
-    resolved_tmpl=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+    resolved_tmpl=$(render_workflow "$tmpl")
     if ! echo "$resolved_tmpl" | diff -q "$vendored" - &>/dev/null; then
         DRIFTED_FILES+=("workflows/$fname")
         DIFF_OUTPUT+="$(printf '\n── workflows/%s ──\n' "$fname")"
@@ -220,7 +235,7 @@ if [[ "$PROXY" == "true" ]]; then
             DIFF_OUTPUT+="$(printf '\n── workflows/%s (new template) ──\n' "$fname")"
             continue
         fi
-        resolved_tmpl=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+        resolved_tmpl=$(render_workflow "$tmpl")
         if ! echo "$resolved_tmpl" | diff -q "$vendored" - &>/dev/null; then
             DRIFTED_FILES+=("workflows/$fname")
             DIFF_OUTPUT+="$(printf '\n── workflows/%s ──\n' "$fname")"
@@ -408,7 +423,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
     [[ ! -f "$tmpl" ]] && continue
     fname="$(basename "$tmpl")"
     dst=".github/workflows/$fname"
-    resolved=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+    resolved=$(render_workflow "$tmpl")
     if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
         apply_resolved "$resolved" "$dst" "workflows/$fname"
     fi
@@ -420,7 +435,7 @@ if [[ "$PROXY" == "true" ]]; then
         [[ ! -f "$tmpl" ]] && continue
         fname="$(basename "$tmpl")"
         dst=".github/workflows/$fname"
-        resolved=$(sed -e "s/{{DEFAULT_BRANCH}}/$BASE_BRANCH/g" "$tmpl")
+        resolved=$(render_workflow "$tmpl")
         if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
             apply_resolved "$resolved" "$dst" "workflows/$fname"
         fi

@@ -6,6 +6,20 @@
 #
 # Usage: bash test/lifecycle.sh
 # Exit: 0 if all pass, 1 if any fail.
+#
+# PARALLEL GROUP PATTERN
+# ──────────────────────
+# Tests are organized into _group_<name>() functions registered in _GROUPS.
+# Each group runs in a background subshell. Groups MUST NOT share mutable
+# state — each creates its own temp directories and git repos. Results are
+# written to per-group files and aggregated after `wait`.
+#
+# Current groups:
+#   _group_init   — init-artifacts, ignore/tracked lanes, plan discovery
+#   _group_update — update-artifacts tests
+#   _group_audit  — artifact-lifecycle-audit tests
+#
+# To add a group: define _group_yourname(), add "_group_yourname" to _GROUPS.
 set -uo pipefail
 
 # When invoked from the pre-commit hook, git exports GIT_DIR / GIT_INDEX_FILE /
@@ -45,13 +59,13 @@ _fail() { FAIL=$((FAIL + 1)); FAILURES+=("$1: $2"); printf "  \033[31m✗\033[0m
 _assert_eq() { [[ "$1" == "$2" ]] && _ok "$3" || _fail "$3" "expected '$2', got '$1'"; }
 
 # _new_repo — create a fresh temp git repo; echo its path.
+# Writes config directly to avoid 2 extra git-config process spawns per repo.
 _new_repo() {
     local d
     d=$(mktemp -d 2>/dev/null || mktemp -d -t lifecycle)
     _CLEANUP_DIRS+=("$d")
     git init -q "$d"
-    git -C "$d" config user.email "t@t"
-    git -C "$d" config user.name "t"
+    printf '\n[user]\n\temail = t@t\n\tname = t\n' >> "$d/.git/config"
     echo "$d"
 }
 
@@ -90,7 +104,8 @@ echo ""
 echo "Artifact lifecycle integration tests"
 echo "════════════════════════════════════════════════"
 
-# ─── Shell syntax ─────────────────────────────────────────────────────────────
+# ─── Group 1: shell syntax + init-artifacts + ignore/tracked + plan discovery ─
+_group_init() {
 echo ""
 echo "── shell syntax ──"
 for s in "$INIT" "$UPDATE" "$AUDIT"; do
@@ -185,8 +200,10 @@ if printf '%s' "$plan_out" | grep -qiE 'myplan|PLAN REVIEW'; then
 else
     _fail "plan in working/active is discovered" "got: $plan_out"
 fi
+}
 
-# ─── update-artifacts ─────────────────────────────────────────────────────────
+# ─── Group 2: update-artifacts ────────────────────────────────────────────────
+_group_update() {
 echo ""
 echo "── update-artifacts ──"
 bare=$(_new_repo)
@@ -204,10 +221,13 @@ _assert_eq "$EC" 0 "update-artifacts --dry-run exits 0 with drift present"
 printf '%s' "$OUT" | grep -qF "working/README.md" \
     && _ok "detects a drifted template (reports working/README.md)" \
     || _fail "detects a drifted template" "working/README.md not reported; got: $OUT"
+}
 
-# ─── artifact-lifecycle-audit ─────────────────────────────────────────────────
+# ─── Group 3: artifact-lifecycle-audit ────────────────────────────────────────
+_group_audit() {
 echo ""
 echo "── artifact-lifecycle-audit ──"
+nongit=$(_new_tmp)
 audrepo=$(_new_repo); _scaffold "$audrepo" --gitignore
 _run "$audrepo" bash "$AUDIT"
 _assert_eq "$EC" 0 "audit passes on a clean scaffold (warn-only)"
@@ -225,8 +245,61 @@ _run "$noign" bash "$AUDIT" --strict
 
 _run "$nongit" bash "$AUDIT"
 [[ "$EC" -ne 0 ]] && _ok "audit errors outside a git repo" || _fail "audit errors outside a git repo" "exit $EC"
+}
 
-# ─── Summary ──────────────────────────────────────────────────────────────────
+# ─── Parallel harness ────────────────────────────────────────────────────────
+_PAR_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t lifecycle-par)
+_CLEANUP_DIRS+=("$_PAR_DIR")
+
+_GROUPS=(_group_init _group_update _group_audit)
+_PIDS=()
+
+for _g in "${_GROUPS[@]}"; do
+    (
+        PASS=0; FAIL=0; FAILURES=()
+        _CLEANUP_DIRS=()
+        _GRP_NAME="$_g"
+        _GRP_DIR="$_PAR_DIR"
+        _grp_exit() {
+            set +e
+            echo "$PASS" > "$_GRP_DIR/$_GRP_NAME.pass"
+            echo "$FAIL" > "$_GRP_DIR/$_GRP_NAME.fail"
+            printf '%s\n' "${FAILURES[@]+"${FAILURES[@]}"}" > "$_GRP_DIR/$_GRP_NAME.failures"
+            _cleanup
+        }
+        _grp_signal_exit() {
+            trap - EXIT INT TERM
+            _grp_exit
+            exit 130
+        }
+        trap '_grp_exit' EXIT
+        trap '_grp_signal_exit' INT TERM
+        "$_g"
+    ) > "$_PAR_DIR/$_g.out" 2>&1 &
+    _PIDS+=($!)
+done
+
+_kill_groups() {
+    for _pid in "${_PIDS[@]}"; do kill "$_pid" 2>/dev/null || true; done
+    wait
+    exit 1
+}
+trap '_kill_groups' INT TERM
+
+for _pid in "${_PIDS[@]}"; do
+    wait "$_pid" || true
+done
+
+# Replay output in order and aggregate results
+PASS=0; FAIL=0; FAILURES=()
+for _g in "${_GROUPS[@]}"; do
+    cat "$_PAR_DIR/$_g.out"
+    PASS=$((PASS + $(<"$_PAR_DIR/$_g.pass")))
+    FAIL=$((FAIL + $(<"$_PAR_DIR/$_g.fail")))
+    while IFS= read -r _f; do
+        [[ -n "$_f" ]] && FAILURES+=("$_f")
+    done < "$_PAR_DIR/$_g.failures"
+done
 echo ""
 echo "════════════════════════════════════════════════"
 printf "  \033[32m%d passed\033[0m  \033[31m%d failed\033[0m\n" "$PASS" "$FAIL"

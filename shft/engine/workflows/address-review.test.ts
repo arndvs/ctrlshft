@@ -34,8 +34,8 @@ vi.mock("../lib/resolve-prompt.js", () => ({
   resolvePrompt: vi.fn(async () => "/repo/prompts/address-review.md"),
   configPromptArgs: vi.fn(() => ({})),
 }));
-vi.mock("node:child_process", () => ({
-  execFileSync: vi.fn(() => "feat/branch"),
+vi.mock("../lib/shell-helpers.js", () => ({
+  shFile: vi.fn(() => "feat/branch"),
 }));
 
 import { runAddressReview } from "./address-review.js";

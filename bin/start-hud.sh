@@ -106,6 +106,10 @@ fi
 
 # Stale PID?
 rm -f "$PID_FILE"
+# Stale lock dir from hard crash (kill -9, OOM)?
+rmdir "$WORKING/.hud.lock" 2>/dev/null || true
+# Stale pipe from crash (daemon didn't get to unlink it)?
+[[ -p "$WORKING/hud.pipe" ]] && rm -f "$WORKING/hud.pipe"
 
 # Node.js check
 if ! command -v node &>/dev/null; then

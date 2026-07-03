@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { postReview, postThreadReply } from "./post-review.js";
 import type { PrComments } from "./fetch-pr-comments.js";
 
-vi.mock("node:child_process", () => ({
-  execFileSync: vi.fn(),
+vi.mock("./shell-helpers.js", () => ({
+  shFile: vi.fn(),
 }));
 
-import { execFileSync } from "node:child_process";
+import { shFile } from "./shell-helpers.js";
 
-const mockExecFileSync = vi.mocked(execFileSync);
+const mockShFile = vi.mocked(shFile);
 
 const SAMPLE_DIFF = `diff --git a/src/app.ts b/src/app.ts
 --- a/src/app.ts
@@ -42,18 +42,18 @@ function basePrComments(): PrComments {
 
 describe("postReview", () => {
   beforeEach(() => {
-    mockExecFileSync.mockReset();
+    mockShFile.mockReset();
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   it("posts valid comments and returns correct counts", () => {
     // diff fetch (inline comments present → fetched first)
-    mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);
+    mockShFile.mockReturnValueOnce(SAMPLE_DIFF);
     // headSha fetch (only once a review will actually be posted)
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
+    mockShFile.mockReturnValueOnce("abc123\n");
     // review POST
-    mockExecFileSync.mockReturnValueOnce("{}");
+    mockShFile.mockReturnValueOnce("{}");
 
     const result = postReview({
       prNumber: "42",
@@ -72,7 +72,7 @@ describe("postReview", () => {
     expect(result.droppedReplies).toBe(0);
 
     // Verify review payload
-    const reviewCall = mockExecFileSync.mock.calls[2]!;
+    const reviewCall = mockShFile.mock.calls[2]!;
     expect(reviewCall[1]).toContain("--input");
     const payload = JSON.parse((reviewCall[2] as { input: string }).input);
     expect(payload.commit_id).toBe("abc123");
@@ -82,9 +82,9 @@ describe("postReview", () => {
   });
 
   it("drops inline comments targeting files not in the diff", () => {
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
-    mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);
-    mockExecFileSync.mockReturnValueOnce("{}");
+    mockShFile.mockReturnValueOnce("abc123\n");
+    mockShFile.mockReturnValueOnce(SAMPLE_DIFF);
+    mockShFile.mockReturnValueOnce("{}");
 
     const result = postReview({
       prNumber: "42",
@@ -104,9 +104,9 @@ describe("postReview", () => {
 
   it("drops inline comments targeting lines not in diff hunks", () => {
     // diff first (inline comments present), then headSha, then review POST
-    mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
-    mockExecFileSync.mockReturnValueOnce("{}");
+    mockShFile.mockReturnValueOnce(SAMPLE_DIFF);
+    mockShFile.mockReturnValueOnce("abc123\n");
+    mockShFile.mockReturnValueOnce("{}");
 
     const result = postReview({
       prNumber: "42",
@@ -125,17 +125,18 @@ describe("postReview", () => {
   });
 
   it("decodes a Buffer stderr from a failed gh pr diff into the warning detail", () => {
-    // execFileSync attaches stderr as a Buffer even with encoding set; the warning
+    // The shell helper surfaces stderr as a Buffer when the underlying process API
+    // does, so decode that case rather than dropping the actionable detail.
     // must surface its text, not drop it. First call (gh pr diff) throws, then the
     // head SHA lookup and the review POST proceed.
     const err = Object.assign(new Error("Command failed"), {
       stderr: Buffer.from("gh: could not authenticate", "utf8"),
     });
-    mockExecFileSync.mockImplementationOnce(() => {
+    mockShFile.mockImplementationOnce(() => {
       throw err;
     });
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
-    mockExecFileSync.mockReturnValueOnce("{}");
+    mockShFile.mockReturnValueOnce("abc123\n");
+    mockShFile.mockReturnValueOnce("{}");
 
     postReview({
       prNumber: "42",
@@ -152,9 +153,9 @@ describe("postReview", () => {
   });
 
   it("drops thread replies referencing unknown commentIds", () => {
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
-    mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);
-    mockExecFileSync.mockReturnValueOnce("{}");
+    mockShFile.mockReturnValueOnce("abc123\n");
+    mockShFile.mockReturnValueOnce(SAMPLE_DIFF);
+    mockShFile.mockReturnValueOnce("{}");
 
     const result = postReview({
       prNumber: "42",
@@ -174,10 +175,10 @@ describe("postReview", () => {
 
   it("posts valid thread replies via GraphQL", () => {
     // No inline comments → diff fetch skipped. headSha + review POST (reviewBody present), then reply.
-    mockExecFileSync.mockReturnValueOnce("abc123\n"); // headSha
-    mockExecFileSync.mockReturnValueOnce("{}"); // review POST
+    mockShFile.mockReturnValueOnce("abc123\n"); // headSha
+    mockShFile.mockReturnValueOnce("{}"); // review POST
     // Thread reply POST
-    mockExecFileSync.mockReturnValueOnce("");
+    mockShFile.mockReturnValueOnce("");
 
     const result = postReview({
       prNumber: "42",
@@ -194,7 +195,7 @@ describe("postReview", () => {
     expect(result.droppedReplies).toBe(0);
 
     // Verify GraphQL call
-    const replyCall = mockExecFileSync.mock.calls[2]!;
+    const replyCall = mockShFile.mock.calls[2]!;
     const args = replyCall[1] as string[];
     expect(args).toContain("graphql");
     expect(args.some((a) => a.includes("PRRT_thread1"))).toBe(true);
@@ -217,7 +218,7 @@ describe("postReview", () => {
     expect(result.postedInlineComments).toBe(0);
     expect(result.postedReplies).toBe(0);
     // Early return — no gh pr view / gh pr diff round-trips.
-    expect(mockExecFileSync).toHaveBeenCalledTimes(0);
+    expect(mockShFile).toHaveBeenCalledTimes(0);
   });
 
   it("skips all gh calls by default when no comments, replies, or body", () => {
@@ -233,11 +234,11 @@ describe("postReview", () => {
     expect(result.postedInlineComments).toBe(0);
     expect(result.postedReplies).toBe(0);
     // Early return — no gh pr view / gh pr diff round-trips.
-    expect(mockExecFileSync).toHaveBeenCalledTimes(0);
+    expect(mockShFile).toHaveBeenCalledTimes(0);
   });
 
   it("still posts thread replies when the review is skipped (no body, no inline)", () => {
-    mockExecFileSync.mockReturnValueOnce(""); // reply POST
+    mockShFile.mockReturnValueOnce(""); // reply POST
 
     const result = postReview({
       prNumber: "42",
@@ -250,12 +251,12 @@ describe("postReview", () => {
 
     expect(result.postedReplies).toBe(1);
     // Reply-only path: diff, headSha, and the review POST are all skipped — just the reply.
-    expect(mockExecFileSync).toHaveBeenCalledTimes(1);
+    expect(mockShFile).toHaveBeenCalledTimes(1);
   });
 
   it("posts an empty review when skipEmptyReview is explicitly false", () => {
-    mockExecFileSync.mockReturnValueOnce("abc123\n"); // headSha
-    mockExecFileSync.mockReturnValueOnce("{}"); // review POST
+    mockShFile.mockReturnValueOnce("abc123\n"); // headSha
+    mockShFile.mockReturnValueOnce("{}"); // review POST
 
     const result = postReview({
       prNumber: "42",
@@ -268,14 +269,14 @@ describe("postReview", () => {
 
     expect(result.postedInlineComments).toBe(0);
     // No inline comments → diff fetch skipped. headSha + review POST (empty body) = 2 calls.
-    expect(mockExecFileSync).toHaveBeenCalledTimes(2);
+    expect(mockShFile).toHaveBeenCalledTimes(2);
   });
 
   it("handles empty diff gracefully — drops all inline comments", () => {
     // Diff fetch (first, since inline comments are present) fails
-    mockExecFileSync.mockImplementationOnce(() => { throw new Error("no diff"); });
-    mockExecFileSync.mockReturnValueOnce("abc123\n"); // headSha
-    mockExecFileSync.mockReturnValueOnce("{}"); // review POST
+    mockShFile.mockImplementationOnce(() => { throw new Error("no diff"); });
+    mockShFile.mockReturnValueOnce("abc123\n"); // headSha
+    mockShFile.mockReturnValueOnce("{}"); // review POST
 
     const result = postReview({
       prNumber: "42",
@@ -293,9 +294,9 @@ describe("postReview", () => {
   });
 
   it("uses custom logPrefix in warnings", () => {
-    mockExecFileSync.mockReturnValueOnce("abc123\n");
-    mockExecFileSync.mockReturnValueOnce(SAMPLE_DIFF);
-    mockExecFileSync.mockReturnValueOnce("{}");
+    mockShFile.mockReturnValueOnce("abc123\n");
+    mockShFile.mockReturnValueOnce(SAMPLE_DIFF);
+    mockShFile.mockReturnValueOnce("{}");
 
     postReview({
       prNumber: "42",
@@ -315,16 +316,16 @@ describe("postReview", () => {
 
 describe("postThreadReply", () => {
   beforeEach(() => {
-    mockExecFileSync.mockReset();
+    mockShFile.mockReset();
   });
 
   it("calls gh api graphql with the correct mutation and parameters", () => {
-    mockExecFileSync.mockReturnValueOnce("");
+    mockShFile.mockReturnValueOnce("");
 
     postThreadReply({ threadId: "PRRT_abc123", body: "Thanks!", cwd: "/repo" });
 
-    expect(mockExecFileSync).toHaveBeenCalledOnce();
-    const args = mockExecFileSync.mock.calls[0]![1] as string[];
+    expect(mockShFile).toHaveBeenCalledOnce();
+    const args = mockShFile.mock.calls[0]![1] as string[];
     expect(args).toContain("graphql");
     expect(args.some((a) => a.includes("PRRT_abc123"))).toBe(true);
     expect(args.some((a) => a.includes("Thanks!"))).toBe(true);

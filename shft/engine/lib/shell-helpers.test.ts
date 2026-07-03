@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { readFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { required, fail, outputDirPath, sh, safeSh } from "./shell-helpers.js";
+import { required, fail, outputDirPath, sh, shFile, shFileInherit, safeSh } from "./shell-helpers.js";
 
 describe("required", () => {
   const ENV_KEY = "SHELL_HELPERS_TEST_VAR";
@@ -69,9 +69,76 @@ describe("sh", () => {
     expect(() => sh('node -e "process.exit(1)"')).toThrow();
   });
 
-  it("accepts optional cwd", () => {
+  it("accepts optional cwd as string", () => {
     const result = sh('node -e "console.log(process.cwd())"', tmpdir());
     expect(result.trim()).toBeTruthy();
+  });
+
+  it("accepts ShellOpts object", () => {
+    const result = sh('node -e "console.log(process.cwd())"', { cwd: tmpdir() });
+    expect(result.trim()).toBeTruthy();
+  });
+
+  it("forwards input to stdin", () => {
+    const result = sh("node -e \"process.stdin.pipe(process.stdout)\"", { input: "hello" });
+    expect(result).toBe("hello");
+  });
+
+  it("forwards empty string input to stdin", () => {
+    const result = sh("node -e \"process.stdin.on('end', () => console.log('done')); process.stdin.resume()\"", { input: "" });
+    expect(result.trim()).toBe("done");
+  });
+
+  it("throws ETIMEDOUT when command exceeds timeout", () => {
+    try {
+      sh('node -e "setTimeout(() => {}, 10000)"', { timeout: 500 });
+      throw new Error("Expected command to time out");
+    } catch (err) {
+      expect(err).toMatchObject({ code: "ETIMEDOUT" });
+    }
+  });
+});
+
+describe("shFile", () => {
+  it("executes command and returns stdout", () => {
+    const result = shFile("node", ["-e", "console.log('hello')"]);
+    expect(result.trim()).toBe("hello");
+  });
+
+  it("throws on failed command", () => {
+    expect(() => shFile("node", ["-e", "process.exit(1)"])).toThrow();
+  });
+
+  it("accepts ShellOpts object", () => {
+    const result = shFile("node", ["-e", "console.log(process.cwd())"], { cwd: tmpdir() });
+    expect(result.trim()).toBeTruthy();
+  });
+
+  it("forwards empty string input to stdin", () => {
+    const result = shFile("node", ["-e", "process.stdin.on('end', () => console.log('done')); process.stdin.resume()"], { input: "" });
+    expect(result.trim()).toBe("done");
+  });
+
+  it("throws when command exceeds timeout", () => {
+    expect(() => shFile("node", ["-e", "setTimeout(() => {}, 10000)"], { timeout: 500 })).toThrow();
+  });
+});
+
+describe("shFileInherit", () => {
+  it("executes command without throwing on success", () => {
+    expect(() => shFileInherit("node", ["-e", "process.exit(0)"])).not.toThrow();
+  });
+
+  it("throws on failed command", () => {
+    expect(() => shFileInherit("node", ["-e", "process.exit(1)"])).toThrow();
+  });
+
+  it("forwards input to stdin", () => {
+    expect(() => shFileInherit("node", ["-e", "process.stdin.resume(); process.stdin.on('end', () => process.exit(0));"], { input: "hello" })).not.toThrow();
+  });
+
+  it("accepts empty string input", () => {
+    expect(() => shFileInherit("node", ["-e", "process.stdin.resume(); process.stdin.on('end', () => process.exit(0));"], { input: "" })).not.toThrow();
   });
 });
 
