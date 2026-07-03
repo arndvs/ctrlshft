@@ -9,14 +9,21 @@
     "dev":     "node bin/hud-daemon.js --debug",
     "stop":    "bash bin/start-hud.sh --stop",
     "status":  "bash bin/start-hud.sh --status",
-    "test":    "npm run test:consistency && npm run test:branch-guard && npm run test:instructions && npm run test:hooks && npm run test:lifecycle && npm run test:proxy-scripts",
+    "test":    "npm run test:consistency && npm run test:branch-guard && npm run test:instructions && npm run test:hooks && npm run test:lifecycle && npm run test:proxy-scripts && npm run test:smoke-coverage",
     "test:consistency": "bash test/config-consistency.sh",
     "test:branch-guard": "bash test/branch-write-guard.sh",
     "test:instructions": "bash test/claude-instructions.sh",
     "test:hooks": "bash test/hooks-integration.sh",
     "test:lifecycle": "bash test/lifecycle.sh",
     "test:proxy-scripts": "bash shft/templates/scripts/test_probe_completion.sh",
-    "test:cli": "bash test/cli-smoke.sh"
+    "test:cli": "bash test/cli-smoke.sh",
+    "test:smoke-report": "bash test/sandcastle-report-smoke.sh",
+    "test:smoke-dispatch": "bash test/sandcastle-dispatch-smoke.sh",
+    "test:smoke-issue-labels": "bash test/sandcastle-issue-label-smoke.sh",
+    "test:smoke-pr-path": "bash test/sandcastle-pr-path-smoke.sh",
+    "test:smoke-promote-queued": "bash test/sandcastle-promote-queued-smoke.sh",
+    "test:smoke-scheduled": "bash test/sandcastle-scheduled-smoke.sh",
+    "test:smoke-coverage": "bash test/sandcastle-smoke-coverage.sh"
   },
   "optionalDependencies": {
     "better-sqlite3": "^9.0.0"
