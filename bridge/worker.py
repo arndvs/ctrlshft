@@ -346,22 +346,19 @@ def _reap_orphaned_workspaces(cfg: Config) -> None:
 
     active_paths = {workspace.workspace_path(root, claim_key) for claim_key in active_keys}
     try:
-        children = list(root.iterdir())
+        for child in root.iterdir():
+            if child.is_symlink():
+                continue
+            if not child.is_dir():
+                continue
+            if child not in active_paths:
+                try:
+                    shutil.rmtree(child)
+                    logger.info("Reaped orphaned workspace: %s", child)
+                except Exception:
+                    logger.warning("Failed to reap workspace: %s", child, exc_info=True)
     except OSError:
         logger.warning("Failed to list workspace root for reaping: %s", root, exc_info=True)
-        return
-
-    for child in children:
-        if child.is_symlink():
-            continue
-        if not child.is_dir():
-            continue
-        if child not in active_paths:
-            try:
-                shutil.rmtree(child)
-                logger.info("Reaped orphaned workspace: %s", child)
-            except Exception:
-                logger.warning("Failed to reap workspace: %s", child, exc_info=True)
 
 
 def _cleanup_workspace_after_job(cfg: Config, job: db.Job, worker_id: str) -> None:
