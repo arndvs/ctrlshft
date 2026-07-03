@@ -35,7 +35,7 @@ paths:
 The `hooks-integration.sh` and `lifecycle.sh` suites run test groups in parallel. When adding tests:
 
 1. Place tests inside a `_group_<name>()` function
-2. Register the group in the `_GROUPS` array
+2. Register the full function name (for example, `_group_init`) in the `_GROUPS` array
 3. Each group runs in a background subshell — **no shared mutable state across groups** (use per-group temp directories)
 4. Groups write `pass`/`fail` + failure details to temp files; the harness aggregates results after `wait`
 

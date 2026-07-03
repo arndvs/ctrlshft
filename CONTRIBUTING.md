@@ -32,11 +32,11 @@ Always clone to `~/dotfiles` — paths are hardcoded across the project.
 
 | Entry point | When it runs | What it does | Wall clock |
 |-------------|-------------|--------------|------------|
-| `git commit` | Automatic (pre-commit hook) | Runs `test:fast` with `SKIP_SLOW_TESTS=1` | ~6.5s |
+| `git commit` | Automatic (pre-commit hook) | Runs the `test` script with `SKIP_SLOW_TESTS=1` and may execute `bash test/run-all.sh` directly | ~6.5s |
 | `npm run test:fast` | Manual quick check | Same as pre-commit — skips `hooks` and `proxy-scripts` suites | ~6.5s |
 | `npm test` | Manual / CI | Full suite — all 6 test suites in parallel | ~31s |
 
-The pre-commit hook runs `test:fast` automatically, so **do not** run `npm test` separately before committing — the hook handles it. The full suite runs via `npm test` and in CI.
+The pre-commit hook runs the package `test` script with `SKIP_SLOW_TESTS=1`, so **do not** run `npm test` separately before committing — the hook handles the fast path. The full suite runs via `npm test` and in CI.
 
 Individual suites: `npm run test:hooks`, `npm run test:lifecycle`, etc.
 
@@ -46,9 +46,9 @@ Individual suites: `npm run test:hooks`, `npm run test:lifecycle`, etc.
 
 Tests live in `test/`. The two largest suites (`hooks-integration.sh` and `lifecycle.sh`) use a **parallel group pattern**:
 
-1. Write test functions as usual (using `_test "name" "command"` from the harness)
+1. Write test functions using that suite's helpers (`_test` in `hooks-integration.sh`; `_run`/`_assert_eq` in `lifecycle.sh`)
 2. Wrap related tests in a `_group_<name>()` function
-3. Add the group name to the `_GROUPS` array
+3. Add the full function name (for example, `_group_init`) to the `_GROUPS` array
 4. Each group runs in a background subshell — **no shared mutable state across groups**
 5. Use per-group temp directories for git repos and fixtures
 
