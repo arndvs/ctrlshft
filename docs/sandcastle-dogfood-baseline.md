@@ -9,7 +9,7 @@ workflows installed in this repository. It serves as the reference for
 regression detection and coverage gap analysis.
 
 - **Workflows tracked:** 16 (10 agent + 6 infrastructure)
-- **Smoke exerciser scripts:** 5
+- **Smoke/report scripts:** 6 (5 exercisers + 1 report aggregator)
 - **Report aggregators:** 1 (`bin/smoke-sandcastle-report.sh`)
 - **Harness tests:** 6 (unit tests for each smoke script)
 - **Nightly cron:** `nightly-smoke.yml` runs daily at 06:00 UTC
