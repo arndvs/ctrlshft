@@ -9,7 +9,7 @@
 # Usage:  bash test/run-all.sh
 # Env:    SKIP_SLOW_TESTS=1  — skip hooks-integration (the heavyweight suite)
 
-set -uo pipefail
+set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -25,7 +25,7 @@ SUITES=(
 )
 
 # ── Temp dir for captured output ────────────────────────────────────────────
-TMPDIR_RUN="$(mktemp -d)"
+TMPDIR_RUN="$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)"
 trap 'rm -rf "$TMPDIR_RUN"' EXIT
 
 # ── Launch all suites in parallel ───────────────────────────────────────────
@@ -43,22 +43,23 @@ for entry in "${SUITES[@]}"; do
   fi
 
   bash "$ROOT/$script" > "$TMPDIR_RUN/$label.out" 2>&1 &
-  PIDS+=($!)
+  PIDS+=("$!")
   LABELS+=("$label")
 done
 
 # ── Wait for all jobs, collect exit codes ───────────────────────────────────
-declare -A EXIT_CODES=()
+declare -a EXIT_CODES=()
 for i in "${!PIDS[@]}"; do
-  wait "${PIDS[$i]}" 2>/dev/null
-  EXIT_CODES["${LABELS[$i]}"]=$?
+  _ec=0
+  wait "${PIDS[$i]}" 2>/dev/null || _ec=$?
+  EXIT_CODES[$i]=$_ec
 done
 
 # ── Replay output sequentially ─────────────────────────────────────────────
 FAILED=0
 for i in "${!LABELS[@]}"; do
   label="${LABELS[$i]}"
-  code="${EXIT_CODES[$label]}"
+  code="${EXIT_CODES[$i]}"
 
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -80,9 +81,8 @@ PASSED=$((TOTAL - FAILED))
 echo "  $PASSED/$TOTAL suites passed"
 if [[ "$FAILED" -gt 0 ]]; then
   echo ""
-  for label in "${LABELS[@]}"; do
-    code="${EXIT_CODES[$label]}"
-    [[ "$code" -ne 0 ]] && echo "  FAIL: $label (exit $code)"
+  for i in "${!LABELS[@]}"; do
+    [[ "${EXIT_CODES[$i]}" -ne 0 ]] && echo "  FAIL: ${LABELS[$i]} (exit ${EXIT_CODES[$i]})"
   done
   echo "════════════════════════════════════════════════════════════════════"
   exit 1
