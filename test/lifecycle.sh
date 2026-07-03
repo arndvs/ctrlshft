@@ -45,13 +45,13 @@ _fail() { FAIL=$((FAIL + 1)); FAILURES+=("$1: $2"); printf "  \033[31m✗\033[0m
 _assert_eq() { [[ "$1" == "$2" ]] && _ok "$3" || _fail "$3" "expected '$2', got '$1'"; }
 
 # _new_repo — create a fresh temp git repo; echo its path.
+# Writes config directly to avoid 2 extra git-config process spawns per repo.
 _new_repo() {
     local d
     d=$(mktemp -d 2>/dev/null || mktemp -d -t lifecycle)
     _CLEANUP_DIRS+=("$d")
     git init -q "$d"
-    git -C "$d" config user.email "t@t"
-    git -C "$d" config user.name "t"
+    printf '[user]\n\temail = t@t\n\tname = t\n' >> "$d/.git/config"
     echo "$d"
 }
 
