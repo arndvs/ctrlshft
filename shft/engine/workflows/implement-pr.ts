@@ -67,7 +67,8 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
 
   if (commitsThisRun === 0 && replyCount === 0) {
     console.error(`[implement-pr] FAILED: Agent produced no commits and no replies`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   // Keep a non-empty review body when there are inline comments but no top-level
