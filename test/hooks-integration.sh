@@ -86,6 +86,19 @@ echo ""
 # ─── git-workflow-gate.sh ─────────────────────────────────────────────────────
 echo "── git-workflow-gate.sh ──"
 
+# Hermetic: stub gh so frozen-branch detection never hits the network.
+# Returns empty (no merged PR) so the check always passes through.
+_GWG_SHIM_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_CLEANUP_DIRS+=("$_GWG_SHIM_DIR")
+cat > "$_GWG_SHIM_DIR/gh" <<'SHIMEOF'
+#!/usr/bin/env bash
+# Stub: no merged PR found
+echo ""
+SHIMEOF
+chmod +x "$_GWG_SHIM_DIR/gh"
+_GWG_OLD_PATH="$PATH"
+export PATH="$_GWG_SHIM_DIR:$PATH"
+
 # Set up temp repo so branch-dependent tests are deterministic
 _setup_test_repo
 
@@ -468,6 +481,9 @@ _test "warns on git reset --hard @ (HEAD alias)" 0 \
 
 _teardown_test_repo
 
+export PATH="$_GWG_OLD_PATH"
+rm -rf "$_GWG_SHIM_DIR"
+
 echo ""
 
 # ─── secret-guard.sh ─────────────────────────────────────────────────────────
@@ -672,6 +688,19 @@ echo "── git-post-push.sh ──"
 
 _setup_test_repo
 
+# Hermetic: stub gh for ALL post-push tests so none hit the network.
+# The shim returns "0" (no PRs) — tests that need specific gh output override it.
+GH_SHIM_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_CLEANUP_DIRS+=("$GH_SHIM_DIR")
+cat > "$GH_SHIM_DIR/gh" <<'SHIMEOF'
+#!/usr/bin/env bash
+# Stub: return empty PR list
+echo "0"
+SHIMEOF
+chmod +x "$GH_SHIM_DIR/gh"
+OLD_PATH="$PATH"
+export PATH="$GH_SHIM_DIR:$PATH"
+
 _test "skips non-push commands" 0 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git status\"},\"tool_result\":{\"stdout\":\"On branch main\"},\"cwd\":\"$TEST_REPO\"}" \
     "$HOOKS_DIR/git-post-push.sh"
@@ -696,20 +725,6 @@ _test "skips git --no-pager -C /repo push (global opts before -C)" 0 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git --no-pager -C /other/repo push origin main\"},\"tool_result\":{\"stdout\":\"ok\"},\"cwd\":\"$TEST_REPO\"}" \
     "$HOOKS_DIR/git-post-push.sh"
 
-# Hermetic test: stub gh to return no PRs and verify reminder output
-# No guard on `command -v gh` — the shim provides gh for the test
-GH_SHIM_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
-_CLEANUP_DIRS+=("$GH_SHIM_DIR")
-cat > "$GH_SHIM_DIR/gh" <<'SHIMEOF'
-#!/usr/bin/env bash
-# Stub: return empty PR list
-echo "0"
-SHIMEOF
-chmod +x "$GH_SHIM_DIR/gh"
-
-OLD_PATH="$PATH"
-export PATH="$GH_SHIM_DIR:$PATH"
-
 _test "emits PR reminder when no PR exists (hermetic)" 0 \
     "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git push origin test-feature\"},\"tool_result\":{\"stdout\":\"ok\"},\"cwd\":\"$TEST_REPO\"}" \
     "$HOOKS_DIR/git-post-push.sh" \
@@ -725,9 +740,25 @@ echo ""
 # ─── stale-branches.sh ───────────────────────────────────────────────────────
 echo "── stale-branches.sh ──"
 
+# Hermetic: create a bare repo as "origin" and a clone so stale-branches.sh
+# can run git fetch against a local filesystem remote (no network).
+_STALE_BARE=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_STALE_WORK=$(mktemp -d 2>/dev/null || mktemp -d -t ctrlshft)
+_CLEANUP_DIRS+=("$_STALE_BARE" "$_STALE_WORK")
+git init -q --bare "$_STALE_BARE"
+git clone -q "$_STALE_BARE" "$_STALE_WORK" 2>/dev/null
+git -C "$_STALE_WORK" config user.name "Test"
+git -C "$_STALE_WORK" config user.email "test@test"
+git -C "$_STALE_WORK" checkout -q -b dev
+git -C "$_STALE_WORK" commit -q --allow-empty -m "init"
+git -C "$_STALE_WORK" push -q origin dev 2>/dev/null
+
+pushd "$_STALE_WORK" > /dev/null
 _test "runs without error in git repo" 0 \
     '{}' \
     "$HOOKS_DIR/stale-branches.sh"
+popd > /dev/null
+rm -rf "$_STALE_BARE" "$_STALE_WORK"
 
 echo ""
 
