@@ -7,7 +7,7 @@
 # interleaving) and a summary reports which passed/failed.
 #
 # Usage:  bash test/run-all.sh
-# Env:    SKIP_SLOW_TESTS=1  — skip hooks-integration (the heavyweight suite)
+# Env:    SKIP_SLOW_TESTS=1  — skip hooks-integration + proxy-scripts (heavyweight suites)
 
 set -euo pipefail
 
