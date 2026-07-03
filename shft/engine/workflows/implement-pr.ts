@@ -1,7 +1,6 @@
 import path from "node:path";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
 import { Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { ImplementPrOutput } from "../schemas/implement-pr-output.js";
@@ -11,6 +10,7 @@ import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 import { runWithExtraction } from "../lib/run-with-extraction.js";
 import { resolveDefaultExtractionsDir, resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
+import { shFile } from "../lib/shell-helpers.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
@@ -26,11 +26,7 @@ export async function runImplementPr(opts: { prNumber: string; repoDir: string; 
   console.log(`[implement-pr] Fetching PR #${prNumber} data...`);
   const prContext = fetchPrComments({ prNumber, cwd: repoDir });
 
-  const branch = execFileSync("gh", ["pr", "view", prNumber, "--json", "headRefName", "--jq", ".headRefName"], {
-    encoding: "utf8",
-    cwd: repoDir,
-    stdio: ["ignore", "pipe", "pipe"],
-  }).trim();
+  const branch = shFile("gh", ["pr", "view", prNumber, "--json", "headRefName", "--jq", ".headRefName"], repoDir).trim();
 
   const issueNumber = prContext.issueNumber || "(none)";
   const issueTitle = prContext.issueTitle || "(no linked issue)";

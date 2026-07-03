@@ -1,6 +1,5 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
 import { Output, StructuredOutputError, claudeCode } from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { PrdSlicesOutput } from "../schemas/prd-slices-output.js";
@@ -8,6 +7,7 @@ import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs } from "../lib/resolve-prompt.js";
 import { runWithRetry } from "../lib/run-with-retry.js";
 import { resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
+import { shFile } from "../lib/shell-helpers.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
@@ -44,11 +44,7 @@ export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: strin
 
   console.log(`[to-issues-prd] Reading PRD from issue #${issueNumber}...`);
 
-  const prdJson = execFileSync("gh", ["issue", "view", issueNumber, "--json", "title,body"], {
-    encoding: "utf8",
-    cwd: repoDir,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const prdJson = shFile("gh", ["issue", "view", issueNumber, "--json", "title,body"], repoDir);
   const prd = JSON.parse(prdJson) as { title: string; body: string };
 
   console.log(`[to-issues-prd] PRD: ${prd.title}`);
@@ -116,15 +112,10 @@ export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: strin
         ...slice.acceptanceCriteria.map((ac) => `- [ ] ${ac}`),
       ].join("\n");
 
-      const createdJson = execFileSync(
+      const createdJson = shFile(
         "gh",
         ["issue", "create", "--title", slice.title, "--body-file", "-"],
-        {
-          input: body,
-          encoding: "utf8",
-          cwd: repoDir,
-          stdio: ["pipe", "pipe", "pipe"],
-        },
+        { input: body, cwd: repoDir },
       );
 
       const issueUrl = createdJson.trim();
@@ -137,10 +128,7 @@ export async function runToIssuesPrd(opts: { issueNumber: string; repoDir: strin
 
       console.log(`[to-issues-prd] Created #${newNumber}: ${slice.title}`);
 
-      execFileSync("gh", ["issue", "edit", issueNumber, "--add-sub-issue", String(newNumber)], {
-        cwd: repoDir,
-        stdio: ["ignore", "pipe", "pipe"],
-      });
+      shFile("gh", ["issue", "edit", issueNumber, "--add-sub-issue", String(newNumber)], repoDir);
     }
 
     console.log(`\n[to-issues-prd] Complete — created ${createdIssues.size} issues as sub-issues of #${issueNumber}`);

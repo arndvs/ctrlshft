@@ -13,6 +13,7 @@ export interface ShellOpts {
   cwd?: string;
   timeout?: number;
   maxBuffer?: number;
+  input?: string;
 }
 
 export function required(name: string): string {
@@ -49,7 +50,8 @@ export function shFile(command: string, args: string[], cwdOrOpts?: string | She
     cwd: opts?.cwd,
     timeout: opts?.timeout ?? DEFAULT_TIMEOUT_MS,
     maxBuffer: opts?.maxBuffer ?? DEFAULT_MAX_BUFFER,
-    stdio: ["ignore", "pipe", "pipe"],
+    input: opts?.input,
+    stdio: [opts?.input ? "pipe" : "ignore", "pipe", "pipe"],
   });
 }
 

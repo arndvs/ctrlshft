@@ -1,5 +1,5 @@
 import type { CliArgs } from "./parse-cli-args.js";
-import { outputDirPath } from "./shell-helpers.js";
+import { outputDirPath, shFileInherit } from "./shell-helpers.js";
 import { join } from "node:path";
 
 export type WorkflowRunner = (opts: { args: CliArgs; repoDir: string; templatesDir: string }) => Promise<void>;
@@ -41,10 +41,9 @@ const workflows: Record<string, WorkflowRunner> = {
 
   "merge-pr": async ({ args, repoDir }) => {
     if (!args.pr) throw new Error("merge-pr requires --pr <number>");
-    const { execFileSync } = await import("node:child_process");
     const repo = process.env["GITHUB_REPOSITORY"];
     if (!repo) throw new Error("GITHUB_REPOSITORY environment variable is required");
-    execFileSync("gh", ["pr", "merge", args.pr, "--squash", "--delete-branch", "-R", repo], { cwd: repoDir, stdio: "inherit" });
+    shFileInherit("gh", ["pr", "merge", args.pr, "--squash", "--delete-branch", "-R", repo], repoDir);
   },
 
   "write-pr": async ({ args, repoDir, templatesDir }) => {

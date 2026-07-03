@@ -1,5 +1,5 @@
-import { execFileSync } from "node:child_process";
 import { parseDiffLineAnchors } from "./parse-diff-lines.js";
+import { shFile } from "./shell-helpers.js";
 import type { InlineComment } from "./inline-comment.js";
 import type { PrComments } from "./fetch-pr-comments.js";
 
@@ -50,7 +50,7 @@ export function postReview(opts: PostReviewOpts): PostReviewResult {
     inlineComments.length > 0
       ? (() => {
           try {
-            return execFileSync("gh", ["pr", "diff", prNumber], { encoding: "utf8", cwd, stdio: ["ignore", "pipe", "pipe"] });
+            return shFile("gh", ["pr", "diff", prNumber], cwd);
           } catch (err) {
             // Surface the underlying gh failure (stderr/message) so auth/repo/network issues are
             // actionable instead of silently swallowed.
@@ -108,11 +108,7 @@ export function postReview(opts: PostReviewOpts): PostReviewResult {
     // No review to post — just do thread replies
   } else {
     // Fetch the head SHA only now that we know a review will actually be posted.
-    const headSha = execFileSync("gh", ["pr", "view", prNumber, "--json", "headRefOid", "--jq", ".headRefOid"], {
-      encoding: "utf8",
-      cwd,
-      stdio: ["ignore", "pipe", "pipe"],
-    }).trim();
+    const headSha = shFile("gh", ["pr", "view", prNumber, "--json", "headRefOid", "--jq", ".headRefOid"], cwd).trim();
     const reviewPayload = JSON.stringify({
       commit_id: headSha,
       event: "COMMENT",
@@ -120,11 +116,9 @@ export function postReview(opts: PostReviewOpts): PostReviewResult {
       comments: validInlineComments.map((c) => ({ path: c.path, line: c.line, side: c.side, body: c.body })),
     });
 
-    execFileSync("gh", ["api", `repos/{owner}/{repo}/pulls/${prNumber}/reviews`, "--input", "-"], {
+    shFile("gh", ["api", `repos/{owner}/{repo}/pulls/${prNumber}/reviews`, "--input", "-"], {
       input: reviewPayload,
-      encoding: "utf8",
       cwd,
-      stdio: ["pipe", "pipe", "pipe"],
     });
     console.log(`${prefix} Posted review with ${validInlineComments.length} inline comments`);
   }
@@ -152,9 +146,9 @@ export function postThreadReply(opts: { threadId: string; body: string; cwd: str
   // Use --raw-field for every value so literal content is sent as-is. gh's -F/--field
   // applies magic type conversion and treats a leading "@" as a filename, so a reply body
   // like "@user thanks" must never go through it.
-  execFileSync(
+  shFile(
     "gh",
     ["api", "graphql", "--raw-field", `nodeId=${opts.threadId}`, "--raw-field", `body=${opts.body}`, "--raw-field", `query=${mutation}`],
-    { encoding: "utf8", cwd: opts.cwd, stdio: ["ignore", "pipe", "pipe"] },
+    opts.cwd,
   );
 }
