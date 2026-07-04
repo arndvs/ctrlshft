@@ -116,7 +116,7 @@ config_repo="$TMP_ROOT/config"
 make_repo "$config_repo"
 printf '{}\n' > "$config_repo/sandcastle.config.json"
 git -C "$config_repo" add -f sandcastle.config.json
-run_case "root sandcastle config is private-only" fail "sandcastle.config.json" \
+run_case "root sandcastle config is allowed on the host" pass "Public promotion guard passed" \
     bash -c "cd '$config_repo' && bash '$GUARD'"
 
 dogfood_repo="$TMP_ROOT/dogfood"
@@ -148,7 +148,7 @@ make_repo "$workflow_repo"
 mkdir -p "$workflow_repo/.github/workflows"
 printf 'name: Installed Agent\n' > "$workflow_repo/.github/workflows/agent-review-issue.yml"
 git -C "$workflow_repo" add .github/workflows/agent-review-issue.yml
-run_case "installed agent workflows are private-only" fail "agent-review-issue.yml" \
+run_case "installed agent workflows are allowed on the host" pass "Public promotion guard passed" \
     bash -c "cd '$workflow_repo' && bash '$GUARD'"
 
 working_repo="$TMP_ROOT/working"
@@ -183,15 +183,16 @@ run_case "public validator blocks private GitHub URLs" fail "dotfiles-private UR
 
 pre_push_repo="$TMP_ROOT/pre-push"
 make_repo "$pre_push_repo"
-printf '{}\n' > "$pre_push_repo/sandcastle.config.json"
-git -C "$pre_push_repo" add -f sandcastle.config.json
-run_case "allowed public pre-push still runs promotion guard" fail "sandcastle.config.json" \
+mkdir -p "$pre_push_repo/working/runtime"
+printf '{"state":"private"}\n' > "$pre_push_repo/working/runtime/state.json"
+git -C "$pre_push_repo" add -f working/runtime/state.json
+run_case "allowed public pre-push still runs promotion guard" fail "working/runtime/state.json" \
     bash -c "cd '$pre_push_repo' && CTRL_ALLOW_PUBLIC_PUSH=1 DOTFILES='$ROOT' bash '$PRE_PUSH' public https://github.com/arndvs/ctrlshft.git"
 
 run_case "ssh public pre-push is blocked without explicit allow" fail "blocked push to public ctrl+shft" \
     bash -c "cd '$pre_push_repo' && DOTFILES='$ROOT' bash '$PRE_PUSH' public git@github.com:arndvs/ctrlshft.git"
 
-run_case "ssh public pre-push still runs promotion guard when allowed" fail "sandcastle.config.json" \
+run_case "ssh public pre-push still runs promotion guard when allowed" fail "working/runtime/state.json" \
     bash -c "cd '$pre_push_repo' && CTRL_ALLOW_PUBLIC_PUSH=1 DOTFILES='$ROOT' bash '$PRE_PUSH' public ssh://git@github.com/arndvs/ctrlshft.git"
 
 printf "\n  \033[32m%d passed\033[0m  \033[31m%d failed\033[0m\n" "$PASS" "$FAIL"
