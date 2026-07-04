@@ -23,7 +23,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-REPO="${CTRLSHFT_RULESET_REPO:-arndvs/dotfiles-private}"
+REPO="${CTRLSHFT_RULESET_REPO:-arndvs/ctrlshft}"
 SPEC="$ROOT/.github/rulesets/main.json"
 DRY_RUN=false
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true

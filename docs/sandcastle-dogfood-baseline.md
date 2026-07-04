@@ -27,7 +27,7 @@ gh workflow run nightly-smoke.yml \
   -f mode=report-only
 ```
 
-- **Run URL:** https://github.com/arndvs/dotfiles-private/actions/runs/28675321893
+- **Run URL:** https://github.com/arndvs/ctrlshft/actions/runs/<RUN_ID>
 - **Artifact:** `smoke-report-3` (`report.json` + `report.md`)
 - **Generated:** 2026-07-03T17:33:36Z
 - **Coverage:** 100.0% (16 / 16 workflows with runs)
@@ -37,9 +37,9 @@ gh workflow run nightly-smoke.yml \
 The report includes both success and failure paths:
 
 - **PASS example:** `Proxy canary` latest run succeeded:
-  https://github.com/arndvs/dotfiles-private/actions/runs/28671699746
+  https://github.com/arndvs/ctrlshft/actions/runs/<RUN_ID>
 - **FAIL example:** `Proxy canary` scheduled run failed:
-  https://github.com/arndvs/dotfiles-private/actions/runs/28618083306
+  https://github.com/arndvs/ctrlshft/actions/runs/<RUN_ID>
 
 Failure diagnostics are actionable from the run URL. The representative failed
 run above links to job `canary`, step `Mark the job failed`, and the preceding
