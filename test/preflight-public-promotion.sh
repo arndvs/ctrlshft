@@ -104,8 +104,22 @@ unsafe_path_repo="$TMP_ROOT/unsafe-path"
 make_repo "$unsafe_path_repo"
 unsafe_base="$(git -C "$unsafe_path_repo" rev-parse HEAD)"
 commit_change "$unsafe_path_repo" "chore: add local sandcastle config" bash -c "printf '{}\n' > '$unsafe_path_repo/sandcastle.config.json'"
-run_case "unsafe candidate path blocks promotion" fail "sandcastle.config.json" \
+run_case "sandcastle.config.json candidate path passes promotion" pass "Public promotion preflight passed" \
     bash -c "cd '$unsafe_path_repo' && bash '$PREFLIGHT' --range '$unsafe_base..HEAD'"
+
+workflow_path_repo="$TMP_ROOT/workflow-path"
+make_repo "$workflow_path_repo"
+workflow_base="$(git -C "$workflow_path_repo" rev-parse HEAD)"
+commit_change "$workflow_path_repo" "ci: add agent workflow" bash -c "mkdir -p '$workflow_path_repo/.github/workflows'; printf 'name: Agent Implement\n' > '$workflow_path_repo/.github/workflows/agent-implement-issue.yml'"
+run_case "agent workflow candidate path passes promotion" pass "Public promotion preflight passed" \
+    bash -c "cd '$workflow_path_repo' && bash '$PREFLIGHT' --range '$workflow_base..HEAD'"
+
+working_runtime_repo="$TMP_ROOT/working-runtime"
+make_repo "$working_runtime_repo"
+working_runtime_base="$(git -C "$working_runtime_repo" rev-parse HEAD)"
+commit_change "$working_runtime_repo" "chore: add runtime state" bash -c "mkdir -p '$working_runtime_repo/working/runtime'; printf '{}\n' > '$working_runtime_repo/working/runtime/state.json'"
+run_case "working/runtime path still blocks promotion" fail "working/runtime/state.json" \
+    bash -c "cd '$working_runtime_repo' && bash '$PREFLIGHT' --range '$working_runtime_base..HEAD'"
 
 private_ref_repo="$TMP_ROOT/private-ref"
 make_repo "$private_ref_repo"
