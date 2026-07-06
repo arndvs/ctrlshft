@@ -54,7 +54,10 @@ secret-like values before public push.
 Do not promote these private-only paths directly to `ctrlshft`:
 
 - `working/active/**`, `working/runtime/**`, `working/tmp/**`, `working/logs/**`, `working/refs/**`, `working/research/**`
-- non-example `secrets/**` and local `.env*` files except tracked `.env.*.example` templates
+- non-example `secrets/**` and local `.env*` files except the tracked
+  template allowlist: `.env.agent.example`, `.env.secrets.example`,
+  `.env.citation.example`, `secrets/.env.agent.example`, and
+  `secrets/.env.bridge.example`
 
 Host-managed Sandcastle files such as `sandcastle.config.json` and installed
 `.github/workflows/agent-*.yml` / `.github/workflows/agent-*.yaml` workflows
