@@ -40,14 +40,6 @@ _private_reason() {
     local path="$1"
 
     case "$path" in
-        sandcastle.config.json)
-            printf '%s\n' "local Sandcastle install config"
-            return 0
-            ;;
-        .github/workflows/agent-*.yml|.github/workflows/agent-*.yaml)
-            printf '%s\n' "installed Sandcastle agent workflow; productize workflow templates from shft/templates/workflows/"
-            return 0
-            ;;
         working/active/*|working/runtime/*|working/tmp/*|working/logs/*|working/refs/*|working/research/*)
             printf '%s\n' "working-state artifact; promote durable material under docs/ instead"
             return 0
@@ -127,7 +119,7 @@ else
     red ""
     red "Public promotion blocked."
     red "Allowed Sandcastle promotion includes sanitized .sandcastle/** plus source paths under shft/."
-    red "Do not promote sandcastle.config.json, installed .github/workflows/agent-*.yml files, private runtime state, local env files, or secret values."
+    red "Do not promote private runtime state, local env files, or secret values."
 fi
 
 exit $_fail

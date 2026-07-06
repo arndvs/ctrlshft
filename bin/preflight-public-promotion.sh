@@ -106,14 +106,6 @@ private_reason() {
     local path="$1"
 
     case "$path" in
-        sandcastle.config.json)
-            printf '%s\n' "local Sandcastle install config"
-            return 0
-            ;;
-        .github/workflows/agent-*.yml|.github/workflows/agent-*.yaml)
-            printf '%s\n' "installed Sandcastle agent workflow; review and promote workflow templates deliberately"
-            return 0
-            ;;
         working/active/*|working/runtime/*|working/tmp/*|working/logs/*|working/refs/*|working/research/*)
             printf '%s\n' "working-state artifact; promote durable material under docs/ instead"
             return 0
