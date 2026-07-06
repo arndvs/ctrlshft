@@ -5,7 +5,7 @@
  * operations, and validates added labels against pipeline object-type constraints.
  *
  * Usage:
- *   pnpm exec tsx <engine-dir>/lib/lint-pipeline-labels.ts [--workflows-dir .github/workflows]
+ *   pnpm exec tsx path/to/engine/lib/lint-pipeline-labels.ts [--workflows-dir .github/workflows]
  *
  * Exit 0 if all transitions are valid; exit 1 on violations.
  */
