@@ -1,12 +1,12 @@
 # ctrl+shft Context
 
-`ctrl+shft` is Aaron's dotfiles-backed operating system for agent-assisted work. This private repo is the canonical source for shell tools, prompts, rules, skills, Sandcastle templates, and local automation.
+`ctrl+shft` is Aaron's dotfiles-backed operating system for agent-assisted work. This public repo is the canonical source for reusable shell tools, prompts, rules, skills, Sandcastle templates, and automation.
 
 ## Source of truth
 
-- `~/dotfiles/` is authoritative.
+- Public-safe product work starts in `arndvs/ctrlshft`.
 - Generated consumer locations such as `~/.claude/`, `~/.copilot/`, and `~/.agents/` must not be edited directly.
-- Public publishing goes through the sanitized `public` remote (`arndvs/ctrlshft`); private work stays on `origin` (`arndvs/dotfiles-private`).
+- Aaron's private `~/dotfiles/` checkout pulls from public and carries only personal overlay, local-machine, and secrets-adjacent work.
 - `REPO_TOPOLOGY.md` defines remote behavior and must be respected before push/publish changes.
 
 ## Important areas
