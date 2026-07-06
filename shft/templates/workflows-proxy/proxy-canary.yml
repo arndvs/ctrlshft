@@ -31,8 +31,8 @@ jobs:
           base="${BASE_URL%/}"
           if [ -z "$base" ] || [ -z "${AUTH_TOKEN:-}" ]; then
             echo "status=skipped" >> "$GITHUB_OUTPUT"
-            echo "detail=proxy canary skipped: LITELLM_BASE_URL / LITELLM_MASTER_KEY are not configured" >> "$GITHUB_OUTPUT"
-            echo "::warning::Proxy canary skipped because LITELLM_BASE_URL / LITELLM_MASTER_KEY are not configured."
+            echo "detail=proxy canary skipped: LITELLM_BASE_URL and/or LITELLM_MASTER_KEY are not configured" >> "$GITHUB_OUTPUT"
+            echo "::warning::Proxy canary skipped because LITELLM_BASE_URL and/or LITELLM_MASTER_KEY are not configured."
             exit 0
           fi
 
@@ -79,7 +79,6 @@ jobs:
             degraded) echo "::warning::Proxy is up and authenticating, but upstream returned empty completions. Not paging."
                       echo "⚠️ degraded: $detail" ;;
             fail)     echo "❌ proxy canary: $detail" ;;
-            skipped)  echo "::warning::$detail" ;;
           esac
 
       - name: Open or update the canary issue on failure
