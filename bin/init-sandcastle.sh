@@ -299,9 +299,9 @@ fi
 
 # ── 11. Install engine dependencies ──────────────────────────────────────────
 echo "  Installing engine dependencies..."
-if ! (cd .sandcastle/engine && pnpm install --frozen-lockfile); then
+if ! (cd .sandcastle/engine && pnpm install --ignore-workspace --frozen-lockfile); then
     red "    pnpm install failed in .sandcastle/engine/ — engine dependencies are required to run agents."
-    red "    Fix the error above, then re-run: (cd .sandcastle/engine && pnpm install --frozen-lockfile)"
+    red "    Fix the error above, then re-run: (cd .sandcastle/engine && pnpm install --ignore-workspace --frozen-lockfile)"
     exit 1
 fi
 
