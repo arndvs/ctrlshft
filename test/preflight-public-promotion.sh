@@ -100,12 +100,12 @@ commit_change "$safe_repo" "docs: add public guide" bash -c "mkdir -p '$safe_rep
 run_case "safe docs scripts and sandcastle pass" pass "Public promotion preflight passed" \
     bash -c "cd '$safe_repo' && bash '$PREFLIGHT' --range '$safe_base..HEAD'"
 
-unsafe_path_repo="$TMP_ROOT/unsafe-path"
-make_repo "$unsafe_path_repo"
-unsafe_base="$(git -C "$unsafe_path_repo" rev-parse HEAD)"
-commit_change "$unsafe_path_repo" "chore: add local sandcastle config" bash -c "printf '{}\n' > '$unsafe_path_repo/sandcastle.config.json'"
+config_path_repo="$TMP_ROOT/config-path"
+make_repo "$config_path_repo"
+config_base="$(git -C "$config_path_repo" rev-parse HEAD)"
+commit_change "$config_path_repo" "chore: add local sandcastle config" bash -c "printf '{}\n' > '$config_path_repo/sandcastle.config.json'"
 run_case "sandcastle.config.json candidate path passes promotion" pass "Public promotion preflight passed" \
-    bash -c "cd '$unsafe_path_repo' && bash '$PREFLIGHT' --range '$unsafe_base..HEAD'"
+    bash -c "cd '$config_path_repo' && bash '$PREFLIGHT' --range '$config_base..HEAD'"
 
 workflow_path_repo="$TMP_ROOT/workflow-path"
 make_repo "$workflow_path_repo"
