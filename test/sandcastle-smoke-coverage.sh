@@ -200,7 +200,35 @@ else
     _record_fail "nightly smoke workflow exists" "$nightly not found"
 fi
 
-# ── 6. Smoke test scripts exist for each smoke script ────────────────────────
+# ── 6. Architecture review workflow retry guard ──────────────────────────────
+architecture_installed="$ROOT/.github/workflows/agent-architecture-review.yml"
+architecture_template="$ROOT/shft/templates/workflows/agent-architecture-review.yml"
+if [[ -f "$architecture_installed" && -f "$architecture_template" ]]; then
+    installed_architecture="$(cat "$architecture_installed")"
+    template_architecture="$(cat "$architecture_template")"
+
+    if [[ "$installed_architecture" == *"max_attempts=2"* && "$installed_architecture" == *"retrying once in 30 seconds"* ]]; then
+        _record_pass "installed architecture review retries transient agent failures"
+    else
+        _record_fail "installed architecture review retries transient agent failures" "missing bounded retry wrapper"
+    fi
+
+    if [[ "$template_architecture" == *"max_attempts=2"* && "$template_architecture" == *"retrying once in 30 seconds"* ]]; then
+        _record_pass "template architecture review retries transient agent failures"
+    else
+        _record_fail "template architecture review retries transient agent failures" "missing bounded retry wrapper"
+    fi
+
+    if [[ "$installed_architecture" == *"timeout-minutes: 45"* && "$template_architecture" == *"timeout-minutes: 45"* ]]; then
+        _record_pass "architecture review timeout accommodates retry"
+    else
+        _record_fail "architecture review timeout accommodates retry" "expected timeout-minutes: 45 in installed workflow and template"
+    fi
+else
+    _record_fail "architecture review retry guard inputs exist" "installed workflow or template missing"
+fi
+
+# ── 7. Smoke test scripts exist for each smoke script ────────────────────────
 # Each bin/smoke-sandcastle-*.sh should have a corresponding test file.
 # Naming conventions vary (sandcastle-FOO-smoke.sh, sandcastle-FOO.sh, etc.),
 # so we use a broad glob to find any test file whose name contains the key stem.
@@ -231,7 +259,7 @@ for smoke in "$ROOT"/bin/smoke-sandcastle-*.sh; do
     fi
 done
 
-# ── 7. QA baseline doc exists ────────────────────────────────────────────────
+# ── 8. QA baseline doc exists ────────────────────────────────────────────────
 baseline_doc="$ROOT/docs/sandcastle-dogfood-baseline.md"
 if [[ -f "$baseline_doc" ]]; then
     _record_pass "QA dogfood baseline document exists"
