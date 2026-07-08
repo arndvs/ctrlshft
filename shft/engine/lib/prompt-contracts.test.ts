@@ -1,12 +1,60 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { configPromptArgs } from "./resolve-prompt.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const templatesDir = join(__dirname, "..", "..", "templates");
+const repoRoot = join(__dirname, "..", "..", "..");
+const promptDirs = [
+  { label: "templates", path: join(templatesDir, "prompts") },
+  { label: "sandcastle templates", path: join(repoRoot, ".sandcastle", "templates", "prompts") },
+  { label: "sandcastle overrides", path: join(repoRoot, ".sandcastle", "prompts") },
+] as const;
 
 const extractionWorkflows = ["architecture-review", "implement-pr", "update-branch"] as const;
+const workflowPromptArgs = {
+  "address-review": ["PR_NUMBER", "BRANCH", "COMMENTS_JSON"],
+  "architecture-review": [],
+  "implement-issue": ["ISSUE_NUMBER", "ISSUE_TITLE", "BRANCH"],
+  "implement-pr": ["PR_NUMBER", "BRANCH", "ISSUE_NUMBER", "ISSUE_TITLE", "PR_COMMENTS_JSON"],
+  "implement-prd": ["PRD_NUMBER", "PRD_TITLE", "SUB_ISSUE_NUMBER", "SUB_ISSUE_TITLE", "BRANCH"],
+  review: ["PR_NUMBER", "PR_COMMENTS_JSON"],
+  "to-issues-prd": ["ISSUE_NUMBER"],
+  "update-branch": ["PR_NUMBER", "BRANCH", "BASE_REF"],
+  "write-pr": ["ISSUE_NUMBER", "ISSUE_TITLE", "BRANCH"],
+  "write-prd-pr": ["PRD_NUMBER", "PRD_TITLE"],
+} as const;
+
+const configArgNames = Object.keys(configPromptArgs({
+  model: "test-model",
+  baseBranch: "main",
+  sandbox: "none",
+  promptDir: ".sandcastle/prompts",
+  codingStandards: ".sandcastle/CODING_STANDARDS.md",
+  contextDoc: "CONTEXT.md",
+  adrDir: "docs/adr",
+  packageManager: "pnpm",
+}));
+
+function promptCases(): Array<{ label: string; name: keyof typeof workflowPromptArgs; content: string }> {
+  return promptDirs.flatMap((dir) => {
+    if (!existsSync(dir.path)) return [];
+
+    return readdirSync(dir.path)
+      .filter((filename) => filename.endsWith(".md"))
+      .map((filename) => ({
+        label: `${dir.label}/${filename}`,
+        name: filename.replace(/\.md$/, "") as keyof typeof workflowPromptArgs,
+        content: readFileSync(join(dir.path, filename), "utf8"),
+      }));
+  });
+}
+
+function extractPlaceholders(content: string): string[] {
+  return [...content.matchAll(/\{\{([A-Z0-9_]+)\}\}/g)].map((match) => match[1]!);
+}
 
 describe("two-phase prompt contracts", () => {
   it.each(extractionWorkflows)("keeps %s produce prompt free of structured-output tags", (workflow) => {
@@ -21,5 +69,29 @@ describe("two-phase prompt contracts", () => {
 
     expect(prompt).toContain("<output>");
     expect(prompt).toContain("</output>");
+  });
+});
+
+describe("prompt argument contracts", () => {
+  it.each(promptCases())("keeps $label placeholders backed by supplied args", ({ name, content }) => {
+    const promptArgs = workflowPromptArgs[name];
+    expect(promptArgs, `Missing workflow prompt arg contract for ${String(name)}`).toBeDefined();
+
+    const suppliedArgs = new Set([...configArgNames, ...promptArgs]);
+    const unknownPlaceholders = extractPlaceholders(content).filter((placeholder) => !suppliedArgs.has(placeholder));
+
+    expect(unknownPlaceholders).toEqual([]);
+  });
+
+  it("keeps config-derived prompt args consumed by at least one active prompt", () => {
+    const activePlaceholders = new Set(promptCases().flatMap((prompt) => extractPlaceholders(prompt.content)));
+    const unusedConfigArgs = configArgNames.filter((arg) => !activePlaceholders.has(arg));
+
+    expect(unusedConfigArgs).toEqual([]);
+  });
+
+  it.each(promptCases())("keeps $label free of hardcoded configurable context paths", ({ content }) => {
+    expect(content).not.toContain("CONTEXT.md");
+    expect(content).not.toContain("docs/adr");
   });
 });

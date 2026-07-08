@@ -110,7 +110,6 @@ describe("configPromptArgs", () => {
       contextDoc: "MY_CTX.md",
       codingStandards: "STANDARDS.md",
       adrDir: "adrs",
-      model: "claude-sonnet-4-20250514",
       baseBranch: "dev",
     });
 
@@ -120,7 +119,6 @@ describe("configPromptArgs", () => {
       CONTEXT_DOC: "MY_CTX.md",
       CODING_STANDARDS: "STANDARDS.md",
       ADR_DIR: "adrs",
-      MODEL: "claude-sonnet-4-20250514",
       BASE_BRANCH: "dev",
     });
   });
