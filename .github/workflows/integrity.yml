@@ -11,11 +11,18 @@ on:
       - "hooks/**"
       - "test/config-consistency.sh"
       - "package.json"
+      - "bin/pipeline-label-data.sh"
       - ".github/workflows/pr-auto-copilot-review.yml"
       - ".github/workflows/integrity.yml"
       - ".github/workflows/agent-*.yml"
+      - "instructions/sandcastle-pipeline.instructions.md"
+      - "shft/engine/package.json"
+      - "shft/engine/lib/render-pipeline-artifacts.ts"
       - "shft/engine/lib/pipeline-states.ts"
       - "shft/engine/lib/lint-pipeline-labels.ts"
+      - "shft/engine/scripts/pipeline-artifacts.ts"
+      - "shft/templates/labels.json"
+      - ".sandcastle/labels.json"
   push:
     branches:
       - dev
@@ -31,11 +38,18 @@ on:
       - "hooks/**"
       - "test/config-consistency.sh"
       - "package.json"
+      - "bin/pipeline-label-data.sh"
       - ".github/workflows/pr-auto-copilot-review.yml"
       - ".github/workflows/integrity.yml"
       - ".github/workflows/agent-*.yml"
+      - "instructions/sandcastle-pipeline.instructions.md"
+      - "shft/engine/package.json"
+      - "shft/engine/lib/render-pipeline-artifacts.ts"
       - "shft/engine/lib/pipeline-states.ts"
       - "shft/engine/lib/lint-pipeline-labels.ts"
+      - "shft/engine/scripts/pipeline-artifacts.ts"
+      - "shft/templates/labels.json"
+      - ".sandcastle/labels.json"
 
 jobs:
   integrity:
@@ -99,3 +113,9 @@ jobs:
         run: |
           set -euo pipefail
           pnpm exec tsx lib/lint-pipeline-labels.ts
+
+      - name: Check generated pipeline artifacts
+        working-directory: shft/engine
+        run: |
+          set -euo pipefail
+          pnpm pipeline-artifacts:check
