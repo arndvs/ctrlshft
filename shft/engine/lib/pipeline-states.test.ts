@@ -115,6 +115,19 @@ describe("pipeline-states", () => {
       }
     });
 
+    it("does not document transition targets for state-marker-only labels", () => {
+      const rows = extractMarkdownStateRows();
+
+      for (const row of rows) {
+        if (TRANSITIONS.has(row.label)) continue;
+
+        expect(
+          row.nextLabels,
+          `${row.label} is not a transition source and should not list next labels`,
+        ).toEqual([]);
+      }
+    });
+
     it("stays aligned with the generated shell label metadata", () => {
       const generated = fs
         .readFileSync(PIPELINE_LABEL_DATA_PATH, "utf8")
