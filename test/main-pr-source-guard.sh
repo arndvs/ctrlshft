@@ -62,6 +62,13 @@ else
     record_fail "main PR source guard workflow is wired" "$WORKFLOW missing or incomplete"
 fi
 
+if [[ -f "$WORKFLOW" ]] &&
+    grep -qF 'ref: ${{ github.event.pull_request.base.sha }}' "$WORKFLOW"; then
+    record_pass "main PR source guard checks out trusted base commit"
+else
+    record_fail "main PR source guard checks out trusted base commit" "workflow must not run the guard from PR-modified code"
+fi
+
 if [[ -x "$GUARD" ]]; then
     run_case "dev may target main" pass main dev
     run_case "feature branch may not target main" fail main ai/fix/example
