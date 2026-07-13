@@ -117,6 +117,12 @@ jobs:
             gh pr comment "$PR_NUMBER" -R ${{ github.repository }} --body-file "$COMMENT_FILE"
           fi
 
+      - name: Restore workflow actions
+        if: always()
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
+
       - name: Sandcastle teardown
         if: always()
         uses: ./.github/actions/sandcastle-teardown

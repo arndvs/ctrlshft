@@ -76,6 +76,12 @@ jobs:
           pnpm --ignore-workspace exec tsx ../run.ts merge-pr \
             --pr ${{ github.event.pull_request.number }}
 
+      - name: Restore workflow actions
+        if: always()
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
+
       - name: Sandcastle teardown
         if: always()
         uses: ./.github/actions/sandcastle-teardown

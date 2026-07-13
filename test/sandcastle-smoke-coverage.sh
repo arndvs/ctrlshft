@@ -299,13 +299,20 @@ for action_name in sandcastle-setup sandcastle-teardown; do
     fi
 done
 
-trigger_label_required="$(awk '
-    /^  trigger-label:/ { in_block=1; next }
-    in_block && /^  [A-Za-z0-9_-]+:/ { in_block=0 }
-    in_block && /required:[[:space:]]*true/ { print "true"; exit }
-' "$template_actions_dir/sandcastle-setup/action.yml")"
-if [[ "$trigger_label_required" == "true" ]]; then
+setup_action="$template_actions_dir/sandcastle-setup/action.yml"
+if [[ -r "$setup_action" ]]; then
+    trigger_label_required="$(awk '
+        /^  trigger-label:/ { in_block=1; next }
+        in_block && /^  [A-Za-z0-9_-]+:/ { in_block=0 }
+        in_block && /required:[[:space:]]*true/ { print "true"; exit }
+    ' "$setup_action")"
+else
+    trigger_label_required="missing"
+fi
+if [[ "${trigger_label_required:-}" == "true" ]]; then
     _record_fail "sandcastle-setup allows setup-only callers" "trigger-label remains required"
+elif [[ "${trigger_label_required:-}" == "missing" ]]; then
+    _record_fail "sandcastle-setup allows setup-only callers" "$setup_action missing or unreadable"
 else
     _record_pass "sandcastle-setup allows setup-only callers"
 fi
@@ -345,6 +352,12 @@ skip_checkout_workflows=(
     agent-review-issue.yml
     agent-architecture-review.yml
     agent-check-stale-prs.yml
+)
+
+teardown_restore_workflows=(
+    agent-fix-pr-feedback.yml
+    agent-merge-pr.yml
+    agent-update-branch.yml
 )
 
 for wf_file in "${migrated_lifecycle_workflows[@]}"; do
@@ -420,6 +433,16 @@ for wf_file in "${skip_checkout_workflows[@]}"; do
         _record_pass "$wf_label skips duplicate setup checkout"
     else
         _record_fail "$wf_label skips duplicate setup checkout" "missing skip-checkout: true"
+    fi
+done
+
+for wf_file in "${teardown_restore_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "name: Restore workflow actions" "$wf_path"; then
+        _record_pass "$wf_label restores local actions before teardown"
+    else
+        _record_fail "$wf_label restores local actions before teardown" "missing final default-branch checkout"
     fi
 done
 
