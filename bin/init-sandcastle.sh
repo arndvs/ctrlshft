@@ -192,6 +192,8 @@ echo "    .sandcastle/.sandcastle-version ($SOURCE_SHA)"
 
 # ── 5. Create run.ts dispatcher ──────────────────────────────────────────────
 echo "  Creating dispatcher..."
+cp "$TEMPLATES/package.json" .sandcastle/package.json
+echo "    .sandcastle/package.json"
 cp "$TEMPLATES/run.ts" .sandcastle/run.ts
 echo "    .sandcastle/run.ts"
 

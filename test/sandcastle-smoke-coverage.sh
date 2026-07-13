@@ -8,6 +8,7 @@
 #   2. Every agent workflow maps to at least one smoke script or report path.
 #   3. The smoke matrix doc exists and references every workflow.
 #   4. The nightly cron workflow exists and can exercise the report.
+#   5. Agent workflows use the isolated pnpm runner invocation.
 #
 # Usage: bash test/sandcastle-smoke-coverage.sh
 set -euo pipefail
@@ -200,7 +201,84 @@ else
     _record_fail "nightly smoke workflow exists" "$nightly not found"
 fi
 
-# ── 6. Smoke test scripts exist for each smoke script ────────────────────────
+# ── 6. Architecture review workflow retry guard ──────────────────────────────
+architecture_installed="$ROOT/.github/workflows/agent-architecture-review.yml"
+architecture_template="$ROOT/shft/templates/workflows/agent-architecture-review.yml"
+if [[ -f "$architecture_installed" && -f "$architecture_template" ]]; then
+    installed_architecture="$(cat "$architecture_installed")"
+    template_architecture="$(cat "$architecture_template")"
+
+    if [[ "$installed_architecture" == *"max_attempts=2"* && "$installed_architecture" == *"retrying once in 30 seconds"* ]]; then
+        _record_pass "installed architecture review retries transient agent failures"
+    else
+        _record_fail "installed architecture review retries transient agent failures" "missing bounded retry wrapper"
+    fi
+
+    if [[ "$template_architecture" == *"max_attempts=2"* && "$template_architecture" == *"retrying once in 30 seconds"* ]]; then
+        _record_pass "template architecture review retries transient agent failures"
+    else
+        _record_fail "template architecture review retries transient agent failures" "missing bounded retry wrapper"
+    fi
+
+    if [[ "$installed_architecture" == *"timeout-minutes: 45"* && "$template_architecture" == *"timeout-minutes: 45"* ]]; then
+        _record_pass "architecture review timeout accommodates retry"
+    else
+        _record_fail "architecture review timeout accommodates retry" "expected timeout-minutes: 45 in installed workflow and template"
+    fi
+else
+    _record_fail "architecture review retry guard inputs exist" "installed workflow or template missing"
+fi
+
+# ── 7. Sandcastle runner invocation drift guard ──────────────────────────────
+stable_runner_pattern="pnpm --ignore-workspace exec tsx ../run.ts"
+direct_binary_pattern="node_modules/.bin/tsx"
+
+template_workflows=("$ROOT"/shft/templates/workflows/agent-*.yml)
+installed_workflows=("$ROOT"/.github/workflows/agent-*.yml)
+
+template_direct_matches="$(grep -nF "$direct_binary_pattern" "${template_workflows[@]}" 2>/dev/null || true)"
+if [[ -z "$template_direct_matches" ]]; then
+    _record_pass "template agent workflows avoid direct tsx binary path"
+else
+    _record_fail "template agent workflows avoid direct tsx binary path" "$template_direct_matches"
+fi
+
+installed_direct_matches="$(grep -nF "$direct_binary_pattern" "${installed_workflows[@]}" 2>/dev/null || true)"
+if [[ -z "$installed_direct_matches" ]]; then
+    _record_pass "installed agent workflows avoid direct tsx binary path"
+else
+    _record_fail "installed agent workflows avoid direct tsx binary path" "$installed_direct_matches"
+fi
+
+template_runner_count="$({ grep -hF "$stable_runner_pattern" "${template_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
+if [[ "$template_runner_count" == "11" ]]; then
+    _record_pass "template agent workflows use isolated pnpm runner invocation (11)"
+else
+    _record_fail "template agent workflows use isolated pnpm runner invocation" "found $template_runner_count, expected 11"
+fi
+
+installed_runner_count="$({ grep -hF "$stable_runner_pattern" "${installed_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
+if [[ "$installed_runner_count" == "11" ]]; then
+    _record_pass "installed agent workflows use isolated pnpm runner invocation (11)"
+else
+    _record_fail "installed agent workflows use isolated pnpm runner invocation" "found $installed_runner_count, expected 11"
+fi
+
+template_sandcastle_package="$ROOT/shft/templates/package.json"
+installed_sandcastle_package="$ROOT/.sandcastle/package.json"
+if [[ -f "$template_sandcastle_package" ]] && grep -q '"type"[[:space:]]*:[[:space:]]*"module"' "$template_sandcastle_package"; then
+    _record_pass "template Sandcastle dispatcher package pins ESM"
+else
+    _record_fail "template Sandcastle dispatcher package pins ESM" "expected shft/templates/package.json with type=module"
+fi
+
+if [[ -f "$installed_sandcastle_package" ]] && grep -q '"type"[[:space:]]*:[[:space:]]*"module"' "$installed_sandcastle_package"; then
+    _record_pass "installed Sandcastle dispatcher package pins ESM"
+else
+    _record_fail "installed Sandcastle dispatcher package pins ESM" "expected .sandcastle/package.json with type=module"
+fi
+
+# ── 8. Smoke test scripts exist for each smoke script ────────────────────────
 # Each bin/smoke-sandcastle-*.sh should have a corresponding test file.
 # Naming conventions vary (sandcastle-FOO-smoke.sh, sandcastle-FOO.sh, etc.),
 # so we use a broad glob to find any test file whose name contains the key stem.
@@ -231,7 +309,7 @@ for smoke in "$ROOT"/bin/smoke-sandcastle-*.sh; do
     fi
 done
 
-# ── 7. QA baseline doc exists ────────────────────────────────────────────────
+# ── 9. QA baseline doc exists ────────────────────────────────────────────────
 baseline_doc="$ROOT/docs/sandcastle-dogfood-baseline.md"
 if [[ -f "$baseline_doc" ]]; then
     _record_pass "QA dogfood baseline document exists"

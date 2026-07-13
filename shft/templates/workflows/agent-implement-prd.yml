@@ -170,7 +170,7 @@ jobs:
         run: |
           corepack enable
           cd .sandcastle/engine
-          pnpm install --frozen-lockfile
+          pnpm --ignore-workspace install --frozen-lockfile
           echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Run implement-prd
@@ -182,7 +182,8 @@ jobs:
           BRANCH: ${{ steps.branch.outputs.name }}
           OUTPUT_DIR: ${{ runner.temp }}
         run: |
-          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts implement-prd \
+          cd .sandcastle/engine
+          pnpm --ignore-workspace exec tsx ../run.ts implement-prd \
             --prd-number "$PRD_NUMBER" \
             --prd-title "$PRD_TITLE" \
             --sub-issue-number "${{ steps.shape.outputs.next_open_number }}" \
@@ -212,7 +213,8 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
           OUTPUT_DIR: ${{ runner.temp }}
         run: |
-          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts write-prd-pr \
+          cd .sandcastle/engine
+          pnpm --ignore-workspace exec tsx ../run.ts write-prd-pr \
             --prd-number "$PRD_NUMBER" \
             --prd-title "$PRD_TITLE"
 

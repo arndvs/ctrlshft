@@ -43,7 +43,7 @@ jobs:
         run: |
           corepack enable
           cd .sandcastle/engine
-          pnpm install --frozen-lockfile
+          pnpm --ignore-workspace install --frozen-lockfile
           echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Run plan
@@ -52,7 +52,8 @@ jobs:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
         run: |
-          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts plan-issue \
+          cd .sandcastle/engine
+          pnpm --ignore-workspace exec tsx ../run.ts plan-issue \
             --issue "$ISSUE_NUMBER"
 
       - name: Transition label

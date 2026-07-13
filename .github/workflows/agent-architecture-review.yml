@@ -9,7 +9,7 @@ on:
 jobs:
   architecture-review:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     concurrency:
       group: agent-architecture-review
       cancel-in-progress: false
@@ -38,7 +38,7 @@ jobs:
         run: |
           corepack enable
           cd .sandcastle/engine
-          pnpm install --frozen-lockfile
+          pnpm --ignore-workspace install --frozen-lockfile
           echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Run architecture review
@@ -46,7 +46,22 @@ jobs:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
           OUTPUT_DIR: ${{ runner.temp }}
-        run: ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts architecture-review
+        run: |
+          set -euo pipefail
+          cd .sandcastle/engine
+          max_attempts=2
+          for attempt in $(seq 1 "$max_attempts"); do
+            echo "Architecture review attempt $attempt/$max_attempts"
+            if pnpm --ignore-workspace exec tsx ../run.ts architecture-review; then
+              exit 0
+            fi
+            if [ "$attempt" -lt "$max_attempts" ]; then
+              echo "::warning::Architecture review attempt $attempt failed; retrying once in 30 seconds."
+              sleep 30
+            fi
+          done
+          echo "Architecture review failed after $max_attempts attempts."
+          exit 1
 
       - name: Publish PRD issue
         id: publish

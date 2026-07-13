@@ -2,37 +2,40 @@
 
 This document describes the maintainer topology for keeping Aaron's private dotfiles and the public ctrl+shft project aligned. Public users do not need Aaron's private remote; they should use the normal GitHub fork flow for `arndvs/ctrlshft`.
 
-## Operating phases
+## Operating model
 
-| Phase | Where work starts | Why |
-| --- | --- | --- |
-| Cleanup/staging | `dotfiles-private` | Containment, secret-adjacent cleanup, remote guardrails, and public-promotion planning stay private until validated. |
-| Steady state | `ctrlshft` for core/product work; `dotfiles-private` for personal overlay | Public product work should build public history first, then be pulled back into the private checkout for Aaron's machine-specific configuration. |
+`ctrlshft` is the canonical public product repository for Sandcastle, shft,
+hooks, skills, docs, and other reusable automation. Start public-safe product
+work here so review and history are native to the public project, then pull
+accepted changes back into `dotfiles-private` for Aaron's machine-specific
+overlay.
 
-Until final readiness is approved, use `dotfiles-private` as the staging area and promote only sanitized ranges to `ctrlshft`. After cleanup, default new Sandcastle, shft, hooks, skills, and docs work to public `ctrlshft` unless it is personal, secret-adjacent, local-machine-specific, or part of a private containment workflow.
+Keep personal configuration, secrets, local runtime state, and private
+containment work in `dotfiles-private`.
 
 ## Canonical roles
 
 | Name | URL | Role |
 | --- | --- | --- |
-| `~/dotfiles` | local path | Private working checkout and source of truth for this machine |
-| `origin` | private GitHub repo | Maintainer-only canonical remote for real dotfiles and personal overlay work |
-| `public` | `https://github.com/arndvs/ctrlshft.git` | Public/sanitized ctrl+shft project repository |
+| `ctrlshft` | `https://github.com/arndvs/ctrlshft.git` | Public canonical repository for reusable product work |
+| `dotfiles-private` | private GitHub repo | Maintainer-only overlay for real dotfiles, secrets-adjacent work, and machine-specific integration |
+| `~/dotfiles` | local path | Aaron's private working checkout, usually synced from public plus private overlay changes |
 
-Do not use `upstream` for `arndvs/ctrlshft` in the private checkout. In this repo, `upstream` reads like "canonical source", but the current cleanup-phase canonical source is private `origin`. Public forks may use the conventional `origin` = fork and `upstream` = `arndvs/ctrlshft`; that public-fork topology is separate from this maintainer checkout.
+In a public checkout, use the normal GitHub fork topology (`origin` = your fork,
+`upstream` = `arndvs/ctrlshft`) if needed. In Aaron's private checkout, remote
+names may differ, but public-safe product changes still flow through
+`arndvs/ctrlshft` before being pulled back into the private overlay.
 
 ## Push policy
 
-- Push normal dotfiles work to `origin`.
-- Treat `public` as fetch-only by default.
-- Public pushes must be intentional, sanitized, and explicitly allowed with `CTRL_ALLOW_PUBLIC_PUSH=1`.
-- Even intentional public pushes run `bin/validate-public-promotion.sh` to block private-only runtime paths, local config, unsafe installed workflows, and unsanitized content.
+- Push reusable product work to `ctrlshft` through feature branches and PRs.
+- Keep private overlay work in `dotfiles-private`.
+- Public pushes from a private checkout must be intentional, sanitized, and explicitly allowed with `CTRL_ALLOW_PUBLIC_PUSH=1`.
+- Even intentional public pushes run `bin/validate-public-promotion.sh` to block private runtime paths, local environment files, private secret paths, and unsanitized content.
 - Before promoting commit history, run `bin/preflight-public-promotion.sh --range <public-base>..HEAD` to validate only the candidate commits and exclude containment work.
-- `remote.pushDefault` must be unset or set to `origin`; it must never point at `public` or `upstream`.
+- In a private checkout, `remote.pushDefault` must not point at the public remote unless the push path is intentionally guarded.
 
 ## Steady-state sync workflow
-
-After cleanup and final readiness:
 
 1. Start public-safe product work in `ctrlshft` so public history is native and reviewable.
 2. Pull or merge accepted public changes back into `dotfiles-private`.
@@ -43,31 +46,42 @@ This makes `ctrlshft` the durable public product history while `dotfiles-private
 
 ## Public promotion guardrails
 
-Sandcastle is intended to become public ctrl+shft product code, including the installed `.sandcastle/**` tree after sanitization. The promotion guard scans `.sandcastle/**` for private repo/local-machine references and high-confidence secret-like values before public push.
+Sandcastle is public ctrl+shft product code, including the installed
+`.sandcastle/**` tree after sanitization. The promotion guard scans
+`.sandcastle/**` for private repo/local-machine references and high-confidence
+secret-like values before public push.
 
 Do not promote these private-only paths directly to `ctrlshft`:
 
-- `sandcastle.config.json`
-- `.github/workflows/agent-*.yml`
 - `working/active/**`, `working/runtime/**`, `working/tmp/**`, `working/logs/**`, `working/refs/**`, `working/research/**`
-- non-example `secrets/**` and local `.env*` files
+- non-example `secrets/**` and local `.env*` files except the tracked
+  template allowlist: `.env.agent.example`, `.env.secrets.example`,
+  `.env.citation.example`, `secrets/.env.agent.example`, and
+  `secrets/.env.bridge.example`
 
-Intentional Sandcastle productization belongs in `.sandcastle/**` plus source paths such as `shft/templates/`, `shft/engine/`, `shft/docs/`, `bin/*sandcastle*.sh`, and `test/sandcastle-*.sh`.
+Host-managed Sandcastle files such as `sandcastle.config.json` and installed
+`.github/workflows/agent-*.yml` / `.github/workflows/agent-*.yaml` workflows
+are allowed in this repository. They are still subject to content scanning and
+review like any other public file.
 
-## Sandcastle public promotion plan
+Intentional Sandcastle productization belongs in `.sandcastle/**`, host-managed
+workflow/config files, and source paths such as `shft/templates/`,
+`shft/engine/`, `shft/docs/`, `bin/*sandcastle*.sh`, and
+`test/sandcastle-*.sh`.
 
-Do not promote the private `dev` branch to public `main` directly. The raw private-to-public history includes private-only installed workflow files, local Sandcastle install config, and emergency-containment/token-hardening subjects that the range preflight intentionally blocks.
+## Public promotion checks
 
-Promote Sandcastle from a dedicated public promotion branch based on `public/main`:
+Use the guard scripts before pushing or promoting public history:
 
-1. Fetch the public base and create a promotion branch from it: `git fetch public main && git switch -c promote/sandcastle public/main`.
-2. Preserve public-safe source history by replaying commits for `shft/engine/**`, `shft/templates/**`, `shft/docs/**`, `bin/init-sandcastle.sh`, `bin/update-sandcastle.sh`, `bin/preflight-sandcastle.sh`, and `test/sandcastle-*.sh` when each commit passes `bin/preflight-public-promotion.sh`.
-3. Rewrite or squash commits whose content is public-safe but whose original subject/path history is not. In the current Sandcastle history this includes token-name workflow fixes and dogfood commits that touched installed `.github/workflows/agent-*.yml` or `sandcastle.config.json`.
-4. Add `.sandcastle/**` as a sanitized installed-runtime snapshot from the reviewed source tree instead of replaying the dogfood `.sandcastle` history. The final `.sandcastle/**` tree is promotable, but its private dogfood history is not the public product history.
-5. Exclude `sandcastle.config.json` and installed `.github/workflows/agent-*.yml`; public consumers should get workflow templates from `shft/templates/workflows/` and generate installed workflows intentionally.
-6. Before any public push, run `bash bin/validate-public-promotion.sh` and `bash bin/preflight-public-promotion.sh --range public/main..HEAD` on the exact promotion branch. Push only through `bin/preflight-public-promotion.sh --push --confirm-public-push`.
+1. Run `bash bin/validate-public-promotion.sh` to validate the tracked tree.
+2. Run `bash bin/preflight-public-promotion.sh --range <base>..HEAD` before
+   promoting a candidate range.
+3. Push public branches only after the tree and range checks pass.
 
-This keeps the public repository current with Sandcastle product work while preserving safe source history and avoiding publication of private dotfiles runtime state.
+The checks allow host-managed Sandcastle config/workflows, and continue to block
+private runtime state, local env files, private secret paths, high-confidence
+secret-like values, emergency-containment commit subjects, and private
+`.sandcastle` references.
 
 ## Issue ownership
 
@@ -81,7 +95,7 @@ This keeps the public repository current with Sandcastle product work while pres
 
 This project was originally called `ctrlshft` while also serving as the real private dotfiles repo. That private instance was briefly published publicly. The current split is intentional:
 
-- `dotfiles-private` is the private cleanup/staging area and long-term personal overlay.
-- `ctrlshft` is the public/sanitized project and steady-state home for core product work.
+- `dotfiles-private` is the private personal overlay and machine integration checkout.
+- `ctrlshft` is the public project and steady-state home for core product work.
 
 Run `bash ~/dotfiles/bin/validate-remotes.sh` after clone, branch changes, or remote changes to confirm the topology is safe. In a private checkout it enforces the maintainer remote layout above. In a public/fork checkout it skips private remote requirements and only checks for private remote URL references in tracked content.
