@@ -31,4 +31,4 @@ jobs:
       - name: Install engine dependencies
         run: |
           cd .sandcastle/engine
-          pnpm install --frozen-lockfile
+          pnpm --ignore-workspace install --frozen-lockfile

@@ -92,7 +92,7 @@ jobs:
         run: |
           corepack enable
           cd shft/engine
-          pnpm install --frozen-lockfile
+          pnpm --ignore-workspace install --frozen-lockfile
 
       - name: Lint pipeline label transitions
         working-directory: shft/engine

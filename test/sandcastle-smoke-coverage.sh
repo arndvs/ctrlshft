@@ -8,7 +8,7 @@
 #   2. Every agent workflow maps to at least one smoke script or report path.
 #   3. The smoke matrix doc exists and references every workflow.
 #   4. The nightly cron workflow exists and can exercise the report.
-#   5. Agent workflows use the stable pnpm runner invocation.
+#   5. Agent workflows use the isolated pnpm runner invocation.
 #
 # Usage: bash test/sandcastle-smoke-coverage.sh
 set -euo pipefail
@@ -230,7 +230,7 @@ else
 fi
 
 # ── 7. Sandcastle runner invocation drift guard ──────────────────────────────
-stable_runner_pattern="pnpm --dir .sandcastle/engine exec tsx ../run.ts"
+stable_runner_pattern="pnpm --ignore-workspace exec tsx ../run.ts"
 direct_binary_pattern="node_modules/.bin/tsx"
 
 template_workflows=("$ROOT"/shft/templates/workflows/agent-*.yml)
@@ -252,16 +252,16 @@ fi
 
 template_runner_count="$({ grep -hF "$stable_runner_pattern" "${template_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
 if [[ "$template_runner_count" == "11" ]]; then
-    _record_pass "template agent workflows use stable pnpm runner invocation (11)"
+    _record_pass "template agent workflows use isolated pnpm runner invocation (11)"
 else
-    _record_fail "template agent workflows use stable pnpm runner invocation" "found $template_runner_count, expected 11"
+    _record_fail "template agent workflows use isolated pnpm runner invocation" "found $template_runner_count, expected 11"
 fi
 
 installed_runner_count="$({ grep -hF "$stable_runner_pattern" "${installed_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
 if [[ "$installed_runner_count" == "11" ]]; then
-    _record_pass "installed agent workflows use stable pnpm runner invocation (11)"
+    _record_pass "installed agent workflows use isolated pnpm runner invocation (11)"
 else
-    _record_fail "installed agent workflows use stable pnpm runner invocation" "found $installed_runner_count, expected 11"
+    _record_fail "installed agent workflows use isolated pnpm runner invocation" "found $installed_runner_count, expected 11"
 fi
 
 template_sandcastle_package="$ROOT/shft/templates/package.json"
