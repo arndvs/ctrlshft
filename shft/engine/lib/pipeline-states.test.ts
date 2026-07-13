@@ -7,6 +7,7 @@ import {
   MUTUAL_EXCLUSIONS,
   TRANSITIONS,
 } from "./pipeline-states.js";
+import { renderPipelineLabelShell } from "./render-pipeline-artifacts.js";
 
 interface MarkdownStateRow {
   label: string;
@@ -18,6 +19,13 @@ const CONTRACT_PATH = path.resolve(
   "../../..",
   "instructions",
   "sandcastle-pipeline.instructions.md",
+);
+
+const PIPELINE_LABEL_DATA_PATH = path.resolve(
+  import.meta.dirname,
+  "../../..",
+  "bin",
+  "pipeline-label-data.sh",
 );
 
 function extractBacktickedLabels(cell: string): string[] {
@@ -87,6 +95,14 @@ describe("pipeline-states", () => {
         expect(row, `missing markdown row for transition source "${from}"`).toBeDefined();
         expect(row!.nextLabels.sort()).toEqual([...targets].sort());
       }
+    });
+
+    it("stays aligned with the generated shell label metadata", () => {
+      const generated = fs
+        .readFileSync(PIPELINE_LABEL_DATA_PATH, "utf8")
+        .replaceAll("\r\n", "\n");
+
+      expect(generated).toBe(renderPipelineLabelShell());
     });
   });
 

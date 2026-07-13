@@ -18,29 +18,9 @@ set -euo pipefail
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-# Object-type constraints from pipeline-states.ts (keep in sync)
-# Format: label|objectType1,objectType2
-declare -A LABEL_APPLIES_TO=(
-  ["Sandcastle"]="issue"
-  ["agent:review"]="issue,pr"
-  ["agent:implement"]="issue"
-  ["agent:pr-open"]="issue"
-  ["agent:fix"]="pr"
-  ["agent:merge"]="pr"
-  ["agent:update-branch"]="pr"
-  ["agent:implement-prd"]="issue"
-  ["agent:queued"]="issue"
-  ["agent:in-progress"]="issue,pr"
-  ["agent:blocked"]="issue,pr"
-  ["source:architecture-review"]="issue,pr"
-)
-
-# Mutual exclusions (pairs that must not coexist)
-MUTUAL_EXCLUSIONS=(
-  "agent:in-progress|agent:blocked"
-  "agent:fix|agent:merge"
-  "agent:implement|agent:queued"
-)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=bin/pipeline-label-data.sh
+source "$SCRIPT_DIR/pipeline-label-data.sh"
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 
