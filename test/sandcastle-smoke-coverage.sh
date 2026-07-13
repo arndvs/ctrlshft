@@ -330,6 +330,14 @@ else
     _record_fail "sandcastle-teardown comments best-effort" "failure comment can fail teardown"
 fi
 
+if grep -qF "FAILURE_CONTEXT:" "$template_actions_dir/sandcastle-teardown/action.yml" &&
+    grep -qF 'context="$FAILURE_CONTEXT"' "$template_actions_dir/sandcastle-teardown/action.yml" &&
+    ! grep -qF 'context="${{ inputs['"'"'failure-context'"'"'] }}"' "$template_actions_dir/sandcastle-teardown/action.yml"; then
+    _record_pass "sandcastle-teardown reads failure context from env"
+else
+    _record_fail "sandcastle-teardown reads failure context from env" "failure-context is interpolated directly into shell"
+fi
+
 # Tracer migration guard for #155: migrated workflows should use the shared
 # lifecycle action contract instead of copied setup/teardown boilerplate.
 migrated_lifecycle_workflows=(
