@@ -26,6 +26,7 @@ const workflowPromptArgs = {
   "write-pr": ["ISSUE_NUMBER", "ISSUE_TITLE", "BRANCH"],
   "write-prd-pr": ["PRD_NUMBER", "PRD_TITLE"],
 } as const;
+const sandcastleBuiltInArgNames = ["SOURCE_BRANCH", "TARGET_BRANCH"] as const;
 
 const configArgNames = Object.keys(configPromptArgs({
   model: "test-model",
@@ -53,7 +54,7 @@ function promptCases(): Array<{ label: string; name: keyof typeof workflowPrompt
 }
 
 function extractPlaceholders(content: string): string[] {
-  return [...content.matchAll(/\{\{([A-Z0-9_]+)\}\}/g)].map((match) => match[1]!);
+  return [...content.matchAll(/\{\{\s*([^{}]+?)\s*\}\}/g)].map((match) => match[1]!.trim().toUpperCase());
 }
 
 describe("two-phase prompt contracts", () => {
@@ -73,14 +74,28 @@ describe("two-phase prompt contracts", () => {
 });
 
 describe("prompt argument contracts", () => {
+  it("extracts placeholders with optional whitespace and case differences", () => {
+    expect(extractPlaceholders("{{ BASE_BRANCH }} {{context_doc}}")).toEqual(["BASE_BRANCH", "CONTEXT_DOC"]);
+  });
+
   it.each(promptCases())("keeps $label placeholders backed by supplied args", ({ name, content }) => {
     const promptArgs = workflowPromptArgs[name];
     expect(promptArgs, `Missing workflow prompt arg contract for ${String(name)}`).toBeDefined();
 
-    const suppliedArgs = new Set([...configArgNames, ...promptArgs]);
+    const suppliedArgs = new Set([...configArgNames, ...promptArgs, ...sandcastleBuiltInArgNames]);
     const unknownPlaceholders = extractPlaceholders(content).filter((placeholder) => !suppliedArgs.has(placeholder));
 
     expect(unknownPlaceholders).toEqual([]);
+  });
+
+  it.each(promptCases())("keeps $label workflow-supplied args consumed by its prompt", ({ name, content }) => {
+    const promptArgs = workflowPromptArgs[name];
+    expect(promptArgs, `Missing workflow prompt arg contract for ${String(name)}`).toBeDefined();
+
+    const placeholders = new Set(extractPlaceholders(content));
+    const unusedPromptArgs = promptArgs.filter((arg) => !placeholders.has(arg));
+
+    expect(unusedPromptArgs).toEqual([]);
   });
 
   it("keeps config-derived prompt args consumed by at least one active prompt", () => {
