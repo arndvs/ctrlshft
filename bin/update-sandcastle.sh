@@ -169,6 +169,16 @@ echo "Checking helper scripts and hooks..."
 check_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
 check_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
 
+# 7. Composite action templates
+echo "Checking composite actions..."
+if [[ -d "$TEMPLATES/actions" ]]; then
+    for action_dir in "$TEMPLATES/actions/"*; do
+        [[ -d "$action_dir" ]] || continue
+        action_name="$(basename "$action_dir")"
+        check_dir_files "$action_dir" ".github/actions/$action_name" "actions/$action_name"
+    done
+fi
+
 # 8. Workflow YAMLs — need to resolve {{DEFAULT_BRANCH}} before comparing
 echo "Checking workflow YAMLs..."
 
@@ -419,6 +429,15 @@ apply_file "$TEMPLATES/labels.json" ".sandcastle/labels.json" "labels.json"
 apply_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
 apply_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
 chmod +x .sandcastle/scripts/*.sh .sandcastle/hooks/*.sh 2>/dev/null || true
+
+# Composite actions
+if [[ -d "$TEMPLATES/actions" ]]; then
+    for action_dir in "$TEMPLATES/actions/"*; do
+        [[ -d "$action_dir" ]] || continue
+        action_name="$(basename "$action_dir")"
+        apply_dir_files "$action_dir" ".github/actions/$action_name" "actions/$action_name"
+    done
+fi
 
 # Workflow YAMLs
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
