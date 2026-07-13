@@ -291,7 +291,19 @@ for action_name in sandcastle-setup sandcastle-teardown; do
     else
         _record_fail "installed action matches template: $action_name" "$installed_action differs from $template_action"
     fi
+
+    if grep -Eq "inputs\.[A-Za-z0-9]+-" "$template_action" "$installed_action"; then
+        _record_fail "action uses bracket syntax for hyphenated inputs: $action_name" "found inputs.<hyphenated-key>"
+    else
+        _record_pass "action uses bracket syntax for hyphenated inputs: $action_name"
+    fi
 done
+
+if grep -A2 "^  trigger-label:" "$template_actions_dir/sandcastle-setup/action.yml" | grep -q "required: true"; then
+    _record_fail "sandcastle-setup allows setup-only callers" "trigger-label remains required"
+else
+    _record_pass "sandcastle-setup allows setup-only callers"
+fi
 
 # Tracer migration guard for #155: migrated workflows should use the shared
 # lifecycle action contract instead of copied setup/teardown boilerplate.

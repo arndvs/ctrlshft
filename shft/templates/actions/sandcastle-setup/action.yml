@@ -3,7 +3,7 @@ description: Shared pre-run setup for Sandcastle agent workflows.
 inputs:
   trigger-label:
     description: Pipeline label that triggered this workflow.
-    required: true
+    required: false
   object-type:
     description: GitHub object type carrying lifecycle labels.
     required: false
@@ -41,34 +41,34 @@ runs:
   using: composite
   steps:
     - name: Transition labels
-      if: ${{ inputs.manage-labels == 'true' }}
+      if: ${{ inputs['manage-labels'] == 'true' }}
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
       run: |
-        gh "${{ inputs.object-type }}" edit "${{ inputs.object-number }}" --remove-label "${{ inputs.trigger-label }}" -R "${{ inputs.repository }}" || true
-        gh "${{ inputs.object-type }}" edit "${{ inputs.object-number }}" --remove-label "agent:blocked" -R "${{ inputs.repository }}" || true
-        gh "${{ inputs.object-type }}" edit "${{ inputs.object-number }}" --add-label "agent:in-progress" -R "${{ inputs.repository }}"
+        gh "${{ inputs['object-type'] }}" edit "${{ inputs['object-number'] }}" --remove-label "${{ inputs['trigger-label'] }}" -R "${{ inputs.repository }}" || true
+        gh "${{ inputs['object-type'] }}" edit "${{ inputs['object-number'] }}" --remove-label "agent:blocked" -R "${{ inputs.repository }}" || true
+        gh "${{ inputs['object-type'] }}" edit "${{ inputs['object-number'] }}" --add-label "agent:in-progress" -R "${{ inputs.repository }}"
 
     - name: Checkout
-      if: ${{ inputs.checkout-token == '' }}
+      if: ${{ inputs['checkout-token'] == '' }}
       uses: actions/checkout@v4
       with:
-        ref: ${{ inputs.checkout-ref }}
-        fetch-depth: ${{ inputs.checkout-fetch-depth }}
+        ref: ${{ inputs['checkout-ref'] }}
+        fetch-depth: ${{ inputs['checkout-fetch-depth'] }}
 
     - name: Checkout with token
-      if: ${{ inputs.checkout-token != '' }}
+      if: ${{ inputs['checkout-token'] != '' }}
       uses: actions/checkout@v4
       with:
-        ref: ${{ inputs.checkout-ref }}
-        fetch-depth: ${{ inputs.checkout-fetch-depth }}
-        token: ${{ inputs.checkout-token }}
+        ref: ${{ inputs['checkout-ref'] }}
+        fetch-depth: ${{ inputs['checkout-fetch-depth'] }}
+        token: ${{ inputs['checkout-token'] }}
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ inputs.node-version }}
+        node-version: ${{ inputs['node-version'] }}
 
     - name: Install engine dependencies
       shell: bash
