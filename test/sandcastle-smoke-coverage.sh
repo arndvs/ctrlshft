@@ -403,6 +403,13 @@ for wf_path in "$ROOT"/shft/templates/workflows/agent-*.yml; do
     fi
 done
 
+prd_workflow="$ROOT/shft/templates/workflows/agent-implement-prd.yml"
+if grep -qF "failure-context: while implementing sub-issue #" "$prd_workflow"; then
+    _record_fail "agent-implement-prd omits empty failure context" "failure-context is unconditional"
+else
+    _record_pass "agent-implement-prd omits empty failure context"
+fi
+
 template_sandcastle_package="$ROOT/shft/templates/package.json"
 installed_sandcastle_package="$ROOT/.sandcastle/package.json"
 if [[ -f "$template_sandcastle_package" ]] && grep -q '"type"[[:space:]]*:[[:space:]]*"module"' "$template_sandcastle_package"; then
