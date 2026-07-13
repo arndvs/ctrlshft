@@ -52,7 +52,7 @@ runs:
         **Workflow run:** $RUN_URL
         Re-add \`${{ inputs['trigger-label'] }}\` to retry.
         EOF
-        )"
+        )" || true
 
     - name: Remove in-progress label
       if: always()

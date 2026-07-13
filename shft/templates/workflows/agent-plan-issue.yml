@@ -33,6 +33,7 @@ jobs:
           object-type: issue
           object-number: ${{ env.ISSUE_NUMBER }}
           checkout-ref: {{DEFAULT_BRANCH}}
+          skip-checkout: true
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
 

@@ -29,6 +29,10 @@ inputs:
     description: Optional token for repository checkout.
     required: false
     default: ""
+  skip-checkout:
+    description: Whether the caller has already checked out the desired ref.
+    required: false
+    default: "false"
   node-version:
     description: Node.js version used by the Sandcastle engine.
     required: false
@@ -40,6 +44,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Validate lifecycle inputs
+      if: ${{ inputs['manage-labels'] == 'true' && (inputs['trigger-label'] == '' || inputs['object-type'] == '' || inputs['object-number'] == '') }}
+      shell: bash
+      run: |
+        echo "sandcastle-setup requires trigger-label, object-type, and object-number when manage-labels is true." >&2
+        exit 1
+
     - name: Transition labels
       if: ${{ inputs['manage-labels'] == 'true' }}
       shell: bash
@@ -51,14 +62,14 @@ runs:
         gh "${{ inputs['object-type'] }}" edit "${{ inputs['object-number'] }}" --add-label "agent:in-progress" -R "${{ inputs.repository }}"
 
     - name: Checkout
-      if: ${{ inputs['checkout-token'] == '' }}
+      if: ${{ inputs['skip-checkout'] != 'true' && inputs['checkout-token'] == '' }}
       uses: actions/checkout@v4
       with:
         ref: ${{ inputs['checkout-ref'] }}
         fetch-depth: ${{ inputs['checkout-fetch-depth'] }}
 
     - name: Checkout with token
-      if: ${{ inputs['checkout-token'] != '' }}
+      if: ${{ inputs['skip-checkout'] != 'true' && inputs['checkout-token'] != '' }}
       uses: actions/checkout@v4
       with:
         ref: ${{ inputs['checkout-ref'] }}

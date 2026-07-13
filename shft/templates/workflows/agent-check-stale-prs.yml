@@ -25,6 +25,7 @@ jobs:
         uses: ./.github/actions/sandcastle-setup
         with:
           checkout-ref: {{DEFAULT_BRANCH}}
+          skip-checkout: true
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           manage-labels: false

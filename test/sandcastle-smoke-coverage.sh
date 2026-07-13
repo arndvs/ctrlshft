@@ -293,16 +293,34 @@ for action_name in sandcastle-setup sandcastle-teardown; do
     fi
 
     if grep -Eq "inputs\.[A-Za-z0-9]+-" "$template_action" "$installed_action"; then
-        _record_fail "action uses bracket syntax for hyphenated inputs: $action_name" "found inputs.<hyphenated-key>"
+        _record_fail "action avoids dot syntax for hyphenated inputs: $action_name" "found inputs.<hyphenated-key>"
     else
-        _record_pass "action uses bracket syntax for hyphenated inputs: $action_name"
+        _record_pass "action avoids dot syntax for hyphenated inputs: $action_name"
     fi
 done
 
-if grep -A2 "^  trigger-label:" "$template_actions_dir/sandcastle-setup/action.yml" | grep -q "required: true"; then
+trigger_label_required="$(awk '
+    /^  trigger-label:/ { in_block=1; next }
+    in_block && /^  [A-Za-z0-9_-]+:/ { in_block=0 }
+    in_block && /required:[[:space:]]*true/ { print "true"; exit }
+' "$template_actions_dir/sandcastle-setup/action.yml")"
+if [[ "$trigger_label_required" == "true" ]]; then
     _record_fail "sandcastle-setup allows setup-only callers" "trigger-label remains required"
 else
     _record_pass "sandcastle-setup allows setup-only callers"
+fi
+
+if grep -qF "name: Validate lifecycle inputs" "$template_actions_dir/sandcastle-setup/action.yml"; then
+    _record_pass "sandcastle-setup validates lifecycle inputs"
+else
+    _record_fail "sandcastle-setup validates lifecycle inputs" "missing explicit validation step"
+fi
+
+if grep -qF 'gh "${{ inputs['"'"'object-type'"'"'] }}" comment' "$template_actions_dir/sandcastle-teardown/action.yml" &&
+    grep -qF ')" || true' "$template_actions_dir/sandcastle-teardown/action.yml"; then
+    _record_pass "sandcastle-teardown comments best-effort"
+else
+    _record_fail "sandcastle-teardown comments best-effort" "failure comment can fail teardown"
 fi
 
 # Tracer migration guard for #155: migrated workflows should use the shared
@@ -318,6 +336,13 @@ migrated_lifecycle_workflows=(
 )
 
 shared_setup_workflows=(
+    agent-architecture-review.yml
+    agent-check-stale-prs.yml
+)
+
+skip_checkout_workflows=(
+    agent-plan-issue.yml
+    agent-review-issue.yml
     agent-architecture-review.yml
     agent-check-stale-prs.yml
 )
@@ -385,6 +410,16 @@ for wf_file in "${shared_setup_workflows[@]}"; do
         _record_fail "$wf_label removes inline engine install" "still contains copied install step"
     else
         _record_pass "$wf_label removes inline engine install"
+    fi
+done
+
+for wf_file in "${skip_checkout_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "skip-checkout: true" "$wf_path"; then
+        _record_pass "$wf_label skips duplicate setup checkout"
+    else
+        _record_fail "$wf_label skips duplicate setup checkout" "missing skip-checkout: true"
     fi
 done
 
