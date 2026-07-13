@@ -36,12 +36,13 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
         RUN_URL: ${{ inputs['run-url'] }}
+        FAILURE_CONTEXT: ${{ inputs['failure-context'] }}
       run: |
         reason="(no reason file written — check workflow logs)"
         if [ -f "${RUNNER_TEMP}/failure_reason.txt" ]; then
           reason=$(cat "${RUNNER_TEMP}/failure_reason.txt")
         fi
-        context="${{ inputs['failure-context'] }}"
+        context="$FAILURE_CONTEXT"
         if [ -n "$context" ]; then
           context=" $context"
         fi
