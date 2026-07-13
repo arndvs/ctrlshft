@@ -294,7 +294,7 @@ _check_engine() {
 
     if [[ ! -d "$engine_dir/node_modules" ]]; then
         case "$package_manager" in
-            pnpm) (cd "$engine_dir" && pnpm install --frozen-lockfile >/tmp/sandcastle-preflight-install.log 2>&1) ;;
+            pnpm) (cd "$engine_dir" && pnpm --ignore-workspace install --frozen-lockfile >/tmp/sandcastle-preflight-install.log 2>&1) ;;
             npm)
                 if [[ -f "$engine_dir/package-lock.json" ]]; then
                     (cd "$engine_dir" && npm ci >/tmp/sandcastle-preflight-install.log 2>&1)
