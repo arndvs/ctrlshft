@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
  * Sandcastle dispatcher — single entry point for all workflow runners.
- * Workflow YAMLs call: ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts <workflow-name> [flags]
+ * Workflow YAMLs call: pnpm --dir .sandcastle/engine exec tsx ../run.ts <workflow-name> [flags]
  * Supported flags are parsed centrally in engine/lib/parse-cli-args.ts.
  */
 
