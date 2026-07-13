@@ -264,6 +264,20 @@ else
     _record_fail "installed agent workflows use stable pnpm runner invocation" "found $installed_runner_count, expected 11"
 fi
 
+template_sandcastle_package="$ROOT/shft/templates/package.json"
+installed_sandcastle_package="$ROOT/.sandcastle/package.json"
+if [[ -f "$template_sandcastle_package" ]] && grep -q '"type"[[:space:]]*:[[:space:]]*"module"' "$template_sandcastle_package"; then
+    _record_pass "template Sandcastle dispatcher package pins ESM"
+else
+    _record_fail "template Sandcastle dispatcher package pins ESM" "expected shft/templates/package.json with type=module"
+fi
+
+if [[ -f "$installed_sandcastle_package" ]] && grep -q '"type"[[:space:]]*:[[:space:]]*"module"' "$installed_sandcastle_package"; then
+    _record_pass "installed Sandcastle dispatcher package pins ESM"
+else
+    _record_fail "installed Sandcastle dispatcher package pins ESM" "expected .sandcastle/package.json with type=module"
+fi
+
 # ── 8. Smoke test scripts exist for each smoke script ────────────────────────
 # Each bin/smoke-sandcastle-*.sh should have a corresponding test file.
 # Naming conventions vary (sandcastle-FOO-smoke.sh, sandcastle-FOO.sh, etc.),
