@@ -7,6 +7,10 @@ import {
   MUTUAL_EXCLUSIONS,
   TRANSITIONS,
 } from "./pipeline-states.js";
+import {
+  renderLabelCatalogJson,
+  renderPipelineLabelShell,
+} from "./render-pipeline-artifacts.js";
 
 interface MarkdownStateRow {
   label: string;
@@ -18,6 +22,28 @@ const CONTRACT_PATH = path.resolve(
   "../../..",
   "instructions",
   "sandcastle-pipeline.instructions.md",
+);
+
+const PIPELINE_LABEL_DATA_PATH = path.resolve(
+  import.meta.dirname,
+  "../../..",
+  "bin",
+  "pipeline-label-data.sh",
+);
+
+const TEMPLATE_LABELS_PATH = path.resolve(
+  import.meta.dirname,
+  "../../..",
+  "shft",
+  "templates",
+  "labels.json",
+);
+
+const INSTALLED_LABELS_PATH = path.resolve(
+  import.meta.dirname,
+  "../../..",
+  ".sandcastle",
+  "labels.json",
 );
 
 function extractBacktickedLabels(cell: string): string[] {
@@ -87,6 +113,40 @@ describe("pipeline-states", () => {
         expect(row, `missing markdown row for transition source "${from}"`).toBeDefined();
         expect(row!.nextLabels.sort()).toEqual([...targets].sort());
       }
+    });
+
+    it("does not document transition targets for state-marker-only labels", () => {
+      const rows = extractMarkdownStateRows();
+
+      for (const row of rows) {
+        if (TRANSITIONS.has(row.label)) continue;
+
+        expect(
+          row.nextLabels,
+          `${row.label} is not a transition source and should not list next labels`,
+        ).toEqual([]);
+      }
+    });
+
+    it("stays aligned with the generated shell label metadata", () => {
+      const generated = fs
+        .readFileSync(PIPELINE_LABEL_DATA_PATH, "utf8")
+        .replaceAll("\r\n", "\n");
+
+      expect(generated).toBe(renderPipelineLabelShell());
+    });
+
+    it("stays aligned with the generated GitHub label catalogues", () => {
+      const expected = renderLabelCatalogJson();
+      const templateLabels = fs
+        .readFileSync(TEMPLATE_LABELS_PATH, "utf8")
+        .replaceAll("\r\n", "\n");
+      const installedLabels = fs
+        .readFileSync(INSTALLED_LABELS_PATH, "utf8")
+        .replaceAll("\r\n", "\n");
+
+      expect(templateLabels).toBe(expected);
+      expect(installedLabels).toBe(expected);
     });
   });
 

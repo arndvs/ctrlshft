@@ -32,7 +32,7 @@ the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`).
 | `agent:queued` | **Human** / skills | `agent-promote-queued.yml` (when a blocker closes) | `agent:implement` once deps clear |
 | `agent:in-progress` | any active workflow | — (state marker) | removed on completion |
 | `agent:blocked` | any workflow on failure | — | needs human intervention |
-| `source:architecture-review` | `agent-architecture-review.yml` | — (proposal marker) | human triages → `Sandcastle`/`agent:implement-prd` |
+| `source:architecture-review` | `agent-architecture-review.yml` | — (proposal marker) | human triages before applying a start label |
 
 There is no separate planning-state label — `agent-plan-issue.yml` promotes
 `agent:review` → `agent:implement` directly.
