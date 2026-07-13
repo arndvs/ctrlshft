@@ -1,0 +1,25 @@
+name: "Main PR source guard"
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  validate-main-pr-source:
+    runs-on: ubuntu-latest
+    name: Validate main PR source
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require dev promotion path
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+        run: bash bin/validate-main-pr-source.sh
