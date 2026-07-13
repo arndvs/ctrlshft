@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { resolvePrompt, configPromptArgs } from "./resolve-prompt.js";
+import { resolvePrompt, configPromptArgs, extractPromptPlaceholders, filterPromptArgs } from "./resolve-prompt.js";
 import type { SandcastleConfig } from "./config.js";
 
 function makeConfig(overrides: Partial<SandcastleConfig> = {}): SandcastleConfig {
@@ -120,6 +120,31 @@ describe("configPromptArgs", () => {
       CODING_STANDARDS: "STANDARDS.md",
       ADR_DIR: "adrs",
       BASE_BRANCH: "dev",
+    });
+  });
+
+  describe("prompt arg filtering", () => {
+    it("extracts placeholders with optional whitespace and case differences", () => {
+      expect([...extractPromptPlaceholders("{{ BASE_BRANCH }} {{context_doc}}")]).toEqual(["BASE_BRANCH", "CONTEXT_DOC"]);
+    });
+
+    it("keeps only args consumed by the prompt file", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "prompt-args-"));
+      try {
+        const promptFile = join(tempDir, "prompt.md");
+        writeFileSync(promptFile, "Read {{ CONTEXT_DOC }} on branch {{branch}}.");
+
+        expect(filterPromptArgs(promptFile, {
+          CONTEXT_DOC: "CONTEXT.md",
+          BRANCH: "feature/test",
+          CODING_STANDARDS: ".sandcastle/CODING_STANDARDS.md",
+        })).toEqual({
+          CONTEXT_DOC: "CONTEXT.md",
+          BRANCH: "feature/test",
+        });
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
     });
   });
 

@@ -33,6 +33,7 @@ vi.mock("../lib/config.js", () => ({
 vi.mock("../lib/resolve-prompt.js", () => ({
   resolvePrompt: vi.fn(async () => "/repo/prompts/address-review.md"),
   configPromptArgs: vi.fn(() => ({})),
+  filterPromptArgs: vi.fn((_promptFile: string, promptArgs: Record<string, string>) => promptArgs),
 }));
 vi.mock("../lib/shell-helpers.js", () => ({
   shFile: vi.fn(() => "feat/branch"),

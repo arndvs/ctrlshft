@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { access } from "node:fs/promises";
 import { join, isAbsolute } from "node:path";
 import type { SandcastleConfig } from "./config.js";
@@ -56,4 +57,16 @@ export function configPromptArgs(config: SandcastleConfig): Record<string, strin
     ADR_DIR: config.adrDir,
     BASE_BRANCH: config.baseBranch,
   };
+}
+
+export function extractPromptPlaceholders(content: string): Set<string> {
+  return new Set([...content.matchAll(/\{\{\s*([^{}]+?)\s*\}\}/g)].map((match) => match[1]!.trim().toUpperCase()));
+}
+
+export function filterPromptArgs(promptFile: string, promptArgs: Record<string, string>): Record<string, string> {
+  const placeholders = extractPromptPlaceholders(readFileSync(promptFile, "utf8"));
+
+  return Object.fromEntries(
+    Object.entries(promptArgs).filter(([name]) => placeholders.has(name.toUpperCase())),
+  );
 }
