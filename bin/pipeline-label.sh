@@ -50,6 +50,8 @@ done
 # ── Validate ──────────────────────────────────────────────────────────────────
 
 WARNINGS=()
+CURRENT_LABELS=()
+CURRENT_LABELS_LOADED=0
 
 validate_label_op() {
   local label="$1"
@@ -72,9 +74,62 @@ validate_label_op() {
   fi
 }
 
+load_current_labels() {
+  if [[ "$CURRENT_LABELS_LOADED" == "1" ]]; then
+    return 0
+  fi
+
+  local output status
+  set +e
+  output=$(gh "$OBJECT_TYPE" view "$NUMBER" --json labels --jq '.labels[].name' "${GH_EXTRA[@]}" 2>&1)
+  status=$?
+  set -e
+
+  if [[ $status -ne 0 ]]; then
+    WARNINGS+=("⚠ Could not load current labels for mutual-exclusion validation: $output")
+    return 1
+  fi
+
+  mapfile -t CURRENT_LABELS <<< "$output"
+  CURRENT_LABELS_LOADED=1
+  return 0
+}
+
+validate_mutual_exclusions() {
+  if [[ ${#ADD_LABELS[@]} -eq 0 ]]; then
+    return
+  fi
+
+  load_current_labels || return
+
+  local label pair left right
+  declare -A final_labels=()
+
+  for label in "${CURRENT_LABELS[@]}"; do
+    [[ -n "$label" ]] && final_labels["$label"]=1
+  done
+
+  for label in "${REMOVE_LABELS[@]}"; do
+    unset 'final_labels[$label]'
+  done
+
+  for label in "${ADD_LABELS[@]}"; do
+    final_labels["$label"]=1
+  done
+
+  for pair in "${MUTUAL_EXCLUSIONS[@]}"; do
+    left="${pair%%|*}"
+    right="${pair#*|}"
+    if [[ -n "${final_labels[$left]:-}" && -n "${final_labels[$right]:-}" ]]; then
+      WARNINGS+=("⚠ Mutual exclusion violated: \"$left\" and \"$right\" cannot coexist")
+    fi
+  done
+}
+
 for label in "${ADD_LABELS[@]}"; do
   validate_label_op "$label" "add"
 done
+validate_mutual_exclusions
 
 # Emit warnings
 if [[ ${#WARNINGS[@]} -gt 0 ]]; then
