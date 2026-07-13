@@ -55,7 +55,8 @@ fi
 
 if [[ -f "$WORKFLOW" ]] &&
     grep -qE '^[[:space:]]*pull_request:' "$WORKFLOW" &&
-    grep -qF 'main' "$WORKFLOW" &&
+    grep -qE '^[[:space:]]*-[[:space:]]*main[[:space:]]*$' "$WORKFLOW" &&
+    grep -qE '^[[:space:]]*-[[:space:]]*master[[:space:]]*$' "$WORKFLOW" &&
     grep -qF 'GITHUB_HEAD_REF" != "dev"' "$WORKFLOW"; then
     record_pass "main PR source guard workflow is wired"
 else
