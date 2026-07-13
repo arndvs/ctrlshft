@@ -97,4 +97,4 @@ jobs:
       - name: Lint pipeline label transitions
         run: |
           set -euo pipefail
-          ./shft/engine/node_modules/.bin/tsx shft/engine/lib/lint-pipeline-labels.ts
+          pnpm --dir shft/engine exec tsx lib/lint-pipeline-labels.ts
