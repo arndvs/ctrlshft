@@ -95,7 +95,7 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Lint pipeline label transitions
+        working-directory: shft/engine
         run: |
           set -euo pipefail
-          cd shft/engine
           pnpm exec tsx lib/lint-pipeline-labels.ts
