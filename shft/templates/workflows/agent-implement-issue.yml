@@ -82,7 +82,7 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
-          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts implement-issue \
+          pnpm --dir .sandcastle/engine exec tsx ../run.ts implement-issue \
             --issue "$ISSUE_NUMBER" \
             --issue-title "$ISSUE_TITLE" \
             --branch "$BRANCH"
@@ -102,7 +102,7 @@ jobs:
           OUTPUT_DIR: ${{ runner.temp }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
-          ./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts write-pr \
+          pnpm --dir .sandcastle/engine exec tsx ../run.ts write-pr \
             --issue "$ISSUE_NUMBER" \
             --issue-title "$ISSUE_TITLE" \
             --branch "$BRANCH"
