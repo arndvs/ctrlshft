@@ -56,17 +56,18 @@ fi
 if [[ -f "$WORKFLOW" ]] &&
     grep -qE '^[[:space:]]*pull_request:' "$WORKFLOW" &&
     grep -qF 'main' "$WORKFLOW" &&
-    grep -qF 'bin/validate-main-pr-source.sh' "$WORKFLOW"; then
+    grep -qF 'GITHUB_HEAD_REF" != "dev"' "$WORKFLOW"; then
     record_pass "main PR source guard workflow is wired"
 else
     record_fail "main PR source guard workflow is wired" "$WORKFLOW missing or incomplete"
 fi
 
 if [[ -f "$WORKFLOW" ]] &&
-    grep -qF 'ref: ${{ github.event.pull_request.base.sha }}' "$WORKFLOW"; then
-    record_pass "main PR source guard checks out trusted base commit"
+    grep -qF 'ref: ${{ github.event.pull_request.base.sha }}' "$WORKFLOW" &&
+    ! grep -qF 'bash bin/validate-main-pr-source.sh' "$WORKFLOW"; then
+    record_pass "main PR source guard uses trusted inline validation"
 else
-    record_fail "main PR source guard checks out trusted base commit" "workflow must not run the guard from PR-modified code"
+    record_fail "main PR source guard uses trusted inline validation" "workflow must not run PR-modified or base-missing script code"
 fi
 
 if [[ -x "$GUARD" ]]; then

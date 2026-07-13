@@ -24,4 +24,17 @@ jobs:
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
-        run: bash bin/validate-main-pr-source.sh
+        run: |
+          set -euo pipefail
+
+          case "$GITHUB_BASE_REF" in
+            main|master)
+              if [[ "$GITHUB_HEAD_REF" != "dev" ]]; then
+                echo "PRs targeting $GITHUB_BASE_REF must come from dev, not $GITHUB_HEAD_REF." >&2
+                echo "Use the promotion path: feature branch -> dev, then dev -> $GITHUB_BASE_REF." >&2
+                exit 1
+              fi
+              ;;
+          esac
+
+          echo "PR source accepted: $GITHUB_HEAD_REF -> $GITHUB_BASE_REF"
