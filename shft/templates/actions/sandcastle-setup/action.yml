@@ -15,12 +15,10 @@ inputs:
     required: true
   repository:
     description: GitHub repository, owner/name.
-    required: false
-    default: ${{ github.repository }}
+    required: true
   checkout-ref:
     description: Ref to check out.
-    required: false
-    default: ${{ github.ref }}
+    required: true
   checkout-fetch-depth:
     description: Checkout history depth.
     required: false

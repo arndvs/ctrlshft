@@ -15,8 +15,7 @@ inputs:
     required: true
   repository:
     description: GitHub repository, owner/name.
-    required: false
-    default: ${{ github.repository }}
+    required: true
   run-url:
     description: URL for the current workflow run.
     required: true

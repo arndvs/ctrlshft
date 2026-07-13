@@ -40,30 +40,20 @@ jobs:
       PR_NUMBER: ${{ github.event.pull_request.number }}
 
     steps:
-      - name: Transition labels
-        env:
-          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr edit "$PR_NUMBER" --remove-label "agent:merge" -R ${{ github.repository }} || true
-          gh pr edit "$PR_NUMBER" --remove-label "agent:blocked" -R ${{ github.repository }} || true
-          gh pr edit "$PR_NUMBER" --add-label "agent:in-progress" -R ${{ github.repository }}
-
-      - name: Checkout code
+      - name: Checkout workflow actions
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: dev
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Sandcastle setup
+        uses: ./.github/actions/sandcastle-setup
         with:
-          node-version: "22"
-
-      - name: Install engine dependencies
-        run: |
-          corepack enable
-          cd .sandcastle/engine
-          pnpm --ignore-workspace install --frozen-lockfile
-          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+          trigger-label: agent:merge
+          object-type: pr
+          object-number: ${{ env.PR_NUMBER }}
+          checkout-ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
 
       - name: Mark PR ready (un-draft)
         env:
@@ -86,28 +76,20 @@ jobs:
           pnpm --ignore-workspace exec tsx ../run.ts merge-pr \
             --pr ${{ github.event.pull_request.number }}
 
-      - name: Mark blocked on failure
-        if: failure()
-        env:
-          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          reason="(no reason file written — check workflow logs)"
-          if [ -f "${RUNNER_TEMP}/failure_reason.txt" ]; then
-            reason=$(cat "${RUNNER_TEMP}/failure_reason.txt")
-          fi
-          gh pr edit "$PR_NUMBER" --add-label "agent:blocked" -R ${{ github.repository }} || true
-          gh pr comment "$PR_NUMBER" -R ${{ github.repository }} --body "$(cat <<EOF
-          \`agent:merge\` run failed.
-          **Reason:** $reason
-          **Workflow run:** $RUN_URL
-          Re-add \`agent:merge\` to retry.
-          EOF
-          )"
-
-      - name: Remove in-progress label
+      - name: Restore workflow actions
         if: always()
-        env:
-          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr edit "$PR_NUMBER" --remove-label "agent:in-progress" -R ${{ github.repository }} || true
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Sandcastle teardown
+        if: always()
+        uses: ./.github/actions/sandcastle-teardown
+        with:
+          trigger-label: agent:merge
+          object-type: pr
+          object-number: ${{ env.PR_NUMBER }}
+          token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          job-status: ${{ job.status }}
