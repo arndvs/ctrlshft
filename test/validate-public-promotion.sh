@@ -151,22 +151,22 @@ git -C "$workflow_repo" add .github/workflows/agent-review-issue.yml
 run_case "installed agent workflows are allowed on the host" pass "Public promotion guard passed" \
     bash -c "cd '$workflow_repo' && bash '$GUARD'"
 
-working_readme_repo="$TMP_ROOT/working-readmes"
-make_repo "$working_readme_repo"
-mkdir -p "$working_readme_repo/working/active" "$working_readme_repo/working/refs" "$working_readme_repo/working/research"
-printf '# working active\n' > "$working_readme_repo/working/active/README.md"
-printf '# working refs\n' > "$working_readme_repo/working/refs/README.md"
-printf '# working research\n' > "$working_readme_repo/working/research/README.md"
-git -C "$working_readme_repo" add working/active/README.md working/refs/README.md working/research/README.md
-run_case "working lane README scaffolds are public structure" pass "Public promotion guard passed" \
-    bash -c "cd '$working_readme_repo' && bash '$GUARD'"
+working_tracked_repo="$TMP_ROOT/working-tracked-lanes"
+make_repo "$working_tracked_repo"
+mkdir -p "$working_tracked_repo/working/active" "$working_tracked_repo/working/refs" "$working_tracked_repo/working/research"
+printf '# active plan\n' > "$working_tracked_repo/working/active/plan.md"
+printf 'Source: https://example.com\nFetched: 2026-01-01\nContext: test\n' > "$working_tracked_repo/working/refs/ref.md"
+printf '# research\n' > "$working_tracked_repo/working/research/topic.md"
+git -C "$working_tracked_repo" add working/active/plan.md working/refs/ref.md working/research/topic.md
+run_case "working active refs and research lanes are public agent-visible structure" pass "Public promotion guard passed" \
+    bash -c "cd '$working_tracked_repo' && bash '$GUARD'"
 
-working_repo="$TMP_ROOT/working"
+working_repo="$TMP_ROOT/working-runtime"
 make_repo "$working_repo"
-mkdir -p "$working_repo/working/active"
-printf '# private plan\n' > "$working_repo/working/active/private.md"
-git -C "$working_repo" add working/active/private.md
-run_case "working active plans are private-only" fail "working/active/private.md" \
+mkdir -p "$working_repo/working/runtime"
+printf '{"state":"private"}\n' > "$working_repo/working/runtime/state.json"
+git -C "$working_repo" add -f working/runtime/state.json
+run_case "working runtime artifacts are private-only" fail "working/runtime/state.json" \
     bash -c "cd '$working_repo' && bash '$GUARD'"
 
 public_refs_repo="$TMP_ROOT/public-refs"
