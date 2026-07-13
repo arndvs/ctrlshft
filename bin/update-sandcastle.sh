@@ -159,6 +159,7 @@ done
 
 # 5. Runtime prompt and extraction templates
 echo "Checking runtime templates..."
+check_file "$TEMPLATES/package.json" ".sandcastle/package.json" "package.json"
 check_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 check_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
 check_file "$TEMPLATES/labels.json" ".sandcastle/labels.json" "labels.json"
@@ -409,6 +410,7 @@ for cfg in pnpm-lock.yaml tsconfig.json; do
 done
 
 # Runtime prompt and extraction templates
+apply_file "$TEMPLATES/package.json" ".sandcastle/package.json" "package.json"
 apply_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 apply_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
 apply_file "$TEMPLATES/labels.json" ".sandcastle/labels.json" "labels.json"
