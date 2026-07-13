@@ -330,11 +330,13 @@ else
 fi
 
 if awk '
-    /^  repository:/ { in_repository=1; next }
-    in_repository && /^  checkout-ref:/ { in_repository=0; in_checkout_ref=1; next }
-    (in_repository || in_checkout_ref) && /^  [A-Za-z0-9_-]+:/ { in_repository=0; in_checkout_ref=0 }
-    in_repository && /required:[[:space:]]*true/ { repository_required=1 }
-    in_checkout_ref && /required:[[:space:]]*true/ { checkout_ref_required=1 }
+    /^  [A-Za-z0-9_-]+:/ {
+        current=$1
+        sub(/:$/, "", current)
+        next
+    }
+    current == "repository" && /required:[[:space:]]*true/ { repository_required=1 }
+    current == "checkout-ref" && /required:[[:space:]]*true/ { checkout_ref_required=1 }
     END { exit !(repository_required && checkout_ref_required) }
 ' "$template_actions_dir/sandcastle-setup/action.yml"; then
     _record_pass "sandcastle-setup requires explicit checkout inputs"
