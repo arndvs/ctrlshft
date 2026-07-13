@@ -8,6 +8,7 @@
 #   2. Every agent workflow maps to at least one smoke script or report path.
 #   3. The smoke matrix doc exists and references every workflow.
 #   4. The nightly cron workflow exists and can exercise the report.
+#   5. Agent workflows use the stable pnpm runner invocation.
 #
 # Usage: bash test/sandcastle-smoke-coverage.sh
 set -euo pipefail
@@ -228,7 +229,42 @@ else
     _record_fail "architecture review retry guard inputs exist" "installed workflow or template missing"
 fi
 
-# ── 7. Smoke test scripts exist for each smoke script ────────────────────────
+# ── 7. Sandcastle runner invocation drift guard ──────────────────────────────
+stable_runner_pattern="pnpm --dir .sandcastle/engine exec tsx ../run.ts"
+direct_binary_pattern="node_modules/.bin/tsx"
+
+template_workflows=("$ROOT"/shft/templates/workflows/agent-*.yml)
+installed_workflows=("$ROOT"/.github/workflows/agent-*.yml)
+
+template_direct_matches="$(grep -nF "$direct_binary_pattern" "${template_workflows[@]}" 2>/dev/null || true)"
+if [[ -z "$template_direct_matches" ]]; then
+    _record_pass "template agent workflows avoid direct tsx binary path"
+else
+    _record_fail "template agent workflows avoid direct tsx binary path" "$template_direct_matches"
+fi
+
+installed_direct_matches="$(grep -nF "$direct_binary_pattern" "${installed_workflows[@]}" 2>/dev/null || true)"
+if [[ -z "$installed_direct_matches" ]]; then
+    _record_pass "installed agent workflows avoid direct tsx binary path"
+else
+    _record_fail "installed agent workflows avoid direct tsx binary path" "$installed_direct_matches"
+fi
+
+template_runner_count="$({ grep -hF "$stable_runner_pattern" "${template_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
+if [[ "$template_runner_count" == "11" ]]; then
+    _record_pass "template agent workflows use stable pnpm runner invocation (11)"
+else
+    _record_fail "template agent workflows use stable pnpm runner invocation" "found $template_runner_count, expected 11"
+fi
+
+installed_runner_count="$({ grep -hF "$stable_runner_pattern" "${installed_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
+if [[ "$installed_runner_count" == "11" ]]; then
+    _record_pass "installed agent workflows use stable pnpm runner invocation (11)"
+else
+    _record_fail "installed agent workflows use stable pnpm runner invocation" "found $installed_runner_count, expected 11"
+fi
+
+# ── 8. Smoke test scripts exist for each smoke script ────────────────────────
 # Each bin/smoke-sandcastle-*.sh should have a corresponding test file.
 # Naming conventions vary (sandcastle-FOO-smoke.sh, sandcastle-FOO.sh, etc.),
 # so we use a broad glob to find any test file whose name contains the key stem.
@@ -259,7 +295,7 @@ for smoke in "$ROOT"/bin/smoke-sandcastle-*.sh; do
     fi
 done
 
-# ── 8. QA baseline doc exists ────────────────────────────────────────────────
+# ── 9. QA baseline doc exists ────────────────────────────────────────────────
 baseline_doc="$ROOT/docs/sandcastle-dogfood-baseline.md"
 if [[ -f "$baseline_doc" ]]; then
     _record_pass "QA dogfood baseline document exists"
