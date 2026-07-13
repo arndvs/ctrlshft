@@ -40,6 +40,9 @@ _private_reason() {
     local path="$1"
 
     case "$path" in
+        working/active/README.md|working/refs/README.md|working/research/README.md)
+            return 1
+            ;;
         working/active/*|working/runtime/*|working/tmp/*|working/logs/*|working/refs/*|working/research/*)
             printf '%s\n' "working-state artifact; promote durable material under docs/ instead"
             return 0
