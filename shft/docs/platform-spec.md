@@ -64,7 +64,7 @@ The full dogfood smoke-test contract for these workflows lives in `shft/docs/ful
 | `sandcastle-ci.yml` | Push/PR touching `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck). Always vendored |
 | `proxy-canary.yml` (in `workflows-proxy/`) | Schedule every 30m + `workflow_dispatch` | Probes the proxy for real completions. Vendored only with `--with-proxy` (default) |
 
-Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` into `.github/workflows/agent-*.yml` (the `pnpm install --frozen-lockfile` step is baked directly into the templates); publishing or installing raw templates without that substitution produces broken workflows. The universal `sandcastle-ci.yml` is always vendored; proxy monitors in `shft/templates/workflows-proxy/` are vendored only with `--with-proxy` (default on).
+Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` into `.github/workflows/agent-*.yml` (the `pnpm --ignore-workspace install --frozen-lockfile` step is baked directly into the templates); publishing or installing raw templates without that substitution produces broken workflows. The universal `sandcastle-ci.yml` is always vendored; proxy monitors in `shft/templates/workflows-proxy/` are vendored only with `--with-proxy` (default on).
 
 ### Workflow security contract
 
@@ -143,7 +143,11 @@ For the current private-to-public Sandcastle promotion, the private `shft/engine
 | Missing `vitest` and `test` script | Promote them in `shft/engine` so source tests are runnable; keep only the rendered no-op test script in `.sandcastle/engine`. |
 | `start` still pointing at the legacy `main.ts` runner | Promote the dispatcher-oriented `start` script because workflow runners now execute via `.sandcastle/run.ts`. |
 
-No package dependency is private-only by itself. Private dogfood assumptions live in `sandcastle.config.json`, installed `.github/workflows/agent-*.yml`, repository secrets, and local runtime state; those remain excluded from public promotion.
+No package dependency is private-only by itself. Host-managed Sandcastle files
+such as `sandcastle.config.json` and installed
+`.github/workflows/agent-*.yml` / `.github/workflows/agent-*.yaml` workflows
+are allowed in ctrl+shft, but repository secrets and local runtime state remain
+private.
 
 ## Public promotion shape
 
@@ -152,9 +156,16 @@ The public ctrl+shft repository should carry both Sandcastle source and the sani
 | Path | Public role | Promotion rule |
 |------|-------------|----------------|
 | `shft/engine/**` | Product source for the TypeScript engine | Preserve safe commit history where `preflight-public-promotion.sh` passes. |
-| `shft/templates/**` | Product source for workflows, prompts, scripts, hooks, and setup templates | Preserve safe commit history; promote installed workflow behavior as templates, not as `.github/workflows/agent-*.yml`. |
+| `shft/templates/**` | Product source for workflows, prompts, scripts, hooks, and setup templates | Preserve safe commit history; promote reusable workflow behavior as templates. |
 | `shft/docs/**` | Public product documentation | Preserve safe commit history. |
 | `bin/*sandcastle*.sh`, `test/sandcastle-*.sh` | Public CLI/update/preflight and smoke-test tooling | Preserve safe commit history after private wording is sanitized. |
 | `.sandcastle/**` | Sanitized generated runtime snapshot for dogfooding and public inspection | Add from the reviewed final tree as a snapshot; do not replay private dogfood runtime history. |
 
-Private install state stays private. Do not publish `sandcastle.config.json`, installed `.github/workflows/agent-*.yml`, working/runtime artifacts, local env files, or secret values. Validate the exact promotion branch with `bin/validate-public-promotion.sh` and `bin/preflight-public-promotion.sh --range public/main..HEAD` before pushing to public.
+Private install state stays private. Do not publish working/runtime artifacts,
+non-example local env files, private secret paths, or secret values.
+Host-managed `sandcastle.config.json` and installed
+`.github/workflows/agent-*.yml` / `.github/workflows/agent-*.yaml` workflows
+are allowed in ctrl+shft when their content is public-safe. Validate the exact
+promotion branch with `bin/validate-public-promotion.sh` and
+`bin/preflight-public-promotion.sh --range public/main..HEAD` before pushing to
+public.

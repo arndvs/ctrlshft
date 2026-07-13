@@ -21,6 +21,7 @@ SUITES=(
   "instructions:test/claude-instructions.sh"
   "hooks:test/hooks-integration.sh"
   "lifecycle:test/lifecycle.sh"
+  "pipeline-label:test/pipeline-label-wrapper.sh"
   "proxy-scripts:shft/templates/scripts/test_probe_completion.sh"
   "smoke-coverage:test/sandcastle-smoke-coverage.sh"
 )

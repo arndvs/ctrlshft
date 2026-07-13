@@ -40,8 +40,11 @@ _private_reason() {
     local path="$1"
 
     case "$path" in
-        working/active/*|working/runtime/*|working/tmp/*|working/logs/*|working/refs/*|working/research/*)
-            printf '%s\n' "working-state artifact; promote durable material under docs/ instead"
+        working/active/*|working/refs/*|working/research/*)
+            return 1
+            ;;
+        working/runtime/*|working/tmp/*|working/logs/*)
+            printf '%s\n' "runtime working artifact; summarize durable material in tracked lanes or docs/ instead"
             return 0
             ;;
         working/*.log|working/*.json|working/*.jsonl)

@@ -14,6 +14,10 @@ export type ObjectType = "issue" | "pr";
 export interface LabelDef {
   /** Which object types this label may legally appear on. */
   appliesTo: readonly ObjectType[];
+  /** GitHub label colour without the leading "#". */
+  color: string;
+  /** Human-readable GitHub label description. */
+  description: string;
   /** If true, this label does not participate in transition legality. */
   stateMarker?: boolean;
 }
@@ -23,19 +27,67 @@ export interface LabelDef {
  * Keys are the exact GitHub label strings.
  */
 export const LABELS: Record<string, LabelDef> = {
-  Sandcastle: { appliesTo: ["issue"] },
-  "agent:review": { appliesTo: ["issue", "pr"] },
-  "agent:implement": { appliesTo: ["issue"] },
-  "agent:pr-open": { appliesTo: ["issue"] },
-  "agent:fix": { appliesTo: ["pr"] },
-  "agent:merge": { appliesTo: ["pr"] },
-  "agent:update-branch": { appliesTo: ["pr"] },
-  "agent:implement-prd": { appliesTo: ["issue"] },
-  "agent:queued": { appliesTo: ["issue"] },
-  "agent:in-progress": { appliesTo: ["issue", "pr"], stateMarker: true },
-  "agent:blocked": { appliesTo: ["issue", "pr"], stateMarker: true },
+  Sandcastle: {
+    appliesTo: ["issue"],
+    color: "7057ff",
+    description: "Entry point — triggers agent review pipeline",
+  },
+  "agent:review": {
+    appliesTo: ["issue", "pr"],
+    color: "0075ca",
+    description: "Agent is reviewing the issue",
+  },
+  "agent:implement": {
+    appliesTo: ["issue"],
+    color: "e4e669",
+    description: "Agent is implementing the issue",
+  },
+  "agent:pr-open": {
+    appliesTo: ["issue"],
+    color: "1d76db",
+    description: "Agent has opened a PR for review",
+  },
+  "agent:fix": {
+    appliesTo: ["pr"],
+    color: "d93f0b",
+    description: "Agent should fix PR review feedback",
+  },
+  "agent:merge": {
+    appliesTo: ["pr"],
+    color: "0e8a16",
+    description: "Agent should merge the PR",
+  },
+  "agent:update-branch": {
+    appliesTo: ["pr"],
+    color: "5319e7",
+    description: "Agent should update branch against base ref",
+  },
+  "agent:implement-prd": {
+    appliesTo: ["issue"],
+    color: "d4c5f9",
+    description: "Agent should implement next sub-issue of a PRD",
+  },
+  "agent:queued": {
+    appliesTo: ["issue"],
+    color: "c5def5",
+    description: "Agent waiting for blocking issues to close before implementing",
+  },
+  "agent:in-progress": {
+    appliesTo: ["issue", "pr"],
+    color: "fbca04",
+    description: "Agent is actively working on this issue",
+    stateMarker: true,
+  },
+  "agent:blocked": {
+    appliesTo: ["issue", "pr"],
+    color: "b60205",
+    description: "Agent is blocked and needs human input",
+    stateMarker: true,
+  },
   "source:architecture-review": {
     appliesTo: ["issue"],
+    color: "5319e7",
+    description: "PRDs proposed by the automated architecture-review workflow",
     stateMarker: true,
   },
 };
