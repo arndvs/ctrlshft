@@ -19,7 +19,7 @@ jobs:
 
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
-      GH_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Block unsafe fork execution
@@ -46,36 +46,23 @@ jobs:
       BRANCH: ${{ github.event.pull_request.head.ref }}
       BRANCH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       BASE_REF: ${{ github.event.pull_request.base.ref }}
-      GH_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
 
     steps:
-      - name: Transition labels
-        run: |
-          gh pr edit "$PR_NUMBER" --remove-label "agent:update-branch" -R ${{ github.repository }} || true
-          gh pr edit "$PR_NUMBER" --remove-label "agent:blocked" -R ${{ github.repository }} || true
-          gh pr edit "$PR_NUMBER" --add-label "agent:in-progress" -R ${{ github.repository }}
-
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
+      - name: Sandcastle setup
+        uses: ./.github/actions/sandcastle-setup
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
+          trigger-label: agent:update-branch
+          object-type: pr
+          object-number: ${{ env.PR_NUMBER }}
+          checkout-ref: ${{ github.event.pull_request.head.sha }}
+          checkout-fetch-depth: 0
+          token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
 
       - name: Ensure branch is checked out by name
         run: git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install engine dependencies
-        run: |
-          corepack enable
-          cd .sandcastle/engine
-          pnpm --ignore-workspace install --frozen-lockfile
-          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Configure git identity
         run: |
@@ -86,7 +73,6 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
-          OUTPUT_DIR: ${{ runner.temp }}
         run: |
           cd .sandcastle/engine
           pnpm --ignore-workspace exec tsx ../run.ts update-branch \
@@ -126,24 +112,14 @@ jobs:
             gh pr comment "$PR_NUMBER" -R ${{ github.repository }} --body-file "$COMMENT_FILE"
           fi
 
-      - name: Mark blocked on failure
-        if: failure()
-        env:
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          reason="(no reason file written — check workflow logs)"
-          if [ -f "${RUNNER_TEMP}/failure_reason.txt" ]; then
-            reason=$(cat "${RUNNER_TEMP}/failure_reason.txt")
-          fi
-          gh pr edit "$PR_NUMBER" --add-label "agent:blocked" -R ${{ github.repository }} || true
-          gh pr comment "$PR_NUMBER" -R ${{ github.repository }} --body "$(cat <<EOF
-          \`agent:update-branch\` run failed.
-          **Reason:** $reason
-          **Workflow run:** $RUN_URL
-          Re-add \`agent:update-branch\` to retry.
-          EOF
-          )"
-
-      - name: Remove in-progress label
+      - name: Sandcastle teardown
         if: always()
-        run: gh pr edit "$PR_NUMBER" --remove-label "agent:in-progress" -R ${{ github.repository }} || true
+        uses: ./.github/actions/sandcastle-teardown
+        with:
+          trigger-label: agent:update-branch
+          object-type: pr
+          object-number: ${{ env.PR_NUMBER }}
+          token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          job-status: ${{ job.status }}

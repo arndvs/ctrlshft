@@ -264,6 +264,121 @@ else
     _record_fail "installed agent workflows use isolated pnpm runner invocation" "found $installed_runner_count, expected 11"
 fi
 
+# ── 7b. Composite action template drift guard ─────────────────────────────────
+template_actions_dir="$ROOT/shft/templates/actions"
+installed_actions_dir="$ROOT/.github/actions"
+
+for action_name in sandcastle-setup sandcastle-teardown; do
+    template_action="$template_actions_dir/$action_name/action.yml"
+    installed_action="$installed_actions_dir/$action_name/action.yml"
+
+    if [[ -f "$template_action" ]]; then
+        _record_pass "template action exists: $action_name"
+    else
+        _record_fail "template action exists: $action_name" "$template_action missing"
+        continue
+    fi
+
+    if [[ -f "$installed_action" ]]; then
+        _record_pass "installed action exists: $action_name"
+    else
+        _record_fail "installed action exists: $action_name" "$installed_action missing"
+        continue
+    fi
+
+    if diff -q "$template_action" "$installed_action" >/dev/null 2>&1; then
+        _record_pass "installed action matches template: $action_name"
+    else
+        _record_fail "installed action matches template: $action_name" "$installed_action differs from $template_action"
+    fi
+done
+
+# Tracer migration guard for #155: migrated workflows should use the shared
+# lifecycle action contract instead of copied setup/teardown boilerplate.
+migrated_lifecycle_workflows=(
+    agent-plan-issue.yml
+    agent-review-issue.yml
+    agent-implement-issue.yml
+    agent-implement-prd.yml
+    agent-fix-pr-feedback.yml
+    agent-merge-pr.yml
+    agent-update-branch.yml
+)
+
+shared_setup_workflows=(
+    agent-architecture-review.yml
+    agent-check-stale-prs.yml
+)
+
+for wf_file in "${migrated_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "uses: ./.github/actions/sandcastle-setup" "$wf_path"; then
+        _record_pass "$wf_label uses sandcastle-setup action"
+    else
+        _record_fail "$wf_label uses sandcastle-setup action" "missing setup action"
+    fi
+
+    if grep -qF "uses: ./.github/actions/sandcastle-teardown" "$wf_path"; then
+        _record_pass "$wf_label uses sandcastle-teardown action"
+    else
+        _record_fail "$wf_label uses sandcastle-teardown action" "missing teardown action"
+    fi
+
+    if grep -qF "Install engine dependencies" "$wf_path"; then
+        _record_fail "$wf_label removes inline engine install" "still contains copied install step"
+    else
+        _record_pass "$wf_label removes inline engine install"
+    fi
+
+    if [ "$wf_file" = "agent-implement-issue.yml" ] || [ "$wf_file" = "agent-implement-prd.yml" ] || [ "$wf_file" = "agent-update-branch.yml" ]; then
+        if grep -qF "checkout-fetch-depth: 0" "$wf_path"; then
+            _record_pass "$wf_label preserves full-history checkout"
+        else
+            _record_fail "$wf_label preserves full-history checkout" "missing checkout-fetch-depth: 0"
+        fi
+    fi
+
+    if [ "$wf_file" = "agent-implement-issue.yml" ] || [ "$wf_file" = "agent-implement-prd.yml" ]; then
+        if grep -qF 'checkout-token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}' "$wf_path"; then
+            _record_pass "$wf_label preserves checkout token"
+        else
+            _record_fail "$wf_label preserves checkout token" "missing checkout-token"
+        fi
+    fi
+done
+
+for wf_file in "${shared_setup_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "uses: ./.github/actions/sandcastle-setup" "$wf_path"; then
+        _record_pass "$wf_label uses sandcastle-setup action"
+    else
+        _record_fail "$wf_label uses sandcastle-setup action" "missing setup action"
+    fi
+
+    if grep -qF "Install engine dependencies" "$wf_path"; then
+        _record_fail "$wf_label removes inline engine install" "still contains copied install step"
+    else
+        _record_pass "$wf_label removes inline engine install"
+    fi
+done
+
+for wf_path in "$ROOT"/shft/templates/workflows/agent-*.yml; do
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "GH_TOKEN:" "$wf_path"; then
+        _record_fail "$wf_label uses GITHUB_TOKEN env naming" "still contains GH_TOKEN env key"
+    else
+        _record_pass "$wf_label uses GITHUB_TOKEN env naming"
+    fi
+
+    if grep -qF 'OUTPUT_DIR: ${{ runner.temp }}' "$wf_path"; then
+        _record_fail "$wf_label relies on setup action for OUTPUT_DIR" "still sets OUTPUT_DIR manually"
+    else
+        _record_pass "$wf_label relies on setup action for OUTPUT_DIR"
+    fi
+done
+
 template_sandcastle_package="$ROOT/shft/templates/package.json"
 installed_sandcastle_package="$ROOT/.sandcastle/package.json"
 if [[ -f "$template_sandcastle_package" ]] && grep -q '"type"[[:space:]]*:[[:space:]]*"module"' "$template_sandcastle_package"; then

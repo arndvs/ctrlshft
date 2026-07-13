@@ -19,33 +19,23 @@ jobs:
       issues: write
 
     env:
-      GH_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Sandcastle setup
+        uses: ./.github/actions/sandcastle-setup
         with:
-          ref: {{DEFAULT_BRANCH}}
-          fetch-depth: 1
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install engine dependencies
-        run: |
-          corepack enable
-          cd .sandcastle/engine
-          pnpm --ignore-workspace install --frozen-lockfile
-          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+          checkout-ref: {{DEFAULT_BRANCH}}
+          checkout-fetch-depth: 1
+          token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          manage-labels: false
 
       - name: Run architecture review
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
-          OUTPUT_DIR: ${{ runner.temp }}
         run: |
           set -euo pipefail
           cd .sandcastle/engine

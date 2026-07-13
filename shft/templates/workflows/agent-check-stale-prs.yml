@@ -16,22 +16,13 @@ jobs:
       issues: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Sandcastle setup
+        uses: ./.github/actions/sandcastle-setup
         with:
-          ref: {{DEFAULT_BRANCH}}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install engine dependencies
-        run: |
-          corepack enable
-          cd .sandcastle/engine
-          pnpm --ignore-workspace install --frozen-lockfile
-          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+          checkout-ref: {{DEFAULT_BRANCH}}
+          token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          manage-labels: false
 
       - name: Check stale PRs
         env:
