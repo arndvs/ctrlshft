@@ -13,6 +13,8 @@ interface PipelineArtifact {
 }
 
 const ROOT = path.resolve(import.meta.dirname, "../../..");
+const CURRENT_DIR_WRITE_COMMAND = "pnpm pipeline-artifacts:write";
+const REPO_ROOT_WRITE_COMMAND = "pnpm --dir shft/engine pipeline-artifacts:write";
 
 const ARTIFACTS: PipelineArtifact[] = [
   {
@@ -62,7 +64,8 @@ function checkArtifacts(): number {
   console.error("Pipeline artifacts are stale:");
   for (const artifactPath of stale) console.error(`  - ${artifactPath}`);
   console.error("");
-  console.error("Run: pnpm --dir shft/engine pipeline-artifacts:write");
+  console.error(`Run from the current directory: ${CURRENT_DIR_WRITE_COMMAND}`);
+  console.error(`Or from the repo root: ${REPO_ROOT_WRITE_COMMAND}`);
   return 1;
 }
 
