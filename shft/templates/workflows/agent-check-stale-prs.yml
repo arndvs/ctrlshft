@@ -16,6 +16,11 @@ jobs:
       issues: write
 
     steps:
+      - name: Checkout workflow actions
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
+
       - name: Sandcastle setup
         uses: ./.github/actions/sandcastle-setup
         with:

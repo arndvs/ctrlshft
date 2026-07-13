@@ -114,6 +114,12 @@ jobs:
           gh issue edit "$PRD_NUMBER" --add-label "agent:blocked" || true
           gh issue comment "$PRD_NUMBER" --body "Refused to run: all sub-issues are already closed; nothing to implement. If you want to do more work on this PRD, reopen or add a sub-issue first."
 
+      - name: Checkout workflow actions
+        if: steps.shape.outputs.mode == 'run'
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
+
       - name: Sandcastle setup
         if: steps.shape.outputs.mode == 'run'
         uses: ./.github/actions/sandcastle-setup

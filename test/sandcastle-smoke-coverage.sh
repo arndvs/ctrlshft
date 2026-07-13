@@ -313,6 +313,12 @@ shared_setup_workflows=(
 for wf_file in "${migrated_lifecycle_workflows[@]}"; do
     wf_path="$ROOT/shft/templates/workflows/$wf_file"
     wf_label="${wf_path#$ROOT/}"
+    if grep -qF "name: Checkout workflow actions" "$wf_path"; then
+        _record_pass "$wf_label bootstraps local action checkout"
+    else
+        _record_fail "$wf_label bootstraps local action checkout" "local composite actions require a prior checkout"
+    fi
+
     if grep -qF "uses: ./.github/actions/sandcastle-setup" "$wf_path"; then
         _record_pass "$wf_label uses sandcastle-setup action"
     else
@@ -351,6 +357,12 @@ done
 for wf_file in "${shared_setup_workflows[@]}"; do
     wf_path="$ROOT/shft/templates/workflows/$wf_file"
     wf_label="${wf_path#$ROOT/}"
+    if grep -qF "name: Checkout workflow actions" "$wf_path"; then
+        _record_pass "$wf_label bootstraps local action checkout"
+    else
+        _record_fail "$wf_label bootstraps local action checkout" "local composite actions require a prior checkout"
+    fi
+
     if grep -qF "uses: ./.github/actions/sandcastle-setup" "$wf_path"; then
         _record_pass "$wf_label uses sandcastle-setup action"
     else
