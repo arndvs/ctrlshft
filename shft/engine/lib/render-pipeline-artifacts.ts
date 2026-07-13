@@ -24,3 +24,13 @@ export function renderPipelineLabelShell(): string {
 
   return lines.join("\n");
 }
+
+export function renderLabelCatalogJson(): string {
+  const labels = Object.entries(LABELS).map(([name, def]) => ({
+    name,
+    color: def.color,
+    description: def.description,
+  }));
+
+  return `${JSON.stringify(labels, null, 2)}\n`;
+}
