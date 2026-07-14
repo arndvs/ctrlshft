@@ -342,7 +342,7 @@ def _run_subprocess(cmd: list[str], cwd: str, env: dict[str, str], emit) -> None
             raise RuntimeError(f"{cmd[0]} exited {proc.returncode}")
     except WorkerShutdown:
         _terminate_process_group(proc, reason="worker_shutdown", emit=emit)
-        raise RuntimeError("worker_shutdown")
+        raise
     except subprocess.TimeoutExpired:
         _terminate_process_group(proc, reason="subprocess_timeout", emit=emit)
         raise RuntimeError(f"{cmd[0]} timed out")
@@ -440,6 +440,23 @@ def process_one_job(cfg: Config, worker_id: str) -> bool:
         _process_job(cfg, job, worker_id)
         with db.connect(cfg.db_path) as conn:
             db.mark_done(conn, job.id)
+    except WorkerShutdown:
+        logger.info("Job %s interrupted by worker shutdown", job.id)
+        with db.connect(cfg.db_path) as conn:
+            db.mark_failed(conn, job.id, "worker_shutdown")
+        try:
+            hud.emit(
+                cfg.hud_script,
+                "bridge.job.failed",
+                project=job.repo_full_name,
+                workspace_id=job.claim_key,
+                worker_id=worker_id,
+                delivery_id=job.delivery_id,
+                pr_number=job.pr_number,
+                error="worker_shutdown",
+            )
+        except Exception:
+            logger.warning("HUD failure event failed for %s", job.claim_key, exc_info=True)
     except Exception as e:
         tb = traceback.format_exc()
         logger.error("Job %s failed: %s\n%s", job.id, e, tb)

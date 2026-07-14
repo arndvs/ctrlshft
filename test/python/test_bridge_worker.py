@@ -482,6 +482,40 @@ class TestProcessJob(unittest.TestCase):
         self.assertIn("bridge.loop.cap_exceeded", event_names)
         dispatch.assert_not_called()
 
+    def test_process_one_job_marks_shutdown_failure_with_clear_error(self):
+        cfg = self._cfg()
+        with db.connect(self.db_path) as conn:
+            db.enqueue(
+                conn,
+                delivery_id="d1",
+                event_type="pull_request_review",
+                repo_full_name="org/repo",
+                pr_number=7,
+                payload={},
+            )
+
+        with mock.patch("bridge.worker._process_job", side_effect=worker_module.WorkerShutdown("worker_shutdown")), \
+                mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
+                mock.patch("bridge.worker.hud.emit") as emit:
+            processed = worker_module.process_one_job(cfg, "worker-1")
+
+        self.assertTrue(processed)
+        cleanup.assert_called_once()
+        emit.assert_any_call(
+            cfg.hud_script,
+            "bridge.job.failed",
+            project="org/repo",
+            workspace_id="org/repo#7",
+            worker_id="worker-1",
+            delivery_id="d1",
+            pr_number=7,
+            error="worker_shutdown",
+        )
+        with db.connect(self.db_path) as conn:
+            row = conn.execute("SELECT status, error FROM jobs").fetchone()
+        self.assertEqual(row["status"], "failed")
+        self.assertEqual(row["error"], "worker_shutdown")
+
     def test_run_cleans_once_after_processed_job(self):
         cfg = self._cfg()
         job = self._claimed_job()
