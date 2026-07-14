@@ -14,6 +14,7 @@ Run: python3 -m unittest discover -s test/python -p "test_bridge_worker.py" -v
 
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -37,6 +38,33 @@ from bridge import db
 from bridge.github import PrMetadata, Token, UnresolvedThread
 
 _TOKEN = Token(value="ghs_test", expires_at="2026-01-01T00:00:00Z")
+
+
+class TestShutdownSignal(unittest.TestCase):
+    def setUp(self):
+        worker_module._shutdown_event.clear()
+        worker_module._shutdown_signum = None
+
+    def tearDown(self):
+        if hasattr(worker_module, "_shutdown_event"):
+            worker_module._shutdown_event.clear()
+        worker_module._shutdown_signum = None
+
+    def test_install_shutdown_handlers_set_flag(self):
+        with mock.patch("bridge.worker.signal.signal") as signal_fn:
+            worker_module._install_shutdown_handlers()
+
+        handlers = {call.args[0]: call.args[1] for call in signal_fn.call_args_list}
+        self.assertIn(signal.SIGTERM, handlers)
+        self.assertIn(signal.SIGINT, handlers)
+        self.assertFalse(worker_module._shutdown_requested())
+
+        with mock.patch("bridge.worker.logger.info") as logger_info:
+            handlers[signal.SIGTERM](signal.SIGTERM, None)
+
+        self.assertTrue(worker_module._shutdown_requested())
+        self.assertEqual(worker_module._shutdown_signum, signal.SIGTERM)
+        logger_info.assert_not_called()
 
 
 class TestBuildSubprocessEnv(unittest.TestCase):
@@ -95,6 +123,7 @@ def _proc(returncode=0, wait_side_effect=None, pid=4321):
     p = mock.MagicMock()
     p.pid = pid
     p.returncode = returncode
+    p.poll.return_value = None
     if wait_side_effect is not None:
         p.wait.side_effect = wait_side_effect
     else:
@@ -103,10 +132,16 @@ def _proc(returncode=0, wait_side_effect=None, pid=4321):
 
 
 class TestRunSubprocess(unittest.TestCase):
+    def setUp(self):
+        worker_module._shutdown_event.clear()
+
+    def tearDown(self):
+        worker_module._shutdown_event.clear()
+
     def _run(self, proc):
         emit = mock.MagicMock()
         with mock.patch("bridge.worker.subprocess.Popen", return_value=proc) as popen, \
-                mock.patch("bridge.worker.os.getpgid", return_value=proc.pid, create=True), \
+                mock.patch("bridge.worker.os.getpgid", return_value=proc.pid, create=True) as getpgid, \
                 mock.patch("bridge.worker.os.killpg", create=True) as killpg, \
                 mock.patch("bridge.worker.signal.SIGKILL", 9, create=True):
             ctx = mock.patch("bridge.worker.signal.SIGTERM", 15, create=True)
@@ -117,6 +152,7 @@ class TestRunSubprocess(unittest.TestCase):
                 except RuntimeError as e:
                     raised = e
         self.popen = popen
+        self.getpgid = getpgid
         return raised, killpg, emit
 
     def test_success_emits_and_no_raise(self):
@@ -145,11 +181,56 @@ class TestRunSubprocess(unittest.TestCase):
         # returns an int) → exactly one killpg targeting the child's process
         # group (pid 4321) with SIGTERM (15), not the bare pid and not SIGKILL.
         # Asserting the args (not just the count) enforces SIGTERM-first behavior.
-        proc = _proc(wait_side_effect=[subprocess.TimeoutExpired("cmd", 1), 0])
-        raised, killpg, emit = self._run(proc)
+        proc = _proc(wait_side_effect=[0])
+        with mock.patch("bridge.worker.time.monotonic", side_effect=[0, worker_module.SHFT_RUN_TIMEOUT_SECONDS + 1]):
+            raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
         killpg.assert_called_once_with(4321, 15)
-        emit.assert_any_call("bridge.job.failed", reason="subprocess_timeout")
+        self.getpgid.assert_called_once_with(4321)
+        proc.wait.assert_called_once_with(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS)
+        self.assertFalse(
+            any(call.args[0] == "bridge.job.failed" for call in emit.call_args_list)
+        )
+
+    def test_shutdown_sigterm_kills_process_group(self):
+        calls = {"count": 0}
+
+        def wait_side_effect(timeout):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                worker_module._shutdown_event.set()
+                raise subprocess.TimeoutExpired("cmd", timeout)
+            return 0
+
+        proc = _proc(wait_side_effect=wait_side_effect)
+
+        raised, killpg, emit = self._run(proc)
+
+        self.assertIsInstance(raised, RuntimeError)
+        self.assertIn("worker_shutdown", str(raised))
+        killpg.assert_called_once_with(4321, 15)
+        self.getpgid.assert_called_once_with(4321)
+        proc.wait.assert_has_calls([
+            mock.call(timeout=worker_module.SUBPROCESS_POLL_SECONDS),
+            mock.call(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS),
+        ])
+        self.assertFalse(
+            any(call.args[0] == "bridge.job.failed" for call in emit.call_args_list)
+        )
+
+    def test_shutdown_after_child_exit_keeps_successful_result(self):
+        def wait_side_effect(timeout):
+            worker_module._shutdown_event.set()
+            raise subprocess.TimeoutExpired("cmd", timeout)
+
+        proc = _proc(wait_side_effect=wait_side_effect)
+        proc.poll.side_effect = [None, 0]
+
+        raised, killpg, emit = self._run(proc)
+
+        self.assertIsNone(raised)
+        killpg.assert_not_called()
+        emit.assert_any_call("bridge.job.shft_completed", exit_code=0)
 
     def test_timeout_escalates_to_sigkill(self):
         # Initial wait + the SIGTERM wait both time out → ordered escalation:
@@ -159,13 +240,42 @@ class TestRunSubprocess(unittest.TestCase):
         proc = _proc(wait_side_effect=[
             subprocess.TimeoutExpired("cmd", 1),
             subprocess.TimeoutExpired("cmd", 1),
-            0,  # post-SIGKILL wait returns rc 0 (Popen.wait() returns an int)
         ])
-        raised, killpg, emit = self._run(proc)
+        with mock.patch("bridge.worker.time.monotonic", side_effect=[0, worker_module.SHFT_RUN_TIMEOUT_SECONDS + 1]), \
+                mock.patch("bridge.worker.logger.warning") as warning:
+            raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
         self.assertEqual(
             killpg.call_args_list, [mock.call(4321, 15), mock.call(4321, 9)]
         )
+        self.getpgid.assert_called_once_with(4321)
+        proc.wait.assert_has_calls([
+            mock.call(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS),
+            mock.call(timeout=worker_module.PROCESS_KILL_WAIT_SECONDS),
+        ])
+        warning.assert_called_once_with(
+            "Process group %s did not exit after SIGKILL", 4321
+        )
+
+    def test_shutdown_timing_budget_stays_within_five_seconds(self):
+        self.assertLessEqual(
+            worker_module.SUBPROCESS_POLL_SECONDS
+            + worker_module.PROCESS_TERMINATE_GRACE_SECONDS
+            + worker_module.PROCESS_KILL_WAIT_SECONDS,
+            5.0,
+        )
+
+    def test_terminate_skips_exited_child(self):
+        proc = _proc()
+        proc.poll.return_value = 0
+
+        with mock.patch("bridge.worker.os.getpgid", create=True) as getpgid, \
+                mock.patch("bridge.worker.os.killpg", create=True) as killpg:
+            worker_module._terminate_process_group(proc)
+
+        getpgid.assert_not_called()
+        killpg.assert_not_called()
+        proc.wait.assert_not_called()
 
 
 class TestDispatch(unittest.TestCase):
@@ -433,6 +543,69 @@ class TestProcessJob(unittest.TestCase):
         self.assertIn("bridge.loop.cap_exceeded", event_names)
         dispatch.assert_not_called()
 
+    def test_process_one_job_marks_shutdown_failure_with_clear_error(self):
+        cfg = self._cfg()
+        with db.connect(self.db_path) as conn:
+            db.enqueue(
+                conn,
+                delivery_id="d1",
+                event_type="pull_request_review",
+                repo_full_name="org/repo",
+                pr_number=7,
+                payload={},
+            )
+
+        with mock.patch("bridge.worker._process_job", side_effect=worker_module.WorkerShutdown("worker_shutdown")), \
+                mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
+                mock.patch("bridge.worker.hud.emit") as emit:
+            processed = worker_module.process_one_job(cfg, "worker-1")
+
+        self.assertTrue(processed)
+        cleanup.assert_called_once()
+        emit.assert_any_call(
+            cfg.hud_script,
+            "bridge.job.failed",
+            project="org/repo",
+            workspace_id="org/repo#7",
+            worker_id="worker-1",
+            delivery_id="d1",
+            pr_number=7,
+            error="worker_shutdown",
+        )
+        with db.connect(self.db_path) as conn:
+            row = conn.execute("SELECT status, error FROM jobs").fetchone()
+        self.assertEqual(row["status"], "failed")
+        self.assertEqual(row["error"], "worker_shutdown")
+
+    def test_shutdown_failure_cleans_existing_workspace(self):
+        cfg = self._cfg()
+        with db.connect(self.db_path) as conn:
+            db.enqueue(
+                conn,
+                delivery_id="d1",
+                event_type="pull_request_review",
+                repo_full_name="org/repo",
+                pr_number=7,
+                payload={},
+            )
+
+        workspace_path = cfg.workspaces_root / "org--repo--pr7"
+        workspace_path.mkdir(parents=True)
+
+        with mock.patch("bridge.worker._process_job", side_effect=worker_module.WorkerShutdown("worker_shutdown")), \
+                mock.patch("bridge.worker.hud.emit") as emit:
+            processed = worker_module.process_one_job(cfg, "worker-1")
+
+        self.assertTrue(processed)
+        self.assertFalse(workspace_path.exists())
+        emit.assert_any_call(
+            cfg.hud_script,
+            "bridge.workspace.cleaned",
+            project="org/repo",
+            workspace_id="org/repo#7",
+            worker_id="worker-1",
+        )
+
     def test_run_cleans_once_after_processed_job(self):
         cfg = self._cfg()
         job = self._claimed_job()
@@ -440,15 +613,19 @@ class TestProcessJob(unittest.TestCase):
         with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
                 mock.patch.object(cfg, "require_github_app"), \
                 mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker._install_shutdown_handlers"), \
                 mock.patch("bridge.worker.db.init_db"), \
                 mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
                 mock.patch("bridge.worker.db.claim_next_job", side_effect=[job, None]), \
                 mock.patch("bridge.worker._process_job"), \
                 mock.patch("bridge.worker.db.mark_done"), \
                 mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
-                mock.patch("bridge.worker.time.sleep", side_effect=KeyboardInterrupt):
-            with self.assertRaises(KeyboardInterrupt):
-                worker_module.run("worker-1")
+                mock.patch.object(
+                    worker_module._shutdown_event,
+                    "wait",
+                    side_effect=lambda _seconds: worker_module._shutdown_event.set() or True,
+                ):
+            worker_module.run("worker-1")
 
         cleanup.assert_called_once_with(cfg, job, "worker-1")
 
@@ -458,18 +635,69 @@ class TestProcessJob(unittest.TestCase):
         with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
                 mock.patch.object(cfg, "require_github_app"), \
                 mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker._install_shutdown_handlers"), \
                 mock.patch("bridge.worker.db.init_db"), \
                 mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
                 mock.patch("bridge.worker.db.claim_next_job", return_value=None), \
                 mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
                 mock.patch("bridge.worker.hud.emit") as emit, \
-                mock.patch("bridge.worker.time.sleep", side_effect=KeyboardInterrupt):
-            with self.assertRaises(KeyboardInterrupt):
-                worker_module.run("worker-1")
+                mock.patch.object(
+                    worker_module._shutdown_event,
+                    "wait",
+                    side_effect=lambda _seconds: worker_module._shutdown_event.set() or True,
+                ):
+            worker_module.run("worker-1")
 
         cleanup.assert_not_called()
         self.assertFalse(
             any(call.args[1] == "bridge.workspace.cleaned" for call in emit.call_args_list)
+        )
+
+    def test_run_exits_idle_loop_when_shutdown_requested(self):
+        cfg = self._cfg()
+
+        def request_shutdown(_seconds):
+            worker_module._shutdown_event.set()
+            return True
+
+        with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
+                mock.patch.object(cfg, "require_github_app"), \
+                mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker.db.init_db"), \
+                mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
+                mock.patch("bridge.worker.db.claim_next_job", return_value=None) as claim, \
+                mock.patch("bridge.worker._install_shutdown_handlers") as install, \
+                mock.patch.object(worker_module._shutdown_event, "wait", side_effect=request_shutdown) as wait:
+            worker_module.run("worker-1")
+
+        install.assert_called_once()
+        claim.assert_called_once()
+        wait.assert_called_once_with(worker_module.POLL_INTERVAL_SECONDS)
+
+    def test_run_emits_worker_shutdown_event(self):
+        cfg = self._cfg()
+
+        with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
+                mock.patch.object(cfg, "require_github_app"), \
+                mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker._install_shutdown_handlers"), \
+                mock.patch("bridge.worker.db.init_db"), \
+                mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
+                mock.patch("bridge.worker.db.claim_next_job", return_value=None), \
+                mock.patch("bridge.worker.hud.emit") as emit, \
+                mock.patch.object(
+                    worker_module._shutdown_event,
+                    "wait",
+                    side_effect=lambda _seconds: worker_module._shutdown_event.set() or True,
+                ):
+            worker_module.run("worker-1")
+
+        emit.assert_any_call(
+            cfg.hud_script,
+            "bridge.worker.shutdown",
+            project="bridge-worker",
+            worker_id="worker-1",
+            reason="shutdown_requested",
         )
 
 
