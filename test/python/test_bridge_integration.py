@@ -282,6 +282,11 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
             ws_path.mkdir(parents=True, exist_ok=True)
             return ws_path
 
+        def fail_job_failed_hud(_script, event, **_kwargs):
+            if event == "bridge.job.failed":
+                raise RuntimeError("hud failed")
+
+        self.hud_emit.side_effect = fail_job_failed_hud
         with mock.patch("bridge.worker.github.mint_token", return_value=_TOKEN), \
                 mock.patch(
                     "bridge.worker.github.fetch_unresolved_copilot_threads",
@@ -303,10 +308,12 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
                     "bridge.worker._run_subprocess",
                     side_effect=RuntimeError("dispatch failed"),
                 ), \
-                mock.patch("bridge.worker.logger.error"):
+                mock.patch("bridge.worker.logger.error"), \
+                mock.patch("bridge.worker.logger.warning") as warning:
             processed = worker.process_one_job(self.cfg, "worker-1")
 
         self.assertTrue(processed)
+        self.assertGreaterEqual(warning.call_count, 1)
 
         with db.connect(self.db_path) as conn:
             row = conn.execute("SELECT * FROM jobs").fetchone()

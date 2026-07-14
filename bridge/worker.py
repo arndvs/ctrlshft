@@ -399,16 +399,19 @@ def process_one_job(cfg: Config, worker_id: str) -> bool:
         logger.error("Job %s failed: %s\n%s", job.id, e, tb)
         with db.connect(cfg.db_path) as conn:
             db.mark_failed(conn, job.id, tb)
-        hud.emit(
-            cfg.hud_script,
-            "bridge.job.failed",
-            project=job.repo_full_name,
-            workspace_id=job.claim_key,
-            worker_id=worker_id,
-            delivery_id=job.delivery_id,
-            pr_number=job.pr_number,
-            error=str(e),
-        )
+        try:
+            hud.emit(
+                cfg.hud_script,
+                "bridge.job.failed",
+                project=job.repo_full_name,
+                workspace_id=job.claim_key,
+                worker_id=worker_id,
+                delivery_id=job.delivery_id,
+                pr_number=job.pr_number,
+                error=str(e),
+            )
+        except Exception:
+            logger.warning("HUD failure event failed for %s", job.claim_key, exc_info=True)
     finally:
         # Workspace cleanup — prevents unbounded disk growth.
         try:
