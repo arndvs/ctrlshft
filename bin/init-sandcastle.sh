@@ -122,6 +122,7 @@ echo ""
 
 # ── 1. Create directories ────────────────────────────────────────────────────
 mkdir -p .github/workflows
+mkdir -p .github/actions
 mkdir -p .sandcastle/prompts
 
 # ── 2. Copy workflow YAML templates ──────────────────────────────────────────
@@ -131,6 +132,14 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
     render_workflow "$tmpl" > ".github/workflows/$fname"
     echo "    .github/workflows/$fname"
 done
+
+# ── 2b. Copy composite action templates ──────────────────────────────────────
+if [[ -d "$TEMPLATES/actions" ]]; then
+    echo "  Installing composite actions..."
+    rm -rf .github/actions/sandcastle-setup .github/actions/sandcastle-teardown
+    cp -R "$TEMPLATES/actions/." .github/actions/
+    echo "    .github/actions/"
+fi
 
 # ── 3. Copy copilot-setup-steps.yml ──────────────────────────────────────────
 echo "  Installing copilot-setup-steps.yml..."
