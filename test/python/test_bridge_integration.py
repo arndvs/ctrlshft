@@ -324,6 +324,41 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
         self.assertIn("bridge.job.failed", emitted_events)
         self.assertIn("bridge.workspace.cleaned", emitted_events)
 
+    def test_worker_startup_requeues_stale_claim_and_reaps_orphan_workspace(self):
+        response = self._post_review()
+        self.assertEqual(response.status_code, 202)
+
+        with db.connect(self.db_path) as conn:
+            claimed = db.claim_next_job(conn, "stale-worker")
+            conn.execute(
+                "UPDATE jobs SET claimed_at=datetime('now', '-3600 seconds') WHERE id=?",
+                (claimed.id,),
+            )
+
+        active_workspace = self.workspaces_root / "org--repo--pr7"
+        orphan_workspace = self.workspaces_root / "org--repo--pr999"
+        active_workspace.mkdir(parents=True)
+        orphan_workspace.mkdir(parents=True)
+
+        cfg = mock.MagicMock()
+        cfg.db_path = self.db_path
+        cfg.workspaces_root = self.workspaces_root
+
+        with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
+                mock.patch.object(cfg, "require_github_app"), \
+                mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker.process_one_job", side_effect=KeyboardInterrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                worker.run("worker-1")
+
+        with db.connect(self.db_path) as conn:
+            row = conn.execute("SELECT * FROM jobs").fetchone()
+
+        self.assertEqual(row["status"], "queued")
+        self.assertIsNone(row["worker_id"])
+        self.assertTrue(active_workspace.exists())
+        self.assertFalse(orphan_workspace.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
