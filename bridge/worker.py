@@ -424,6 +424,19 @@ def _cleanup_workspace_after_job(cfg: Config, job: db.Job, worker_id: str) -> No
             logger.warning("HUD cleanup event failed for %s", job.claim_key, exc_info=True)
 
 
+def _emit_worker_shutdown(cfg: Config, worker_id: str) -> None:
+    try:
+        hud.emit(
+            cfg.hud_script,
+            "bridge.worker.shutdown",
+            project="bridge-worker",
+            worker_id=worker_id,
+            reason="shutdown_requested",
+        )
+    except Exception:
+        logger.warning("HUD worker shutdown event failed for %s", worker_id, exc_info=True)
+
+
 def process_one_job(cfg: Config, worker_id: str) -> bool:
     """Claim and process one queued job.
 
@@ -521,6 +534,7 @@ def run(worker_id: str) -> None:
             _shutdown_event.wait(POLL_INTERVAL_SECONDS)
 
     logger.info("Worker %s shutdown complete", worker_id)
+    _emit_worker_shutdown(cfg, worker_id)
 
 
 if __name__ == "__main__":

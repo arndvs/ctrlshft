@@ -516,6 +516,35 @@ class TestProcessJob(unittest.TestCase):
         self.assertEqual(row["status"], "failed")
         self.assertEqual(row["error"], "worker_shutdown")
 
+    def test_shutdown_failure_cleans_existing_workspace(self):
+        cfg = self._cfg()
+        with db.connect(self.db_path) as conn:
+            db.enqueue(
+                conn,
+                delivery_id="d1",
+                event_type="pull_request_review",
+                repo_full_name="org/repo",
+                pr_number=7,
+                payload={},
+            )
+
+        workspace_path = cfg.workspaces_root / "org--repo--pr7"
+        workspace_path.mkdir(parents=True)
+
+        with mock.patch("bridge.worker._process_job", side_effect=worker_module.WorkerShutdown("worker_shutdown")), \
+                mock.patch("bridge.worker.hud.emit") as emit:
+            processed = worker_module.process_one_job(cfg, "worker-1")
+
+        self.assertTrue(processed)
+        self.assertFalse(workspace_path.exists())
+        emit.assert_any_call(
+            cfg.hud_script,
+            "bridge.workspace.cleaned",
+            project="org/repo",
+            workspace_id="org/repo#7",
+            worker_id="worker-1",
+        )
+
     def test_run_cleans_once_after_processed_job(self):
         cfg = self._cfg()
         job = self._claimed_job()
@@ -581,6 +610,31 @@ class TestProcessJob(unittest.TestCase):
         install.assert_called_once()
         claim.assert_called_once()
         wait.assert_called_once_with(worker_module.POLL_INTERVAL_SECONDS)
+
+    def test_run_emits_worker_shutdown_event(self):
+        cfg = self._cfg()
+
+        with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
+                mock.patch.object(cfg, "require_github_app"), \
+                mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker.db.init_db"), \
+                mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
+                mock.patch("bridge.worker.db.claim_next_job", return_value=None), \
+                mock.patch("bridge.worker.hud.emit") as emit, \
+                mock.patch.object(
+                    worker_module._shutdown_event,
+                    "wait",
+                    side_effect=lambda _seconds: worker_module._shutdown_event.set() or True,
+                ):
+            worker_module.run("worker-1")
+
+        emit.assert_any_call(
+            cfg.hud_script,
+            "bridge.worker.shutdown",
+            project="bridge-worker",
+            worker_id="worker-1",
+            reason="shutdown_requested",
+        )
 
 
 class TestCleanupWorkspaceAfterJob(unittest.TestCase):
