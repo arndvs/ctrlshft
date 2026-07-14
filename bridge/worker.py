@@ -439,6 +439,8 @@ def process_one_job(cfg: Config, worker_id: str) -> bool:
 
 
 def run(worker_id: str) -> None:
+    _shutdown_event.clear()
+    _install_shutdown_handlers()
     cfg = Config.from_env()
     cfg.require_github_app()  # Worker needs GitHub App credentials — fail fast
     cfg.ensure_dirs()
@@ -460,16 +462,18 @@ def run(worker_id: str) -> None:
         POLL_INTERVAL_SECONDS,
     )
 
-    while True:
+    while not _shutdown_requested():
         try:
             processed = process_one_job(cfg, worker_id)
         except Exception as e:
             logger.exception("Claim failed: %s", e)
-            time.sleep(POLL_INTERVAL_SECONDS)
+            _shutdown_event.wait(POLL_INTERVAL_SECONDS)
             continue
 
         if not processed:
-            time.sleep(POLL_INTERVAL_SECONDS)
+            _shutdown_event.wait(POLL_INTERVAL_SECONDS)
+
+    logger.info("Worker %s shutdown complete", worker_id)
 
 
 if __name__ == "__main__":

@@ -41,6 +41,9 @@ _TOKEN = Token(value="ghs_test", expires_at="2026-01-01T00:00:00Z")
 
 
 class TestShutdownSignal(unittest.TestCase):
+    def setUp(self):
+        worker_module._shutdown_event.clear()
+
     def tearDown(self):
         if hasattr(worker_module, "_shutdown_event"):
             worker_module._shutdown_event.clear()
@@ -466,9 +469,12 @@ class TestProcessJob(unittest.TestCase):
                 mock.patch("bridge.worker._process_job"), \
                 mock.patch("bridge.worker.db.mark_done"), \
                 mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
-                mock.patch("bridge.worker.time.sleep", side_effect=KeyboardInterrupt):
-            with self.assertRaises(KeyboardInterrupt):
-                worker_module.run("worker-1")
+                mock.patch.object(
+                    worker_module._shutdown_event,
+                    "wait",
+                    side_effect=lambda _seconds: worker_module._shutdown_event.set() or True,
+                ):
+            worker_module.run("worker-1")
 
         cleanup.assert_called_once_with(cfg, job, "worker-1")
 
@@ -483,14 +489,38 @@ class TestProcessJob(unittest.TestCase):
                 mock.patch("bridge.worker.db.claim_next_job", return_value=None), \
                 mock.patch("bridge.worker._cleanup_workspace_after_job") as cleanup, \
                 mock.patch("bridge.worker.hud.emit") as emit, \
-                mock.patch("bridge.worker.time.sleep", side_effect=KeyboardInterrupt):
-            with self.assertRaises(KeyboardInterrupt):
-                worker_module.run("worker-1")
+                mock.patch.object(
+                    worker_module._shutdown_event,
+                    "wait",
+                    side_effect=lambda _seconds: worker_module._shutdown_event.set() or True,
+                ):
+            worker_module.run("worker-1")
 
         cleanup.assert_not_called()
         self.assertFalse(
             any(call.args[1] == "bridge.workspace.cleaned" for call in emit.call_args_list)
         )
+
+    def test_run_exits_idle_loop_when_shutdown_requested(self):
+        cfg = self._cfg()
+
+        def request_shutdown(_seconds):
+            worker_module._shutdown_event.set()
+            return True
+
+        with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
+                mock.patch.object(cfg, "require_github_app"), \
+                mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker.db.init_db"), \
+                mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
+                mock.patch("bridge.worker.db.claim_next_job", return_value=None) as claim, \
+                mock.patch("bridge.worker._install_shutdown_handlers") as install, \
+                mock.patch.object(worker_module._shutdown_event, "wait", side_effect=request_shutdown) as wait:
+            worker_module.run("worker-1")
+
+        install.assert_called_once()
+        claim.assert_called_once()
+        wait.assert_called_once_with(worker_module.POLL_INTERVAL_SECONDS)
 
 
 class TestCleanupWorkspaceAfterJob(unittest.TestCase):
