@@ -35,8 +35,8 @@ jobs:
       - name: Install bridge dependencies
         run: |
           set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install -r bridge/requirements.txt
+          python -m pip install --upgrade "pip==26.1.2"
+          python -m pip install -r bridge/requirements.lock
 
       - name: Run bridge unit tests
         run: |
