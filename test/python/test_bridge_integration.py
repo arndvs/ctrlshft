@@ -262,6 +262,68 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
             any(call.args[1] == "bridge.webhook.received" for call in self.hud_emit.call_args_list)
         )
 
+    def test_dispatch_failure_marks_failed_without_burning_iteration(self):
+        response = self._post_review()
+        self.assertEqual(response.status_code, 202)
+        self.hud_emit.reset_mock()
+
+        thread = UnresolvedThread(
+            thread_id="thread-1",
+            url="https://example.test/thread",
+            path="bridge/worker.py",
+            line=12,
+            body="fix this",
+            diff_hunk=None,
+            author="copilot-pull-request-reviewer[bot]",
+        )
+        ws_path = self.workspaces_root / "org--repo--pr7"
+
+        def prepare_workspace(*_args, **_kwargs):
+            ws_path.mkdir(parents=True, exist_ok=True)
+            return ws_path
+
+        with mock.patch("bridge.worker.github.mint_token", return_value=_TOKEN), \
+                mock.patch(
+                    "bridge.worker.github.fetch_unresolved_copilot_threads",
+                    return_value=[thread],
+                ), \
+                mock.patch("bridge.worker.github.find_tracking_issue", return_value=None), \
+                mock.patch(
+                    "bridge.worker.github.fetch_pr_metadata",
+                    return_value=PrMetadata(
+                        head_ref="feature",
+                        head_repo_full_name="org/repo",
+                        title="Test PR",
+                        html_url="https://example.test/pulls/7",
+                    ),
+                ), \
+                mock.patch("bridge.worker.workspace.prepare", side_effect=prepare_workspace), \
+                mock.patch("bridge.worker.github.create_issue", return_value=123), \
+                mock.patch(
+                    "bridge.worker._run_subprocess",
+                    side_effect=RuntimeError("dispatch failed"),
+                ), \
+                mock.patch("bridge.worker.logger.error"):
+            processed = worker.process_one_job(self.cfg, "worker-1")
+
+        self.assertTrue(processed)
+
+        with db.connect(self.db_path) as conn:
+            row = conn.execute("SELECT * FROM jobs").fetchone()
+            iteration = db.read_iteration(conn, "org/repo#7")
+
+        self.assertEqual(row["status"], "failed")
+        self.assertIn("dispatch failed", row["error"])
+        self.assertEqual(row["tracking_issue_number"], 123)
+        self.assertEqual(row["workspace_path"], str(ws_path))
+        self.assertEqual(row["iteration"], 0)
+        self.assertEqual(iteration, 0)
+        self.assertFalse(ws_path.exists())
+
+        emitted_events = [call.args[1] for call in self.hud_emit.call_args_list]
+        self.assertIn("bridge.job.failed", emitted_events)
+        self.assertIn("bridge.workspace.cleaned", emitted_events)
+
 
 if __name__ == "__main__":
     unittest.main()
