@@ -118,6 +118,7 @@ def _proc(returncode=0, wait_side_effect=None, pid=4321):
     p = mock.MagicMock()
     p.pid = pid
     p.returncode = returncode
+    p.poll.return_value = None
     if wait_side_effect is not None:
         p.wait.side_effect = wait_side_effect
     else:
@@ -179,7 +180,10 @@ class TestRunSubprocess(unittest.TestCase):
             raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
         killpg.assert_called_once_with(4321, 15)
-        emit.assert_any_call("bridge.job.failed", reason="subprocess_timeout")
+        proc.wait.assert_called_once_with(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS)
+        self.assertFalse(
+            any(call.args[0] == "bridge.job.failed" for call in emit.call_args_list)
+        )
 
     def test_shutdown_sigterm_kills_process_group(self):
         calls = {"count": 0}
@@ -198,7 +202,27 @@ class TestRunSubprocess(unittest.TestCase):
         self.assertIsInstance(raised, RuntimeError)
         self.assertIn("worker_shutdown", str(raised))
         killpg.assert_called_once_with(4321, 15)
-        emit.assert_any_call("bridge.job.failed", reason="worker_shutdown")
+        proc.wait.assert_has_calls([
+            mock.call(timeout=worker_module.SUBPROCESS_POLL_SECONDS),
+            mock.call(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS),
+        ])
+        self.assertFalse(
+            any(call.args[0] == "bridge.job.failed" for call in emit.call_args_list)
+        )
+
+    def test_shutdown_after_child_exit_keeps_successful_result(self):
+        def wait_side_effect(timeout):
+            worker_module._shutdown_event.set()
+            raise subprocess.TimeoutExpired("cmd", timeout)
+
+        proc = _proc(wait_side_effect=wait_side_effect)
+        proc.poll.side_effect = [None, 0]
+
+        raised, killpg, emit = self._run(proc)
+
+        self.assertIsNone(raised)
+        killpg.assert_not_called()
+        emit.assert_any_call("bridge.job.shft_completed", exit_code=0)
 
     def test_timeout_escalates_to_sigkill(self):
         # Initial wait + the SIGTERM wait both time out → ordered escalation:
@@ -215,6 +239,10 @@ class TestRunSubprocess(unittest.TestCase):
         self.assertEqual(
             killpg.call_args_list, [mock.call(4321, 15), mock.call(4321, 9)]
         )
+        proc.wait.assert_has_calls([
+            mock.call(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS),
+            mock.call(timeout=worker_module.PROCESS_KILL_WAIT_SECONDS),
+        ])
 
 
 class TestDispatch(unittest.TestCase):

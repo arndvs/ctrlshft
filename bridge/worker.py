@@ -33,6 +33,8 @@ logger = logging.getLogger("bridge.worker")
 POLL_INTERVAL_SECONDS = 2.0
 SHFT_RUN_TIMEOUT_SECONDS = 60 * 30  # 30 min hard cap per shft invocation
 SUBPROCESS_POLL_SECONDS = 1.0
+PROCESS_TERMINATE_GRACE_SECONDS = 4.0
+PROCESS_KILL_WAIT_SECONDS = 1.0
 _shutdown_event = threading.Event()
 
 
@@ -293,28 +295,29 @@ def _build_subprocess_env(cfg: Config, token, ws_path, repo: str) -> dict[str, s
     return env
 
 
-def _terminate_process_group(proc, *, reason: str, emit) -> None:
+def _terminate_process_group(proc) -> None:
     try:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
     except (ProcessLookupError, OSError):
         pass
     try:
-        proc.wait(timeout=10)
+        proc.wait(timeout=PROCESS_TERMINATE_GRACE_SECONDS)
     except subprocess.TimeoutExpired:
         try:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
         except (ProcessLookupError, OSError):
             pass
         try:
-            proc.wait(timeout=5)
+            proc.wait(timeout=PROCESS_KILL_WAIT_SECONDS)
         except subprocess.TimeoutExpired:
             pass
-    emit("bridge.job.failed", reason=reason)
 
 
 def _wait_for_subprocess(proc, cmd: list[str]) -> None:
     deadline = time.monotonic() + SHFT_RUN_TIMEOUT_SECONDS
     while True:
+        if proc.poll() is not None:
+            return
         if _shutdown_requested():
             raise WorkerShutdown("worker_shutdown")
         remaining = deadline - time.monotonic()
@@ -341,10 +344,10 @@ def _run_subprocess(cmd: list[str], cwd: str, env: dict[str, str], emit) -> None
         if proc.returncode != 0:
             raise RuntimeError(f"{cmd[0]} exited {proc.returncode}")
     except WorkerShutdown:
-        _terminate_process_group(proc, reason="worker_shutdown", emit=emit)
+        _terminate_process_group(proc)
         raise
     except subprocess.TimeoutExpired:
-        _terminate_process_group(proc, reason="subprocess_timeout", emit=emit)
+        _terminate_process_group(proc)
         raise RuntimeError(f"{cmd[0]} timed out")
 
 
