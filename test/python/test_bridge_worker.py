@@ -258,7 +258,7 @@ class TestRunSubprocess(unittest.TestCase):
         )
 
     def test_shutdown_timing_budget_stays_within_five_seconds(self):
-        self.assertLessEqual(
+        self.assertLess(
             worker_module.SUBPROCESS_POLL_SECONDS
             + worker_module.PROCESS_TERMINATE_GRACE_SECONDS
             + worker_module.PROCESS_KILL_WAIT_SECONDS,
