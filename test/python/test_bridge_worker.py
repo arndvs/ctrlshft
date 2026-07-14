@@ -43,10 +43,12 @@ _TOKEN = Token(value="ghs_test", expires_at="2026-01-01T00:00:00Z")
 class TestShutdownSignal(unittest.TestCase):
     def setUp(self):
         worker_module._shutdown_event.clear()
+        worker_module._shutdown_signum = None
 
     def tearDown(self):
         if hasattr(worker_module, "_shutdown_event"):
             worker_module._shutdown_event.clear()
+        worker_module._shutdown_signum = None
 
     def test_install_shutdown_handlers_set_flag(self):
         with mock.patch("bridge.worker.signal.signal") as signal_fn:
@@ -57,9 +59,12 @@ class TestShutdownSignal(unittest.TestCase):
         self.assertIn(signal.SIGINT, handlers)
         self.assertFalse(worker_module._shutdown_requested())
 
-        handlers[signal.SIGTERM](signal.SIGTERM, None)
+        with mock.patch("bridge.worker.logger.info") as logger_info:
+            handlers[signal.SIGTERM](signal.SIGTERM, None)
 
         self.assertTrue(worker_module._shutdown_requested())
+        self.assertEqual(worker_module._shutdown_signum, signal.SIGTERM)
+        logger_info.assert_not_called()
 
 
 class TestBuildSubprocessEnv(unittest.TestCase):
@@ -236,7 +241,8 @@ class TestRunSubprocess(unittest.TestCase):
             subprocess.TimeoutExpired("cmd", 1),
             subprocess.TimeoutExpired("cmd", 1),
         ])
-        with mock.patch("bridge.worker.time.monotonic", side_effect=[0, worker_module.SHFT_RUN_TIMEOUT_SECONDS + 1]):
+        with mock.patch("bridge.worker.time.monotonic", side_effect=[0, worker_module.SHFT_RUN_TIMEOUT_SECONDS + 1]), \
+                mock.patch("bridge.worker.logger.warning") as warning:
             raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
         self.assertEqual(
@@ -247,6 +253,17 @@ class TestRunSubprocess(unittest.TestCase):
             mock.call(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS),
             mock.call(timeout=worker_module.PROCESS_KILL_WAIT_SECONDS),
         ])
+        warning.assert_called_once_with(
+            "Process group %s did not exit after SIGKILL", 4321
+        )
+
+    def test_shutdown_timing_budget_stays_within_five_seconds(self):
+        self.assertLessEqual(
+            worker_module.SUBPROCESS_POLL_SECONDS
+            + worker_module.PROCESS_TERMINATE_GRACE_SECONDS
+            + worker_module.PROCESS_KILL_WAIT_SECONDS,
+            5.0,
+        )
 
     def test_terminate_skips_exited_child(self):
         proc = _proc()

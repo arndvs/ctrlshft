@@ -32,14 +32,16 @@ logger = logging.getLogger("bridge.worker")
 
 POLL_INTERVAL_SECONDS = 2.0
 SHFT_RUN_TIMEOUT_SECONDS = 60 * 30  # 30 min hard cap per shft invocation
-SUBPROCESS_POLL_SECONDS = 1.0
-PROCESS_TERMINATE_GRACE_SECONDS = 4.0
+SUBPROCESS_POLL_SECONDS = 0.5
+PROCESS_TERMINATE_GRACE_SECONDS = 3.5
 PROCESS_KILL_WAIT_SECONDS = 1.0
 _shutdown_event = threading.Event()
+_shutdown_signum: int | None = None
 
 
 def _request_shutdown(signum, _frame) -> None:
-    logger.info("Shutdown requested by signal %s", signum)
+    global _shutdown_signum
+    _shutdown_signum = signum
     _shutdown_event.set()
 
 
@@ -316,6 +318,7 @@ def _terminate_process_group(proc) -> None:
         try:
             proc.wait(timeout=PROCESS_KILL_WAIT_SECONDS)
         except subprocess.TimeoutExpired:
+            logger.warning("Process group %s did not exit after SIGKILL", pgid)
             pass
 
 
@@ -508,6 +511,8 @@ def process_one_job(cfg: Config, worker_id: str) -> bool:
 
 
 def run(worker_id: str) -> None:
+    global _shutdown_signum
+    _shutdown_signum = None
     _shutdown_event.clear()
     _install_shutdown_handlers()
     cfg = Config.from_env()
@@ -542,7 +547,7 @@ def run(worker_id: str) -> None:
         if not processed:
             _shutdown_event.wait(POLL_INTERVAL_SECONDS)
 
-    logger.info("Worker %s shutdown complete", worker_id)
+    logger.info("Worker %s shutdown complete (signal=%s)", worker_id, _shutdown_signum)
     _emit_worker_shutdown(cfg, worker_id)
 
 
