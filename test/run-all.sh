@@ -23,6 +23,7 @@ SUITES=(
   "lifecycle:test/lifecycle.sh"
   "main-pr-source:test/main-pr-source-guard.sh"
   "pipeline-label:test/pipeline-label-wrapper.sh"
+  "bridge-python:test/bridge-python.sh"
   "proxy-scripts:shft/templates/scripts/test_probe_completion.sh"
   "smoke-coverage:test/sandcastle-smoke-coverage.sh"
 )
