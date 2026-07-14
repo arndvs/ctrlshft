@@ -323,6 +323,38 @@ else
     _record_fail "sandcastle-setup validates lifecycle inputs" "missing explicit validation step"
 fi
 
+if grep -Eq "default:[[:space:]]*\\$\\{\\{ github\\." "$template_actions_dir"/*/action.yml "$installed_actions_dir"/*/action.yml; then
+    _record_fail "composite actions avoid expression defaults" "action inputs cannot use github.* expression defaults"
+else
+    _record_pass "composite actions avoid expression defaults"
+fi
+
+if awk '
+    /^  [A-Za-z0-9_-]+:/ {
+        current=$1
+        sub(/:$/, "", current)
+        next
+    }
+    current == "repository" && /required:[[:space:]]*true/ { repository_required=1 }
+    current == "checkout-ref" && /required:[[:space:]]*true/ { checkout_ref_required=1 }
+    END { exit !(repository_required && checkout_ref_required) }
+' "$template_actions_dir/sandcastle-setup/action.yml"; then
+    _record_pass "sandcastle-setup requires explicit checkout inputs"
+else
+    _record_fail "sandcastle-setup requires explicit checkout inputs" "repository and checkout-ref must be explicit"
+fi
+
+if awk '
+    /^  repository:/ { in_repository=1; next }
+    in_repository && /^  [A-Za-z0-9_-]+:/ { in_repository=0 }
+    in_repository && /required:[[:space:]]*true/ { repository_required=1 }
+    END { exit !repository_required }
+' "$template_actions_dir/sandcastle-teardown/action.yml"; then
+    _record_pass "sandcastle-teardown requires explicit repository"
+else
+    _record_fail "sandcastle-teardown requires explicit repository" "repository must be explicit"
+fi
+
 if grep -qF 'gh "${{ inputs['"'"'object-type'"'"'] }}" comment' "$template_actions_dir/sandcastle-teardown/action.yml" &&
     grep -qF ')" || true' "$template_actions_dir/sandcastle-teardown/action.yml"; then
     _record_pass "sandcastle-teardown comments best-effort"
@@ -434,8 +466,68 @@ for wf_file in "${shared_setup_workflows[@]}"; do
     fi
 done
 
+for wf_file in "${migrated_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "name: Checkout workflow actions" "$wf_path"; then
+        _record_pass "$wf_label bootstraps local action checkout"
+    else
+        _record_fail "$wf_label bootstraps local action checkout" "local composite actions require a prior checkout"
+    fi
+
+    if grep -qF "uses: ./.github/actions/sandcastle-setup" "$wf_path"; then
+        _record_pass "$wf_label uses sandcastle-setup action"
+    else
+        _record_fail "$wf_label uses sandcastle-setup action" "missing setup action"
+    fi
+
+    if grep -qF "uses: ./.github/actions/sandcastle-teardown" "$wf_path"; then
+        _record_pass "$wf_label uses sandcastle-teardown action"
+    else
+        _record_fail "$wf_label uses sandcastle-teardown action" "missing teardown action"
+    fi
+
+    if grep -qF "Install engine dependencies" "$wf_path"; then
+        _record_fail "$wf_label removes inline engine install" "still contains copied install step"
+    else
+        _record_pass "$wf_label removes inline engine install"
+    fi
+done
+
+for wf_file in "${shared_setup_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "name: Checkout workflow actions" "$wf_path"; then
+        _record_pass "$wf_label bootstraps local action checkout"
+    else
+        _record_fail "$wf_label bootstraps local action checkout" "local composite actions require a prior checkout"
+    fi
+
+    if grep -qF "uses: ./.github/actions/sandcastle-setup" "$wf_path"; then
+        _record_pass "$wf_label uses sandcastle-setup action"
+    else
+        _record_fail "$wf_label uses sandcastle-setup action" "missing setup action"
+    fi
+
+    if grep -qF "Install engine dependencies" "$wf_path"; then
+        _record_fail "$wf_label removes inline engine install" "still contains copied install step"
+    else
+        _record_pass "$wf_label removes inline engine install"
+    fi
+done
+
 for wf_file in "${skip_checkout_workflows[@]}"; do
     wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "skip-checkout: true" "$wf_path"; then
+        _record_pass "$wf_label skips duplicate setup checkout"
+    else
+        _record_fail "$wf_label skips duplicate setup checkout" "missing skip-checkout: true"
+    fi
+done
+
+for wf_file in "${skip_checkout_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
     wf_label="${wf_path#$ROOT/}"
     if grep -qF "skip-checkout: true" "$wf_path"; then
         _record_pass "$wf_label skips duplicate setup checkout"
@@ -454,7 +546,32 @@ for wf_file in "${teardown_restore_workflows[@]}"; do
     fi
 done
 
+for wf_file in "${teardown_restore_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "name: Restore workflow actions" "$wf_path"; then
+        _record_pass "$wf_label restores local actions before teardown"
+    else
+        _record_fail "$wf_label restores local actions before teardown" "missing final default-branch checkout"
+    fi
+done
+
 for wf_path in "$ROOT"/shft/templates/workflows/agent-*.yml; do
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF "GH_TOKEN:" "$wf_path"; then
+        _record_fail "$wf_label uses GITHUB_TOKEN env naming" "still contains GH_TOKEN env key"
+    else
+        _record_pass "$wf_label uses GITHUB_TOKEN env naming"
+    fi
+
+    if grep -qF 'OUTPUT_DIR: ${{ runner.temp }}' "$wf_path"; then
+        _record_fail "$wf_label relies on setup action for OUTPUT_DIR" "still sets OUTPUT_DIR manually"
+    else
+        _record_pass "$wf_label relies on setup action for OUTPUT_DIR"
+    fi
+done
+
+for wf_path in "$ROOT"/.github/workflows/agent-*.yml; do
     wf_label="${wf_path#$ROOT/}"
     if grep -qF "GH_TOKEN:" "$wf_path"; then
         _record_fail "$wf_label uses GITHUB_TOKEN env naming" "still contains GH_TOKEN env key"
