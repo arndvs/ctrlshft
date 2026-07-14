@@ -18,6 +18,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import traceback
 
@@ -31,6 +32,21 @@ logger = logging.getLogger("bridge.worker")
 
 POLL_INTERVAL_SECONDS = 2.0
 SHFT_RUN_TIMEOUT_SECONDS = 60 * 30  # 30 min hard cap per shft invocation
+_shutdown_event = threading.Event()
+
+
+def _request_shutdown(signum, _frame) -> None:
+    logger.info("Shutdown requested by signal %s", signum)
+    _shutdown_event.set()
+
+
+def _install_shutdown_handlers() -> None:
+    signal.signal(signal.SIGTERM, _request_shutdown)
+    signal.signal(signal.SIGINT, _request_shutdown)
+
+
+def _shutdown_requested() -> bool:
+    return _shutdown_event.is_set()
 
 
 def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:

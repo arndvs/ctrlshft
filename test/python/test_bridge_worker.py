@@ -14,6 +14,7 @@ Run: python3 -m unittest discover -s test/python -p "test_bridge_worker.py" -v
 
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -37,6 +38,25 @@ from bridge import db
 from bridge.github import PrMetadata, Token, UnresolvedThread
 
 _TOKEN = Token(value="ghs_test", expires_at="2026-01-01T00:00:00Z")
+
+
+class TestShutdownSignal(unittest.TestCase):
+    def tearDown(self):
+        if hasattr(worker_module, "_shutdown_event"):
+            worker_module._shutdown_event.clear()
+
+    def test_install_shutdown_handlers_set_flag(self):
+        with mock.patch("bridge.worker.signal.signal") as signal_fn:
+            worker_module._install_shutdown_handlers()
+
+        handlers = {call.args[0]: call.args[1] for call in signal_fn.call_args_list}
+        self.assertIn(signal.SIGTERM, handlers)
+        self.assertIn(signal.SIGINT, handlers)
+        self.assertFalse(worker_module._shutdown_requested())
+
+        handlers[signal.SIGTERM](signal.SIGTERM, None)
+
+        self.assertTrue(worker_module._shutdown_requested())
 
 
 class TestBuildSubprocessEnv(unittest.TestCase):
