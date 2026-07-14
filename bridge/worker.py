@@ -296,15 +296,21 @@ def _build_subprocess_env(cfg: Config, token, ws_path, repo: str) -> dict[str, s
 
 
 def _terminate_process_group(proc) -> None:
+    if proc.poll() is not None:
+        return
     try:
-        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        pgid = os.getpgid(proc.pid)
+    except (ProcessLookupError, OSError):
+        return
+    try:
+        os.killpg(pgid, signal.SIGTERM)
     except (ProcessLookupError, OSError):
         pass
     try:
         proc.wait(timeout=PROCESS_TERMINATE_GRACE_SECONDS)
     except subprocess.TimeoutExpired:
         try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            os.killpg(pgid, signal.SIGKILL)
         except (ProcessLookupError, OSError):
             pass
         try:

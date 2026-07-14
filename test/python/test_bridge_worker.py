@@ -136,7 +136,7 @@ class TestRunSubprocess(unittest.TestCase):
     def _run(self, proc):
         emit = mock.MagicMock()
         with mock.patch("bridge.worker.subprocess.Popen", return_value=proc) as popen, \
-                mock.patch("bridge.worker.os.getpgid", return_value=proc.pid, create=True), \
+                mock.patch("bridge.worker.os.getpgid", return_value=proc.pid, create=True) as getpgid, \
                 mock.patch("bridge.worker.os.killpg", create=True) as killpg, \
                 mock.patch("bridge.worker.signal.SIGKILL", 9, create=True):
             ctx = mock.patch("bridge.worker.signal.SIGTERM", 15, create=True)
@@ -147,6 +147,7 @@ class TestRunSubprocess(unittest.TestCase):
                 except RuntimeError as e:
                     raised = e
         self.popen = popen
+        self.getpgid = getpgid
         return raised, killpg, emit
 
     def test_success_emits_and_no_raise(self):
@@ -180,6 +181,7 @@ class TestRunSubprocess(unittest.TestCase):
             raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
         killpg.assert_called_once_with(4321, 15)
+        self.getpgid.assert_called_once_with(4321)
         proc.wait.assert_called_once_with(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS)
         self.assertFalse(
             any(call.args[0] == "bridge.job.failed" for call in emit.call_args_list)
@@ -202,6 +204,7 @@ class TestRunSubprocess(unittest.TestCase):
         self.assertIsInstance(raised, RuntimeError)
         self.assertIn("worker_shutdown", str(raised))
         killpg.assert_called_once_with(4321, 15)
+        self.getpgid.assert_called_once_with(4321)
         proc.wait.assert_has_calls([
             mock.call(timeout=worker_module.SUBPROCESS_POLL_SECONDS),
             mock.call(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS),
@@ -239,10 +242,23 @@ class TestRunSubprocess(unittest.TestCase):
         self.assertEqual(
             killpg.call_args_list, [mock.call(4321, 15), mock.call(4321, 9)]
         )
+        self.getpgid.assert_called_once_with(4321)
         proc.wait.assert_has_calls([
             mock.call(timeout=worker_module.PROCESS_TERMINATE_GRACE_SECONDS),
             mock.call(timeout=worker_module.PROCESS_KILL_WAIT_SECONDS),
         ])
+
+    def test_terminate_skips_exited_child(self):
+        proc = _proc()
+        proc.poll.return_value = 0
+
+        with mock.patch("bridge.worker.os.getpgid", create=True) as getpgid, \
+                mock.patch("bridge.worker.os.killpg", create=True) as killpg:
+            worker_module._terminate_process_group(proc)
+
+        getpgid.assert_not_called()
+        killpg.assert_not_called()
+        proc.wait.assert_not_called()
 
 
 class TestDispatch(unittest.TestCase):
@@ -580,6 +596,7 @@ class TestProcessJob(unittest.TestCase):
         with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
                 mock.patch.object(cfg, "require_github_app"), \
                 mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker._install_shutdown_handlers"), \
                 mock.patch("bridge.worker.db.init_db"), \
                 mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
                 mock.patch("bridge.worker.db.claim_next_job", side_effect=[job, None]), \
@@ -601,6 +618,7 @@ class TestProcessJob(unittest.TestCase):
         with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
                 mock.patch.object(cfg, "require_github_app"), \
                 mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker._install_shutdown_handlers"), \
                 mock.patch("bridge.worker.db.init_db"), \
                 mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
                 mock.patch("bridge.worker.db.claim_next_job", return_value=None), \
@@ -645,6 +663,7 @@ class TestProcessJob(unittest.TestCase):
         with mock.patch("bridge.worker.Config.from_env", return_value=cfg), \
                 mock.patch.object(cfg, "require_github_app"), \
                 mock.patch.object(cfg, "ensure_dirs"), \
+                mock.patch("bridge.worker._install_shutdown_handlers"), \
                 mock.patch("bridge.worker.db.init_db"), \
                 mock.patch("bridge.worker.db.requeue_stale_claims", return_value=0), \
                 mock.patch("bridge.worker.db.claim_next_job", return_value=None), \
