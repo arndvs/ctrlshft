@@ -15,6 +15,6 @@ if [[ -x "$TMPDIR_BRIDGE/venv/Scripts/python.exe" ]]; then
   PYTHON="$TMPDIR_BRIDGE/venv/Scripts/python.exe"
 fi
 
-"$PYTHON" -m pip install --quiet --upgrade pip
-"$PYTHON" -m pip install --quiet -r bridge/requirements.txt
+"$PYTHON" -m pip install --quiet --upgrade -c bridge/requirements.lock pip
+"$PYTHON" -m pip install --quiet -c bridge/requirements.lock -r bridge/requirements.txt
 "$PYTHON" -m unittest discover -s test/python -p "test_bridge*.py" -v
