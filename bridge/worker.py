@@ -378,6 +378,47 @@ def _cleanup_workspace_after_job(cfg: Config, job: db.Job, worker_id: str) -> No
             logger.warning("HUD cleanup event failed for %s", job.claim_key, exc_info=True)
 
 
+def process_one_job(cfg: Config, worker_id: str) -> bool:
+    """Claim and process one queued job.
+
+    Returns True when a job was claimed, even if processing records it as failed.
+    Returns False when the queue is empty.
+    """
+    with db.connect(cfg.db_path) as conn:
+        job = db.claim_next_job(conn, worker_id)
+
+    if job is None:
+        return False
+
+    try:
+        _process_job(cfg, job, worker_id)
+        with db.connect(cfg.db_path) as conn:
+            db.mark_done(conn, job.id)
+    except Exception as e:
+        tb = traceback.format_exc()
+        logger.error("Job %s failed: %s\n%s", job.id, e, tb)
+        with db.connect(cfg.db_path) as conn:
+            db.mark_failed(conn, job.id, tb)
+        hud.emit(
+            cfg.hud_script,
+            "bridge.job.failed",
+            project=job.repo_full_name,
+            workspace_id=job.claim_key,
+            worker_id=worker_id,
+            delivery_id=job.delivery_id,
+            pr_number=job.pr_number,
+            error=str(e),
+        )
+    finally:
+        # Workspace cleanup — prevents unbounded disk growth.
+        try:
+            _cleanup_workspace_after_job(cfg, job, worker_id)
+        except Exception:
+            logger.warning("Workspace cleanup failed for %s", job.claim_key, exc_info=True)
+
+    return True
+
+
 def run(worker_id: str) -> None:
     cfg = Config.from_env()
     cfg.require_github_app()  # Worker needs GitHub App credentials — fail fast
@@ -402,42 +443,14 @@ def run(worker_id: str) -> None:
 
     while True:
         try:
-            with db.connect(cfg.db_path) as conn:
-                job = db.claim_next_job(conn, worker_id)
+            processed = process_one_job(cfg, worker_id)
         except Exception as e:
             logger.exception("Claim failed: %s", e)
             time.sleep(POLL_INTERVAL_SECONDS)
             continue
 
-        if job is None:
+        if not processed:
             time.sleep(POLL_INTERVAL_SECONDS)
-            continue
-
-        try:
-            _process_job(cfg, job, worker_id)
-            with db.connect(cfg.db_path) as conn:
-                db.mark_done(conn, job.id)
-        except Exception as e:
-            tb = traceback.format_exc()
-            logger.error("Job %s failed: %s\n%s", job.id, e, tb)
-            with db.connect(cfg.db_path) as conn:
-                db.mark_failed(conn, job.id, tb)
-            hud.emit(
-                cfg.hud_script,
-                "bridge.job.failed",
-                project=job.repo_full_name,
-                workspace_id=job.claim_key,
-                worker_id=worker_id,
-                delivery_id=job.delivery_id,
-                pr_number=job.pr_number,
-                error=str(e),
-            )
-        finally:
-            # Workspace cleanup — prevents unbounded disk growth.
-            try:
-                _cleanup_workspace_after_job(cfg, job, worker_id)
-            except Exception:
-                logger.warning("Workspace cleanup failed for %s", job.claim_key, exc_info=True)
 
 
 if __name__ == "__main__":
