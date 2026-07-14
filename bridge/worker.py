@@ -34,7 +34,7 @@ POLL_INTERVAL_SECONDS = 2.0
 SHFT_RUN_TIMEOUT_SECONDS = 60 * 30  # 30 min hard cap per shft invocation
 SUBPROCESS_POLL_SECONDS = 0.5
 PROCESS_TERMINATE_GRACE_SECONDS = 3.5
-PROCESS_KILL_WAIT_SECONDS = 1.0
+PROCESS_KILL_WAIT_SECONDS = 0.5
 _shutdown_event = threading.Event()
 _shutdown_signum: int | None = None
 
