@@ -32,6 +32,7 @@ logger = logging.getLogger("bridge.worker")
 
 POLL_INTERVAL_SECONDS = 2.0
 SHFT_RUN_TIMEOUT_SECONDS = 60 * 30  # 30 min hard cap per shft invocation
+SUBPROCESS_POLL_SECONDS = 1.0
 _shutdown_event = threading.Event()
 
 
@@ -47,6 +48,10 @@ def _install_shutdown_handlers() -> None:
 
 def _shutdown_requested() -> bool:
     return _shutdown_event.is_set()
+
+
+class WorkerShutdown(RuntimeError):
+    """Raised when a worker shutdown interrupts active subprocess work."""
 
 
 def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
@@ -288,6 +293,40 @@ def _build_subprocess_env(cfg: Config, token, ws_path, repo: str) -> dict[str, s
     return env
 
 
+def _terminate_process_group(proc, *, reason: str, emit) -> None:
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+    except (ProcessLookupError, OSError):
+        pass
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, OSError):
+            pass
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pass
+    emit("bridge.job.failed", reason=reason)
+
+
+def _wait_for_subprocess(proc, cmd: list[str]) -> None:
+    deadline = time.monotonic() + SHFT_RUN_TIMEOUT_SECONDS
+    while True:
+        if _shutdown_requested():
+            raise WorkerShutdown("worker_shutdown")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise subprocess.TimeoutExpired(cmd, SHFT_RUN_TIMEOUT_SECONDS)
+        try:
+            proc.wait(timeout=min(SUBPROCESS_POLL_SECONDS, remaining))
+            return
+        except subprocess.TimeoutExpired:
+            continue
+
+
 def _run_subprocess(cmd: list[str], cwd: str, env: dict[str, str], emit) -> None:
     """Run a subprocess with timeout and process group cleanup."""
     proc = subprocess.Popen(
@@ -297,24 +336,15 @@ def _run_subprocess(cmd: list[str], cwd: str, env: dict[str, str], emit) -> None
         start_new_session=True,
     )
     try:
-        proc.wait(timeout=SHFT_RUN_TIMEOUT_SECONDS)
+        _wait_for_subprocess(proc, cmd)
         emit("bridge.job.shft_completed", exit_code=proc.returncode)
         if proc.returncode != 0:
             raise RuntimeError(f"{cmd[0]} exited {proc.returncode}")
+    except WorkerShutdown:
+        _terminate_process_group(proc, reason="worker_shutdown", emit=emit)
+        raise RuntimeError("worker_shutdown")
     except subprocess.TimeoutExpired:
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        except (ProcessLookupError, OSError):
-            pass
-        try:
-            proc.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            except (ProcessLookupError, OSError):
-                pass
-            proc.wait(timeout=5)
-        emit("bridge.job.failed", reason="subprocess_timeout")
+        _terminate_process_group(proc, reason="subprocess_timeout", emit=emit)
         raise RuntimeError(f"{cmd[0]} timed out")
 
 

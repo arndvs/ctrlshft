@@ -126,6 +126,12 @@ def _proc(returncode=0, wait_side_effect=None, pid=4321):
 
 
 class TestRunSubprocess(unittest.TestCase):
+    def setUp(self):
+        worker_module._shutdown_event.clear()
+
+    def tearDown(self):
+        worker_module._shutdown_event.clear()
+
     def _run(self, proc):
         emit = mock.MagicMock()
         with mock.patch("bridge.worker.subprocess.Popen", return_value=proc) as popen, \
@@ -168,11 +174,31 @@ class TestRunSubprocess(unittest.TestCase):
         # returns an int) → exactly one killpg targeting the child's process
         # group (pid 4321) with SIGTERM (15), not the bare pid and not SIGKILL.
         # Asserting the args (not just the count) enforces SIGTERM-first behavior.
-        proc = _proc(wait_side_effect=[subprocess.TimeoutExpired("cmd", 1), 0])
-        raised, killpg, emit = self._run(proc)
+        proc = _proc(wait_side_effect=[0])
+        with mock.patch("bridge.worker.time.monotonic", side_effect=[0, worker_module.SHFT_RUN_TIMEOUT_SECONDS + 1]):
+            raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
         killpg.assert_called_once_with(4321, 15)
         emit.assert_any_call("bridge.job.failed", reason="subprocess_timeout")
+
+    def test_shutdown_sigterm_kills_process_group(self):
+        calls = {"count": 0}
+
+        def wait_side_effect(timeout):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                worker_module._shutdown_event.set()
+                raise subprocess.TimeoutExpired("cmd", timeout)
+            return 0
+
+        proc = _proc(wait_side_effect=wait_side_effect)
+
+        raised, killpg, emit = self._run(proc)
+
+        self.assertIsInstance(raised, RuntimeError)
+        self.assertIn("worker_shutdown", str(raised))
+        killpg.assert_called_once_with(4321, 15)
+        emit.assert_any_call("bridge.job.failed", reason="worker_shutdown")
 
     def test_timeout_escalates_to_sigkill(self):
         # Initial wait + the SIGTERM wait both time out → ordered escalation:
@@ -182,9 +208,9 @@ class TestRunSubprocess(unittest.TestCase):
         proc = _proc(wait_side_effect=[
             subprocess.TimeoutExpired("cmd", 1),
             subprocess.TimeoutExpired("cmd", 1),
-            0,  # post-SIGKILL wait returns rc 0 (Popen.wait() returns an int)
         ])
-        raised, killpg, emit = self._run(proc)
+        with mock.patch("bridge.worker.time.monotonic", side_effect=[0, worker_module.SHFT_RUN_TIMEOUT_SECONDS + 1]):
+            raised, killpg, emit = self._run(proc)
         self.assertIsInstance(raised, RuntimeError)
         self.assertEqual(
             killpg.call_args_list, [mock.call(4321, 15), mock.call(4321, 9)]
