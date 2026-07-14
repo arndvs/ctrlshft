@@ -91,17 +91,35 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)
 
-    def _post_review(self, delivery_id: str = "delivery-1"):
-        body = json.dumps(_copilot_review_payload()).encode()
+    def _post_payload(
+        self,
+        payload: dict,
+        *,
+        delivery_id: str = "delivery-1",
+        event: str = "pull_request_review",
+        sig: str = "__valid__",
+    ):
+        body = json.dumps(payload).encode()
+        headers = {
+            "X-GitHub-Event": event,
+            "X-GitHub-Delivery": delivery_id,
+        }
+        if sig == "__valid__":
+            headers["X-Hub-Signature-256"] = _sign(body)
+        elif sig is not None:
+            headers["X-Hub-Signature-256"] = sig
         return self.client.post(
             "/webhook",
             content=body,
-            headers={
-                "X-GitHub-Event": "pull_request_review",
-                "X-GitHub-Delivery": delivery_id,
-                "X-Hub-Signature-256": _sign(body),
-            },
+            headers=headers,
         )
+
+    def _post_review(self, delivery_id: str = "delivery-1"):
+        return self._post_payload(_copilot_review_payload(), delivery_id=delivery_id)
+
+    def _job_count(self) -> int:
+        with db.connect(self.db_path) as conn:
+            return conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
 
     def test_valid_review_delivery_processes_one_job_to_done(self):
         response = self._post_review()
@@ -180,6 +198,69 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
         self.assertEqual(rows[0]["status"], "queued")
         self.hud_emit.assert_called_once()
         self.assertEqual(self.hud_emit.call_args.args[1], "bridge.webhook.received")
+
+    def test_rejected_webhook_events_do_not_enqueue_jobs(self):
+        cases = [
+            (
+                "bad signature",
+                _copilot_review_payload(),
+                {"sig": "sha256=bad"},
+                401,
+            ),
+            (
+                "disallowed event",
+                _copilot_review_payload(),
+                {"event": "push"},
+                204,
+            ),
+            (
+                "non-allowlisted repo",
+                {
+                    **_copilot_review_payload(),
+                    "repository": {"full_name": "evil/repo"},
+                },
+                {},
+                204,
+            ),
+            (
+                "non-copilot actor",
+                {
+                    **_copilot_review_payload(),
+                    "review": {
+                        **_copilot_review_payload()["review"],
+                        "user": {"login": "human-reviewer"},
+                    },
+                },
+                {},
+                204,
+            ),
+            (
+                "non-changes-requested review",
+                {
+                    **_copilot_review_payload(),
+                    "review": {
+                        **_copilot_review_payload()["review"],
+                        "state": "approved",
+                    },
+                },
+                {},
+                204,
+            ),
+        ]
+
+        for index, (name, payload, kwargs, expected_status) in enumerate(cases, 1):
+            with self.subTest(name=name):
+                response = self._post_payload(
+                    payload,
+                    delivery_id=f"rejected-{index}",
+                    **kwargs,
+                )
+                self.assertEqual(response.status_code, expected_status)
+                self.assertEqual(self._job_count(), 0)
+
+        self.assertFalse(
+            any(call.args[1] == "bridge.webhook.received" for call in self.hud_emit.call_args_list)
+        )
 
 
 if __name__ == "__main__":
