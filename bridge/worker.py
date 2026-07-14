@@ -18,6 +18,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import traceback
 
@@ -31,6 +32,30 @@ logger = logging.getLogger("bridge.worker")
 
 POLL_INTERVAL_SECONDS = 2.0
 SHFT_RUN_TIMEOUT_SECONDS = 60 * 30  # 30 min hard cap per shft invocation
+SUBPROCESS_POLL_SECONDS = 0.5
+PROCESS_TERMINATE_GRACE_SECONDS = 3.5
+PROCESS_KILL_WAIT_SECONDS = 1.0
+_shutdown_event = threading.Event()
+_shutdown_signum: int | None = None
+
+
+def _request_shutdown(signum, _frame) -> None:
+    global _shutdown_signum
+    _shutdown_signum = signum
+    _shutdown_event.set()
+
+
+def _install_shutdown_handlers() -> None:
+    signal.signal(signal.SIGTERM, _request_shutdown)
+    signal.signal(signal.SIGINT, _request_shutdown)
+
+
+def _shutdown_requested() -> bool:
+    return _shutdown_event.is_set()
+
+
+class WorkerShutdown(RuntimeError):
+    """Raised when a worker shutdown interrupts active subprocess work."""
 
 
 def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
@@ -272,6 +297,48 @@ def _build_subprocess_env(cfg: Config, token, ws_path, repo: str) -> dict[str, s
     return env
 
 
+def _terminate_process_group(proc) -> None:
+    if proc.poll() is not None:
+        return
+    try:
+        pgid = os.getpgid(proc.pid)
+    except (ProcessLookupError, OSError):
+        return
+    try:
+        os.killpg(pgid, signal.SIGTERM)
+    except (ProcessLookupError, OSError):
+        pass
+    try:
+        proc.wait(timeout=PROCESS_TERMINATE_GRACE_SECONDS)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(pgid, signal.SIGKILL)
+        except (ProcessLookupError, OSError):
+            pass
+        try:
+            proc.wait(timeout=PROCESS_KILL_WAIT_SECONDS)
+        except subprocess.TimeoutExpired:
+            logger.warning("Process group %s did not exit after SIGKILL", pgid)
+            pass
+
+
+def _wait_for_subprocess(proc, cmd: list[str]) -> None:
+    deadline = time.monotonic() + SHFT_RUN_TIMEOUT_SECONDS
+    while True:
+        if proc.poll() is not None:
+            return
+        if _shutdown_requested():
+            raise WorkerShutdown("worker_shutdown")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise subprocess.TimeoutExpired(cmd, SHFT_RUN_TIMEOUT_SECONDS)
+        try:
+            proc.wait(timeout=min(SUBPROCESS_POLL_SECONDS, remaining))
+            return
+        except subprocess.TimeoutExpired:
+            continue
+
+
 def _run_subprocess(cmd: list[str], cwd: str, env: dict[str, str], emit) -> None:
     """Run a subprocess with timeout and process group cleanup."""
     proc = subprocess.Popen(
@@ -281,24 +348,15 @@ def _run_subprocess(cmd: list[str], cwd: str, env: dict[str, str], emit) -> None
         start_new_session=True,
     )
     try:
-        proc.wait(timeout=SHFT_RUN_TIMEOUT_SECONDS)
+        _wait_for_subprocess(proc, cmd)
         emit("bridge.job.shft_completed", exit_code=proc.returncode)
         if proc.returncode != 0:
             raise RuntimeError(f"{cmd[0]} exited {proc.returncode}")
+    except WorkerShutdown:
+        _terminate_process_group(proc)
+        raise
     except subprocess.TimeoutExpired:
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        except (ProcessLookupError, OSError):
-            pass
-        try:
-            proc.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            except (ProcessLookupError, OSError):
-                pass
-            proc.wait(timeout=5)
-        emit("bridge.job.failed", reason="subprocess_timeout")
+        _terminate_process_group(proc)
         raise RuntimeError(f"{cmd[0]} timed out")
 
 
@@ -378,6 +436,19 @@ def _cleanup_workspace_after_job(cfg: Config, job: db.Job, worker_id: str) -> No
             logger.warning("HUD cleanup event failed for %s", job.claim_key, exc_info=True)
 
 
+def _emit_worker_shutdown(cfg: Config, worker_id: str) -> None:
+    try:
+        hud.emit(
+            cfg.hud_script,
+            "bridge.worker.shutdown",
+            project="bridge-worker",
+            worker_id=worker_id,
+            reason="shutdown_requested",
+        )
+    except Exception:
+        logger.warning("HUD worker shutdown event failed for %s", worker_id, exc_info=True)
+
+
 def process_one_job(cfg: Config, worker_id: str) -> bool:
     """Claim and process one queued job.
 
@@ -394,6 +465,23 @@ def process_one_job(cfg: Config, worker_id: str) -> bool:
         _process_job(cfg, job, worker_id)
         with db.connect(cfg.db_path) as conn:
             db.mark_done(conn, job.id)
+    except WorkerShutdown:
+        logger.info("Job %s interrupted by worker shutdown", job.id)
+        with db.connect(cfg.db_path) as conn:
+            db.mark_failed(conn, job.id, "worker_shutdown")
+        try:
+            hud.emit(
+                cfg.hud_script,
+                "bridge.job.failed",
+                project=job.repo_full_name,
+                workspace_id=job.claim_key,
+                worker_id=worker_id,
+                delivery_id=job.delivery_id,
+                pr_number=job.pr_number,
+                error="worker_shutdown",
+            )
+        except Exception:
+            logger.warning("HUD failure event failed for %s", job.claim_key, exc_info=True)
     except Exception as e:
         tb = traceback.format_exc()
         logger.error("Job %s failed: %s\n%s", job.id, e, tb)
@@ -423,6 +511,10 @@ def process_one_job(cfg: Config, worker_id: str) -> bool:
 
 
 def run(worker_id: str) -> None:
+    global _shutdown_signum
+    _shutdown_signum = None
+    _shutdown_event.clear()
+    _install_shutdown_handlers()
     cfg = Config.from_env()
     cfg.require_github_app()  # Worker needs GitHub App credentials — fail fast
     cfg.ensure_dirs()
@@ -444,16 +536,19 @@ def run(worker_id: str) -> None:
         POLL_INTERVAL_SECONDS,
     )
 
-    while True:
+    while not _shutdown_requested():
         try:
             processed = process_one_job(cfg, worker_id)
         except Exception as e:
             logger.exception("Claim failed: %s", e)
-            time.sleep(POLL_INTERVAL_SECONDS)
+            _shutdown_event.wait(POLL_INTERVAL_SECONDS)
             continue
 
         if not processed:
-            time.sleep(POLL_INTERVAL_SECONDS)
+            _shutdown_event.wait(POLL_INTERVAL_SECONDS)
+
+    logger.info("Worker %s shutdown complete (signal=%s)", worker_id, _shutdown_signum)
+    _emit_worker_shutdown(cfg, worker_id)
 
 
 if __name__ == "__main__":
