@@ -81,6 +81,10 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
         self.addCleanup(setattr, wh, "config", self._orig_config)
         self.addCleanup(setattr, wh, "_webhook_secret", self._orig_secret)
 
+        self._hud_patch = mock.patch("bridge.webhook.hud.emit")
+        self.hud_emit = self._hud_patch.start()
+        self.addCleanup(self._hud_patch.stop)
+
         self.client = TestClient(wh.app)
         self.addCleanup(self.client.close)
 
@@ -102,6 +106,8 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
     def test_valid_review_delivery_processes_one_job_to_done(self):
         response = self._post_review()
         self.assertEqual(response.status_code, 202)
+        self.hud_emit.assert_called_once()
+        self.assertEqual(self.hud_emit.call_args.args[1], "bridge.webhook.received")
 
         with db.connect(self.db_path) as conn:
             queued = conn.execute("SELECT * FROM jobs").fetchall()
@@ -157,6 +163,23 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
         self.assertEqual(row["iteration"], 1)
         self.assertEqual(iteration, 1)
         self.assertFalse(ws_path.exists())
+
+    def test_duplicate_delivery_is_idempotent_in_real_db(self):
+        first = self._post_review(delivery_id="delivery-dup")
+        second = self._post_review(delivery_id="delivery-dup")
+
+        self.assertEqual(first.status_code, 202)
+        self.assertEqual(second.status_code, 202)
+
+        with db.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM jobs WHERE delivery_id='delivery-dup'"
+            ).fetchall()
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["status"], "queued")
+        self.hud_emit.assert_called_once()
+        self.assertEqual(self.hud_emit.call_args.args[1], "bridge.webhook.received")
 
 
 if __name__ == "__main__":
