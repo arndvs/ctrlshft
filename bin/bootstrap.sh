@@ -375,11 +375,29 @@ else
     yellow "  Codex not detected — skipping"
 fi
 
-# ── 8. Symlink ~/.copilot/skills/ ────────────────────────────────────────────
+# ── 8. Copilot consumer deployment ───────────────────────────────────────────
 echo
-green "[8/13] Copilot skills directory"
+green "[8/13] Copilot directory (skills + instructions)"
 mkdir -p "$COPILOT_DIR"
 ensure_symlink "$DOTFILES/skills" "$COPILOT_DIR/skills" "~/.copilot/skills"
+
+# Deploy generated CLAUDE.md as copilot-instructions.md (same source, no separate rule file)
+if [[ -L "$COPILOT_DIR/copilot-instructions.md" ]]; then
+    _target=$(readlink "$COPILOT_DIR/copilot-instructions.md")
+    if [[ "$_target" == "$DOTFILES/CLAUDE.md" ]]; then
+        yellow "  ~/.copilot/copilot-instructions.md is already symlinked correctly"
+    else
+        ln -sf "$DOTFILES/CLAUDE.md" "$COPILOT_DIR/copilot-instructions.md"
+        green "  Fixed stale symlink (was $_target)"
+    fi
+elif [[ "$OS" == "windows" ]]; then
+    cp "$DOTFILES/CLAUDE.md" "$COPILOT_DIR/copilot-instructions.md"
+    yellow "  Copied copilot-instructions.md to ~/.copilot/ (Windows: file symlinks require admin)"
+else
+    [[ -f "$COPILOT_DIR/copilot-instructions.md" ]] && yellow "  Replacing regular file with symlink"
+    ln -sf "$DOTFILES/CLAUDE.md" "$COPILOT_DIR/copilot-instructions.md"
+    green "  Symlinked ~/.copilot/copilot-instructions.md -> ~/dotfiles/CLAUDE.md"
+fi
 
 # ── 9. Symlink ~/.agents/skills/ ─────────────────────────────────────────────
 echo
