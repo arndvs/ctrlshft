@@ -27,7 +27,8 @@
     "test:smoke-pr-path": "bash test/sandcastle-pr-path-smoke.sh",
     "test:smoke-promote-queued": "bash test/sandcastle-promote-queued-smoke.sh",
     "test:smoke-scheduled": "bash test/sandcastle-scheduled-smoke.sh",
-    "test:smoke-coverage": "bash test/sandcastle-smoke-coverage.sh"
+    "test:smoke-coverage": "bash test/sandcastle-smoke-coverage.sh",
+    "test:copilot-repo-local": "bash test/copilot-repo-local-guard.sh"
   },
   "optionalDependencies": {
     "better-sqlite3": "^9.0.0"
