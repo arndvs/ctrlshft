@@ -12,6 +12,7 @@ Slice 7.1: HUD event producers, daemon upgrade, compliance polish.
 Slice 7.2: CLI entry points (`ctrl` & `shft`).
 
 ### Added
+- Mirrored Claude/Copilot instruction deployment: bootstrap symlinks generated `CLAUDE.md` to `~/.copilot/copilot-instructions.md` so both agents share one instruction source
 - `bin/ctrl` — CLI entry point for infrastructure management (`ctrl check`, `ctrl bootstrap`, `ctrl dashboard`, `ctrl status`, etc.)
 - `shft/shft` — CLI entry point for autonomous execution (`shft run`, `shft afk`, `shft issues`, `shft plan`, etc.)
 - `ctrl dashboard violations` — show violations via HUD API
