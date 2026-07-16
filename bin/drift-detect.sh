@@ -35,6 +35,7 @@ done
 declare -A TARGETS=(
     ["$HOME/.claude/settings.json"]=".claude/settings.json"
     ["$HOME/.claude/CLAUDE.md"]="CLAUDE.md"
+    ["$HOME/.copilot/copilot-instructions.md"]="CLAUDE.md"
 )
 
 # Check hook scripts (all .sh files in hooks/ should be symlinked to ~/.claude/hooks/)
