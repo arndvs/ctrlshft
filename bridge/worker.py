@@ -78,7 +78,14 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
     emit("bridge.job.claimed")
 
     # 1. Mint token.
-    token = github.mint_token(cfg.mint_script)
+    try:
+        token = github.mint_token(cfg.mint_script, shutdown_check=_shutdown_requested)
+    except github.GitHubError:
+        if _shutdown_requested():
+            raise WorkerShutdown("worker_shutdown")
+        raise
+    if _shutdown_requested():
+        raise WorkerShutdown("worker_shutdown")
     emit("bridge.job.token_minted", expires_at=token.expires_at)
 
     # 2. Fetch unresolved threads.
@@ -166,14 +173,22 @@ def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
     )
     review_event_url = job.payload.get("review", {}).get("html_url", "")
 
-    ws_path = workspace.prepare(
-        cfg.workspaces_root,
-        token=token,
-        repo_full_name=repo,
-        pr_number=job.pr_number,
-        head_ref=pr_meta.head_ref,
-        head_repo_full_name=pr_meta.head_repo_full_name,
-    )
+    try:
+        ws_path = workspace.prepare(
+            cfg.workspaces_root,
+            token=token,
+            repo_full_name=repo,
+            pr_number=job.pr_number,
+            head_ref=pr_meta.head_ref,
+            head_repo_full_name=pr_meta.head_repo_full_name,
+            shutdown_check=_shutdown_requested,
+        )
+    except workspace.WorkspaceError:
+        if _shutdown_requested():
+            raise WorkerShutdown("worker_shutdown")
+        raise
+    if _shutdown_requested():
+        raise WorkerShutdown("worker_shutdown")
     emit("bridge.workspace.prepared", path=str(ws_path))
 
     # 5. Upsert tracking issue.

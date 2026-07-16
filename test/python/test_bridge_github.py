@@ -242,5 +242,57 @@ class TestClientAuthHeader(unittest.TestCase):
         client.close()
 
 
+class TestMintTokenShutdown(unittest.TestCase):
+    """Test shutdown-aware mint_token with shutdown_check callback."""
+
+    def test_shutdown_during_mint_raises_github_error(self):
+        """When shutdown_check returns True, mint terminates the child and raises."""
+        proc = mock.MagicMock()
+        proc.poll.return_value = None
+        proc.pid = 1234
+        proc.wait.side_effect = subprocess.TimeoutExpired("cmd", 0.5)
+
+        with mock.patch("bridge.github.subprocess.Popen", return_value=proc), \
+                mock.patch("bridge.github._terminate_popen") as terminate, \
+                mock.patch("bridge.github._time.monotonic", return_value=0):
+            with self.assertRaises(GitHubError) as ctx:
+                mint_token(Path("/mint"), shutdown_check=lambda: True)
+
+        self.assertIn("shutdown", str(ctx.exception))
+        terminate.assert_called_once_with(proc)
+
+    def test_mint_completes_when_no_shutdown(self):
+        """Normal completion with shutdown_check that never fires."""
+        proc = mock.MagicMock()
+        proc.poll.return_value = None
+        proc.pid = 1234
+        proc.returncode = 0
+        proc.stdout.read.return_value = '{"token":"ghs_x","expires_at":"2026-01-01T00:00:00Z"}'
+        proc.stderr.read.return_value = ""
+        proc.wait.return_value = None  # exits immediately
+
+        with mock.patch("bridge.github.subprocess.Popen", return_value=proc), \
+                mock.patch("bridge.github._time.monotonic", return_value=0):
+            token = mint_token(Path("/mint"), shutdown_check=lambda: False)
+
+        self.assertEqual(token.value, "ghs_x")
+
+    def test_mint_timeout_with_shutdown_check(self):
+        """Timeout still works when shutdown_check is provided."""
+        proc = mock.MagicMock()
+        proc.poll.return_value = None
+        proc.pid = 1234
+        proc.wait.side_effect = subprocess.TimeoutExpired("cmd", 0.5)
+
+        with mock.patch("bridge.github.subprocess.Popen", return_value=proc), \
+                mock.patch("bridge.github._terminate_popen") as terminate, \
+                mock.patch("bridge.github._time.monotonic", side_effect=[0, 31]):
+            with self.assertRaises(GitHubError) as ctx:
+                mint_token(Path("/mint"), shutdown_check=lambda: False)
+
+        self.assertIn("timed out", str(ctx.exception))
+        terminate.assert_called_once_with(proc)
+
+
 if __name__ == "__main__":
     unittest.main()
