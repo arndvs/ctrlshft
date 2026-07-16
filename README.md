@@ -784,6 +784,7 @@ ctrl sync-settings
 | `~/.claude/skills/`        | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.claude/agents/`        | Linked to `~/dotfiles/agents/` (or replaced with verified fallback copy on Windows) |
 | `~/.claude/rules/`         | Linked to `~/dotfiles/rules/` (or replaced with verified fallback copy on Windows)  |
+| `~/.copilot/copilot-instructions.md` | Symlinked → `~/dotfiles/CLAUDE.md` — **do not edit directly** (mirrors Claude instructions) |
 | `~/.copilot/skills/`       | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.agents/skills/`        | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.bashrc` / `~/.zshrc`   | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent)            |
@@ -849,6 +850,7 @@ Notes:
 
 - Windows fallback copies are allowed when content matches the `~/dotfiles` source.
 - CI is stricter for deprecated skill flags; local `validate-symlinks.sh` reports them as warnings.
+- `validate-symlinks.sh` and `drift-detect.sh` both verify `~/.copilot/copilot-instructions.md` points to the generated `CLAUDE.md`.
 
 ## Contributing
 
