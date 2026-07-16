@@ -136,5 +136,81 @@ class TestCleanup(unittest.TestCase):
             shutil.rmtree(root, ignore_errors=True)
 
 
+class TestPrepareShutdown(unittest.TestCase):
+    """Test shutdown-aware workspace.prepare with shutdown_check callback."""
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_shutdown_during_clone_raises_workspace_error(self):
+        from bridge.workspace import WorkspaceError, _run_git
+
+        proc = mock.MagicMock()
+        proc.poll.return_value = None
+        proc.pid = 5678
+        proc.wait.side_effect = subprocess.TimeoutExpired("cmd", 0.5)
+
+        with mock.patch("bridge.workspace.subprocess.Popen", return_value=proc), \
+                mock.patch("bridge.workspace._terminate_popen") as terminate, \
+                mock.patch("bridge.workspace._time.monotonic", return_value=0):
+            with self.assertRaises(WorkspaceError) as ctx:
+                _run_git(
+                    ["git", "clone", "--branch", "main", "url", "/path"],
+                    env={},
+                    timeout=300,
+                    shutdown_check=lambda: True,
+                )
+
+        self.assertIn("shutdown", str(ctx.exception))
+        terminate.assert_called_once_with(proc)
+
+    def test_shutdown_during_fetch_raises_workspace_error(self):
+        from bridge.workspace import WorkspaceError, _run_git
+
+        proc = mock.MagicMock()
+        proc.poll.return_value = None
+        proc.pid = 5678
+        proc.wait.side_effect = subprocess.TimeoutExpired("cmd", 0.5)
+
+        with mock.patch("bridge.workspace.subprocess.Popen", return_value=proc), \
+                mock.patch("bridge.workspace._terminate_popen") as terminate, \
+                mock.patch("bridge.workspace._time.monotonic", return_value=0):
+            with self.assertRaises(WorkspaceError) as ctx:
+                _run_git(
+                    ["git", "-C", "/ws", "fetch", "origin", "refs/heads/main:refs/remotes/origin/main"],
+                    env={},
+                    timeout=120,
+                    shutdown_check=lambda: True,
+                )
+
+        self.assertIn("shutdown", str(ctx.exception))
+        terminate.assert_called_once_with(proc)
+
+    def test_run_git_completes_without_shutdown(self):
+        from bridge.workspace import _run_git
+
+        proc = mock.MagicMock()
+        proc.poll.return_value = None
+        proc.pid = 5678
+        proc.returncode = 0
+        proc.stdout.read.return_value = ""
+        proc.stderr.read.return_value = ""
+        proc.wait.return_value = None
+
+        with mock.patch("bridge.workspace.subprocess.Popen", return_value=proc), \
+                mock.patch("bridge.workspace._time.monotonic", return_value=0):
+            result = _run_git(
+                ["git", "status"],
+                env={},
+                timeout=30,
+                shutdown_check=lambda: False,
+            )
+
+        self.assertEqual(result.returncode, 0)
+
+
 if __name__ == "__main__":
     unittest.main()
