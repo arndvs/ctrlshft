@@ -11,6 +11,7 @@ import os
 import signal
 import subprocess
 import sys
+import tempfile
 import time as _time
 from dataclasses import dataclass
 from pathlib import Path
@@ -93,45 +94,50 @@ def mint_token(
         except subprocess.TimeoutExpired:
             raise GitHubError("Token mint timed out after 30s")
     else:
-        proc = subprocess.Popen(
-            [sys.executable, str(mint_script)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            start_new_session=True,
-        )
-        deadline = _time.monotonic() + MINT_TIMEOUT_SECONDS
-        try:
-            while True:
-                if shutdown_check():
-                    _terminate_popen(proc)
-                    raise GitHubError("Token mint interrupted by shutdown")
-                remaining = deadline - _time.monotonic()
-                if remaining <= 0:
-                    _terminate_popen(proc)
-                    raise GitHubError("Token mint timed out after 30s")
-                try:
-                    proc.wait(timeout=min(MINT_POLL_SECONDS, remaining))
-                    break
-                except subprocess.TimeoutExpired:
-                    continue
-        except GitHubError:
-            raise
-        except Exception:
-            _terminate_popen(proc)
-            raise
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stdout_file, \
+                tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stderr_file:
+            proc = subprocess.Popen(
+                [sys.executable, str(mint_script)],
+                stdout=stdout_file,
+                stderr=stderr_file,
+                text=True,
+                start_new_session=True,
+            )
+            deadline = _time.monotonic() + MINT_TIMEOUT_SECONDS
+            try:
+                while True:
+                    if shutdown_check():
+                        _terminate_popen(proc)
+                        raise GitHubError("Token mint interrupted by shutdown")
+                    remaining = deadline - _time.monotonic()
+                    if remaining <= 0:
+                        _terminate_popen(proc)
+                        raise GitHubError("Token mint timed out after 30s")
+                    try:
+                        proc.wait(timeout=min(MINT_POLL_SECONDS, remaining))
+                        break
+                    except subprocess.TimeoutExpired:
+                        continue
+            except GitHubError:
+                raise
+            except Exception:
+                _terminate_popen(proc)
+                raise
+
+            stdout_file.seek(0)
+            stderr_file.seek(0)
+            stdout = stdout_file.read()
+            stderr = stderr_file.read()
 
         if proc.returncode != 0:
-            stderr = proc.stderr.read() if proc.stderr else ""
             raise GitHubError(
                 f"Token mint failed (exit {proc.returncode}): {stderr.strip()}"
             )
-        stdout = proc.stdout.read() if proc.stdout else ""
         result = subprocess.CompletedProcess(
             args=[sys.executable, str(mint_script)],
             returncode=0,
             stdout=stdout,
-            stderr="",
+            stderr=stderr,
         )
 
     try:

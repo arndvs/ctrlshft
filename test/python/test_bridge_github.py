@@ -267,11 +267,14 @@ class TestMintTokenShutdown(unittest.TestCase):
         proc.poll.return_value = None
         proc.pid = 1234
         proc.returncode = 0
-        proc.stdout.read.return_value = '{"token":"ghs_x","expires_at":"2026-01-01T00:00:00Z"}'
-        proc.stderr.read.return_value = ""
         proc.wait.return_value = None  # exits immediately
 
-        with mock.patch("bridge.github.subprocess.Popen", return_value=proc), \
+        def fake_popen(*args, **kwargs):
+            kwargs["stdout"].write('{"token":"ghs_x","expires_at":"2026-01-01T00:00:00Z"}')
+            kwargs["stdout"].flush()
+            return proc
+
+        with mock.patch("bridge.github.subprocess.Popen", side_effect=fake_popen), \
                 mock.patch("bridge.github._time.monotonic", return_value=0):
             token = mint_token(Path("/mint"), shutdown_check=lambda: False)
 

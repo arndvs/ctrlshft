@@ -14,6 +14,7 @@ import os
 import signal
 import shutil
 import subprocess
+import tempfile
 import time as _time
 from pathlib import Path
 from typing import Callable
@@ -74,44 +75,49 @@ def _run_git(
             env=env,
         )
 
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=env,
-        start_new_session=True,
-    )
-    deadline = _time.monotonic() + timeout
-    try:
-        while True:
-            if shutdown_check():
-                _terminate_popen(proc)
-                raise WorkspaceError(
-                    f"git operation interrupted by shutdown: {' '.join(cmd[:3])}"
-                )
-            remaining = deadline - _time.monotonic()
-            if remaining <= 0:
-                _terminate_popen(proc)
-                raise WorkspaceError(
-                    f"git operation timed out after {timeout}s: {' '.join(cmd[:3])}"
-                )
-            try:
-                proc.wait(timeout=min(_GIT_POLL_SECONDS, remaining))
-                break
-            except subprocess.TimeoutExpired:
-                continue
-    except WorkspaceError:
-        raise
-    except Exception:
-        _terminate_popen(proc)
-        raise
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stdout_file, \
+            tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stderr_file:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=stdout_file,
+            stderr=stderr_file,
+            text=True,
+            env=env,
+            start_new_session=True,
+        )
+        deadline = _time.monotonic() + timeout
+        try:
+            while True:
+                if shutdown_check():
+                    _terminate_popen(proc)
+                    raise WorkspaceError(
+                        f"git operation interrupted by shutdown: {' '.join(cmd[:3])}"
+                    )
+                remaining = deadline - _time.monotonic()
+                if remaining <= 0:
+                    _terminate_popen(proc)
+                    raise WorkspaceError(
+                        f"git operation timed out after {timeout}s: {' '.join(cmd[:3])}"
+                    )
+                try:
+                    proc.wait(timeout=min(_GIT_POLL_SECONDS, remaining))
+                    break
+                except subprocess.TimeoutExpired:
+                    continue
+        except WorkspaceError:
+            raise
+        except Exception:
+            _terminate_popen(proc)
+            raise
+
+        stdout_file.seek(0)
+        stderr_file.seek(0)
+        stdout = stdout_file.read()
+        stderr = stderr_file.read()
 
     if proc.returncode != 0:
-        raise subprocess.CalledProcessError(
-            proc.returncode, cmd, proc.stdout.read(), proc.stderr.read()
-        )
-    return subprocess.CompletedProcess(cmd, 0, proc.stdout.read(), proc.stderr.read())
+        raise subprocess.CalledProcessError(proc.returncode, cmd, stdout, stderr)
+    return subprocess.CompletedProcess(cmd, 0, stdout, stderr)
 
 
 class WorkspaceError(RuntimeError):
