@@ -233,10 +233,11 @@ class TestRunSubprocess(unittest.TestCase):
         emit.assert_any_call("bridge.job.shft_completed", exit_code=0)
 
     def test_timeout_escalates_to_sigkill(self):
-        # Initial wait + the SIGTERM wait both time out → ordered escalation:
-        # SIGTERM (15) then SIGKILL (9) on the same process group, no extra or
-        # reordered calls. The exact call list catches double-SIGKILL or
-        # SIGKILL-before-SIGTERM regressions that a bare count would miss.
+        # Forced deadline expiry enters cleanup, then the SIGTERM wait times out
+        # → ordered escalation: SIGTERM (15) then SIGKILL (9) on the same
+        # process group, no extra or reordered calls. The exact call list
+        # catches double-SIGKILL or SIGKILL-before-SIGTERM regressions that a
+        # bare count would miss.
         proc = _proc(wait_side_effect=[
             subprocess.TimeoutExpired("cmd", 1),
             subprocess.TimeoutExpired("cmd", 1),
