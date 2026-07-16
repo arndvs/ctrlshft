@@ -7,11 +7,15 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import signal
 import subprocess
 import sys
+import tempfile
+import time as _time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import httpx
 
@@ -32,27 +36,109 @@ class Token:
         return f"Token(expires_at={self.expires_at!r}, value=<redacted>)"
 
 
-def mint_token(mint_script: Path) -> Token:
+MINT_TIMEOUT_SECONDS = 30
+MINT_POLL_SECONDS = 0.5
+
+
+def _terminate_popen(proc: subprocess.Popen) -> None:
+    """Terminate a Popen process group gracefully, escalating to SIGKILL."""
+    if proc.poll() is not None:
+        return
+    try:
+        pgid = os.getpgid(proc.pid)
+    except (ProcessLookupError, OSError):
+        return
+    try:
+        os.killpg(pgid, signal.SIGTERM)
+    except (ProcessLookupError, OSError):
+        pass
+    try:
+        proc.wait(timeout=3.5)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(pgid, signal.SIGKILL)
+        except (ProcessLookupError, OSError):
+            pass
+        try:
+            proc.wait(timeout=0.5)
+        except subprocess.TimeoutExpired:
+            pass
+
+
+def mint_token(
+    mint_script: Path, *, shutdown_check: Callable[[], bool] | None = None
+) -> Token:
     """Invoke the existing mint script and parse its JSON output.
 
     The script outputs JSON natively: {"token":"...","expires_at":"..."}
     No --json flag needed (fixes C-1 from audit — mint script has no
     --json flag, it always outputs JSON).
+
+    If shutdown_check is provided, the subprocess is polled and terminated
+    early when shutdown_check() returns True.
     """
-    try:
-        result = subprocess.run(
-            [sys.executable, str(mint_script)],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=30,
+    if shutdown_check is None:
+        # Legacy path: blocking subprocess.run
+        try:
+            result = subprocess.run(
+                [sys.executable, str(mint_script)],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=MINT_TIMEOUT_SECONDS,
+            )
+        except subprocess.CalledProcessError as e:
+            raise GitHubError(
+                f"Token mint failed (exit {e.returncode}): {e.stderr.strip()}"
+            )
+        except subprocess.TimeoutExpired:
+            raise GitHubError("Token mint timed out after 30s")
+    else:
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stdout_file, \
+                tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stderr_file:
+            proc = subprocess.Popen(
+                [sys.executable, str(mint_script)],
+                stdout=stdout_file,
+                stderr=stderr_file,
+                text=True,
+                start_new_session=True,
+            )
+            deadline = _time.monotonic() + MINT_TIMEOUT_SECONDS
+            try:
+                while True:
+                    if shutdown_check():
+                        _terminate_popen(proc)
+                        raise GitHubError("Token mint interrupted by shutdown")
+                    remaining = deadline - _time.monotonic()
+                    if remaining <= 0:
+                        _terminate_popen(proc)
+                        raise GitHubError("Token mint timed out after 30s")
+                    try:
+                        proc.wait(timeout=min(MINT_POLL_SECONDS, remaining))
+                        break
+                    except subprocess.TimeoutExpired:
+                        continue
+            except GitHubError:
+                raise
+            except Exception:
+                _terminate_popen(proc)
+                raise
+
+            stdout_file.seek(0)
+            stderr_file.seek(0)
+            stdout = stdout_file.read()
+            stderr = stderr_file.read()
+
+        if proc.returncode != 0:
+            raise GitHubError(
+                f"Token mint failed (exit {proc.returncode}): {stderr.strip()}"
+            )
+        result = subprocess.CompletedProcess(
+            args=[sys.executable, str(mint_script)],
+            returncode=0,
+            stdout=stdout,
+            stderr=stderr,
         )
-    except subprocess.CalledProcessError as e:
-        raise GitHubError(
-            f"Token mint failed (exit {e.returncode}): {e.stderr.strip()}"
-        )
-    except subprocess.TimeoutExpired:
-        raise GitHubError("Token mint timed out after 30s")
 
     try:
         data = json.loads(result.stdout)

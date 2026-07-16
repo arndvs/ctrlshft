@@ -702,6 +702,56 @@ class TestProcessJob(unittest.TestCase):
         )
 
 
+    def test_shutdown_during_mint_raises_worker_shutdown(self):
+        """SIGTERM during token mint phase propagates as WorkerShutdown."""
+        cfg = self._cfg()
+        job = self._claimed_job()
+
+        def mint_interrupted(*args, **kwargs):
+            worker_module._shutdown_event.set()
+            raise worker_module.github.GitHubError("Token mint interrupted by shutdown")
+
+        with mock.patch("bridge.worker.hud.emit"), \
+                mock.patch("bridge.worker.github.mint_token", side_effect=mint_interrupted):
+            with self.assertRaises(worker_module.WorkerShutdown):
+                _process_job(cfg, job, "worker-1")
+
+    def test_shutdown_during_workspace_prepare_raises_worker_shutdown(self):
+        """SIGTERM during git clone/fetch phase propagates as WorkerShutdown."""
+        cfg = self._cfg()
+        job = self._claimed_job()
+        thread = UnresolvedThread(
+            thread_id="thread-1",
+            url="https://example.test/thread",
+            path="bridge/worker.py",
+            line=1,
+            body="fix this",
+            diff_hunk=None,
+            author="copilot-pull-request-reviewer[bot]",
+        )
+
+        def prepare_interrupted(*args, **kwargs):
+            worker_module._shutdown_event.set()
+            raise worker_module.workspace.WorkspaceError("git operation interrupted by shutdown: git clone")
+
+        with mock.patch("bridge.worker.hud.emit"), \
+                mock.patch("bridge.worker.github.mint_token", return_value=_TOKEN), \
+                mock.patch("bridge.worker.github.fetch_unresolved_copilot_threads", return_value=[thread]), \
+                mock.patch("bridge.worker.github.find_tracking_issue", return_value=None), \
+                mock.patch(
+                    "bridge.worker.github.fetch_pr_metadata",
+                    return_value=PrMetadata(
+                        head_ref="feature",
+                        head_repo_full_name="org/repo",
+                        title="Test PR",
+                        html_url="https://example.test/pr/7",
+                    ),
+                ), \
+                mock.patch("bridge.worker.workspace.prepare", side_effect=prepare_interrupted):
+            with self.assertRaises(worker_module.WorkerShutdown):
+                _process_job(cfg, job, "worker-1")
+
+
 class TestCleanupWorkspaceAfterJob(unittest.TestCase):
     def test_missing_workspace_does_not_emit_cleaned_event(self):
         cfg = mock.MagicMock()
