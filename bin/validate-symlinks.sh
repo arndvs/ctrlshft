@@ -117,6 +117,7 @@ else
     check_link_or_windows_copy "$DOTFILES/agents" "$CLAUDE_DIR/agents" "~/.claude/agents"
     check_link_or_windows_copy "$DOTFILES/rules" "$CLAUDE_DIR/rules" "~/.claude/rules"
     check_link_or_windows_copy "$DOTFILES/skills" "$COPILOT_DIR/skills" "~/.copilot/skills"
+    check_link_or_windows_copy "$DOTFILES/CLAUDE.md" "$COPILOT_DIR/copilot-instructions.md" "~/.copilot/copilot-instructions.md"
     check_link_or_windows_copy "$DOTFILES/skills" "$AGENTS_DIR/skills" "~/.agents/skills"
 
     # CLI entry points
