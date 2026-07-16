@@ -5,7 +5,7 @@
 #   source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 #
 # Provides: green, yellow, red, detect_os, find_python, find_venv_python,
-#           ensure_symlink
+#           ensure_symlink, materialize_copilot_skills
 #
 # NOTE: load-secrets.sh intentionally does NOT source this file because
 # it's loaded from .bashrc/.zshrc and must remain self-contained.
@@ -145,4 +145,51 @@ ensure_symlink() {
         red "  Symlink creation failed for $label — check permissions"
         _fail=1
     fi
+}
+
+# ── Copilot skill materialization ─────────────────────────────────────────────
+# materialize_copilot_skills SOURCE TARGET LABEL
+#   SOURCE — dotfiles skills directory
+#   TARGET — ~/.copilot/skills
+#   LABEL  — human-readable name for logging
+#
+# Copilot loads skill directories from ~/.copilot/skills. Keep that runtime tree
+# flat and filtered: public skills/*/SKILL.md plus private skills/_local/*/SKILL.md.
+# Do not expose wrapper/helper directories like _local, .git, __pycache__, scripts,
+# references, or private nested-repo metadata as candidate skills.
+materialize_copilot_skills() {
+    local source="$1" target="$2" label="$3"
+    local tmp="${target}.tmp.$$"
+    local skill_dir skill_name local_dir
+
+    rm -rf "$tmp"
+    mkdir -p "$tmp"
+
+    for skill_dir in "$source"/*; do
+        [[ -d "$skill_dir" ]] || continue
+        skill_name="$(basename "$skill_dir")"
+        [[ "$skill_name" == _* || "$skill_name" == .* || "$skill_name" == "__pycache__" ]] && continue
+        [[ -f "$skill_dir/SKILL.md" ]] || continue
+        cp -R "$skill_dir" "$tmp/$skill_name"
+    done
+
+    if [[ -d "$source/_local" ]]; then
+        for local_dir in "$source/_local"/*; do
+            [[ -d "$local_dir" ]] || continue
+            skill_name="$(basename "$local_dir")"
+            [[ "$skill_name" == .* || "$skill_name" == "__pycache__" ]] && continue
+            [[ -f "$local_dir/SKILL.md" ]] || continue
+            if [[ -e "$tmp/$skill_name" ]]; then
+                red "  Duplicate Copilot skill name: $skill_name"
+                rm -rf "$tmp"
+                _fail=1
+                return 1
+            fi
+            cp -R "$local_dir" "$tmp/$skill_name"
+        done
+    fi
+
+    rm -rf "$target"
+    mv "$tmp" "$target"
+    green "  Materialized $label from $source (filtered Copilot runtime tree)"
 }

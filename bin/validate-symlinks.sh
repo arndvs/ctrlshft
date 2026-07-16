@@ -83,6 +83,72 @@ check_link_or_windows_copy() {
     fi
 }
 
+check_copilot_skill_runtime() {
+    local source="$1"
+    local target="$2"
+    local label="$3"
+    local expected actual runtime_fail=0
+
+    if [[ ! -d "$target" ]]; then
+        red "  ✗ $label is missing"
+        _fail=1
+        return
+    fi
+
+    if find "$target" -mindepth 1 -maxdepth 1 -type d \( -name '_local' -o -name '.git' -o -name '__pycache__' \) | grep -q .; then
+        red "  ✗ $label exposes non-skill wrapper/helper directories"
+        find "$target" -mindepth 1 -maxdepth 1 -type d \( -name '_local' -o -name '.git' -o -name '__pycache__' \) | sed 's/^/      /'
+        runtime_fail=1
+        _fail=1
+    fi
+
+    while IFS= read -r actual; do
+        if [[ ! -f "$actual/SKILL.md" ]]; then
+            red "  ✗ $label contains non-skill directory: $actual"
+            runtime_fail=1
+            _fail=1
+        fi
+    done < <(find "$target" -mindepth 1 -maxdepth 1 -type d | sort)
+
+    expected=$(
+        {
+            find "$source" -mindepth 1 -maxdepth 1 -type d ! -name '_*' ! -name '.*' ! -name '__pycache__' -exec test -f '{}/SKILL.md' ';' -print
+            if [[ -d "$source/_local" ]]; then
+                find "$source/_local" -mindepth 1 -maxdepth 1 -type d ! -name '.*' ! -name '__pycache__' -exec test -f '{}/SKILL.md' ';' -print
+            fi
+        } | sed 's#.*/##' | sort
+    )
+    actual=$(find "$target" -mindepth 1 -maxdepth 1 -type d -exec basename '{}' ';' | sort)
+    if [[ "$expected" != "$actual" ]]; then
+        red "  ✗ $label skill inventory does not match source"
+        echo "    Expected:"
+        printf '%s\n' "$expected" | sed 's/^/      /'
+        echo "    Actual:"
+        printf '%s\n' "$actual" | sed 's/^/      /'
+        runtime_fail=1
+        _fail=1
+    fi
+
+    while IFS= read -r actual; do
+        [[ -n "$actual" ]] || continue
+        local source_dir
+        if [[ -d "$source/$actual" ]]; then
+            source_dir="$source/$actual"
+        else
+            source_dir="$source/_local/$actual"
+        fi
+        if ! diff -qr "$source_dir" "$target/$actual" >/dev/null 2>&1; then
+            red "  ✗ $label skill $actual has drifted from $source_dir"
+            runtime_fail=1
+            _fail=1
+        fi
+    done < <(printf '%s\n' "$expected")
+
+    if [[ $runtime_fail -eq 0 ]]; then
+        green "  ✓ $label filtered runtime tree is valid"
+    fi
+}
+
 check_nested_duplication() {
     local path="$1"
     local label="$2"
@@ -116,7 +182,7 @@ else
     check_link_or_windows_copy "$DOTFILES/skills" "$CLAUDE_DIR/skills" "~/.claude/skills"
     check_link_or_windows_copy "$DOTFILES/agents" "$CLAUDE_DIR/agents" "~/.claude/agents"
     check_link_or_windows_copy "$DOTFILES/rules" "$CLAUDE_DIR/rules" "~/.claude/rules"
-    check_link_or_windows_copy "$DOTFILES/skills" "$COPILOT_DIR/skills" "~/.copilot/skills"
+    check_copilot_skill_runtime "$DOTFILES/skills" "$COPILOT_DIR/skills" "~/.copilot/skills"
     check_link_or_windows_copy "$DOTFILES/CLAUDE.md" "$COPILOT_DIR/copilot-instructions.md" "~/.copilot/copilot-instructions.md"
     check_link_or_windows_copy "$DOTFILES/skills" "$AGENTS_DIR/skills" "~/.agents/skills"
 

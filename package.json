@@ -14,6 +14,8 @@
     "test:consistency": "bash test/config-consistency.sh",
     "test:branch-guard": "bash test/branch-write-guard.sh",
     "test:instructions": "bash test/claude-instructions.sh",
+    "test:skills": "bash test/skills.sh",
+    "test:copilot-skills": "bash test/copilot-skills-materialize.sh",
     "test:hooks": "bash test/hooks-integration.sh",
     "test:lifecycle": "bash test/lifecycle.sh",
     "test:main-pr-source": "bash test/main-pr-source-guard.sh",

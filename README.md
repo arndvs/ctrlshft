@@ -785,7 +785,7 @@ ctrl sync-settings
 | `~/.claude/agents/`        | Linked to `~/dotfiles/agents/` (or replaced with verified fallback copy on Windows) |
 | `~/.claude/rules/`         | Linked to `~/dotfiles/rules/` (or replaced with verified fallback copy on Windows)  |
 | `~/.copilot/copilot-instructions.md` | Symlinked → `~/dotfiles/CLAUDE.md` — **do not edit directly** (mirrors Claude instructions) |
-| `~/.copilot/skills/`       | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
+| `~/.copilot/skills/`       | Rebuilt from `~/dotfiles/skills/` as a filtered, flat runtime tree |
 | `~/.agents/skills/`        | Linked to `~/dotfiles/skills/` (or replaced with verified fallback copy on Windows) |
 | `~/.bashrc` / `~/.zshrc`   | Appends `load-secrets.sh` + `detect-context.sh` integration (idempotent)            |
 | `~/.npmrc`                 | Appends `min-release-age=7` (supply chain protection)                               |
@@ -837,6 +837,7 @@ Guardrails are enforced in CI by `.github/workflows/integrity.yml`.
 It validates:
 
 - source-of-truth language exists in `global.instructions.md` and `CLAUDE.base.md`
+- skill `SKILL.md` frontmatter is loadable by Copilot/Claude (`name` and `description`, no invalid unquoted YAML)
 - deprecated `disable-model-invocation` flags are absent from `skills/**/SKILL.md`
 - static integrity checks pass via `bash bin/validate-symlinks.sh --ci`
 
@@ -844,6 +845,7 @@ Run local checks before opening a PR:
 
 ```bash
 ctrl check               # or: bash ~/dotfiles/bin/validate-env.sh && bash ~/dotfiles/bin/validate-symlinks.sh --ci
+npm run test:skills      # validate public skills; ctrl check also validates private skills/_local when present
 ```
 
 Notes:
