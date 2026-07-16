@@ -14,7 +14,14 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 
+CURRENT_SCHEMA_VERSION = 2
+
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS schema_version (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  version INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS jobs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   delivery_id TEXT UNIQUE NOT NULL,
@@ -85,12 +92,85 @@ class Job:
         )
 
 
+def _get_existing_columns(conn: sqlite3.Connection, table: str) -> set:
+    """Return set of column names for a table."""
+    rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+    return {r[1] for r in rows}
+
+
+def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
+    row = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        (table,),
+    ).fetchone()
+    return row is not None
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Upgrade an existing DB to the current schema in place."""
+    # Ensure schema_version table exists
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS schema_version (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          version INTEGER NOT NULL
+        )
+    """)
+
+    row = conn.execute("SELECT version FROM schema_version WHERE id=1").fetchone()
+    if row and row[0] >= CURRENT_SCHEMA_VERSION:
+        return  # Already up to date or ahead
+
+    # --- Migration: ensure jobs table has all expected columns ---
+    if _table_exists(conn, "jobs"):
+        existing = _get_existing_columns(conn, "jobs")
+        migrations = [
+            ("claim_key", "TEXT NOT NULL DEFAULT ''"),
+            ("iteration", "INTEGER NOT NULL DEFAULT 0"),
+            ("tracking_issue_number", "INTEGER"),
+            ("workspace_path", "TEXT"),
+            ("worker_id", "TEXT"),
+            ("error", "TEXT"),
+        ]
+        for col, typedef in migrations:
+            if col not in existing:
+                conn.execute(f"ALTER TABLE jobs ADD COLUMN {col} {typedef}")
+
+    # --- Migration: ensure claim_keys table exists ---
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS claim_keys (
+          claim_key TEXT PRIMARY KEY,
+          current_iteration INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # --- Ensure indexes ---
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_status_id ON jobs(status, id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_claim_key ON jobs(claim_key, status)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_pr ON jobs(repo_full_name, pr_number)")
+
+    # --- Set version ---
+    conn.execute(
+        "INSERT OR REPLACE INTO schema_version (id, version) VALUES (1, ?)",
+        (CURRENT_SCHEMA_VERSION,),
+    )
+
+
 def init_db(db_path: Path) -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as conn:
-        conn.executescript(SCHEMA)
+        # PRAGMAs must run outside any transaction
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=NORMAL;")
+        # Migrate existing DBs before applying full schema
+        if _table_exists(conn, "jobs"):
+            _migrate(conn)
+        conn.executescript(SCHEMA)
+        # Set version for fresh DBs
+        conn.execute(
+            "INSERT OR IGNORE INTO schema_version (id, version) VALUES (1, ?)",
+            (CURRENT_SCHEMA_VERSION,),
+        )
 
 
 @contextmanager
