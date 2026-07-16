@@ -81,6 +81,7 @@ See [ADR-002](adr/ADR-002-four-tier-disclosure.md) for the decision rationale.
 ```
 ~/dotfiles/          ──bootstrap.sh──►  ~/.claude/     (symlinks; Windows: copies)
   CLAUDE.base.md     ──awk + append──►  CLAUDE.md      (generated, gitignored)
+  CLAUDE.md          ──symlink──────►   ~/.copilot/copilot-instructions.md  (mirrored)
   rules/             ──symlink──────►   ~/.claude/rules/
   skills/            ──symlink──────►   ~/.claude/skills/  +  ~/.copilot/skills/  +  ~/.agents/skills/
   agents/            ──symlink──────►   ~/.claude/agents/
@@ -91,6 +92,18 @@ See [ADR-002](adr/ADR-002-four-tier-disclosure.md) for the decision rationale.
 ```
 
 Shell integration injects a managed block into `~/.bashrc`/`~/.zshrc` that runs `detect-context.sh` and `detect-client.sh` on every `cd()`.
+
+### Mirrored Claude/Copilot Instructions
+
+Copilot instructions are **not maintained separately**. Bootstrap step [8/13] symlinks the generated `CLAUDE.md` to `~/.copilot/copilot-instructions.md`, so both Claude Code and GitHub Copilot Chat consume the same instruction set from a single source.
+
+**Workflow:** edit `CLAUDE.base.md` → run `ctrl bootstrap` → both consumers update automatically.
+
+> ⚠️ **Never edit `~/.copilot/copilot-instructions.md` directly.** It is a symlink (or copy on Windows) of the generated `CLAUDE.md`. Any direct edits will be overwritten on the next bootstrap run.
+
+**Validation and drift detection:**
+- `bin/validate-symlinks.sh` verifies the Copilot instruction symlink is intact.
+- `bin/drift-detect.sh` checks `~/.copilot/copilot-instructions.md` for content drift against the source `CLAUDE.md`.
 
 ---
 
