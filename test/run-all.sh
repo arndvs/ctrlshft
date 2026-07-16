@@ -25,6 +25,7 @@ SUITES=(
   "pipeline-label:test/pipeline-label-wrapper.sh"
   "bridge-python:test/bridge-python.sh"
   "proxy-scripts:shft/templates/scripts/test_probe_completion.sh"
+  "mirror-regression:test/mirror-regression.sh"
   "smoke-coverage:test/sandcastle-smoke-coverage.sh"
 )
 
