@@ -54,11 +54,7 @@ Run whatever the project uses. Do not skip feedback loops.
 
 ## Git Commit
 
-Make a git commit. Include in the commit message:
-
-- Key decisions made
-- Files changed
-- Blockers and notes for the next iteration
+Make a git commit. Conventional-commit subject (≤50 chars). Body: key decisions and reasoning (why, not what). Do not list files changed — git tracks that.
 
 After committing:
 
