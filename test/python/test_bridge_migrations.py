@@ -132,6 +132,12 @@ class TestMigrateV0(unittest.TestCase):
             row = conn.execute("SELECT * FROM jobs WHERE delivery_id='d-old'").fetchone()
             self.assertIsNotNone(row)
             self.assertEqual(row["repo_full_name"], "org/repo")
+            self.assertEqual(row["claim_key"], "org/repo#1")
+
+            claim_key = conn.execute(
+                "SELECT claim_key FROM claim_keys WHERE claim_key='org/repo#1'"
+            ).fetchone()
+            self.assertIsNotNone(claim_key)
 
     def test_current_queries_work_after_migration(self):
         """Full enqueue/claim/done cycle works on migrated DB."""
@@ -195,6 +201,21 @@ class TestMigrateV1(unittest.TestCase):
             job = db.claim_next_job(conn, worker_id="w-1")
             self.assertIsNotNone(job)
             db.mark_failed(conn, job.id, "oops")
+
+    def test_existing_claim_keys_are_seeded(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "INSERT INTO jobs (delivery_id, event_type, repo_full_name, pr_number, claim_key, payload_json)"
+                " VALUES ('d-old', 'pull_request_review', 'org/repo', 5, 'org/repo#5', '{}')"
+            )
+
+        db.init_db(self.db_path)
+
+        with db.connect(self.db_path) as conn:
+            claim_key = conn.execute(
+                "SELECT claim_key FROM claim_keys WHERE claim_key='org/repo#5'"
+            ).fetchone()
+            self.assertIsNotNone(claim_key)
 
 
 if __name__ == "__main__":

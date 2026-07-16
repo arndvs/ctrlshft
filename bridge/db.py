@@ -135,6 +135,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
             if col not in existing:
                 conn.execute(f"ALTER TABLE jobs ADD COLUMN {col} {typedef}")
 
+        conn.execute(
+            "UPDATE jobs SET claim_key = repo_full_name || '#' || pr_number "
+            "WHERE claim_key IS NULL OR claim_key = ''"
+        )
+
     # --- Migration: ensure claim_keys table exists ---
     conn.execute("""
         CREATE TABLE IF NOT EXISTS claim_keys (
@@ -143,6 +148,15 @@ def _migrate(conn: sqlite3.Connection) -> None:
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    if _table_exists(conn, "jobs"):
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO claim_keys (claim_key)
+            SELECT DISTINCT claim_key FROM jobs
+              WHERE claim_key IS NOT NULL AND claim_key != ''
+            """
+        )
 
     # --- Ensure indexes ---
     conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_status_id ON jobs(status, id)")
