@@ -47,13 +47,19 @@ Skills chain together for end-to-end feature delivery:
 
 ## Private Skills
 
-`skills/_local/` is gitignored. Drop private, business-specific, or stack-specific skills here — auto-discovered alongside public skills, never leave your machine.
+`skills/_local/` is gitignored. Drop private, business-specific, or stack-specific skills here — auto-discovered alongside public skills, never leave your machine. `bootstrap.sh` materializes Copilot's runtime skill directory as a flat filtered tree, so only real skill directories with `SKILL.md` are exposed to Copilot.
 
 ## Adding a Skill
 
 1. Create `skills/your-skill/SKILL.md`
-2. Add YAML frontmatter with `name` and `description` (description contains trigger phrases)
+2. Add YAML frontmatter with `name` and `description` (description contains trigger phrases). Quote the description or use block style if it contains YAML syntax such as `: `.
 3. Define the workflow steps, output format, and rules
 4. Auto-discovered — no registration needed
 
 See [ADR-001](../docs/adr/ADR-001-vendor-boundary.md) for what belongs in `skills/` (universal workflow) vs `_local/` (stack-specific).
+
+Validate before restarting an agent:
+
+```bash
+bash bin/validate-skills.sh "$PWD"
+```

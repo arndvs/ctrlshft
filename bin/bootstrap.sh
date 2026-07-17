@@ -379,7 +379,7 @@ fi
 echo
 green "[8/13] Copilot directory (skills + instructions)"
 mkdir -p "$COPILOT_DIR"
-ensure_symlink "$DOTFILES/skills" "$COPILOT_DIR/skills" "~/.copilot/skills"
+materialize_copilot_skills "$DOTFILES/skills" "$COPILOT_DIR/skills" "~/.copilot/skills"
 
 # Deploy generated CLAUDE.md as copilot-instructions.md (same source, no separate rule file)
 if [[ -L "$COPILOT_DIR/copilot-instructions.md" ]]; then

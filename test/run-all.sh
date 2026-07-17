@@ -19,6 +19,8 @@ SUITES=(
   "consistency:test/config-consistency.sh"
   "branch-guard:test/branch-write-guard.sh"
   "instructions:test/claude-instructions.sh"
+  "skills:test/skills.sh"
+  "copilot-skills:test/copilot-skills-materialize.sh"
   "hooks:test/hooks-integration.sh"
   "lifecycle:test/lifecycle.sh"
   "main-pr-source:test/main-pr-source-guard.sh"

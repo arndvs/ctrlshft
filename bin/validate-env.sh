@@ -269,6 +269,12 @@ else
     _fail=1
 fi
 
+if bash "$HOME/dotfiles/bin/validate-skills.sh" "$HOME/dotfiles"; then
+    :
+else
+    _fail=1
+fi
+
 if [[ -f "$HOME/.claude/CLAUDE.md" ]]; then
     green "  ✓ ~/.claude/CLAUDE.md exists"
 else
