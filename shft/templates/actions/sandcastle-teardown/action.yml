@@ -20,7 +20,7 @@ inputs:
     description: URL for the current workflow run.
     required: true
   job-status:
-    description: Caller job status, usually `${{ job.status }}`.
+    description: Caller job status supplied by the workflow.
     required: true
   failure-context:
     description: Optional context appended to the failure summary.
