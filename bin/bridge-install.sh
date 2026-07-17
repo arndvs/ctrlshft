@@ -10,6 +10,9 @@ set -euo pipefail
 DOTFILES="${CTRLSHFT_HOME:-$HOME/dotfiles}"
 BRIDGE_ROOT="${BRIDGE_ROOT:-$HOME/bridge}"
 VENV="$DOTFILES/secrets/.venv"
+ENV_AGENT="$DOTFILES/secrets/.env.agent"
+ENV_SECRETS="$DOTFILES/secrets/.env.secrets"
+ENV_BRIDGE="$DOTFILES/secrets/.env.bridge"
 
 log()  { printf '\033[1;34m[bridge-install]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[bridge-install]\033[0m %s\n' "$*" >&2; }
@@ -23,6 +26,34 @@ _ok=1
 _check() {
     if ! command -v "$1" >/dev/null 2>&1; then
         die "$1 not installed — $2"
+    fi
+}
+
+_trim() {
+    local s="$1"
+    s="${s#"${s%%[![:space:]]*}"}"
+    s="${s%"${s##*[![:space:]]}"}"
+    printf '%s' "$s"
+}
+
+_env_file_has_value() {
+    local file="$1" key="$2" line value
+    [[ -f "$file" ]] || return 1
+    line=$(grep -E "^[[:space:]]*(export[[:space:]]+)?${key}[[:space:]]*=" "$file" | tail -n 1 || true)
+    [[ -n "$line" ]] || return 1
+    value="${line#*=}"
+    value="$(_trim "$value")"
+    value="${value%\"}"
+    value="${value#\"}"
+    value="${value%\'}"
+    value="${value#\'}"
+    [[ -n "$value" ]]
+}
+
+_require_env_file_value() {
+    local file="$1" key="$2"
+    if ! _env_file_has_value "$file" "$key"; then
+        die "$key is missing or empty in $file"
     fi
 }
 
@@ -41,23 +72,47 @@ fi
 
 log "prerequisites: OK"
 
-# ── 2. Required env vars ────────────────────────────────────────────────────
-for v in GITHUB_APP_ID GITHUB_APP_INSTALLATION_ID GITHUB_APP_PRIVATE_KEY_B64 \
-         WEBHOOK_SECRET BRIDGE_REPO_ALLOWLIST; do
-    if [[ -z "${!v:-}" ]]; then
-        die "$v is not set (check secrets/.env.agent and .env.secrets)"
+# ── 2. Bridge secrets file ──────────────────────────────────────────────────
+# systemd EnvironmentFile= requires this file to exist before units start.
+if [[ ! -f "$ENV_BRIDGE" ]]; then
+    if [[ "$validate_only" == "0" ]]; then
+        if [[ -n "${WEBHOOK_SECRET:-}" ]]; then
+            printf 'WEBHOOK_SECRET=%s\n' "$WEBHOOK_SECRET" > "$ENV_BRIDGE"
+            log "created secrets/.env.bridge from current WEBHOOK_SECRET"
+        elif [[ -f "$DOTFILES/secrets/.env.bridge.example" ]]; then
+            cp "$DOTFILES/secrets/.env.bridge.example" "$ENV_BRIDGE"
+            warn "created secrets/.env.bridge from example — set WEBHOOK_SECRET before starting services"
+        else
+            die "secrets/.env.bridge missing and WEBHOOK_SECRET is not set"
+        fi
+    else
+        die "secrets/.env.bridge is missing — required by systemd/bridge-webhook.service"
     fi
-done
+else
+    log "secrets/.env.bridge: exists"
+fi
 
-# WEBHOOK_SECRET entropy check
-if [[ ${#WEBHOOK_SECRET} -lt 32 ]]; then
-    warn "WEBHOOK_SECRET is only ${#WEBHOOK_SECRET} chars — recommend >= 32 for security"
+# ── 3. Required EnvironmentFile contents ────────────────────────────────────
+_require_env_file_value "$ENV_AGENT" BRIDGE_REPO_ALLOWLIST
+_require_env_file_value "$ENV_SECRETS" GITHUB_APP_ID
+_require_env_file_value "$ENV_SECRETS" GITHUB_APP_INSTALLATION_ID
+_require_env_file_value "$ENV_SECRETS" GITHUB_APP_PRIVATE_KEY_B64
+_require_env_file_value "$ENV_BRIDGE" WEBHOOK_SECRET
+
+_webhook_secret_line=$(grep -E '^[[:space:]]*(export[[:space:]]+)?WEBHOOK_SECRET[[:space:]]*=' "$ENV_BRIDGE" | tail -n 1 || true)
+_webhook_secret="$(_trim "${_webhook_secret_line#*=}")"
+_webhook_secret="${_webhook_secret%\"}"
+_webhook_secret="${_webhook_secret#\"}"
+_webhook_secret="${_webhook_secret%\'}"
+_webhook_secret="${_webhook_secret#\'}"
+if [[ ${#_webhook_secret} -lt 32 ]]; then
+    warn "WEBHOOK_SECRET in secrets/.env.bridge is only ${#_webhook_secret} chars — recommend >= 32 for security"
     warn "Generate with: openssl rand -hex 32"
 fi
 
-log "environment: OK"
+log "environment files: OK"
 
-# ── 3. Python deps ──────────────────────────────────────────────────────────
+# ── 4. Python deps ──────────────────────────────────────────────────────────
 if [[ "$validate_only" == "0" ]]; then
     if [[ -f "$DOTFILES/bridge/requirements.txt" ]]; then
         "$VENV/bin/pip" install --quiet -r "$DOTFILES/bridge/requirements.txt" >/dev/null
@@ -69,30 +124,12 @@ else
     log "python deps: skipped (--validate)"
 fi
 
-# ── 3a. Bridge secrets file ─────────────────────────────────────────────────
-# systemd EnvironmentFile= requires this file to exist before units start.
-if [[ ! -f "$DOTFILES/secrets/.env.bridge" ]]; then
-    if [[ "$validate_only" == "0" ]]; then
-        if [[ -f "$DOTFILES/secrets/.env.bridge.example" ]]; then
-            cp "$DOTFILES/secrets/.env.bridge.example" "$DOTFILES/secrets/.env.bridge"
-            log "created secrets/.env.bridge from example — edit with your webhook secret"
-        else
-            printf 'WEBHOOK_SECRET=%s\n' "$WEBHOOK_SECRET" > "$DOTFILES/secrets/.env.bridge"
-            log "created secrets/.env.bridge from current WEBHOOK_SECRET"
-        fi
-    else
-        warn "secrets/.env.bridge does not exist — systemd units will fail to start"
-    fi
-else
-    log "secrets/.env.bridge: exists"
-fi
-
-# ── 4. Runtime dirs ─────────────────────────────────────────────────────────
+# ── 5. Runtime dirs ─────────────────────────────────────────────────────────
 mkdir -p "$BRIDGE_ROOT/workspaces" "$BRIDGE_ROOT/logs"
 touch "$BRIDGE_ROOT/logs/bridge.log"
 log "runtime dirs: $BRIDGE_ROOT"
 
-# ── 5. Systemd user units ──────────────────────────────────────────────────
+# ── 6. Systemd user units ──────────────────────────────────────────────────
 if [[ "$validate_only" == "0" ]]; then
     SYSTEMD_USER="$HOME/.config/systemd/user"
     mkdir -p "$SYSTEMD_USER"
@@ -117,7 +154,7 @@ else
     log "systemd units: skipped (--validate)"
 fi
 
-# ── 6. User linger ──────────────────────────────────────────────────────────
+# ── 7. User linger ──────────────────────────────────────────────────────────
 if command -v loginctl >/dev/null 2>&1; then
     if ! loginctl show-user "$USER" 2>/dev/null | grep -q 'Linger=yes'; then
         warn "User linger is off. Services will stop on logout."
@@ -125,7 +162,7 @@ if command -v loginctl >/dev/null 2>&1; then
     fi
 fi
 
-# ── 7. Token mint smoke test ───────────────────────────────────────────────
+# ── 8. Token mint smoke test ───────────────────────────────────────────────
 if [[ "$validate_only" == "0" ]]; then
     if [[ -f "$DOTFILES/bin/verify-github-app-token.sh" ]]; then
         if bash "$DOTFILES/bin/verify-github-app-token.sh" >/dev/null 2>&1; then
