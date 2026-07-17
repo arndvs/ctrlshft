@@ -38,7 +38,7 @@ SH
 _fake_commands() {
     local dir="$1"
     mkdir -p "$dir/bin"
-    for cmd in docker systemctl sqlite3 jq srt; do
+    for cmd in docker systemctl sqlite3 jq loginctl srt; do
         cat > "$dir/bin/$cmd" <<'SH'
 #!/usr/bin/env bash
 exit 0
@@ -117,7 +117,7 @@ ENV
 cat > "$tmp/dotfiles/secrets/.env.bridge" <<'ENV'
 WEBHOOK_SECRET=12345678901234567890123456789012
 ENV
-PATH="$tmp/bin:$PATH" CTRLSHFT_HOME="$tmp/dotfiles" BRIDGE_ROOT="$tmp/bridge" HOME="$tmp/home" \
+PATH="$tmp/bin:$PATH" CTRLSHFT_HOME="$tmp/dotfiles" BRIDGE_ROOT="$tmp/bridge" HOME="$tmp/home" USER="bridge-test" \
     bash "$ROOT/bin/bridge-install.sh" --validate >"$tmp/install.out" 2>&1 \
     && _ok "bridge-install --validate reads EnvironmentFile contents without exported secrets" \
     || _fail "bridge-install --validate reads EnvironmentFile contents without exported secrets" "$(<"$tmp/install.out")"
@@ -139,7 +139,7 @@ cat > "$tmp/dotfiles/secrets/.env.bridge" <<'ENV'
 WEBHOOK_SECRET=
 ENV
 ec=0
-PATH="$tmp/bin:$PATH" CTRLSHFT_HOME="$tmp/dotfiles" BRIDGE_ROOT="$tmp/bridge" HOME="$tmp/home" \
+PATH="$tmp/bin:$PATH" CTRLSHFT_HOME="$tmp/dotfiles" BRIDGE_ROOT="$tmp/bridge" HOME="$tmp/home" USER="bridge-test" \
     bash "$ROOT/bin/bridge-install.sh" --validate >"$tmp/install.out" 2>&1 || ec=$?
 if [[ "$ec" -ne 0 ]] && grep -qF "WEBHOOK_SECRET is missing or empty" "$tmp/install.out"; then
     _ok "bridge-install --validate fails empty webhook EnvironmentFile value"
