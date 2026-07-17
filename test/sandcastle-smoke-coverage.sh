@@ -329,6 +329,12 @@ else
     _record_pass "composite actions avoid expression defaults"
 fi
 
+if grep -Eq "description:.*\\$\\{\\{" "$template_actions_dir"/*/action.yml "$installed_actions_dir"/*/action.yml; then
+    _record_fail "composite action descriptions avoid expressions" "metadata descriptions are parsed before workflow contexts exist"
+else
+    _record_pass "composite action descriptions avoid expressions"
+fi
+
 if awk '
     /^  [A-Za-z0-9_-]+:/ {
         current=$1
