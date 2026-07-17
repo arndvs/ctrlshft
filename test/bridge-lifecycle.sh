@@ -91,8 +91,8 @@ tmp="$TMP"
 _fake_bin "$tmp"
 SYSTEMCTL_LOG="$tmp/systemctl.log" PATH="$tmp/bin:$PATH" DOTFILES="$ROOT" HOME="$tmp/home" WORKER_COUNT=1 \
     bash "$ROOT/bin/ctrl" bridge start >"$tmp/out" 2>&1
-if grep -qx -- "--user start bridge-webhook.service" "$tmp/systemctl.log" \
-    && grep -qx -- "--user start bridge-worker@1.service" "$tmp/systemctl.log" \
+if grep -Fxq -- "--user start bridge-webhook.service" "$tmp/systemctl.log" \
+    && grep -Fxq -- "--user start bridge-worker@1.service" "$tmp/systemctl.log" \
     && [[ "$(wc -l < "$tmp/systemctl.log" | tr -d ' ')" == "2" ]]; then
     _ok "ctrl bridge start starts exactly one worker"
 else
