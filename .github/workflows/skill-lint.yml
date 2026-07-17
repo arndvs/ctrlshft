@@ -2,6 +2,8 @@ name: Skill lint
 on:
   pull_request:
     paths:
+      - ".github/workflows/skill-lint.yml"
+      - "bin/validate-skills.sh"
       - "skills/**"
 
 jobs:
