@@ -73,6 +73,15 @@ _open_browser() {
     esac
 }
 
+_bridge_validate_worker_count() {
+    local _bridge_wcount="${WORKER_COUNT:-1}"
+    if [[ ! "$_bridge_wcount" =~ ^[0-9]+$ ]] || [[ "$_bridge_wcount" -ne 1 ]]; then
+        red "WORKER_COUNT must be exactly 1 for bridge start/restart."
+        echo "  Multiple bridge workers are blocked until the global shft AFK lock is removed."
+        exit 1
+    fi
+}
+
 # ── Version ───────────────────────────────────────────────────────────────────
 CTRL_VERSION="0.1.0"
 
@@ -346,25 +355,21 @@ except:
 
         case "$_bridge_cmd" in
             start)
+                _bridge_validate_worker_count
                 systemctl --user start bridge-webhook.service
-                _wcount="${WORKER_COUNT:-1}"
-                for _i in $(seq 1 "$_wcount"); do
-                    systemctl --user start "bridge-worker@${_i}.service"
-                done
-                green "Bridge started ($_wcount worker$([ "$_wcount" -gt 1 ] && echo s))"
+                systemctl --user start bridge-worker@1.service
+                green "Bridge started (1 worker)"
                 ;;
             stop)
                 systemctl --user stop 'bridge-worker@*.service' bridge-webhook.service 2>/dev/null || true
                 green "Bridge stopped"
                 ;;
             restart)
+                _bridge_validate_worker_count
                 systemctl --user stop 'bridge-worker@*.service' bridge-webhook.service 2>/dev/null || true
                 systemctl --user start bridge-webhook.service
-                _wcount="${WORKER_COUNT:-1}"
-                for _i in $(seq 1 "$_wcount"); do
-                    systemctl --user start "bridge-worker@${_i}.service"
-                done
-                green "Bridge restarted ($_wcount worker$([ "$_wcount" -gt 1 ] && echo s))"
+                systemctl --user start bridge-worker@1.service
+                green "Bridge restarted (1 worker)"
                 ;;
             status)
                 echo ""

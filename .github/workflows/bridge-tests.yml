@@ -3,7 +3,14 @@ on:
   pull_request:
     paths:
       - "bridge/**"
+      - "bin/ctrl"
+      - "bin/bridge-install.sh"
+      - "systemd/bridge-*.service"
+      - "test/bridge-python.sh"
+      - "test/bridge-lifecycle.sh"
       - "test/python/**"
+      - "bridge/requirements.txt"
+      - "bridge/requirements.lock"
       - ".github/workflows/bridge-tests.yml"
   push:
     branches:
@@ -12,7 +19,14 @@ on:
       - main
     paths:
       - "bridge/**"
+      - "bin/ctrl"
+      - "bin/bridge-install.sh"
+      - "systemd/bridge-*.service"
+      - "test/bridge-python.sh"
+      - "test/bridge-lifecycle.sh"
       - "test/python/**"
+      - "bridge/requirements.txt"
+      - "bridge/requirements.lock"
       - ".github/workflows/bridge-tests.yml"
 
 permissions:
@@ -21,7 +35,7 @@ permissions:
 jobs:
   bridge-tests:
     runs-on: ubuntu-latest
-    name: Unit-test the bridge Python package
+    name: Test bridge lifecycle and Python package
 
     steps:
       - name: Checkout
@@ -37,6 +51,11 @@ jobs:
           set -euo pipefail
           python -m pip install --upgrade "pip==26.1.2"
           python -m pip install -r bridge/requirements.lock
+
+      - name: Run bridge lifecycle shell tests
+        run: |
+          set -euo pipefail
+          bash test/bridge-lifecycle.sh
 
       - name: Run bridge unit tests
         run: |
