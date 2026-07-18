@@ -5,7 +5,7 @@ description: "Use when implementing UI, checking dark/light mode, or validating 
 
 # Visual Feedback
 
-Output "Read Visual Feedback skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Visual Feedback skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Pipeline position: sits inside **`/do-work`** → replaces the "look at the UI" step that LLMs otherwise skip.
 

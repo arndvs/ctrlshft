@@ -5,7 +5,7 @@ description: Use when stress-testing a plan against the project's domain model �
 
 # Grill With Docs
 
-Output "Read Grill With Docs skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Grill With Docs skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Pipeline position: **`/grill-with-docs`** → `/write-a-prd` → `/architect` → `/prd-to-issues` → `/do-work` → `shft`
 

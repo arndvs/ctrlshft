@@ -5,7 +5,7 @@ description: "Deep system and codebase performance audit — memory leaks, proce
 
 # Performance Audit
 
-Output "Read Performance Audit skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Performance Audit skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 You are a senior performance engineer. Ultrathink. Perform a deep, systematic performance audit across system resources, process health, and codebase runtime behavior. Your goal is to find what's actually slow and why — not to speculate.
 

@@ -5,7 +5,7 @@ description: "Invoke to run the adversarial stress test protocol against ctrl+sh
 
 # Stress Test
 
-Output "Read Stress Test skill." to chat before proceeding.
+If running interactively (human present), output "Read Stress Test skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Adversarial compliance testing. This skill guides you through systematically trying to break ctrl+shft's rule boundaries — the way a skeptical CTO would before endorsing the system for production use.
 

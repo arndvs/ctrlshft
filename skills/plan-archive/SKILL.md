@@ -5,6 +5,8 @@ description: Use after merging a PR or during periodic cleanup to archive plan-m
 
 # Plan Archive
 
+If running interactively (human present), output "Read Plan Archive skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
+
 Archives `~/.claude/plans/*.md` files by matching them to merged PRs via
 file-overlap analysis, then moves them into organized directories with
 metadata linking back to the PR, Linear tickets, and commits.

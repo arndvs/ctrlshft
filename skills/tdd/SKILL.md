@@ -5,7 +5,7 @@ description: "Red-green refactor workflow for test-driven development. Use when 
 
 # TDD (Red-Green Refactor)
 
-Output "Read TDD skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read TDD skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 ## Scope
 

@@ -5,7 +5,7 @@ description: "7-phase UX design process from user stories to tested interfaces. 
 
 # Sketch the Solution
 
-Output "Read Sketch the Solution skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Sketch the Solution skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Pipeline position: `/grill-me` → `/write-a-prd` → **`/sketch-the-solution`** → `/architect` → `/do-work`
 

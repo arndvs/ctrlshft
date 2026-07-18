@@ -5,7 +5,7 @@ description: "Meta-skill for creating new agent skills that involve multi-step a
 
 # Skill Scaffolder
 
-Output "Read Skill Scaffolder skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Skill Scaffolder skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Creates production-ready agent skills that follow the proven agentic pipeline architecture: Python scripts provide the scaffolding (state management, config, error handling), while the VS Code Copilot agent provides the runtime muscle (browser interactions, code analysis, decision-making).
 
