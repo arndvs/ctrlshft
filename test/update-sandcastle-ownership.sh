@@ -98,8 +98,32 @@ echo "════════════════════════�
 rm -rf "$TMP_ROOT"
 mkdir -p "$TMP_ROOT"
 
+no_drift_repo="$TMP_ROOT/no-drift"
+make_repo "$no_drift_repo"
+set +e
+sync_output="$(printf 'a\n' | run_update "$no_drift_repo" 2>&1)"
+sync_status=$?
+set -e
+if [[ $sync_status -eq 0 ]]; then
+    _record_pass "fixture sync for no-drift case exits successfully"
+else
+    _record_fail "fixture sync for no-drift case exits successfully" "exit $sync_status: $sync_output"
+fi
+set +e
+no_drift_output="$(run_update "$no_drift_repo" --dry-run 2>&1)"
+no_drift_status=$?
+set -e
+
+if [[ $no_drift_status -eq 0 ]]; then
+    _record_pass "dry-run with no drift exits successfully"
+else
+    _record_fail "dry-run with no drift exits successfully" "exit $no_drift_status: $no_drift_output"
+fi
+assert_contains "dry-run reports no drift" "No drift detected" "$no_drift_output"
+
 dry_run_repo="$TMP_ROOT/dry-run"
 make_repo "$dry_run_repo"
+rm "$dry_run_repo/.sandcastle/package.json"
 rm "$dry_run_repo/.sandcastle/run.ts"
 
 set +e
@@ -112,6 +136,7 @@ if [[ $dry_run_status -eq 0 ]]; then
 else
     _record_fail "dry-run with drift exits successfully" "exit $dry_run_status: $dry_run_output"
 fi
+assert_contains "dry-run detects missing dispatcher package" ".sandcastle/package.json" "$dry_run_output"
 assert_contains "dry-run detects missing dispatcher" "run.ts" "$dry_run_output"
 assert_contains "dry-run reports dispatcher as not vendored" "not vendored" "$dry_run_output"
 

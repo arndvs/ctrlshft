@@ -79,6 +79,7 @@ seed_minimal_sandcastle() {
     local repo="$1"
     mkdir -p "$repo/.github/workflows" "$repo/.sandcastle/engine"
     cp "$ROOT/.github/workflows/agent-review-issue.yml" "$repo/.github/workflows/agent-review-issue.yml"
+    cp "$ROOT/.sandcastle/package.json" "$repo/.sandcastle/package.json"
     cp "$ROOT/.sandcastle/run.ts" "$repo/.sandcastle/run.ts"
     cp "$ROOT/.sandcastle/engine/package.json" "$repo/.sandcastle/engine/package.json"
     cp "$ROOT/.sandcastle/engine/tsconfig.json" "$repo/.sandcastle/engine/tsconfig.json"
@@ -99,6 +100,9 @@ echo "════════════════════════�
 
 rm -rf "$TMP_ROOT"
 mkdir -p "$TMP_ROOT"
+DOTFILES_NO_SECRETS="$TMP_ROOT/dotfiles-no-secrets"
+mkdir -p "$DOTFILES_NO_SECRETS/bin"
+cp "$ROOT/bin/_lib.sh" "$DOTFILES_NO_SECRETS/bin/_lib.sh"
 
 missing_install="$TMP_ROOT/missing-install"
 make_repo "$missing_install"
@@ -107,7 +111,30 @@ run_case "missing Sandcastle install reports CONFIG" fail "CONFIG" bash -c "cd '
 missing_secret="$TMP_ROOT/missing-secret"
 make_repo "$missing_secret"
 seed_minimal_sandcastle "$missing_secret"
-run_case "missing secrets report SECRETS" fail "SECRETS" bash -c "cd '$missing_secret' && DOTFILES='$ROOT' '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
+run_case "missing secrets report SECRETS" fail "SECRETS" bash -c "cd '$missing_secret' && env -u LITELLM_BASE_URL -u LITELLM_MASTER_KEY -u AGENT_PAT DOTFILES='$DOTFILES_NO_SECRETS' bash '$ROOT/bin/preflight-sandcastle.sh' --skip-drift --skip-engine --skip-github"
+
+missing_dispatcher_package="$TMP_ROOT/missing-dispatcher-package"
+make_repo "$missing_dispatcher_package"
+seed_minimal_sandcastle "$missing_dispatcher_package"
+rm "$missing_dispatcher_package/.sandcastle/package.json"
+run_case "missing dispatcher package reports CONFIG" fail "Missing .sandcastle/package.json" bash -c "cd '$missing_dispatcher_package' && DOTFILES='$ROOT' LITELLM_BASE_URL=dummy LITELLM_MASTER_KEY=dummy AGENT_PAT=dummy '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
+
+wrong_dispatcher_package="$TMP_ROOT/wrong-dispatcher-package"
+make_repo "$wrong_dispatcher_package"
+seed_minimal_sandcastle "$wrong_dispatcher_package"
+"$PY_BIN" - "$wrong_dispatcher_package/.sandcastle/package.json" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+with open(path, encoding="utf-8") as handle:
+    package = json.load(handle)
+package["type"] = "commonjs"
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump(package, handle, indent=2)
+    handle.write("\n")
+PY
+run_case "wrong dispatcher package type reports CONFIG" fail 'must declare "type": "module"' bash -c "cd '$wrong_dispatcher_package' && DOTFILES='$ROOT' LITELLM_BASE_URL=dummy LITELLM_MASTER_KEY=dummy AGENT_PAT=dummy '$CTRL' preflight-sandcastle --skip-drift --skip-engine --skip-github"
 
 malformed_workflow="$TMP_ROOT/malformed-workflow"
 make_repo "$malformed_workflow"
