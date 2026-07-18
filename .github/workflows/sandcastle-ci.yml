@@ -44,6 +44,27 @@ jobs:
           cd .sandcastle/engine
           pnpm --ignore-workspace install --frozen-lockfile
 
+      - name: Smoke dispatcher module resolution
+        run: |
+          cd .sandcastle/engine
+          set +e
+          output="$(pnpm --ignore-workspace exec tsx ../run.ts __smoke__ 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if printf '%s\n' "$output" | grep -q "ERR_PACKAGE_PATH_NOT_EXPORTED"; then
+            echo "Dispatcher crashed during module resolution."
+            exit 1
+          fi
+          if [[ "$status" -ne 1 ]]; then
+            echo "Expected dispatcher smoke to exit 1 for an unknown workflow, got $status."
+            exit 1
+          fi
+          if ! printf '%s\n' "$output" | grep -q 'Unknown workflow: "__smoke__"'; then
+            echo "Expected dispatcher smoke to report the unknown workflow."
+            exit 1
+          fi
+
       - name: Typecheck engine
         run: |
           cd .sandcastle/engine
