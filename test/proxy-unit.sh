@@ -423,7 +423,8 @@ assert_contains "proxy down fails closed" "AFK will not start" "$_validate_fn"
 assert_contains "proxy validation exits non-zero" "exit 1" "$_validate_fn"
 assert_contains "proxy validation waits for readiness" "_proxy_wait_healthy" "$_validate_fn"
 assert_contains "proxy validation honors wait env" "SHFT_PROXY_HEALTH_WAIT_SECONDS" "$_validate_fn"
-assert_contains "quiet validation suppresses successful validate-env output" ">/dev/null 2>&1" "$_validate_fn"
+assert_contains "quiet validation captures validate-env output" '_validate_out=$(mktemp)' "$_validate_fn"
+assert_contains "quiet validation replays captured failure output" 'cat "$_validate_out" >&2' "$_validate_fn"
 assert_contains "quiet validation keeps ERROR output" "ERROR: AFK validation failed" "$_validate_fn"
 
 _dirty_guard_fn=$(extract_function shft/shft _shft_require_clean_for_afk)
@@ -498,6 +499,10 @@ _afk_run_state_decl=$(grep -n 'RUN_STATE_FILE=' shft/afk.sh || true)
 assert_contains "afk consumes injected run-state file" "SHFT_RUN_STATE_FILE" "$_afk_run_state_decl"
 assert_contains "afk run-state fallback derives from lock" "_RUN_STATE_ID" "$_afk_run_state_decl"
 assert_not_contains "afk run-state file is not global" 'shft-run.json' "$_afk_run_state_decl"
+
+_afk_validate_block=$(sed -n '/if _shft_quiet; then/,/# Inject proxy env vars/p' shft/afk.sh)
+assert_contains "afk quiet validation captures validate-env output" '_validate_out=$(mktemp)' "$_afk_validate_block"
+assert_contains "afk quiet validation replays captured failure output" 'cat "$_validate_out" >&2' "$_afk_validate_block"
 
 _afk_loop_block=$(sed -n '/^for i in /,/^done/p' shft/afk.sh)
 assert_contains "afk checks lock between iterations" '[[ ! -d "$LOCKDIR" ]]' "$_afk_loop_block"

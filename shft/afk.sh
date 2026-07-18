@@ -127,12 +127,16 @@ _run_state_set "started_at" "$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo
 _log_afk "afk started worker_pid=$$ max_iterations=$MAX_ITERATIONS lock_dir=$LOCKDIR"
 
 if _shft_quiet; then
+    _validate_out=$(mktemp)
     if ! "$RUN_WITH_SECRETS" \
         --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
-        bash "$CTRL_DIR/bin/validate-env.sh" --afk >/dev/null 2>&1; then
+        bash "$CTRL_DIR/bin/validate-env.sh" --afk >"$_validate_out" 2>&1; then
+        cat "$_validate_out" >&2
+        rm -f "$_validate_out"
         echo "ERROR: AFK environment validation failed" >&2
         exit 1
     fi
+    rm -f "$_validate_out"
 else
     if ! "$RUN_WITH_SECRETS" \
         --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
