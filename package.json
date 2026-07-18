@@ -22,6 +22,7 @@
     "test:pipeline-label": "bash test/pipeline-label-wrapper.sh",
     "test:bridge-python": "bash test/bridge-python.sh",
     "test:proxy-scripts": "bash shft/templates/scripts/test_probe_completion.sh",
+    "test:init-sandcastle-proxy-canary": "bash test/init-sandcastle-proxy-canary.sh",
     "test:cli": "bash test/cli-smoke.sh",
     "test:smoke-report": "bash test/sandcastle-report-smoke.sh",
     "test:smoke-dispatch": "bash test/sandcastle-dispatch-smoke.sh",
