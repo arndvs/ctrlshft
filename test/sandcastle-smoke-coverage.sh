@@ -675,8 +675,8 @@ fi
 
 for wf_path in "$ROOT/shft/templates/workflows/sandcastle-ci.yml" "$ROOT/.github/workflows/sandcastle-ci.yml"; do
     wf_label="${wf_path#$ROOT/}"
-    package_path_count="$(grep -cF '      - ".sandcastle/package.json"' "$wf_path" || true)"
-    run_path_count="$(grep -cF '      - ".sandcastle/run.ts"' "$wf_path" || true)"
+    package_path_count="$(grep -Ec '^[[:space:]]*-[[:space:]]*['\''"]?\.sandcastle/package\.json['\''"]?[[:space:]]*$' "$wf_path" || true)"
+    run_path_count="$(grep -Ec '^[[:space:]]*-[[:space:]]*['\''"]?\.sandcastle/run\.ts['\''"]?[[:space:]]*$' "$wf_path" || true)"
 
     if [[ "$package_path_count" -eq 2 ]]; then
         _record_pass "$wf_label includes dispatcher package path filters"
