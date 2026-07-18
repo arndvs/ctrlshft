@@ -79,6 +79,15 @@ git -C "$FAIL_DIR" add .
 run_hook "$HOOK" "$(make_pretooluse_json 'git commit -m "feat: change"' "$FAIL_DIR")"
 assert_deny "deny: tests fail" "tests failed"
 
+run_hook "$HOOK" "$(make_pretooluse_json 'command git commit -m "feat: wrapper"' "$FAIL_DIR")"
+assert_deny "deny: command git commit wrapper (tests fail)" "tests failed"
+
+run_hook "$HOOK" "$(make_pretooluse_json 'env FOO=bar git commit -m "feat: wrapper"' "$FAIL_DIR")"
+assert_deny "deny: env git commit wrapper (tests fail)" "tests failed"
+
+run_hook "$HOOK" "$(make_pretooluse_json 'sudo git commit -m "feat: wrapper"' "$FAIL_DIR")"
+assert_deny "deny: sudo git commit wrapper (tests fail)" "tests failed"
+
 # --amend inside a quoted commit message should NOT skip (not a real flag)
 run_hook "$HOOK" "$(make_pretooluse_json 'git commit -m "mention --amend in message"' "$FAIL_DIR")"
 assert_deny "deny: --amend inside quoted message is not real flag" "tests failed"
