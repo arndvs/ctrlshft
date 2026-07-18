@@ -19,10 +19,24 @@ emit() {
 
 base="${ANTHROPIC_BASE_URL:-}"
 token="${ANTHROPIC_AUTH_TOKEN:-}"
+api_key="${ANTHROPIC_API_KEY:-}"
+
+proxy_enabled="$(node -e 'try { const c = JSON.parse(require("fs").readFileSync("sandcastle.config.json", "utf8")); process.stdout.write(c.proxy === false ? "false" : "true"); } catch { process.stdout.write("true"); }' 2>/dev/null || echo "true")"
+
+if [[ "$proxy_enabled" == "false" ]]; then
+    if [[ -z "$api_key" ]]; then
+        echo "::warning::Proxy preflight: direct provider mode missing ANTHROPIC_API_KEY; skipping agent run."
+        emit "false" "missing-direct-provider-key" "ANTHROPIC_API_KEY is not configured"
+        exit 0
+    fi
+    echo "Proxy preflight: direct provider mode; running agent."
+    emit "true" "direct-provider" "sandcastle.config.json proxy=false"
+    exit 0
+fi
 
 if [[ -z "$base" ]]; then
-    echo "Proxy preflight: direct provider mode; running agent."
-    emit "true" "direct-provider" "ANTHROPIC_BASE_URL is not configured"
+    echo "::warning::Proxy preflight: proxy mode missing base URL; skipping agent run."
+    emit "false" "missing-proxy-base-url" "ANTHROPIC_BASE_URL is not configured"
     exit 0
 fi
 

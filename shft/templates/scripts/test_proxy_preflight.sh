@@ -2,11 +2,13 @@
 #
 # test_proxy_preflight.sh — hermetic tests for proxy_preflight.sh.
 #
-# Stubs curl via PATH so proxy readiness/model checks run offline.
+# Stubs curl via PATH so proxy readiness/model checks run offline. The same
+# suite runs against the template script and the installed dogfood copy because
+# GitHub Actions execute the installed `.sandcastle/scripts` path.
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-PROBE="$SCRIPT_DIR/proxy_preflight.sh"
+ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 PASS=0
 FAIL=0
@@ -54,15 +56,18 @@ STUB
 chmod +x "$STUB_DIR/curl"
 
 write_config() {
-  printf '{"model":"%s"}\n' "${1:-claude-sonnet-4-6}" > "$WORK_DIR/sandcastle.config.json"
+  local model="${1:-claude-sonnet-4-6}"
+  local proxy="${2:-true}"
+  printf '{"model":"%s","proxy":%s}\n' "$model" "$proxy" > "$WORK_DIR/sandcastle.config.json"
 }
 
 run_preflight() {
+  local probe="$1"
   local out_file="$TMPDIR_ROOT/github-output"
   rm -f "$out_file"
   (
     cd "$WORK_DIR"
-    GITHUB_OUTPUT="$out_file" PATH="$STUB_DIR:$PATH" bash "$PROBE" >/dev/null
+    GITHUB_OUTPUT="$out_file" PATH="$STUB_DIR:$PATH" bash "$probe" >/dev/null
   )
   cat "$out_file"
 }
@@ -76,47 +81,68 @@ assert_field() {
   fi
 }
 
+run_suite() {
+  local label="$1"
+  local probe="$2"
+
+  if [[ ! -f "$probe" ]]; then
+    fail "$label script exists"
+    return
+  fi
+
+  write_config "claude-sonnet-4-6" "false"
+  out=$(ANTHROPIC_BASE_URL="" ANTHROPIC_AUTH_TOKEN="" ANTHROPIC_API_KEY="direct-key" run_preflight "$probe")
+  assert_field "$label direct provider mode runs only when proxy=false" "$out" "should_run" "true"
+  assert_field "$label direct provider mode reason" "$out" "reason" "direct-provider"
+
+  out=$(ANTHROPIC_BASE_URL="" ANTHROPIC_AUTH_TOKEN="" ANTHROPIC_API_KEY="" run_preflight "$probe")
+  assert_field "$label direct provider missing key skips" "$out" "should_run" "false"
+  assert_field "$label direct provider missing key reason" "$out" "reason" "missing-direct-provider-key"
+
+  write_config
+  out=$(ANTHROPIC_BASE_URL="" ANTHROPIC_AUTH_TOKEN="" run_preflight "$probe")
+  assert_field "$label proxy mode missing base URL skips" "$out" "should_run" "false"
+  assert_field "$label proxy mode missing base URL reason" "$out" "reason" "missing-proxy-base-url"
+
+  out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="" run_preflight "$probe")
+  assert_field "$label missing proxy token skips" "$out" "should_run" "false"
+  assert_field "$label missing proxy token reason" "$out" "reason" "missing-proxy-token"
+
+  out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_READY_CODE=503 run_preflight "$probe")
+  assert_field "$label readiness failure skips" "$out" "should_run" "false"
+  assert_field "$label readiness failure reason" "$out" "reason" "proxy-not-ready"
+
+  auth_capture="$TMPDIR_ROOT/$label-auth-header.txt"
+  out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_AUTH_CAPTURE="$auth_capture" run_preflight "$probe")
+  assert_field "$label available model runs" "$out" "should_run" "true"
+  assert_field "$label available model reason" "$out" "reason" "ok"
+  if [ "$(cat "$auth_capture" 2>/dev/null || true)" = "Authorization: Bearer secret-token" ] && ! printf '%s\n' "$out" | grep -qF "secret-token"; then
+    pass "$label models probe sends bearer token without emitting it"
+  else
+    fail "$label models probe auth header"
+  fi
+
+  out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_MODELS_BODY='{"data":[{"id":"other-model"}]}' run_preflight "$probe")
+  assert_field "$label missing configured model skips" "$out" "should_run" "false"
+  assert_field "$label missing configured model reason" "$out" "reason" "model-unavailable"
+
+  out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_MODELS_CODE=401 run_preflight "$probe")
+  assert_field "$label models auth failure skips" "$out" "should_run" "false"
+  assert_field "$label models auth failure reason" "$out" "reason" "proxy-auth-failed"
+
+  out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_MODELS_CODE=404 run_preflight "$probe")
+  assert_field "$label models probe unavailable still runs after readiness" "$out" "should_run" "true"
+  assert_field "$label models probe unavailable reason" "$out" "reason" "models-probe-unavailable"
+
+  printf '{}\n' > "$WORK_DIR/sandcastle.config.json"
+  out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" run_preflight "$probe")
+  assert_field "$label missing model config skips" "$out" "should_run" "false"
+  assert_field "$label missing model config reason" "$out" "reason" "missing-model"
+}
+
 echo "── proxy_preflight.sh tests ──"
-
-write_config
-out=$(ANTHROPIC_BASE_URL="" ANTHROPIC_AUTH_TOKEN="" run_preflight)
-assert_field "direct provider mode runs" "$out" "should_run" "true"
-assert_field "direct provider mode reason" "$out" "reason" "direct-provider"
-
-out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="" run_preflight)
-assert_field "missing proxy token skips" "$out" "should_run" "false"
-assert_field "missing proxy token reason" "$out" "reason" "missing-proxy-token"
-
-out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_READY_CODE=503 run_preflight)
-assert_field "readiness failure skips" "$out" "should_run" "false"
-assert_field "readiness failure reason" "$out" "reason" "proxy-not-ready"
-
-auth_capture="$TMPDIR_ROOT/auth-header.txt"
-out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_AUTH_CAPTURE="$auth_capture" run_preflight)
-assert_field "available model runs" "$out" "should_run" "true"
-assert_field "available model reason" "$out" "reason" "ok"
-if [ "$(cat "$auth_capture" 2>/dev/null || true)" = "Authorization: Bearer secret-token" ] && ! printf '%s\n' "$out" | grep -qF "secret-token"; then
-  pass "models probe sends bearer token without emitting it"
-else
-  fail "models probe auth header"
-fi
-
-out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_MODELS_BODY='{"data":[{"id":"other-model"}]}' run_preflight)
-assert_field "missing configured model skips" "$out" "should_run" "false"
-assert_field "missing configured model reason" "$out" "reason" "model-unavailable"
-
-out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_MODELS_CODE=401 run_preflight)
-assert_field "models auth failure skips" "$out" "should_run" "false"
-assert_field "models auth failure reason" "$out" "reason" "proxy-auth-failed"
-
-out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" STUB_MODELS_CODE=404 run_preflight)
-assert_field "models probe unavailable still runs after readiness" "$out" "should_run" "true"
-assert_field "models probe unavailable reason" "$out" "reason" "models-probe-unavailable"
-
-printf '{}\n' > "$WORK_DIR/sandcastle.config.json"
-out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" run_preflight)
-assert_field "missing model config skips" "$out" "should_run" "false"
-assert_field "missing model config reason" "$out" "reason" "missing-model"
+run_suite "template" "$SCRIPT_DIR/proxy_preflight.sh"
+run_suite "installed" "$ROOT/.sandcastle/scripts/proxy_preflight.sh"
 
 echo ""
 printf "  \033[32m%d passed\033[0m  \033[31m%d failed\033[0m\n" "$PASS" "$FAIL"
