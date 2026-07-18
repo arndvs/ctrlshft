@@ -130,6 +130,8 @@ Each initialized repo gets `sandcastle.config.json`. Missing fields fall back to
 | `contextDoc` | `CONTEXT.md` | — | Project context document |
 | `adrDir` | `docs/adr` | — | ADR directory |
 | `packageManager` | `pnpm` | `SANDCASTLE_PACKAGE_MANAGER` | `npm`, `pnpm`, `yarn`, or `bun` |
+| `proxy` | `true` | — | Routes model-backed workflow traffic through the LiteLLM/Copilot proxy. Set by `--with-proxy` or `--no-proxy`. |
+| `proxyCanary` | `false` | — | Installs the scheduled proxy monitor only when explicitly enabled with `--with-proxy-canary`. |
 
 Prompt resolution checks `.sandcastle/prompts/` first, then falls back to the templates directory passed by `.sandcastle/run.ts`.
 
@@ -174,9 +176,11 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 | `agent-promote-queued.yml` | `issues:closed` | Promotes unblocked `agent:queued` issues |
 | `agent-check-stale-prs.yml` | `schedule`, `workflow_dispatch` | Scheduled maintenance |
 | `sandcastle-ci.yml` | `push`/`pull_request` on `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck); always vendored |
-| `proxy-canary.yml` (in `workflows-proxy/`) | `schedule`, `workflow_dispatch` | Proxy health probe; vendored only with `--with-proxy` (the default) |
+| `proxy-canary.yml` (in `workflows-proxy/`) | `schedule`, `workflow_dispatch` | Proxy health probe; vendored only with `--with-proxy-canary` |
 
-Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--branch` or `sandcastle.config.json`. Proxy monitors live in `workflows-proxy/` and are vendored only when `--with-proxy` is set (the default); pass `--no-proxy` to skip them.
+Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--branch` or `sandcastle.config.json`. Proxy routing and proxy monitoring are separate switches: `proxy` defaults to true and controls whether agents call the LiteLLM/Copilot proxy, while `proxyCanary` defaults to false and controls whether the scheduled `proxy-canary.yml` monitor is installed. Prefer one canonical scheduled canary in the proxy owner repository; consumer repos should rely on per-run proxy preflight unless they intentionally opt in with `ctrl init-sandcastle --with-proxy-canary`.
+
+Model-backed agent workflows run `.sandcastle/scripts/proxy_preflight.sh` before installing dependencies or dispatching the TypeScript engine. In proxy mode, that preflight requires `LITELLM_BASE_URL` and `LITELLM_MASTER_KEY`, checks proxy readiness, and skips the expensive agent run when the proxy is unavailable. In direct-provider mode (`proxy: false`), the preflight expects `ANTHROPIC_API_KEY` instead.
 
 The canonical dogfood smoke-test contract for these templates is documented in `shft/docs/full-smoke-matrix.md`.
 
@@ -190,8 +194,9 @@ Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is
 
 Required GitHub Actions secrets:
 
-- `LITELLM_BASE_URL` — points Claude-compatible model traffic at the LiteLLM proxy backed by GitHub Copilot
-- `LITELLM_MASTER_KEY` — authenticates workflow calls to the LiteLLM proxy
+- `LITELLM_BASE_URL` — required when `proxy` is true; points Claude-compatible model traffic at the LiteLLM proxy backed by GitHub Copilot
+- `LITELLM_MASTER_KEY` — required when `proxy` is true; authenticates workflow calls to the LiteLLM proxy
+- `ANTHROPIC_API_KEY` — required when `proxy` is false and workflows call the provider directly
 - `AGENT_PAT` — optional but recommended; label mutations made with `GITHUB_TOKEN` do not trigger downstream workflows, so `AGENT_PAT` is needed for chains such as `agent:implement` → `agent:review` and PRD sub-issue chaining
 
 For hosted GitHub Actions, see [the EC2 hosted proxy runbook](docs/hosted-proxy-ec2-runbook.md). Sandcastle expects an HTTPS reverse proxy endpoint (for example Caddy or nginx) while the LiteLLM app port remains bound to localhost on the proxy host.

@@ -62,9 +62,17 @@ The full dogfood smoke-test contract for these workflows lives in `shft/docs/ful
 | `agent-check-stale-prs.yml` | Schedule | Finds stale PRs needing attention |
 | `agent-promote-queued.yml` | Issue closed | Unblocks queued issues when dependencies close |
 | `sandcastle-ci.yml` | Push/PR touching `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck). Always vendored |
-| `proxy-canary.yml` (in `workflows-proxy/`) | Schedule every 30m + `workflow_dispatch` | Probes the proxy for real completions. Vendored only with `--with-proxy` (default) |
+| `proxy-canary.yml` (in `workflows-proxy/`) | Schedule every 30m + `workflow_dispatch` | Probes the proxy for real completions. Vendored only with `--with-proxy-canary` |
 
-Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` into `.github/workflows/agent-*.yml` (the `pnpm --ignore-workspace install --frozen-lockfile` step is baked directly into the templates); publishing or installing raw templates without that substitution produces broken workflows. The universal `sandcastle-ci.yml` is always vendored; proxy monitors in `shft/templates/workflows-proxy/` are vendored only with `--with-proxy` (default on).
+Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` into `.github/workflows/agent-*.yml` (the `pnpm --ignore-workspace install --frozen-lockfile` step is baked directly into the templates); publishing or installing raw templates without that substitution produces broken workflows. The universal `sandcastle-ci.yml` is always vendored.
+
+Proxy routing and proxy monitoring are intentionally separate:
+
+- `proxy` defaults to true and controls runtime model routing. Proxy-mode workflows set `ANTHROPIC_BASE_URL`/`ANTHROPIC_AUTH_TOKEN` from `LITELLM_*`; no-proxy workflows use `ANTHROPIC_API_KEY`.
+- `proxyCanary` defaults to false and controls whether `proxy-canary.yml` is vendored from `shft/templates/workflows-proxy/`.
+- Model-backed workflows run `.sandcastle/scripts/proxy_preflight.sh` before installing dependencies or dispatching `.sandcastle/run.ts`; proxy-mode runs skip expensive agent work when required proxy secrets, readiness, auth, or model availability checks fail.
+
+The scheduled proxy canary should normally live in one canonical proxy owner repository. Consumer repos inherit the cheap per-run preflight and should only opt into the scheduled canary when they intentionally own monitoring coverage for that proxy.
 
 ### Workflow security contract
 
@@ -108,8 +116,9 @@ Sandcastle expects these repository secrets after `ctrl init-sandcastle`:
 
 | Secret | Required for | Notes |
 |--------|--------------|-------|
-| `LITELLM_BASE_URL` | All model-backed workflows | Claude-compatible proxy endpoint used through `ANTHROPIC_BASE_URL`. |
-| `LITELLM_MASTER_KEY` | All model-backed workflows | Proxy auth token used through `ANTHROPIC_AUTH_TOKEN`. |
+| `LITELLM_BASE_URL` | Model-backed workflows when `proxy` is true | Claude-compatible proxy endpoint used through `ANTHROPIC_BASE_URL`. |
+| `LITELLM_MASTER_KEY` | Model-backed workflows when `proxy` is true | Proxy auth token used through `ANTHROPIC_AUTH_TOKEN`. |
+| `ANTHROPIC_API_KEY` | Model-backed workflows when `proxy` is false | Direct-provider key used when proxy routing is disabled. |
 | `AGENT_PAT` | Workflow-to-workflow label handoffs and reliable branch/PR mutations | Required for the label-driven state machine because `GITHUB_TOKEN` label changes do not trigger follow-up workflow runs. Use a classic PAT with `repo` scope for private repositories, or equivalent fine-grained issue/PR/content scopes. |
 
 ## Vendoring model
