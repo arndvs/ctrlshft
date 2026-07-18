@@ -174,9 +174,11 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 | `agent-promote-queued.yml` | `issues:closed` | Promotes unblocked `agent:queued` issues |
 | `agent-check-stale-prs.yml` | `schedule`, `workflow_dispatch` | Scheduled maintenance |
 | `sandcastle-ci.yml` | `push`/`pull_request` on `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck); always vendored |
-| `proxy-canary.yml` (in `workflows-proxy/`) | `schedule`, `workflow_dispatch` | Proxy health probe; vendored only with `--with-proxy` (the default) |
+| `proxy-canary.yml` (in `workflows-proxy/`) | `schedule`, `workflow_dispatch` | Proxy health probe; opt-in only with `--with-proxy-canary` (default off) |
 
-Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--branch` or `sandcastle.config.json`. Proxy monitors live in `workflows-proxy/` and are vendored only when `--with-proxy` is set (the default); pass `--no-proxy` to skip them.
+Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--branch` or `sandcastle.config.json`. Proxy routing is enabled by default (`--with-proxy`); pass `--no-proxy` to disable it. The `proxy-canary.yml` scheduled monitor is a separate opt-in: pass `--with-proxy-canary` to install it, or `--no-proxy-canary` (the default) to skip it. The `proxyCanary` field in `sandcastle.config.json` records this choice independently from `proxy`.
+
+> **Central canary model:** Most consumer repos should **not** install their own proxy canary. Run one canonical scheduled canary in the proxy owner repo (the repo that operates the LiteLLM/Copilot proxy host). Consumer repos rely on cheap preflight health gates at workflow start — if the proxy is down, the preflight fails fast and the workflow exits before spending model tokens. Only opt into `--with-proxy-canary` in a consumer repo when you intentionally need repo-local scheduled monitoring (e.g., an independent availability SLA).
 
 The canonical dogfood smoke-test contract for these templates is documented in `shft/docs/full-smoke-matrix.md`.
 

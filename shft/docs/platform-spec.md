@@ -62,9 +62,9 @@ The full dogfood smoke-test contract for these workflows lives in `shft/docs/ful
 | `agent-check-stale-prs.yml` | Schedule | Finds stale PRs needing attention |
 | `agent-promote-queued.yml` | Issue closed | Unblocks queued issues when dependencies close |
 | `sandcastle-ci.yml` | Push/PR touching `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck). Always vendored |
-| `proxy-canary.yml` (in `workflows-proxy/`) | Schedule every 30m + `workflow_dispatch` | Probes the proxy for real completions. Vendored only with `--with-proxy` (default) |
+| `proxy-canary.yml` (in `workflows-proxy/`) | Schedule every 30m + `workflow_dispatch` | Probes the proxy for real completions. Opt-in only with `--with-proxy-canary` (default off) |
 
-Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` into `.github/workflows/agent-*.yml` (the `pnpm --ignore-workspace install --frozen-lockfile` step is baked directly into the templates); publishing or installing raw templates without that substitution produces broken workflows. The universal `sandcastle-ci.yml` is always vendored; proxy monitors in `shft/templates/workflows-proxy/` are vendored only with `--with-proxy` (default on).
+Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` into `.github/workflows/agent-*.yml` (the `pnpm --ignore-workspace install --frozen-lockfile` step is baked directly into the templates); publishing or installing raw templates without that substitution produces broken workflows. The universal `sandcastle-ci.yml` is always vendored; the `proxy-canary.yml` monitor in `shft/templates/workflows-proxy/` is vendored only when `--with-proxy-canary` is passed (default off). Proxy routing (`--with-proxy` / `--no-proxy`) is a separate concern from proxy canary monitoring (`--with-proxy-canary` / `--no-proxy-canary`).
 
 ### Workflow security contract
 

@@ -30,6 +30,7 @@ SUITES=(
   "proxy-scripts:shft/templates/scripts/test_probe_completion.sh"
   "proxy-preflight:shft/templates/scripts/test_proxy_preflight.sh"
   "init-sandcastle-proxy-canary:test/init-sandcastle-proxy-canary.sh"
+  "doc-proxy-canary-accuracy:test/doc-proxy-canary-accuracy.sh"
   "copilot-repo-local:test/copilot-repo-local-guard.sh"
   "mirror-regression:test/mirror-regression.sh"
   "smoke-coverage:test/sandcastle-smoke-coverage.sh"
