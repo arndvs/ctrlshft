@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import os
-import signal
 import shutil
 import subprocess
 import tempfile
@@ -21,36 +20,12 @@ from typing import Callable
 
 from .git_creds import git_credential_env
 from .github import Token
+from .subprocess_helpers import terminate_process_group
 
 logger = logging.getLogger(__name__)
 
 _SAFE_ENV_VARS = ("HOME", "PATH", "TERM", "LANG", "USER")
 _GIT_POLL_SECONDS = 0.5
-
-
-def _terminate_popen(proc: subprocess.Popen) -> None:
-    """Terminate a Popen process group gracefully."""
-    if proc.poll() is not None:
-        return
-    try:
-        pgid = os.getpgid(proc.pid)
-    except (ProcessLookupError, OSError):
-        return
-    try:
-        os.killpg(pgid, signal.SIGTERM)
-    except (ProcessLookupError, OSError):
-        pass
-    try:
-        proc.wait(timeout=3.5)
-    except subprocess.TimeoutExpired:
-        try:
-            os.killpg(pgid, signal.SIGKILL)
-        except (ProcessLookupError, OSError):
-            pass
-        try:
-            proc.wait(timeout=0.5)
-        except subprocess.TimeoutExpired:
-            pass
 
 
 def _run_git(
@@ -89,13 +64,13 @@ def _run_git(
         try:
             while True:
                 if shutdown_check():
-                    _terminate_popen(proc)
+                    terminate_process_group(proc)
                     raise WorkspaceError(
                         f"git operation interrupted by shutdown: {' '.join(cmd[:3])}"
                     )
                 remaining = deadline - _time.monotonic()
                 if remaining <= 0:
-                    _terminate_popen(proc)
+                    terminate_process_group(proc)
                     raise WorkspaceError(
                         f"git operation timed out after {timeout}s: {' '.join(cmd[:3])}"
                     )
@@ -107,7 +82,7 @@ def _run_git(
         except WorkspaceError:
             raise
         except Exception:
-            _terminate_popen(proc)
+            terminate_process_group(proc)
             raise
 
         stdout_file.seek(0)

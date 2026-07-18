@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-import signal
 import subprocess
 import sys
 import tempfile
@@ -18,6 +16,8 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import httpx
+
+from .subprocess_helpers import terminate_process_group
 
 logger = logging.getLogger(__name__)
 
@@ -38,31 +38,6 @@ class Token:
 
 MINT_TIMEOUT_SECONDS = 30
 MINT_POLL_SECONDS = 0.5
-
-
-def _terminate_popen(proc: subprocess.Popen) -> None:
-    """Terminate a Popen process group gracefully, escalating to SIGKILL."""
-    if proc.poll() is not None:
-        return
-    try:
-        pgid = os.getpgid(proc.pid)
-    except (ProcessLookupError, OSError):
-        return
-    try:
-        os.killpg(pgid, signal.SIGTERM)
-    except (ProcessLookupError, OSError):
-        pass
-    try:
-        proc.wait(timeout=3.5)
-    except subprocess.TimeoutExpired:
-        try:
-            os.killpg(pgid, signal.SIGKILL)
-        except (ProcessLookupError, OSError):
-            pass
-        try:
-            proc.wait(timeout=0.5)
-        except subprocess.TimeoutExpired:
-            pass
 
 
 def mint_token(
@@ -107,11 +82,11 @@ def mint_token(
             try:
                 while True:
                     if shutdown_check():
-                        _terminate_popen(proc)
+                        terminate_process_group(proc)
                         raise GitHubError("Token mint interrupted by shutdown")
                     remaining = deadline - _time.monotonic()
                     if remaining <= 0:
-                        _terminate_popen(proc)
+                        terminate_process_group(proc)
                         raise GitHubError("Token mint timed out after 30s")
                     try:
                         proc.wait(timeout=min(MINT_POLL_SECONDS, remaining))
@@ -121,7 +96,7 @@ def mint_token(
             except GitHubError:
                 raise
             except Exception:
-                _terminate_popen(proc)
+                terminate_process_group(proc)
                 raise
 
             stdout_file.seek(0)

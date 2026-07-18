@@ -1,9 +1,8 @@
 """Unit tests for bridge/worker.py — subprocess env, process-group cleanup,
 and workflow dispatch command construction.
 
-subprocess.Popen, os.killpg/os.getpgid, and signal are mocked (the latter with
-create=True so the suite runs on platforms without POSIX process-group APIs).
-No real process is spawned.
+subprocess.Popen is mocked in worker.py, and process-group APIs are mocked in
+bridge.subprocess_helpers. No real process is spawned.
 
 Covers: _build_subprocess_env() credential/GH env, _run_subprocess() success /
 non-zero / timeout-SIGTERM / timeout-SIGKILL escalation (the orphaned-process
@@ -141,10 +140,10 @@ class TestRunSubprocess(unittest.TestCase):
     def _run(self, proc):
         emit = mock.MagicMock()
         with mock.patch("bridge.worker.subprocess.Popen", return_value=proc) as popen, \
-                mock.patch("bridge.worker.os.getpgid", return_value=proc.pid, create=True) as getpgid, \
-                mock.patch("bridge.worker.os.killpg", create=True) as killpg, \
-                mock.patch("bridge.worker.signal.SIGKILL", 9, create=True):
-            ctx = mock.patch("bridge.worker.signal.SIGTERM", 15, create=True)
+                mock.patch("bridge.subprocess_helpers.os.getpgid", return_value=proc.pid, create=True) as getpgid, \
+                mock.patch("bridge.subprocess_helpers.os.killpg", create=True) as killpg, \
+                mock.patch("bridge.subprocess_helpers.signal.SIGKILL", 9, create=True):
+            ctx = mock.patch("bridge.subprocess_helpers.signal.SIGTERM", 15, create=True)
             with ctx:
                 try:
                     _run_subprocess(["shft", "afk", "1"], cwd=".", env={}, emit=emit)
@@ -270,9 +269,9 @@ class TestRunSubprocess(unittest.TestCase):
         proc = _proc()
         proc.poll.return_value = 0
 
-        with mock.patch("bridge.worker.os.getpgid", create=True) as getpgid, \
-                mock.patch("bridge.worker.os.killpg", create=True) as killpg:
-            worker_module._terminate_process_group(proc)
+        with mock.patch("bridge.subprocess_helpers.os.getpgid", create=True) as getpgid, \
+                mock.patch("bridge.subprocess_helpers.os.killpg", create=True) as killpg:
+            worker_module.terminate_process_group(proc)
 
         getpgid.assert_not_called()
         killpg.assert_not_called()

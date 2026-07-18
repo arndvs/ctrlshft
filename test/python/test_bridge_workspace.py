@@ -154,7 +154,7 @@ class TestPrepareShutdown(unittest.TestCase):
         proc.wait.side_effect = subprocess.TimeoutExpired("cmd", 0.5)
 
         with mock.patch("bridge.workspace.subprocess.Popen", return_value=proc), \
-                mock.patch("bridge.workspace._terminate_popen") as terminate, \
+                mock.patch("bridge.workspace.terminate_process_group") as terminate, \
                 mock.patch("bridge.workspace._time.monotonic", return_value=0):
             with self.assertRaises(WorkspaceError) as ctx:
                 _run_git(
@@ -176,7 +176,7 @@ class TestPrepareShutdown(unittest.TestCase):
         proc.wait.side_effect = subprocess.TimeoutExpired("cmd", 0.5)
 
         with mock.patch("bridge.workspace.subprocess.Popen", return_value=proc), \
-                mock.patch("bridge.workspace._terminate_popen") as terminate, \
+                mock.patch("bridge.workspace.terminate_process_group") as terminate, \
                 mock.patch("bridge.workspace._time.monotonic", return_value=0):
             with self.assertRaises(WorkspaceError) as ctx:
                 _run_git(
