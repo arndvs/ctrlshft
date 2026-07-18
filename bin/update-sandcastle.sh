@@ -10,6 +10,7 @@
 #   3. .sandcastle/{scripts,hooks}/ vs shft/templates/{scripts,hooks}/ in the source checkout
 #   4. .github/workflows/agent-*.yml vs shft/templates/workflows/ in the source checkout
 #   5. .github/copilot-setup-steps.yml vs shft/templates/copilot-setup-steps.yml in the source checkout
+#   6. Removed source files do not linger in managed vendored directories
 #
 # Never touches project-specific files: prompts, config, CODING_STANDARDS.md.
 
@@ -113,6 +114,44 @@ check_dir_files() {
     done
 }
 
+is_managed_source_file() {
+    local src_file="$1" skip_tests="${2:-false}"
+    local fname
+    fname="$(basename "$src_file")"
+
+    [[ -f "$src_file" ]] || return 1
+    [[ "$skip_tests" == true && "$fname" == *.test.ts ]] && return 1
+    return 0
+}
+
+check_stale_dir_files() {
+    local src_dir="$1" dst_dir="$2" label_prefix="$3" skip_tests="${4:-false}"
+
+    [[ -d "$src_dir" && -d "$dst_dir" ]] || return
+    for vendored_file in "$dst_dir"/*; do
+        [[ -f "$vendored_file" ]] || continue
+        local fname
+        fname="$(basename "$vendored_file")"
+        if ! is_managed_source_file "$src_dir/$fname" "$skip_tests"; then
+            DRIFTED_FILES+=("$label_prefix/$fname (removed from source)")
+            DIFF_OUTPUT+="$(printf '\n── %s/%s (removed from source) ──\n' "$label_prefix" "$fname")"
+        fi
+    done
+}
+
+check_stale_workflow_files() {
+    local vendored_file fname
+
+    for vendored_file in .github/workflows/agent-*.yml .github/workflows/labels-sync.yml .github/workflows/sandcastle-ci.yml; do
+        [[ -f "$vendored_file" ]] || continue
+        fname="$(basename "$vendored_file")"
+        if [[ ! -f "$TEMPLATES/workflows/$fname" ]]; then
+            DRIFTED_FILES+=("workflows/$fname (removed from source)")
+            DIFF_OUTPUT+="$(printf '\n── workflows/%s (removed from source) ──\n' "$fname")"
+        fi
+    done
+}
+
 # 1. Engine lib files (skip tests)
 echo "Checking engine/lib/..."
 for src_file in "$ENGINE/lib/"*.ts; do
@@ -120,16 +159,7 @@ for src_file in "$ENGINE/lib/"*.ts; do
     [[ "$fname" == *.test.ts ]] && continue
     check_file "$src_file" ".sandcastle/engine/lib/$fname" "engine/lib/$fname"
 done
-
-# Check for removed files in vendored that no longer exist in source
-for vendored_file in .sandcastle/engine/lib/*.ts; do
-    [[ ! -f "$vendored_file" ]] && continue
-    fname="$(basename "$vendored_file")"
-    if [[ ! -f "$ENGINE/lib/$fname" ]]; then
-        DRIFTED_FILES+=("engine/lib/$fname (removed from source)")
-        DIFF_OUTPUT+="$(printf '\n── engine/lib/%s (removed from source) ──\n' "$fname")"
-    fi
-done
+check_stale_dir_files "$ENGINE/lib" ".sandcastle/engine/lib" "engine/lib" true
 
 # 2. Engine schemas
 echo "Checking engine/schemas/..."
@@ -138,6 +168,7 @@ for src_file in "$ENGINE/schemas/"*.ts; do
     fname="$(basename "$src_file")"
     check_file "$src_file" ".sandcastle/engine/schemas/$fname" "engine/schemas/$fname"
 done
+check_stale_dir_files "$ENGINE/schemas" ".sandcastle/engine/schemas" "engine/schemas"
 
 # 3. Engine workflows
 echo "Checking engine/workflows/..."
@@ -147,6 +178,7 @@ for src_file in "$ENGINE/workflows/"*.ts; do
     [[ "$fname" == *.test.ts ]] && continue
     check_file "$src_file" ".sandcastle/engine/workflows/$fname" "engine/workflows/$fname"
 done
+check_stale_dir_files "$ENGINE/workflows" ".sandcastle/engine/workflows" "engine/workflows" true
 
 # 4. Engine package.json + tsconfig.json
 echo "Checking engine config files..."
@@ -160,14 +192,19 @@ done
 # 5. Runtime prompt and extraction templates
 echo "Checking runtime templates..."
 check_file "$TEMPLATES/package.json" ".sandcastle/package.json" "package.json"
+check_file "$TEMPLATES/run.ts" ".sandcastle/run.ts" "run.ts"
 check_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
+check_stale_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 check_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
+check_stale_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
 check_file "$TEMPLATES/labels.json" ".sandcastle/labels.json" "labels.json"
 
 # 6. Helper scripts and hooks
 echo "Checking helper scripts and hooks..."
 check_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
+check_stale_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
 check_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
+check_stale_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
 
 # 7. Composite action templates
 echo "Checking composite actions..."
@@ -176,6 +213,7 @@ if [[ -d "$TEMPLATES/actions" ]]; then
         [[ -d "$action_dir" ]] || continue
         action_name="$(basename "$action_dir")"
         check_dir_files "$action_dir" ".github/actions/$action_name" "actions/$action_name"
+        check_stale_dir_files "$action_dir" ".github/actions/$action_name" "actions/$action_name"
     done
 fi
 
@@ -240,6 +278,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
         DIFF_OUTPUT+=$'\n'
     fi
 done
+check_stale_workflow_files
 
 # 8b. Proxy monitoring workflows
 # proxy-canary.yml is gated on PROXY_CANARY (not PROXY alone).
@@ -399,6 +438,48 @@ apply_dir_files() {
     done
 }
 
+apply_remove_file() {
+    local path="$1" label="$2"
+
+    if [[ "$choice" == "s" || "$choice" == "S" ]]; then
+        read -r -p "  Remove stale $label? [y/n]: " confirm
+        if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            echo "    Skipped: $label"
+            return
+        fi
+    fi
+
+    rm "$path"
+    echo "    Removed (stale): $label"
+    ((updated++)) || true
+}
+
+apply_stale_dir_files() {
+    local src_dir="$1" dst_dir="$2" label_prefix="$3" skip_tests="${4:-false}"
+
+    [[ -d "$src_dir" && -d "$dst_dir" ]] || return
+    for vendored_file in "$dst_dir"/*; do
+        [[ -f "$vendored_file" ]] || continue
+        local fname
+        fname="$(basename "$vendored_file")"
+        if ! is_managed_source_file "$src_dir/$fname" "$skip_tests"; then
+            apply_remove_file "$vendored_file" "$label_prefix/$fname"
+        fi
+    done
+}
+
+apply_stale_workflow_files() {
+    local vendored_file fname
+
+    for vendored_file in .github/workflows/agent-*.yml .github/workflows/labels-sync.yml .github/workflows/sandcastle-ci.yml; do
+        [[ -f "$vendored_file" ]] || continue
+        fname="$(basename "$vendored_file")"
+        if [[ ! -f "$TEMPLATES/workflows/$fname" ]]; then
+            apply_remove_file "$vendored_file" "workflows/$fname"
+        fi
+    done
+}
+
 # Re-run checks and apply (simpler than tracking which files drifted)
 
 # Engine lib
@@ -410,6 +491,7 @@ for src_file in "$ENGINE/lib/"*.ts; do
         apply_file "$src_file" "$dst" "engine/lib/$fname"
     fi
 done
+apply_stale_dir_files "$ENGINE/lib" ".sandcastle/engine/lib" "engine/lib" true
 
 # Engine schemas
 for src_file in "$ENGINE/schemas/"*.ts; do
@@ -420,6 +502,7 @@ for src_file in "$ENGINE/schemas/"*.ts; do
         apply_file "$src_file" "$dst" "engine/schemas/$fname"
     fi
 done
+apply_stale_dir_files "$ENGINE/schemas" ".sandcastle/engine/schemas" "engine/schemas"
 
 # Engine workflows
 for src_file in "$ENGINE/workflows/"*.ts; do
@@ -431,6 +514,7 @@ for src_file in "$ENGINE/workflows/"*.ts; do
         apply_file "$src_file" "$dst" "engine/workflows/$fname"
     fi
 done
+apply_stale_dir_files "$ENGINE/workflows" ".sandcastle/engine/workflows" "engine/workflows" true
 
 # Engine config files
 if [[ ! -f ".sandcastle/engine/package.json" ]] || ! diff -q "$VENDORED_ENGINE_PACKAGE_JSON" ".sandcastle/engine/package.json" &>/dev/null; then
@@ -447,13 +531,18 @@ done
 
 # Runtime prompt and extraction templates
 apply_file "$TEMPLATES/package.json" ".sandcastle/package.json" "package.json"
+apply_file "$TEMPLATES/run.ts" ".sandcastle/run.ts" "run.ts"
 apply_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
+apply_stale_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 apply_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
+apply_stale_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
 apply_file "$TEMPLATES/labels.json" ".sandcastle/labels.json" "labels.json"
 
 # Helper scripts and hooks
 apply_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
+apply_stale_dir_files "$TEMPLATES/scripts" ".sandcastle/scripts" "scripts"
 apply_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
+apply_stale_dir_files "$TEMPLATES/hooks" ".sandcastle/hooks" "hooks"
 chmod +x .sandcastle/scripts/*.sh .sandcastle/hooks/*.sh 2>/dev/null || true
 
 # Composite actions
@@ -462,6 +551,7 @@ if [[ -d "$TEMPLATES/actions" ]]; then
         [[ -d "$action_dir" ]] || continue
         action_name="$(basename "$action_dir")"
         apply_dir_files "$action_dir" ".github/actions/$action_name" "actions/$action_name"
+        apply_stale_dir_files "$action_dir" ".github/actions/$action_name" "actions/$action_name"
     done
 fi
 
@@ -475,6 +565,7 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
         apply_resolved "$resolved" "$dst" "workflows/$fname"
     fi
 done
+apply_stale_workflow_files
 
 # Proxy monitoring workflows
 # proxy-canary.yml requires proxyCanary: true; remove stale copies.
