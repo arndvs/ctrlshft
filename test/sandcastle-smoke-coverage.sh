@@ -689,6 +689,15 @@ for wf_path in "$ROOT/shft/templates/workflows/sandcastle-ci.yml" "$ROOT/.github
     else
         _record_fail "$wf_label includes dispatcher run path filters" "expected path in push and pull_request filters"
     fi
+
+    if grep -qF "Smoke dispatcher module resolution" "$wf_path" \
+        && grep -qF "pnpm --ignore-workspace exec tsx ../run.ts __smoke__" "$wf_path" \
+        && grep -qF "ERR_PACKAGE_PATH_NOT_EXPORTED" "$wf_path" \
+        && grep -qF 'Unknown workflow: "__smoke__"' "$wf_path"; then
+        _record_pass "$wf_label verifies dispatcher module resolution"
+    else
+        _record_fail "$wf_label verifies dispatcher module resolution" "missing __smoke__ dispatch, expected Unknown workflow check, or module-resolution crash guard"
+    fi
 done
 
 # ── 8. Smoke test scripts exist for each smoke script ────────────────────────
