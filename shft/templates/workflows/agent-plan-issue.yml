@@ -26,7 +26,15 @@ jobs:
         with:
           ref: {{DEFAULT_BRANCH}}
 
+      - name: Proxy preflight
+        id: proxy-preflight
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+        run: bash .sandcastle/scripts/proxy_preflight.sh
+
       - name: Sandcastle setup
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         uses: ./.github/actions/sandcastle-setup
         with:
           trigger-label: agent:review
@@ -38,6 +46,7 @@ jobs:
           repository: ${{ github.repository }}
 
       - name: Run plan
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
@@ -48,7 +57,7 @@ jobs:
             --issue "$ISSUE_NUMBER"
 
       - name: Transition label
-        if: success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && success()
         env:
           AGENT_PAT: ${{ secrets.AGENT_PAT }}
         run: |
