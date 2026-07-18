@@ -54,7 +54,15 @@ assert_file_not_exists() {
     else _fail "$label" "file should not exist: $path"; fi
 }
 json_bool() {
-    node -e 'const fs = require("fs"); const cfg = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(String(cfg[process.argv[2]]));' "$1" "$2"
+    node -e '
+const fs = require("fs");
+try {
+  const cfg = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+  process.stdout.write(String(cfg[process.argv[2]]));
+} catch {
+  process.stdout.write("__missing_or_invalid_json__");
+}
+' "$1" "$2" || printf '__missing_or_invalid_json__'
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -85,10 +93,18 @@ run_init_case() {
     git -C "$repo" init -q
     git -C "$repo" remote add origin "https://github.com/example/$name.git"
 
+    set +e
     (
         cd "$repo"
         DOTFILES="$ROOT" PATH="$FAKE_BIN:$PATH" bash "$ROOT/$SCRIPT" --branch dev --no-artifacts "$@" > "$repo/init.log" 2>&1
     )
+    local ec=$?
+    set -e
+    if [[ "$ec" -ne 0 ]]; then
+        echo "init-sandcastle failed for case '$name' (exit $ec). Last 40 log lines:" >&2
+        tail -40 "$repo/init.log" >&2 || true
+        return "$ec"
+    fi
 
     printf '%s\n' "$repo"
 }
