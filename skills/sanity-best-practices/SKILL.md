@@ -5,7 +5,7 @@ description: "Sanity development best practices — schemas, GROQ, TypeGen, Visu
 
 # Sanity Best Practices
 
-Output "Read Sanity Best Practices skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Sanity Best Practices skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Comprehensive best practices and integration guides for Sanity development, maintained by Sanity. Use the quick reference below to load only the one or two topic files that match the task.
 

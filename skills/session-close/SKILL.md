@@ -5,7 +5,7 @@ description: Pre-flight checklist that runs quality gates before ending a coding
 
 # Session Close (`/check`)
 
-Output "Read Session Close skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Session Close skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Audit this session before we close it. Answer with evidence, not assertions.
 

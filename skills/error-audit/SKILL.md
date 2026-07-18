@@ -5,7 +5,7 @@ description: Use when repeated Claude Code session errors need analysis; scans s
 
 # Error Audit
 
-Output "Read Error Audit skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Error Audit skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Scan every Claude Code session transcript for errors, cluster by root cause, surface the top offenders with suggested remediations.
 

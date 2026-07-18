@@ -5,7 +5,7 @@ description: "Core execution loop for implementing tasks. Use when asked to 'do 
 
 # Do Work
 
-Output "Read Do Work skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Do Work skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Pipeline position: `/grill-me` → `/write-a-prd` → `/architect` → `/prd-to-issues` → **`/do-work`** → `shft`
 

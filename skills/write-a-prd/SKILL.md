@@ -5,7 +5,7 @@ description: "Write a Product Requirements Document from a rough idea. Use when 
 
 # Write a PRD
 
-Output "Read Write a PRD skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Write a PRD skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Pipeline position: `/grill-me` → **`/write-a-prd`** → `/architect` → `/prd-to-issues` → `/do-work` → `shft`
 

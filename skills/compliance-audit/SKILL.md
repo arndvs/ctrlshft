@@ -5,7 +5,7 @@ description: "Auto-invoke after any do-work, tdd, systematic-debugging, or revie
 
 # Compliance Audit
 
-Output "Read Compliance Audit skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Compliance Audit skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Runs after a task completes. Reviews the actual diff against the rules and skills that were active during the session. Flags violations explicitly. Updates the skill if the gap is structural.
 
