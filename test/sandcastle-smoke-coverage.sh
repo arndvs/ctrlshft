@@ -264,6 +264,66 @@ else
     _record_fail "installed agent workflows use isolated pnpm runner invocation" "found $installed_runner_count, expected 11"
 fi
 
+missing_template_preflight=""
+for wf in "${template_workflows[@]}"; do
+    if grep -qF "$stable_runner_pattern" "$wf" && ! grep -qF "id: proxy-preflight" "$wf"; then
+        missing_template_preflight+="$wf"$'\n'
+    fi
+done
+if [[ -z "$missing_template_preflight" ]]; then
+    _record_pass "template model workflows include proxy preflight"
+else
+    _record_fail "template model workflows include proxy preflight" "$missing_template_preflight"
+fi
+
+missing_installed_preflight=""
+for wf in "${installed_workflows[@]}"; do
+    if grep -qF "$stable_runner_pattern" "$wf" && ! grep -qF "id: proxy-preflight" "$wf"; then
+        missing_installed_preflight+="$wf"$'\n'
+    fi
+done
+if [[ -z "$missing_installed_preflight" ]]; then
+    _record_pass "installed model workflows include proxy preflight"
+else
+    _record_fail "installed model workflows include proxy preflight" "$missing_installed_preflight"
+fi
+
+find_ungated_dispatches() {
+    local wf
+    for wf in "$@"; do
+        awk -v file="$wf" -v pattern="$stable_runner_pattern" '
+            {
+                window[NR % 12] = $0
+                if (index($0, pattern) > 0) {
+                    gated = 0
+                    for (i = NR - 11; i <= NR; i++) {
+                        if (i > 0 && window[i % 12] ~ /steps\.proxy-preflight\.outputs\.should_run == '\''true'\''/) {
+                            gated = 1
+                        }
+                    }
+                    if (!gated) {
+                        print file ":" NR ": missing proxy preflight gate near run.ts dispatch"
+                    }
+                }
+            }
+        ' "$wf"
+    done
+}
+
+template_ungated_dispatches="$(find_ungated_dispatches "${template_workflows[@]}")"
+if [[ -z "$template_ungated_dispatches" ]]; then
+    _record_pass "template run.ts dispatches are gated by proxy preflight"
+else
+    _record_fail "template run.ts dispatches are gated by proxy preflight" "$template_ungated_dispatches"
+fi
+
+installed_ungated_dispatches="$(find_ungated_dispatches "${installed_workflows[@]}")"
+if [[ -z "$installed_ungated_dispatches" ]]; then
+    _record_pass "installed run.ts dispatches are gated by proxy preflight"
+else
+    _record_fail "installed run.ts dispatches are gated by proxy preflight" "$installed_ungated_dispatches"
+fi
+
 # ── 7b. Composite action template drift guard ─────────────────────────────────
 template_actions_dir="$ROOT/shft/templates/actions"
 installed_actions_dir="$ROOT/.github/actions"

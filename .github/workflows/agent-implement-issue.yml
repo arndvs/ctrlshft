@@ -28,7 +28,15 @@ jobs:
         with:
           ref: dev
 
+      - name: Proxy preflight
+        id: proxy-preflight
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+        run: bash .sandcastle/scripts/proxy_preflight.sh
+
       - name: Sandcastle setup
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         uses: ./.github/actions/sandcastle-setup
         with:
           trigger-label: agent:implement
@@ -41,6 +49,7 @@ jobs:
           repository: ${{ github.repository }}
 
       - name: Compute branch name
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         id: branch
         run: |
           set -euo pipefail
@@ -52,6 +61,7 @@ jobs:
           echo "name=$branch" >> "$GITHUB_OUTPUT"
 
       - name: Set up git identity and branch
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         env:
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
@@ -66,6 +76,7 @@ jobs:
           fi
 
       - name: Run implement
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
@@ -79,13 +90,13 @@ jobs:
             --branch "$BRANCH"
 
       - name: Push branch
-        if: success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && success()
         env:
           BRANCH: ${{ steps.branch.outputs.name }}
         run: git push origin "$BRANCH"
 
       - name: Write PR title and description
-        if: success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && success()
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
@@ -99,7 +110,7 @@ jobs:
             --branch "$BRANCH"
 
       - name: Open draft PR
-        if: success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && success()
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           BRANCH: ${{ steps.branch.outputs.name }}
@@ -121,7 +132,7 @@ jobs:
             --body-file "${RUNNER_TEMP}/pr_description.txt"
 
       - name: Transition label
-        if: success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && success()
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
         run: |

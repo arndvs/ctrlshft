@@ -55,7 +55,15 @@ jobs:
         with:
           ref: dev
 
+      - name: Proxy preflight
+        id: proxy-preflight
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+        run: bash .sandcastle/scripts/proxy_preflight.sh
+
       - name: Sandcastle setup
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         uses: ./.github/actions/sandcastle-setup
         with:
           trigger-label: agent:update-branch
@@ -67,14 +75,17 @@ jobs:
           repository: ${{ github.repository }}
 
       - name: Ensure branch is checked out by name
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         run: git checkout "$BRANCH" 2>/dev/null || git checkout -B "$BRANCH"
 
       - name: Configure git identity
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         run: |
           git config user.name "claude-code[bot]"
           git config user.email "claude-code[bot]@users.noreply.github.com"
 
       - name: Run update-branch
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
@@ -86,7 +97,7 @@ jobs:
             --base-ref "$BASE_REF"
 
       - name: Push branch (abort cleanly if non-fast-forward)
-        if: success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && success()
         env:
           SHOULD_PUSH_FILE: ${{ runner.temp }}/should_push.txt
         run: |
@@ -109,7 +120,7 @@ jobs:
           fi
 
       - name: Post PR comment
-        if: success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && success()
         env:
           COMMENT_FILE: ${{ runner.temp }}/comment.md
         run: |

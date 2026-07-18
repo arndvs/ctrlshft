@@ -120,8 +120,16 @@ jobs:
         with:
           ref: {{DEFAULT_BRANCH}}
 
-      - name: Sandcastle setup
+      - name: Proxy preflight
         if: steps.shape.outputs.mode == 'run'
+        id: proxy-preflight
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+        run: bash .sandcastle/scripts/proxy_preflight.sh
+
+      - name: Sandcastle setup
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run'
         uses: ./.github/actions/sandcastle-setup
         with:
           trigger-label: agent:implement-prd
@@ -134,7 +142,7 @@ jobs:
           repository: ${{ github.repository }}
 
       - name: Compute branch name
-        if: steps.shape.outputs.mode == 'run'
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run'
         id: branch
         run: |
           set -euo pipefail
@@ -146,7 +154,7 @@ jobs:
           echo "name=$branch" >> "$GITHUB_OUTPUT"
 
       - name: Set up git identity and resume/create branch
-        if: steps.shape.outputs.mode == 'run'
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run'
         id: branchstate
         env:
           BRANCH: ${{ steps.branch.outputs.name }}
@@ -164,7 +172,7 @@ jobs:
           fi
 
       - name: Run implement-prd
-        if: steps.shape.outputs.mode == 'run'
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run'
         id: implement
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
@@ -180,13 +188,13 @@ jobs:
             --branch "$BRANCH"
 
       - name: Push branch
-        if: steps.shape.outputs.mode == 'run' && success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && success()
         env:
           BRANCH: ${{ steps.branch.outputs.name }}
         run: git push origin "$BRANCH"
 
       - name: Check whether a PR already exists for this branch
-        if: steps.shape.outputs.mode == 'run' && success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && success()
         id: pr_lookup
         env:
           BRANCH: ${{ steps.branch.outputs.name }}
@@ -196,7 +204,7 @@ jobs:
           echo "existing_pr=$existing_pr" >> "$GITHUB_OUTPUT"
 
       - name: Write PR title and description (only when opening a new PR)
-        if: steps.shape.outputs.mode == 'run' && success() && steps.pr_lookup.outputs.existing_pr == ''
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && success() && steps.pr_lookup.outputs.existing_pr == ''
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
@@ -207,7 +215,7 @@ jobs:
             --prd-title "$PRD_TITLE"
 
       - name: Open draft PR if one doesn't exist for this branch
-        if: steps.shape.outputs.mode == 'run' && success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && success()
         id: open_pr
         env:
           BRANCH: ${{ steps.branch.outputs.name }}
@@ -233,7 +241,7 @@ jobs:
           fi
 
       - name: Close completed sub-issue
-        if: steps.shape.outputs.mode == 'run' && success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && success()
         env:
           SUB_ISSUE_NUMBER: ${{ steps.shape.outputs.next_open_number }}
         run: |
@@ -241,7 +249,7 @@ jobs:
           gh issue close "$SUB_ISSUE_NUMBER" --comment "Implemented in ${commit_sha}. Part of #${PRD_NUMBER}."
 
       - name: Re-check remaining open sub-issues
-        if: steps.shape.outputs.mode == 'run' && success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && success()
         id: remaining
         env:
           SUB_ISSUE_NUMBER: ${{ steps.shape.outputs.next_open_number }}
@@ -257,7 +265,7 @@ jobs:
           fi
 
       - name: Chain — re-label PRD to pick up next sub-issue
-        if: steps.shape.outputs.mode == 'run' && success() && steps.remaining.outputs.count != '0'
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && success() && steps.remaining.outputs.count != '0'
         env:
           AGENT_PAT: ${{ secrets.AGENT_PAT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -273,7 +281,7 @@ jobs:
           }
 
       - name: Hand off — request review on the PR
-        if: steps.shape.outputs.mode == 'run' && success() && steps.remaining.outputs.count == '0'
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && success() && steps.remaining.outputs.count == '0'
         env:
           PR_NUMBER: ${{ steps.open_pr.outputs.pr_number }}
           AGENT_PAT: ${{ secrets.AGENT_PAT }}
@@ -290,7 +298,7 @@ jobs:
           }
 
       - name: Comment on failed sub-issue
-        if: steps.shape.outputs.mode == 'run' && failure() && steps.shape.outputs.next_open_number != ''
+        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && failure() && steps.shape.outputs.next_open_number != ''
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SUB_ISSUE_NUMBER: ${{ steps.shape.outputs.next_open_number }}
