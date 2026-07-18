@@ -324,6 +324,29 @@ _check_engine() {
     fi
 }
 
+_check_dispatcher_package() {
+    local package_file=".sandcastle/package.json"
+
+    if [[ ! -f "$package_file" ]]; then
+        _fail_class "CONFIG" "Missing $package_file"
+        return 0
+    fi
+
+    if node -e "
+const fs = require('fs');
+try {
+  const pkg = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
+  process.exit(pkg.type === 'module' ? 0 : 2);
+} catch {
+  process.exit(1);
+}
+" "$package_file" >/dev/null 2>&1; then
+        _pass_class "CONFIG" "$package_file declares type=module"
+    else
+        _fail_class "CONFIG" "$package_file must declare \"type\": \"module\""
+    fi
+}
+
 green "Sandcastle preflight"
 echo ""
 
@@ -357,6 +380,7 @@ for required_path in ".sandcastle/engine" ".github/workflows" ".sandcastle/run.t
         _fail_class "CONFIG" "Missing $required_path"
     fi
 done
+_check_dispatcher_package
 
 workflow_count=0
 if [[ -d ".github/workflows" ]]; then

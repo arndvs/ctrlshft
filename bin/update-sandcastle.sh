@@ -191,8 +191,8 @@ done
 
 # 5. Runtime prompt and extraction templates
 echo "Checking runtime templates..."
-check_file "$TEMPLATES/package.json" ".sandcastle/package.json" "package.json"
-check_file "$TEMPLATES/run.ts" ".sandcastle/run.ts" "run.ts"
+check_file "$TEMPLATES/package.json" ".sandcastle/package.json" ".sandcastle/package.json"
+check_file "$TEMPLATES/run.ts" ".sandcastle/run.ts" ".sandcastle/run.ts"
 check_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 check_stale_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 check_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
@@ -530,8 +530,8 @@ for cfg in pnpm-lock.yaml tsconfig.json; do
 done
 
 # Runtime prompt and extraction templates
-apply_file "$TEMPLATES/package.json" ".sandcastle/package.json" "package.json"
-apply_file "$TEMPLATES/run.ts" ".sandcastle/run.ts" "run.ts"
+apply_file "$TEMPLATES/package.json" ".sandcastle/package.json" ".sandcastle/package.json"
+apply_file "$TEMPLATES/run.ts" ".sandcastle/run.ts" ".sandcastle/run.ts"
 apply_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 apply_stale_dir_files "$TEMPLATES/prompts" ".sandcastle/templates/prompts" "templates/prompts"
 apply_dir_files "$TEMPLATES/extractions" ".sandcastle/templates/extractions" "templates/extractions"
