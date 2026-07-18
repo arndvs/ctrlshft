@@ -32,6 +32,10 @@ _log_afk() {
 _ticker_pid=""
 raw_output=""
 
+_shft_quiet() {
+    [[ -n "${SHFT_QUIET:-}" ]]
+}
+
 _stop_ticker() {
     if [[ -n "${_ticker_pid:-}" ]]; then
         kill "$_ticker_pid" 2>/dev/null || true
@@ -122,11 +126,20 @@ _run_state_set "started_at" "$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo
 [[ -n "${SHFT_SOURCE_REPO_ROOT:-}" ]] && _run_state_set "source_repo_root" "$SHFT_SOURCE_REPO_ROOT"
 _log_afk "afk started worker_pid=$$ max_iterations=$MAX_ITERATIONS lock_dir=$LOCKDIR"
 
-if ! "$RUN_WITH_SECRETS" \
-    --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
-    bash "$CTRL_DIR/bin/validate-env.sh" --afk; then
-    echo "ERROR: AFK environment validation failed" >&2
-    exit 1
+if _shft_quiet; then
+    if ! "$RUN_WITH_SECRETS" \
+        --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
+        bash "$CTRL_DIR/bin/validate-env.sh" --afk >/dev/null 2>&1; then
+        echo "ERROR: AFK environment validation failed" >&2
+        exit 1
+    fi
+else
+    if ! "$RUN_WITH_SECRETS" \
+        --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
+        bash "$CTRL_DIR/bin/validate-env.sh" --afk; then
+        echo "ERROR: AFK environment validation failed" >&2
+        exit 1
+    fi
 fi
 
 # Inject proxy env vars if enabled (sets ANTHROPIC_BASE_URL etc.)
@@ -144,7 +157,7 @@ if grep -qi microsoft /proc/version 2>/dev/null || [[ "$(uname -o 2>/dev/null)" 
     # --dangerously-skip-permissions and deny-rule hooks ONLY (no defense-in-depth).
     # Record it in run-state so the HUD / `shft status` keep an audit trail per run.
     _run_state_set "sandboxed" "false"
-    echo "WARNING: AFK running WITHOUT a container sandbox (WSL/MSYS) — deny-rule hooks apply, but no defense-in-depth." >&2
+    _shft_quiet || echo "WARNING: AFK running WITHOUT a container sandbox (WSL/MSYS) — deny-rule hooks apply, but no defense-in-depth." >&2
     _log_afk "sandbox unavailable (WSL/MSYS) — running claude unsandboxed"
 else
     _CLAUDE_CMD=(srt claude)
@@ -158,7 +171,7 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
         exit 0
     fi
 
-    echo "=== shft iteration $i of $MAX_ITERATIONS ==="
+    _shft_quiet || echo "=== shft iteration $i of $MAX_ITERATIONS ==="
     _run_state_set "current_iteration" "$i"
     _log_afk "iteration $i started"
     _push_afk_event "info" "AFK iteration $i of $MAX_ITERATIONS started"
@@ -183,49 +196,51 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
         exit 1
     fi
 
-    echo "token minted for iteration $i (expires_at=$afk_token_expires_at)"
+    _shft_quiet || echo "token minted for iteration $i (expires_at=$afk_token_expires_at)"
 
-    # Progress ticker — visual heartbeat while waiting for first Claude response
-    _ticker_chars=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
-    _tick_i=0
-    _tick_ppid=$$
-    while kill -0 "$_tick_ppid" 2>/dev/null; do
-        printf "\r  %s thinking..." "${_ticker_chars[$((_tick_i % ${#_ticker_chars[@]}))]}" >&2
-        _tick_i=$((_tick_i + 1))
-        sleep 0.2
-    done &
-    _ticker_pid=$!
+    if ! _shft_quiet; then
+        # Progress ticker — visual heartbeat while waiting for first Claude response
+        _ticker_chars=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+        _tick_i=0
+        _tick_ppid=$$
+        while kill -0 "$_tick_ppid" 2>/dev/null; do
+            printf "\r  %s thinking..." "${_ticker_chars[$((_tick_i % ${#_ticker_chars[@]}))]}" >&2
+            _tick_i=$((_tick_i + 1))
+            sleep 0.2
+        done &
+        _ticker_pid=$!
 
-    # Thinking-gap spinner — animates when jq output pauses > 1s
-    _thinking_filter() {
-        local line _tpid=
-        _start_think() {
-            local _think_ppid=$BASHPID
-            ( while kill -0 "$_think_ppid" 2>/dev/null; do
-                for c in '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏'; do
-                    printf '\r  %s thinking...' "$c"
-                    sleep 0.2
-                done
-            done ) &
-            _tpid=$!
+        # Thinking-gap spinner — animates when jq output pauses > 1s
+        _thinking_filter() {
+            local line _tpid=
+            _start_think() {
+                local _think_ppid=$BASHPID
+                ( while kill -0 "$_think_ppid" 2>/dev/null; do
+                    for c in '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏'; do
+                        printf '\r  %s thinking...' "$c"
+                        sleep 0.2
+                    done
+                done ) &
+                _tpid=$!
+            }
+            _kill_think() {
+                [[ -n "$_tpid" ]] && kill "$_tpid" 2>/dev/null && wait "$_tpid" 2>/dev/null
+                printf '\r\033[K'
+                _tpid=
+            }
+            while true; do
+                if IFS= read -r -t 1 line; then
+                    [[ -n "$_tpid" ]] && _kill_think
+                    printf '%s\n' "$line"
+                elif (( $? > 128 )); then
+                    [[ -z "$_tpid" ]] && _start_think
+                else
+                    break
+                fi
+            done
+            [[ -n "$_tpid" ]] && _kill_think
         }
-        _kill_think() {
-            [[ -n "$_tpid" ]] && kill "$_tpid" 2>/dev/null && wait "$_tpid" 2>/dev/null
-            printf '\r\033[K'
-            _tpid=
-        }
-        while true; do
-            if IFS= read -r -t 1 line; then
-                [[ -n "$_tpid" ]] && _kill_think
-                printf '%s\n' "$line"
-            elif (( $? > 128 )); then
-                [[ -z "$_tpid" ]] && _start_think
-            else
-                break
-            fi
-        done
-        [[ -n "$_tpid" ]] && _kill_think
-    }
+    fi
 
     source "$SCRIPT_DIR/_build_prompt.sh"
     raw_output=$(mktemp)
@@ -272,21 +287,37 @@ for i in $(seq 1 "$MAX_ITERATIONS"); do
 
     _afk_stderr_log="$WORKING_DIR/afk-iter-${i}-stderr.log"
     _run_state_set "current_stderr_log" "$_afk_stderr_log"
-    if ! "${_afk_env[@]}" \
-        "${_CLAUDE_CMD[@]}" \
-        --print \
-        --verbose \
-        --dangerously-skip-permissions \
-        --output-format stream-json \
-        < "$PROMPT_FILE" \
-        2>"$_afk_stderr_log" \
-        | awk '/^[[:space:]]*\{/ { print; fflush() }' \
-        | { _first=true; while IFS= read -r line; do
-              if $_first; then _stop_ticker; _first=false; fi
-              printf '%s\n' "$line"
-            done; } \
-        | tee >(jq --unbuffered -rj "$stream_live" 2>/dev/null | _thinking_filter >&2; cat >/dev/null) \
-        > "$raw_output"; then
+    if _shft_quiet; then
+        if ! "${_afk_env[@]}" \
+            "${_CLAUDE_CMD[@]}" \
+            --print \
+            --verbose \
+            --dangerously-skip-permissions \
+            --output-format stream-json \
+            < "$PROMPT_FILE" \
+            2>"$_afk_stderr_log" \
+            | awk '/^[[:space:]]*\{/ { print; fflush() }' \
+            > "$raw_output"; then
+            _log_afk "iteration $i failed stderr=$_afk_stderr_log"
+            echo "ERROR: ${_CLAUDE_CMD[*]} failed on iteration $i" >&2
+            echo "  stderr log: $_afk_stderr_log" >&2
+            exit 1
+        fi
+    elif ! "${_afk_env[@]}" \
+            "${_CLAUDE_CMD[@]}" \
+            --print \
+            --verbose \
+            --dangerously-skip-permissions \
+            --output-format stream-json \
+            < "$PROMPT_FILE" \
+            2>"$_afk_stderr_log" \
+            | awk '/^[[:space:]]*\{/ { print; fflush() }' \
+            | { _first=true; while IFS= read -r line; do
+                  if $_first; then _stop_ticker; _first=false; fi
+                  printf '%s\n' "$line"
+                done; } \
+            | tee >(jq --unbuffered -rj "$stream_live" 2>/dev/null | _thinking_filter >&2; cat >/dev/null) \
+            > "$raw_output"; then
         _stop_ticker
         _log_afk "iteration $i failed stderr=$_afk_stderr_log"
         echo "ERROR: ${_CLAUDE_CMD[*]} failed on iteration $i" >&2

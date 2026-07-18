@@ -423,6 +423,8 @@ assert_contains "proxy down fails closed" "AFK will not start" "$_validate_fn"
 assert_contains "proxy validation exits non-zero" "exit 1" "$_validate_fn"
 assert_contains "proxy validation waits for readiness" "_proxy_wait_healthy" "$_validate_fn"
 assert_contains "proxy validation honors wait env" "SHFT_PROXY_HEALTH_WAIT_SECONDS" "$_validate_fn"
+assert_contains "quiet validation suppresses successful validate-env output" ">/dev/null 2>&1" "$_validate_fn"
+assert_contains "quiet validation keeps ERROR output" "ERROR: AFK validation failed" "$_validate_fn"
 
 _dirty_guard_fn=$(extract_function shft/shft _shft_require_clean_for_afk)
 assert_contains "dirty guard explains worktree mode" "shft afk --worktree" "$_dirty_guard_fn"
@@ -479,6 +481,7 @@ assert_contains "afk current checkout dirty guard" "_shft_require_clean_for_afk"
 assert_contains "afk creates isolated worktree" "_shft_create_afk_worktree" "$_afk_command_block"
 assert_contains "afk passes isolated flag" "SHFT_ISOLATED_WORKTREE" "$_afk_command_block"
 assert_contains "afk runs from selected cwd" 'cd "$_afk_cwd"' "$_afk_command_block"
+assert_contains "afk pre-launch block is gated by quiet" 'if ! _shft_quiet; then' "$_afk_command_block"
 
 _worktrees_block=$(sed -n '/^    worktrees|worktree)/,/^        ;;$/p' shft/shft)
 assert_contains "worktrees command lists" "_shft_worktrees_list" "$_worktrees_block"
@@ -498,6 +501,10 @@ assert_not_contains "afk run-state file is not global" 'shft-run.json' "$_afk_ru
 
 _afk_loop_block=$(sed -n '/^for i in /,/^done/p' shft/afk.sh)
 assert_contains "afk checks lock between iterations" '[[ ! -d "$LOCKDIR" ]]' "$_afk_loop_block"
+assert_contains "afk quiet gates iteration banner" '_shft_quiet || echo "=== shft iteration' "$_afk_loop_block"
+assert_contains "afk quiet gates token minted echo" '_shft_quiet || echo "token minted' "$_afk_loop_block"
+assert_contains "afk quiet does not spawn ticker" 'if ! _shft_quiet; then' "$_afk_loop_block"
+assert_contains "afk quiet skips stream_live tee" 'if _shft_quiet; then' "$_afk_loop_block"
 
 _afk_cleanup_fn=$(extract_function shft/afk.sh _cleanup_afk)
 assert_contains "afk cleanup stops ticker" "_stop_ticker" "$_afk_cleanup_fn"
@@ -517,6 +524,10 @@ assert_contains "prompt builder keeps one branch per run" "Later issues in this 
 _help_block=$(sed -n '/^    help|--help|-h)/,/^        ;;$/p' shft/shft)
 assert_contains "help documents worktree AFK" "shft afk --worktree" "$_help_block"
 assert_contains "help documents worktrees command" "shft worktrees" "$_help_block"
+assert_contains "help documents SHFT_QUIET" "SHFT_QUIET=1" "$_help_block"
+
+_proxy_env_routing=$(grep -n 'Routing: Copilot proxy' shft/_proxy_env.sh || true)
+assert_contains "proxy env routing echo is quiet-gated" 'SHFT_QUIET' "$_proxy_env_routing"
 
 _gitignore_runtime=$(grep -n 'working/runtime/afk-worktrees' .gitignore || true)
 assert_contains "AFK worktrees are ignored" "working/runtime/afk-worktrees" "$_gitignore_runtime"
