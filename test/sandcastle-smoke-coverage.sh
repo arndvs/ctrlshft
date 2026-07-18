@@ -673,6 +673,24 @@ else
     _record_fail "installed Sandcastle dispatcher package pins ESM" "expected .sandcastle/package.json with type=module"
 fi
 
+for wf_path in "$ROOT/shft/templates/workflows/sandcastle-ci.yml" "$ROOT/.github/workflows/sandcastle-ci.yml"; do
+    wf_label="${wf_path#$ROOT/}"
+    package_path_count="$(grep -cF '      - ".sandcastle/package.json"' "$wf_path" || true)"
+    run_path_count="$(grep -cF '      - ".sandcastle/run.ts"' "$wf_path" || true)"
+
+    if [[ "$package_path_count" -eq 2 ]]; then
+        _record_pass "$wf_label includes dispatcher package path filters"
+    else
+        _record_fail "$wf_label includes dispatcher package path filters" "expected path in push and pull_request filters"
+    fi
+
+    if [[ "$run_path_count" -eq 2 ]]; then
+        _record_pass "$wf_label includes dispatcher run path filters"
+    else
+        _record_fail "$wf_label includes dispatcher run path filters" "expected path in push and pull_request filters"
+    fi
+done
+
 # ── 8. Smoke test scripts exist for each smoke script ────────────────────────
 # Each bin/smoke-sandcastle-*.sh should have a corresponding test file.
 # Naming conventions vary (sandcastle-FOO-smoke.sh, sandcastle-FOO.sh, etc.),
