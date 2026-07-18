@@ -89,6 +89,7 @@ _test "ctrl update-artifacts (dry-run)" ctrl update-artifacts --dry-run
 _skip "ctrl lifecycle-audit"            "requires git repo setup"
 
 # Sandcastle commands
+_test "ctrl init-sandcastle help"  ctrl init-sandcastle --help
 _test "ctrl preflight-sandcastle help"  ctrl preflight-sandcastle --help
 _test "ctrl smoke-sandcastle-dispatch help" ctrl smoke-sandcastle-dispatch --help
 _test "ctrl smoke-sandcastle-issue-labels help" ctrl smoke-sandcastle-issue-labels --help
