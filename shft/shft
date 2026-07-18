@@ -665,7 +665,7 @@ _validate_afk() {
             bash "$DOTFILES/bin/run-with-secrets.sh" \
                 --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
                 bash "$DOTFILES/bin/validate-env.sh" --afk >/dev/null 2>&1 || {
-                echo "ERROR: AFK validation failed. Fix the above before running shft afk." >&2
+                echo "ERROR: AFK validation failed; rerun without SHFT_QUIET to see validation details." >&2
                 echo "ERROR: Run 'shft mint' to test GitHub App token minting." >&2
                 exit 1
             }
