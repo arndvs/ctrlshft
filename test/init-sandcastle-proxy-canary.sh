@@ -11,7 +11,7 @@
 #
 # Usage: bash test/init-sandcastle-proxy-canary.sh
 set -euo pipefail
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$(dirname "$0")/..")"
+ROOT="$(cd "$(git rev-parse --show-toplevel 2>/dev/null || echo "$(dirname "$0")/..")" && pwd)"
 cd "$ROOT"
 
 # ── Test harness ──────────────────────────────────────────────────────────────
