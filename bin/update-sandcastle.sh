@@ -185,6 +185,7 @@ echo "Checking workflow YAMLs..."
 # Read baseBranch from config (default: main)
 BASE_BRANCH="main"
 PROXY="true"
+PROXY_CANARY="false"
 if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
     BASE_BRANCH=$(node -e "
         try {
@@ -198,6 +199,12 @@ if [[ -f "sandcastle.config.json" ]] && command -v node &>/dev/null; then
             console.log(c.proxy === false ? 'false' : 'true');
         } catch { console.log('true'); }
     " 2>/dev/null || echo "true")
+    PROXY_CANARY=$(node -e "
+        try {
+            const c = JSON.parse(require('fs').readFileSync('sandcastle.config.json','utf8'));
+            console.log(c.proxyCanary === true ? 'true' : 'false');
+        } catch { console.log('false'); }
+    " 2>/dev/null || echo "false")
 fi
 
 # Render a workflow template with variable + auth-mode substitution.
@@ -234,13 +241,26 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
     fi
 done
 
-# 8b. Proxy monitoring workflows (only when proxy mode is enabled in config)
+# 8b. Proxy monitoring workflows
+# proxy-canary.yml is gated on PROXY_CANARY (not PROXY alone).
+# Other workflows-proxy templates still use PROXY.
 if [[ "$PROXY" == "true" ]]; then
     echo "Checking proxy monitoring workflows..."
     for tmpl in "$TEMPLATES/workflows-proxy/"*.yml; do
         [[ ! -f "$tmpl" ]] && continue
         fname="$(basename "$tmpl")"
         vendored=".github/workflows/$fname"
+
+        # proxy-canary.yml requires proxyCanary: true
+        if [[ "$fname" == "proxy-canary.yml" && "$PROXY_CANARY" != "true" ]]; then
+            # Flag as stale if the file exists but canary is not opted in
+            if [[ -f "$vendored" ]]; then
+                DRIFTED_FILES+=("workflows/$fname (stale — proxyCanary not enabled)")
+                DIFF_OUTPUT+="$(printf '\n── workflows/%s (stale — will be removed) ──\n' "$fname")"
+            fi
+            continue
+        fi
+
         if [[ ! -f "$vendored" ]]; then
             DRIFTED_FILES+=("workflows/$fname (new — not installed)")
             DIFF_OUTPUT+="$(printf '\n── workflows/%s (new template) ──\n' "$fname")"
@@ -254,6 +274,12 @@ if [[ "$PROXY" == "true" ]]; then
             DIFF_OUTPUT+=$'\n'
         fi
     done
+fi
+
+# 8c. Detect stale proxy-canary.yml even when proxy is disabled
+if [[ "$PROXY" != "true" && -f ".github/workflows/proxy-canary.yml" ]]; then
+    DRIFTED_FILES+=("workflows/proxy-canary.yml (stale — proxyCanary not enabled)")
+    DIFF_OUTPUT+="$(printf '\n── workflows/proxy-canary.yml (stale — will be removed) ──\n')"
 fi
 
 # 9. copilot-setup-steps.yml
@@ -450,17 +476,55 @@ for tmpl in "$TEMPLATES/workflows/"*.yml; do
     fi
 done
 
-# Proxy monitoring workflows (only when proxy mode is enabled in config)
+# Proxy monitoring workflows
+# proxy-canary.yml requires proxyCanary: true; remove stale copies.
 if [[ "$PROXY" == "true" ]]; then
     for tmpl in "$TEMPLATES/workflows-proxy/"*.yml; do
         [[ ! -f "$tmpl" ]] && continue
         fname="$(basename "$tmpl")"
         dst=".github/workflows/$fname"
+
+        # proxy-canary.yml requires proxyCanary: true
+        if [[ "$fname" == "proxy-canary.yml" && "$PROXY_CANARY" != "true" ]]; then
+            # Remove stale proxy-canary.yml if present
+            if [[ -f "$dst" ]]; then
+                if [[ "$choice" == "s" || "$choice" == "S" ]]; then
+                    read -r -p "  Remove stale $fname? [y/n]: " confirm
+                    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+                        echo "    Skipped: workflows/$fname"
+                        continue
+                    fi
+                fi
+                rm "$dst"
+                echo "    Removed (stale): workflows/$fname"
+                ((updated++)) || true
+            fi
+            continue
+        fi
+
         resolved=$(render_workflow "$tmpl")
         if [[ ! -f "$dst" ]] || ! echo "$resolved" | diff -q "$dst" - &>/dev/null; then
             apply_resolved "$resolved" "$dst" "workflows/$fname"
         fi
     done
+fi
+
+# Remove stale proxy-canary.yml when proxy is disabled entirely
+if [[ "$PROXY" != "true" && -f ".github/workflows/proxy-canary.yml" ]]; then
+    if [[ "$choice" == "s" || "$choice" == "S" ]]; then
+        read -r -p "  Remove stale proxy-canary.yml? [y/n]: " confirm
+        if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+            rm ".github/workflows/proxy-canary.yml"
+            echo "    Removed (stale): workflows/proxy-canary.yml"
+            ((updated++)) || true
+        else
+            echo "    Skipped: workflows/proxy-canary.yml"
+        fi
+    else
+        rm ".github/workflows/proxy-canary.yml"
+        echo "    Removed (stale): workflows/proxy-canary.yml"
+        ((updated++)) || true
+    fi
 fi
 
 # copilot-setup-steps.yml
