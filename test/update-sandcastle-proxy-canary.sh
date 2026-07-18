@@ -81,8 +81,11 @@ assert_contains "stale detection logic present" "stale" "$script_content"
 echo ""
 echo "── apply mode removal ──"
 
-# Apply section should handle removal of stale proxy-canary.yml
-assert_contains "apply removes stale canary" "rm " "$script_content"
+# Apply section should handle both stale removal paths:
+# - proxy enabled, but proxyCanary disabled
+# - proxy disabled entirely
+assert_contains "apply removes stale canary from proxy-enabled branch" 'rm "$dst"' "$script_content"
+assert_contains "apply removes stale canary from proxy-disabled branch" 'rm ".github/workflows/proxy-canary.yml"' "$script_content"
 
 # ── 5. proxy: true alone does NOT gate canary ────────────────────────────────
 echo ""
