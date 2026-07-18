@@ -27,14 +27,19 @@ import httpx
 from . import db, github, hud, issue, workspace
 from .config import Config
 from .git_creds import git_credential_env
+from .subprocess_helpers import (
+    DEFAULT_KILL_WAIT_SECONDS,
+    DEFAULT_TERMINATE_GRACE_SECONDS,
+    terminate_process_group,
+)
 
 logger = logging.getLogger("bridge.worker")
 
 POLL_INTERVAL_SECONDS = 2.0
 SHFT_RUN_TIMEOUT_SECONDS = 60 * 30  # 30 min hard cap per shft invocation
 SUBPROCESS_POLL_SECONDS = 0.5
-PROCESS_TERMINATE_GRACE_SECONDS = 3.5
-PROCESS_KILL_WAIT_SECONDS = 0.5
+PROCESS_TERMINATE_GRACE_SECONDS = DEFAULT_TERMINATE_GRACE_SECONDS
+PROCESS_KILL_WAIT_SECONDS = DEFAULT_KILL_WAIT_SECONDS
 _shutdown_event = threading.Event()
 _shutdown_signum: int | None = None
 
@@ -312,31 +317,6 @@ def _build_subprocess_env(cfg: Config, token, ws_path, repo: str) -> dict[str, s
     return env
 
 
-def _terminate_process_group(proc) -> None:
-    if proc.poll() is not None:
-        return
-    try:
-        pgid = os.getpgid(proc.pid)
-    except (ProcessLookupError, OSError):
-        return
-    try:
-        os.killpg(pgid, signal.SIGTERM)
-    except (ProcessLookupError, OSError):
-        pass
-    try:
-        proc.wait(timeout=PROCESS_TERMINATE_GRACE_SECONDS)
-    except subprocess.TimeoutExpired:
-        try:
-            os.killpg(pgid, signal.SIGKILL)
-        except (ProcessLookupError, OSError):
-            pass
-        try:
-            proc.wait(timeout=PROCESS_KILL_WAIT_SECONDS)
-        except subprocess.TimeoutExpired:
-            logger.warning("Process group %s did not exit after SIGKILL", pgid)
-            pass
-
-
 def _wait_for_subprocess(proc, cmd: list[str]) -> None:
     deadline = time.monotonic() + SHFT_RUN_TIMEOUT_SECONDS
     while True:
@@ -368,10 +348,20 @@ def _run_subprocess(cmd: list[str], cwd: str, env: dict[str, str], emit) -> None
         if proc.returncode != 0:
             raise RuntimeError(f"{cmd[0]} exited {proc.returncode}")
     except WorkerShutdown:
-        _terminate_process_group(proc)
+        terminate_process_group(
+            proc,
+            grace_seconds=PROCESS_TERMINATE_GRACE_SECONDS,
+            kill_wait_seconds=PROCESS_KILL_WAIT_SECONDS,
+            logger=logger,
+        )
         raise
     except subprocess.TimeoutExpired:
-        _terminate_process_group(proc)
+        terminate_process_group(
+            proc,
+            grace_seconds=PROCESS_TERMINATE_GRACE_SECONDS,
+            kill_wait_seconds=PROCESS_KILL_WAIT_SECONDS,
+            logger=logger,
+        )
         raise RuntimeError(f"{cmd[0]} timed out")
 
 
