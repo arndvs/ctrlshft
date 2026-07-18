@@ -12,6 +12,8 @@
 set -euo pipefail
 trap 'exit 0' ERR  # fail-open: any error → allow
 
+source "$(dirname "${BASH_SOURCE[0]}")/_hooklib.sh"
+
 if ! command -v jq &>/dev/null; then
     exit 0
 fi
@@ -22,17 +24,18 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # Skip if no command
 [[ -z "$COMMAND" ]] && exit 0
 
-# Only intercept git commit commands (allow env prefixes like EDITOR=vim and global git options like -c key=val, --no-pager)
-ENV_PREFIX='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*'
+# Only intercept git commit commands (allow env prefixes like EDITOR=vim,
+# shell wrappers like command/env/sudo, and global git options like -c key=val).
 GIT_OPTS='([[:space:]]+(-[a-zA-Z]([[:space:]]+[^-[:space:]][^[:space:]]*)?|--[a-z][a-z-]*(=[^[:space:]]+)?))*'
-if ! echo "$COMMAND" | grep -qE "(^|;|&&|\|\||\|)[[:space:]]*${ENV_PREFIX}git${GIT_OPTS}[[:space:]]+commit([[:space:]]|$)"; then
+GIT_COMMIT_PATTERN="${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git${GIT_OPTS}[[:space:]]+commit([[:space:]]|$)"
+if ! echo "$COMMAND" | grep -qE "$GIT_COMMIT_PATTERN"; then
     exit 0
 fi
 
 # Skip amend commits (typically fixups, not new code)
 # Strip quoted strings first so --amend inside a -m message doesn't false-positive
 _cmd_stripped=$(echo "$COMMAND" | sed "s/\"[^\"]*\"//g; s/'[^']*'//g")
-if echo "$_cmd_stripped" | grep -qE "(^|;|&&|\|\||\|)[[:space:]]*${ENV_PREFIX}git${GIT_OPTS}[[:space:]]+commit([[:space:]].*)?[[:space:]]--amend([[:space:]]|$)"; then
+if echo "$_cmd_stripped" | grep -qE "${COMMAND_BOUNDARY}${ASSIGNMENT_PREFIX}${WRAPPER_PREFIX}git${GIT_OPTS}[[:space:]]+commit([[:space:]].*)?[[:space:]]--amend([[:space:]]|$)"; then
     exit 0
 fi
 

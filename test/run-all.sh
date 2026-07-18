@@ -21,6 +21,7 @@ SUITES=(
   "instructions:test/claude-instructions.sh"
   "skills:test/skills.sh"
   "copilot-skills:test/copilot-skills-materialize.sh"
+  "hook-unit:test/hooks/run-hook-tests.sh"
   "hooks:test/hooks-integration.sh"
   "lifecycle:test/lifecycle.sh"
   "main-pr-source:test/main-pr-source-guard.sh"

@@ -16,7 +16,7 @@
     "test:instructions": "bash test/claude-instructions.sh",
     "test:skills": "bash test/skills.sh",
     "test:copilot-skills": "bash test/copilot-skills-materialize.sh",
-    "test:hooks": "bash test/hooks-integration.sh",
+    "test:hooks": "bash test/hooks/run-hook-tests.sh && bash test/hooks-integration.sh",
     "test:lifecycle": "bash test/lifecycle.sh",
     "test:main-pr-source": "bash test/main-pr-source-guard.sh",
     "test:pipeline-label": "bash test/pipeline-label-wrapper.sh",

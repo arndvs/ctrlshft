@@ -10,6 +10,8 @@ on:
       - "skills/**"
       - ".claude/settings.json"
       - "hooks/**"
+      - "test/hooks/**"
+      - "test/hooks-integration.sh"
       - "test/config-consistency.sh"
       - "test/copilot-instructions.sh"
       - "test/copilot-repo-local-guard.sh"
@@ -40,6 +42,8 @@ on:
       - "skills/**"
       - ".claude/settings.json"
       - "hooks/**"
+      - "test/hooks/**"
+      - "test/hooks-integration.sh"
       - "test/config-consistency.sh"
       - "test/copilot-instructions.sh"
       - "test/copilot-repo-local-guard.sh"
@@ -108,6 +112,11 @@ jobs:
         run: |
           set -euo pipefail
           bash test/config-consistency.sh
+
+      - name: Run hook unit and integration tests
+        run: |
+          set -euo pipefail
+          npm run test:hooks
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
