@@ -33,10 +33,10 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: bash .sandcastle/scripts/proxy_preflight.sh
 
       - name: Sandcastle setup
-        if: steps.proxy-preflight.outputs.should_run == 'true'
         uses: ./.github/actions/sandcastle-setup
         with:
           trigger-label: agent:implement
@@ -44,6 +44,8 @@ jobs:
           object-number: ${{ env.ISSUE_NUMBER }}
           checkout-ref: {{DEFAULT_BRANCH}}
           checkout-fetch-depth: 0
+          skip-checkout: ${{ steps.proxy-preflight.outputs.should_run != 'true' }}
+          install-engine: ${{ steps.proxy-preflight.outputs.should_run }}
           checkout-token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
@@ -81,6 +83,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           cd .sandcastle/engine
@@ -101,6 +104,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           cd .sandcastle/engine
@@ -139,6 +143,12 @@ jobs:
           gh issue edit "$ISSUE_NUMBER" \
             --add-label "agent:pr-open" \
             -R ${{ github.repository }}
+
+      - name: Restore workflow actions
+        if: always()
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
 
       - name: Sandcastle teardown
         if: always()

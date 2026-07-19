@@ -126,10 +126,11 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: bash .sandcastle/scripts/proxy_preflight.sh
 
       - name: Sandcastle setup
-        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run'
+        if: steps.shape.outputs.mode == 'run'
         uses: ./.github/actions/sandcastle-setup
         with:
           trigger-label: agent:implement-prd
@@ -137,6 +138,8 @@ jobs:
           object-number: ${{ env.PRD_NUMBER }}
           checkout-ref: dev
           checkout-fetch-depth: 0
+          skip-checkout: ${{ steps.proxy-preflight.outputs.should_run != 'true' }}
+          install-engine: ${{ steps.proxy-preflight.outputs.should_run }}
           checkout-token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
@@ -177,6 +180,7 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           cd .sandcastle/engine
@@ -208,6 +212,7 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           cd .sandcastle/engine
           pnpm --ignore-workspace exec tsx ../run.ts write-prd-pr \
@@ -315,6 +320,12 @@ jobs:
           SUB_ISSUE_NUMBER: ${{ steps.shape.outputs.next_open_number }}
         run: |
           gh issue comment "$SUB_ISSUE_NUMBER" --body "Implementation attempt failed. See PRD #${PRD_NUMBER} for status. Workflow run: $RUN_URL" || true
+
+      - name: Restore workflow actions
+        if: always() && steps.shape.outputs.mode == 'run'
+        uses: actions/checkout@v4
+        with:
+          ref: dev
 
       - name: Sandcastle teardown
         if: always() && steps.shape.outputs.mode == 'run'

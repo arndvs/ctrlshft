@@ -136,8 +136,8 @@ run_suite() {
 
   printf '{}\n' > "$WORK_DIR/sandcastle.config.json"
   out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" run_preflight "$probe")
-  assert_field "$label missing model config skips" "$out" "should_run" "false"
-  assert_field "$label missing model config reason" "$out" "reason" "missing-model"
+  assert_field "$label missing model config uses default model" "$out" "should_run" "false"
+  assert_field "$label missing model config probes default model" "$out" "reason" "model-unavailable"
 }
 
 echo "── proxy_preflight.sh tests ──"

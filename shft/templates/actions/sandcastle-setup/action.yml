@@ -35,6 +35,10 @@ inputs:
     description: Node.js version used by the Sandcastle engine.
     required: false
     default: "22"
+  install-engine:
+    description: Whether to install Sandcastle engine dependencies.
+    required: false
+    default: "true"
   manage-labels:
     description: Whether to run lifecycle label transitions.
     required: false
@@ -75,11 +79,13 @@ runs:
         token: ${{ inputs['checkout-token'] }}
 
     - name: Set up Node.js
+      if: ${{ inputs['install-engine'] == 'true' }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs['node-version'] }}
 
     - name: Install engine dependencies
+      if: ${{ inputs['install-engine'] == 'true' }}
       shell: bash
       run: |
         echo "OUTPUT_DIR=$RUNNER_TEMP" >> "$GITHUB_ENV"

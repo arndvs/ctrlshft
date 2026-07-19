@@ -383,6 +383,13 @@ else
     _record_fail "sandcastle-setup validates lifecycle inputs" "missing explicit validation step"
 fi
 
+if grep -qF "install-engine:" "$template_actions_dir/sandcastle-setup/action.yml" &&
+    grep -qF "inputs['install-engine'] == 'true'" "$template_actions_dir/sandcastle-setup/action.yml"; then
+    _record_pass "sandcastle-setup can skip engine install"
+else
+    _record_fail "sandcastle-setup can skip engine install" "missing install-engine input guard"
+fi
+
 if grep -Eq "default:[[:space:]]*\\$\\{\\{ github\\." "$template_actions_dir"/*/action.yml "$installed_actions_dir"/*/action.yml; then
     _record_fail "composite actions avoid expression defaults" "action inputs cannot use github.* expression defaults"
 else
@@ -436,6 +443,12 @@ else
     _record_fail "sandcastle-teardown reads failure context from env" "failure-context is interpolated directly into shell"
 fi
 
+if grep -qF "name: Remove trigger label" "$template_actions_dir/sandcastle-teardown/action.yml"; then
+    _record_pass "sandcastle-teardown removes trigger labels"
+else
+    _record_fail "sandcastle-teardown removes trigger labels" "missing best-effort trigger label cleanup"
+fi
+
 if grep -qF "types: [opened, ready_for_review]" "$ROOT/.github/workflows/pr-auto-copilot-review.yml" &&
     grep -qF -- "--add-reviewer copilot-pull-request-reviewer" "$ROOT/.github/workflows/pr-auto-copilot-review.yml"; then
     _record_pass "ready PRs trigger Copilot review workflow"
@@ -469,6 +482,8 @@ skip_checkout_workflows=(
 
 teardown_restore_workflows=(
     agent-fix-pr-feedback.yml
+    agent-implement-issue.yml
+    agent-implement-prd.yml
     agent-merge-pr.yml
     agent-update-branch.yml
 )
@@ -527,6 +542,16 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
         else
             _record_fail "$wf_label fails closed when PR draft lookup fails" "missing failure_reason.txt guard or preserving negated assignment status bug"
         fi
+    fi
+done
+
+for wf_file in "${migrated_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'install-engine: ${{ steps.proxy-preflight.outputs.should_run }}' "$wf_path"; then
+        _record_pass "$wf_label keeps lifecycle setup on preflight skip"
+    else
+        _record_fail "$wf_label keeps lifecycle setup on preflight skip" "setup must clear trigger labels while skipping engine install"
     fi
 done
 
@@ -627,6 +652,16 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
     fi
 done
 
+for wf_file in "${migrated_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'install-engine: ${{ steps.proxy-preflight.outputs.should_run }}' "$wf_path"; then
+        _record_pass "$wf_label keeps lifecycle setup on preflight skip"
+    else
+        _record_fail "$wf_label keeps lifecycle setup on preflight skip" "setup must clear trigger labels while skipping engine install"
+    fi
+done
+
 for wf_file in "${issue_lifecycle_workflows[@]}"; do
     wf_path="$ROOT/.github/workflows/$wf_file"
     wf_label="${wf_path#$ROOT/}"
@@ -722,6 +757,12 @@ for wf_path in "$ROOT"/shft/templates/workflows/agent-*.yml; do
     else
         _record_pass "$wf_label relies on setup action for OUTPUT_DIR"
     fi
+
+    if grep -qF "id: proxy-preflight" "$wf_path" && ! grep -qF 'ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}' "$wf_path"; then
+        _record_fail "$wf_label wires direct provider key" "preflight callers must expose ANTHROPIC_API_KEY"
+    else
+        _record_pass "$wf_label wires direct provider key"
+    fi
 done
 
 for wf_path in "$ROOT"/.github/workflows/agent-*.yml; do
@@ -736,6 +777,12 @@ for wf_path in "$ROOT"/.github/workflows/agent-*.yml; do
         _record_fail "$wf_label relies on setup action for OUTPUT_DIR" "still sets OUTPUT_DIR manually"
     else
         _record_pass "$wf_label relies on setup action for OUTPUT_DIR"
+    fi
+
+    if grep -qF "id: proxy-preflight" "$wf_path" && ! grep -qF 'ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}' "$wf_path"; then
+        _record_fail "$wf_label wires direct provider key" "preflight callers must expose ANTHROPIC_API_KEY"
+    else
+        _record_pass "$wf_label wires direct provider key"
     fi
 done
 
@@ -762,13 +809,13 @@ fi
 
 for wf_path in "$ROOT/shft/templates/workflows/sandcastle-ci.yml" "$ROOT/.github/workflows/sandcastle-ci.yml"; do
     wf_label="${wf_path#$ROOT/}"
-    package_path_count="$(grep -Ec '^[[:space:]]*-[[:space:]]*['\''"]?\.sandcastle/package\.json['\''"]?[[:space:]]*$' "$wf_path" || true)"
+    package_path_count="$(grep -Ec '^[[:space:]]*-[[:space:]]*['\''"]?\.sandcastle/engine/package\.json['\''"]?[[:space:]]*$' "$wf_path" || true)"
     run_path_count="$(grep -Ec '^[[:space:]]*-[[:space:]]*['\''"]?\.sandcastle/run\.ts['\''"]?[[:space:]]*$' "$wf_path" || true)"
 
     if [[ "$package_path_count" -eq 2 ]]; then
-        _record_pass "$wf_label includes dispatcher package path filters"
+        _record_pass "$wf_label includes engine package path filters"
     else
-        _record_fail "$wf_label includes dispatcher package path filters" "expected path in push and pull_request filters"
+        _record_fail "$wf_label includes engine package path filters" "expected path in push and pull_request filters"
     fi
 
     if [[ "$run_path_count" -eq 2 ]]; then

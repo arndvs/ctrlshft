@@ -7,6 +7,10 @@
 set -euo pipefail
 
 out="${GITHUB_OUTPUT:-/dev/stdout}"
+python_bin="${PYTHON_BIN:-}"
+if [[ -z "$python_bin" ]]; then
+    python_bin="$(command -v python3 || command -v python || true)"
+fi
 
 emit() {
     local should_run="$1" reason="$2" detail="$3"
@@ -21,7 +25,18 @@ base="${ANTHROPIC_BASE_URL:-}"
 token="${ANTHROPIC_AUTH_TOKEN:-}"
 api_key="${ANTHROPIC_API_KEY:-}"
 
-proxy_enabled="$(node -e 'try { const c = JSON.parse(require("fs").readFileSync("sandcastle.config.json", "utf8")); process.stdout.write(c.proxy === false ? "false" : "true"); } catch { process.stdout.write("true"); }' 2>/dev/null || echo "true")"
+proxy_enabled="$("$python_bin" - <<'PY' 2>/dev/null || echo "true"
+import json
+
+try:
+    with open("sandcastle.config.json", encoding="utf-8") as handle:
+        config = json.load(handle)
+except Exception:
+    print("true", end="")
+else:
+    print("false" if config.get("proxy") is False else "true", end="")
+PY
+)"
 
 if [[ "$proxy_enabled" == "false" ]]; then
     if [[ -z "$api_key" ]]; then
@@ -49,12 +64,18 @@ fi
 base="${base%/}"
 base="${base%/v1}"
 
-model="$(node -e 'try { const c = JSON.parse(require("fs").readFileSync("sandcastle.config.json", "utf8")); process.stdout.write(c.model || ""); } catch {}' 2>/dev/null || true)"
-if [[ -z "$model" ]]; then
-    echo "::warning::Proxy preflight: sandcastle.config.json has no model; skipping agent run."
-    emit "false" "missing-model" "sandcastle.config.json does not define model"
-    exit 0
-fi
+model="$("$python_bin" - <<'PY' 2>/dev/null || echo "claude-opus-4-6"
+import json
+
+try:
+    with open("sandcastle.config.json", encoding="utf-8") as handle:
+        config = json.load(handle)
+except Exception:
+    print("claude-opus-4-6", end="")
+else:
+    print(config.get("model") or "claude-opus-4-6", end="")
+PY
+)"
 
 ready_body="$(mktemp)"
 models_body="$(mktemp)"
@@ -72,13 +93,17 @@ models_code="$(curl -sS -o "$models_body" -w '%{http_code}' --connect-timeout 5 
 
 case "$models_code" in
     200)
-        if MODEL="$model" MODELS_BODY="$models_body" node 2>/dev/null <<'NODE'
-const fs = require("fs");
-const model = process.env.MODEL;
-const body = JSON.parse(fs.readFileSync(process.env.MODELS_BODY, "utf8"));
-const ids = Array.isArray(body.data) ? body.data.map((m) => m && m.id).filter(Boolean) : [];
-process.exit(ids.includes(model) ? 0 : 1);
-NODE
+        if MODEL="$model" MODELS_BODY="$models_body" "$python_bin" - <<'PY' 2>/dev/null
+import json
+import os
+import sys
+
+model = os.environ["MODEL"]
+with open(os.environ["MODELS_BODY"], encoding="utf-8") as handle:
+    body = json.load(handle)
+ids = [item.get("id") for item in body.get("data", []) if isinstance(item, dict) and item.get("id")]
+sys.exit(0 if model in ids else 1)
+PY
         then
             echo "Proxy preflight: proxy ready and model '$model' is available."
             emit "true" "ok" "proxy ready and model available"
