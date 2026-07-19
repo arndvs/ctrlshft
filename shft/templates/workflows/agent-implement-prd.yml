@@ -287,7 +287,11 @@ jobs:
           AGENT_PAT: ${{ secrets.AGENT_PAT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          is_draft=$(gh pr view "$PR_NUMBER" -R "$GH_REPO" --json isDraft --jq '.isDraft')
+          if ! is_draft=$(gh pr view "$PR_NUMBER" -R "$GH_REPO" --json isDraft --jq '.isDraft'); then
+            status=$?
+            echo "Failed to determine draft state for PR #${PR_NUMBER} (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
+            exit "$status"
+          fi
           if [ "$is_draft" != "true" ]; then
             echo "PR #${PR_NUMBER} is already ready for review."
             exit 0
