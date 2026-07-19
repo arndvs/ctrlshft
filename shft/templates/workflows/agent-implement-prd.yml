@@ -280,20 +280,25 @@ jobs:
             exit "$status"
           }
 
-      - name: Hand off — request review on the PR
+      - name: Hand off — mark PR ready for Copilot review
         if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run' && success() && steps.remaining.outputs.count == '0'
         env:
           PR_NUMBER: ${{ steps.open_pr.outputs.pr_number }}
           AGENT_PAT: ${{ secrets.AGENT_PAT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          is_draft=$(gh pr view "$PR_NUMBER" -R "$GH_REPO" --json isDraft --jq '.isDraft')
+          if [ "$is_draft" != "true" ]; then
+            echo "PR #${PR_NUMBER} is already ready for review."
+            exit 0
+          fi
           if [ -z "$AGENT_PAT" ]; then
-            echo "AGENT_PAT is required to add agent:review because GITHUB_TOKEN-created labels do not trigger workflows." > "${RUNNER_TEMP}/failure_reason.txt"
+            echo "AGENT_PAT is required to mark the PR ready because GITHUB_TOKEN-created ready_for_review events do not trigger workflows." > "${RUNNER_TEMP}/failure_reason.txt"
             exit 1
           fi
-          GH_TOKEN="$AGENT_PAT" gh pr edit -R "$GH_REPO" "$PR_NUMBER" --add-label "agent:review" || {
+          GH_TOKEN="$AGENT_PAT" gh pr ready -R "$GH_REPO" "$PR_NUMBER" || {
             status=$?
-            echo "AGENT_PAT failed to add agent:review (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
+            echo "AGENT_PAT failed to mark PR #${PR_NUMBER} ready for review (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
             exit "$status"
           }
 

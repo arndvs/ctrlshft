@@ -197,7 +197,7 @@ Required GitHub Actions secrets:
 - `LITELLM_BASE_URL` — required when `proxy` is true; points Claude-compatible model traffic at the LiteLLM proxy backed by GitHub Copilot
 - `LITELLM_MASTER_KEY` — required when `proxy` is true; authenticates workflow calls to the LiteLLM proxy
 - `ANTHROPIC_API_KEY` — required when `proxy` is false and workflows call the provider directly
-- `AGENT_PAT` — optional but recommended; label mutations made with `GITHUB_TOKEN` do not trigger downstream workflows, so `AGENT_PAT` is needed for chains such as `agent:implement` → `agent:review` and PRD sub-issue chaining
+- `AGENT_PAT` — optional but recommended; label mutations and ready-for-review events made with `GITHUB_TOKEN` do not trigger downstream workflows, so `AGENT_PAT` is needed for chains such as `agent:implement` → `agent:review`, PRD sub-issue chaining, and PRD final review handoff
 
 For hosted GitHub Actions, see [the EC2 hosted proxy runbook](docs/hosted-proxy-ec2-runbook.md). Sandcastle expects an HTTPS reverse proxy endpoint (for example Caddy or nginx) while the LiteLLM app port remains bound to localhost on the proxy host.
 

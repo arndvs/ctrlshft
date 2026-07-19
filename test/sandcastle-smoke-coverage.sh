@@ -436,6 +436,13 @@ else
     _record_fail "sandcastle-teardown reads failure context from env" "failure-context is interpolated directly into shell"
 fi
 
+if grep -qF "types: [opened, ready_for_review]" "$ROOT/.github/workflows/pr-auto-copilot-review.yml" &&
+    grep -qF -- "--add-reviewer copilot-pull-request-reviewer" "$ROOT/.github/workflows/pr-auto-copilot-review.yml"; then
+    _record_pass "ready PRs trigger Copilot review workflow"
+else
+    _record_fail "ready PRs trigger Copilot review workflow" "pr-auto-copilot-review.yml must consume ready_for_review and request Copilot"
+fi
+
 # Tracer migration guard for #155: migrated workflows should use the shared
 # lifecycle action contract instead of copied setup/teardown boilerplate.
 migrated_lifecycle_workflows=(
@@ -508,6 +515,14 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
             _record_fail "$wf_label preserves checkout token" "missing checkout-token"
         fi
     fi
+
+    if [ "$wf_file" = "agent-implement-prd.yml" ]; then
+        if grep -qF "gh pr ready" "$wf_path" && ! grep -qF -- '--add-label "agent:review"' "$wf_path"; then
+            _record_pass "$wf_label hands PRD output to ready-for-review workflow"
+        else
+            _record_fail "$wf_label hands PRD output to ready-for-review workflow" "expected gh pr ready and no PR agent:review label"
+        fi
+    fi
 done
 
 issue_lifecycle_workflows=(
@@ -563,6 +578,7 @@ for wf_file in "${shared_setup_workflows[@]}"; do
     else
         _record_pass "$wf_label removes inline engine install"
     fi
+
 done
 
 for wf_file in "${migrated_lifecycle_workflows[@]}"; do
@@ -590,6 +606,14 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
         _record_fail "$wf_label removes inline engine install" "still contains copied install step"
     else
         _record_pass "$wf_label removes inline engine install"
+    fi
+
+    if [ "$wf_file" = "agent-implement-prd.yml" ]; then
+        if grep -qF "gh pr ready" "$wf_path" && ! grep -qF -- '--add-label "agent:review"' "$wf_path"; then
+            _record_pass "$wf_label hands PRD output to ready-for-review workflow"
+        else
+            _record_fail "$wf_label hands PRD output to ready-for-review workflow" "expected gh pr ready and no PR agent:review label"
+        fi
     fi
 done
 
