@@ -98,8 +98,8 @@ git log --oneline --since="2 weeks ago" --grep="fix" --grep="revert" | head -30
 find ~/.claude/projects/ -name "*.jsonl" -mtime -14 2>/dev/null | head -10
 
 # HUD events
-if [[ -f "$HOME/dotfiles/working/events.jsonl" ]]; then
-  grep -i "error\|fail\|block" "$HOME/dotfiles/working/events.jsonl" | tail -30
+if [[ -f "$HOME/dotfiles/working/logs/events.jsonl" ]]; then
+  grep -i "error\|fail\|block" "$HOME/dotfiles/working/logs/events.jsonl" | tail -30
 fi
 ```
 

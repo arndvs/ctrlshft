@@ -22,9 +22,9 @@ Then map one or more project directories in `clients/<client-slug>/.projects`.
 
 - `detect-client.sh` runs on every `cd()` (via shell integration).
 - It scans all `clients/*/.projects` mappings.
-- On match, it writes `working/active-client.md` with `@` references to:
+- On match, it writes `working/runtime/active-client.md` with `@` references to:
   - `client.instructions.md`
   - `project.instructions.md` (if mapped)
-- `CLAUDE.base.md` always references `@~/dotfiles/working/active-client.md`.
+- `CLAUDE.base.md` always references `@~/dotfiles/working/runtime/active-client.md`.
 
-If no client is active, `working/active-client.md` contains an empty placeholder.
+If no client is active, `working/runtime/active-client.md` contains an empty placeholder.

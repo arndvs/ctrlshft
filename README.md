@@ -15,7 +15,7 @@ Every developer using Claude Code or Copilot hits the same walls. Context degrad
 
 ctrl+shft fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and AFK iteration tokens (short-lived GitHub App installation tokens) minted per loop. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
-**Source of truth:** `~/dotfiles/` is canonical. `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Make all edits in `~/dotfiles/` only. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the internal system map and [REPO_TOPOLOGY.md](REPO_TOPOLOGY.md) for the private/public remote split.
+**Source of truth:** `arndvs/ctrlshft` is the canonical public product repository for reusable agent configuration, automation, docs, and Sandcastle/shft code. `~/dotfiles/` is the local checkout bootstrap uses as the on-machine source of truth; `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Public-safe product work starts in `ctrlshft`, then gets pulled back into `dotfiles-private` only for Aaron's private overlay. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [REPO_TOPOLOGY.md](REPO_TOPOLOGY.md).
 
 ```bash
 # Fork at github.com/arndvs/ctrlshft/fork, then:
@@ -798,7 +798,7 @@ ctrl sync-settings
 | `~/.claude/settings.json`  | Hook config merged into existing settings                                           |
 | `~/.local/bin/ctrl`        | CLI installed (symlink or copy)                                                     |
 | `~/.local/bin/shft`        | CLI installed (symlink or copy)                                                     |
-| `working/active-client.md` | Created from template if missing                                                    |
+| `working/runtime/active-client.md` | Created from template if missing                                           |
 
 **Not run by bootstrap:** `sync-settings.sh` (VS Code settings merge) is manual. Run with `--dry-run` first.
 
@@ -1057,7 +1057,7 @@ Symlinks survive pulls — your setup keeps working. The main thing that goes st
 
 **How do I know the agent is actually following the rules, not just loading them?**
 
-"Read X" confirms a rule was loaded into context — not that it was followed. The `compliance-audit` skill closes the gap: after each task it reviews the diff against every active rule, logs pass/fail/warn to `working/compliance-log.md`, and the HUD surfaces compliance rates in real time. Run `/stress-test` for adversarial verification. Current compliance on well-formed tasks: ~85–90%, with known failure modes documented and actively tracked.
+"Read X" confirms a rule was loaded into context — not that it was followed. The `compliance-audit` skill closes the gap: after each task it reviews the diff against every active rule, logs pass/fail/warn to `working/logs/compliance-log.md`, and the HUD surfaces compliance rates in real time. Run `/stress-test` for adversarial verification. Current compliance on well-formed tasks: ~85–90%, with known failure modes documented and actively tracked.
 
 </details>
 

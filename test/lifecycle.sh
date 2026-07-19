@@ -39,6 +39,8 @@ DOTFILES="${DOTFILES:-$REPO_ROOT}"
 INIT="$DOTFILES/bin/init-artifacts.sh"
 UPDATE="$DOTFILES/bin/update-artifacts.sh"
 AUDIT="$DOTFILES/bin/artifact-lifecycle-audit.sh"
+DETECT_CLIENT="$DOTFILES/bin/detect-client.sh"
+DETECT_CMD="$DOTFILES/bin/detect-cmd.sh"
 PLAN_GATE="$DOTFILES/hooks/plan-quality-gate.sh"
 
 PASS=0
@@ -108,7 +110,7 @@ echo "════════════════════════�
 _group_init() {
 echo ""
 echo "── shell syntax ──"
-for s in "$INIT" "$UPDATE" "$AUDIT"; do
+for s in "$INIT" "$UPDATE" "$AUDIT" "$DETECT_CLIENT" "$DETECT_CMD"; do
     if bash -n "$s" 2>/dev/null; then _ok "syntax ok: $(basename "$s")"; else _fail "syntax: $(basename "$s")" "bash -n failed"; fi
 done
 
@@ -175,6 +177,36 @@ if git -C "$repo" check-ignore -q working/note.md; then
 else
     _ok "working/ is not blanket-ignored"
 fi
+
+# ─── generated active-client runtime path ─────────────────────────────────────
+echo ""
+echo "── active-client runtime path ──"
+client_tmp=$(_new_tmp)
+if (cd "$repo" && DOTFILES="$client_tmp" bash "$DETECT_CLIENT" >/dev/null 2>&1); then
+    _ok "detect-client exits cleanly without client mappings"
+else
+    _fail "detect-client exits cleanly without client mappings" "non-zero exit"
+fi
+[[ -f "$client_tmp/working/runtime/active-client.md" ]] \
+    && _ok "detect-client writes working/runtime/active-client.md" \
+    || _fail "detect-client writes working/runtime/active-client.md" "runtime active-client missing"
+[[ ! -e "$client_tmp/working/active-client.md" ]] \
+    && _ok "detect-client avoids root-level working/active-client.md" \
+    || _fail "detect-client avoids root-level working/active-client.md" "legacy root active-client exists"
+if grep -qxF "working/active-client.md" "$DOTFILES/.gitignore"; then
+    _fail "root active-client is not gitignored as a blessed runtime path" ".gitignore still ignores working/active-client.md"
+else
+    _ok "root active-client is not gitignored as a blessed runtime path"
+fi
+_legacy_hud_paths=$(grep -RInE 'working/(hud\.pipe|events\.jsonl|hud-daemon\.(pid|log)|hud-state\.json|hud\.db|compliance-log\.md)' \
+    "$DOTFILES/README.md" "$DOTFILES/docs" "$DOTFILES/hud" "$DOTFILES/bin" "$DOTFILES/shft" "$DOTFILES/skills" "$DOTFILES/site" \
+    2>/dev/null || true)
+if [[ -z "$_legacy_hud_paths" ]]; then
+    _ok "HUD and compliance docs/code avoid root-level working runtime paths"
+else
+    _fail "HUD and compliance docs/code avoid root-level working runtime paths" "$_legacy_hud_paths"
+fi
+unset _legacy_hud_paths
 
 # ─── working/active plan discovery ────────────────────────────────────────────
 echo ""

@@ -89,12 +89,12 @@ Events emitted by `write-hud-state.sh`:
 
 All runtime data lives in `working/` (gitignored):
 
-- `working/events.jsonl` — append-only event log
-- `working/hud.db` — SQLite database (if better-sqlite3 installed)
-- `working/hud.pipe` — named pipe for real-time events (Unix only)
-- `working/hud-state.json` — legacy aggregated state (fallback)
-- `working/hud-daemon.pid` — daemon PID file
-- `working/hud-daemon.log` — daemon stdout/stderr log
+- `working/logs/events.jsonl` — append-only event log
+- `working/runtime/hud.db` — SQLite database (if better-sqlite3 installed)
+- `working/runtime/hud.pipe` — named pipe for real-time events (Unix only)
+- `working/runtime/hud-state.json` — legacy aggregated state (fallback)
+- `working/runtime/hud-daemon.pid` — daemon PID file
+- `working/logs/hud-daemon.log` — daemon stdout/stderr log
 
 ## Optional: SQLite Persistence
 
@@ -122,7 +122,7 @@ cp ~/dotfiles/bin/ctrlshft-hud.service ~/.config/systemd/user/
 systemctl --user enable --now ctrlshft-hud.service
 ```
 
-Restarting the daemon clears in-memory state and re-reads from `events.jsonl`.
+Restarting the daemon clears in-memory state and re-reads from `working/logs/events.jsonl`.
 
 ## Requirements
 

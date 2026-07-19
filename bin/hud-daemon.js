@@ -6,9 +6,9 @@
  * Optional: better-sqlite3 for persistent history (falls back to in-memory + JSONL)
  *
  * Data sources (in priority order):
- *   1. Named pipe  ~/dotfiles/working/hud.pipe  — real-time from shells
- *   2. JSONL file  ~/dotfiles/working/events.jsonl    — AFK/Docker writes here
- *   3. State file  ~/dotfiles/working/hud-state.json — legacy fallback
+ *   1. Named pipe  ~/dotfiles/working/runtime/hud.pipe  — real-time from shells
+ *   2. JSONL file  ~/dotfiles/working/logs/events.jsonl — AFK/Docker writes here
+ *   3. State file  ~/dotfiles/working/runtime/hud-state.json — legacy fallback
  *
  * AFK/Docker note:
  *   afk.sh mounts $CTRL_DIR read-only. working/ is NOT mounted by default.
@@ -38,14 +38,16 @@ const { execSync } = require('child_process');
 // ── Config ────────────────────────────────────────────────────────────────────
 const DOTFILES    = process.env.DOTFILES || path.join(os.homedir(), 'dotfiles');
 const WORKING     = path.join(DOTFILES, 'working');
-const PIPE_PATH   = path.join(WORKING, 'hud.pipe');
-const JSONL_PATH  = path.join(WORKING, 'events.jsonl');
-const STATE_PATH  = path.join(WORKING, 'hud-state.json');
-const LOG_PATH    = path.join(WORKING, 'compliance-log.md');
-const DB_PATH     = path.join(WORKING, 'hud.db');
-const LOCK_DIR    = path.join(WORKING, '.hud.lock');
-const DISMISSED_PATH = path.join(WORKING, '.hud-dismissed.json');
-const PID_FILE       = path.join(WORKING, 'hud-daemon.pid');
+const RUNTIME_DIR = path.join(WORKING, 'runtime');
+const LOG_DIR     = path.join(WORKING, 'logs');
+const PIPE_PATH   = path.join(RUNTIME_DIR, 'hud.pipe');
+const JSONL_PATH  = path.join(LOG_DIR, 'events.jsonl');
+const STATE_PATH  = path.join(RUNTIME_DIR, 'hud-state.json');
+const LOG_PATH    = path.join(LOG_DIR, 'compliance-log.md');
+const DB_PATH     = path.join(RUNTIME_DIR, 'hud.db');
+const LOCK_DIR    = path.join(RUNTIME_DIR, '.hud.lock');
+const DISMISSED_PATH = path.join(RUNTIME_DIR, '.hud-dismissed.json');
+const PID_FILE       = path.join(RUNTIME_DIR, 'hud-daemon.pid');
 
 let httpServer = null;
 let wsServerRef = null;
@@ -66,7 +68,8 @@ const log  = (...a) => console.log(`[ctrlshft]`, new Date().toLocaleTimeString()
 const dbg  = (...a) => DEBUG && console.log(`[debug]`, ...a);
 const warn = (...a) => console.warn(`[ctrlshft WARN]`, ...a);
 
-fs.mkdirSync(WORKING, { recursive: true });
+fs.mkdirSync(RUNTIME_DIR, { recursive: true });
+fs.mkdirSync(LOG_DIR, { recursive: true });
 
 function parsePositiveInt(raw, fallback) {
     const parsed = Number.parseInt(raw || '', 10);

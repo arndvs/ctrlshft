@@ -29,8 +29,10 @@
 
 DOTFILES="${DOTFILES:-$HOME/dotfiles}"
 _WD="$DOTFILES/working"
-_PIPE="$_WD/hud.pipe"
-_JSONL="$_WD/events.jsonl"
+_RUNTIME_DIR="$_WD/runtime"
+_LOG_DIR="$_WD/logs"
+_PIPE="$_RUNTIME_DIR/hud.pipe"
+_JSONL="$_LOG_DIR/events.jsonl"
 _HTTP_PORT="${HUD_PORT:-7823}"
 
 # ── _can_use_pipe — check if named pipe transport is available ────────────────
@@ -39,7 +41,7 @@ _HTTP_PORT="${HUD_PORT:-7823}"
 _can_use_pipe() {
     [[ -p "$_PIPE" && "$(uname -o 2>/dev/null)" != "Msys" ]] || return 1
     # Verify daemon is actually alive — stale FIFO after crash would block writers
-    local _pid_file="$_WD/hud-daemon.pid"
+    local _pid_file="$_RUNTIME_DIR/hud-daemon.pid"
     [[ -f "$_pid_file" ]] || return 1
     local _pid
     _pid=$(cat "$_pid_file" 2>/dev/null) || return 1
@@ -93,7 +95,7 @@ write_hud_event() {
     fi
 
     # Transport 3 — JSONL file (AFK/Docker fallback)
-    mkdir -p "$_WD" 2>/dev/null || true
+    mkdir -p "$_LOG_DIR" 2>/dev/null || true
     printf '%s\n' "$_payload" >> "$_JSONL" 2>/dev/null || true
 }
 
@@ -125,6 +127,7 @@ update_hud_compliance() {
             -X POST -H "Content-Type: application/json" \
             -d "$_payload" > /dev/null 2>&1 || true
     else
+        mkdir -p "$_LOG_DIR" 2>/dev/null || true
         printf '%s\n' "$_payload" >> "$_JSONL" 2>/dev/null || true
     fi
 }
@@ -176,7 +179,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
                 -d "$_bridge_payload" > /dev/null 2>&1 || true
         fi
         # Transport 3 — always append to JSONL fallback
-        mkdir -p "$_WD" 2>/dev/null || true
+        mkdir -p "$_LOG_DIR" 2>/dev/null || true
         printf '%s\n' "$_bridge_payload" >> "$_JSONL" 2>/dev/null || true
     else
         write_hud_event "${1:-info}" "${2:-}"
