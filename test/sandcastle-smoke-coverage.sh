@@ -510,6 +510,39 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
     fi
 done
 
+issue_lifecycle_workflows=(
+    agent-plan-issue.yml
+    agent-review-issue.yml
+    agent-implement-issue.yml
+    agent-implement-prd.yml
+)
+
+pr_lifecycle_workflows=(
+    agent-fix-pr-feedback.yml
+    agent-merge-pr.yml
+    agent-update-branch.yml
+)
+
+for wf_file in "${issue_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'group: sandcastle-issue-${{ github.event.issue.number }}' "$wf_path"; then
+        _record_pass "$wf_label uses per-issue lifecycle concurrency"
+    else
+        _record_fail "$wf_label uses per-issue lifecycle concurrency" "expected shared sandcastle-issue group"
+    fi
+done
+
+for wf_file in "${pr_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'group: sandcastle-pr-${{ github.event.pull_request.number }}' "$wf_path"; then
+        _record_pass "$wf_label uses per-PR lifecycle concurrency"
+    else
+        _record_fail "$wf_label uses per-PR lifecycle concurrency" "expected shared sandcastle-pr group"
+    fi
+done
+
 for wf_file in "${shared_setup_workflows[@]}"; do
     wf_path="$ROOT/shft/templates/workflows/$wf_file"
     wf_label="${wf_path#$ROOT/}"
@@ -557,6 +590,26 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
         _record_fail "$wf_label removes inline engine install" "still contains copied install step"
     else
         _record_pass "$wf_label removes inline engine install"
+    fi
+done
+
+for wf_file in "${issue_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'group: sandcastle-issue-${{ github.event.issue.number }}' "$wf_path"; then
+        _record_pass "$wf_label uses per-issue lifecycle concurrency"
+    else
+        _record_fail "$wf_label uses per-issue lifecycle concurrency" "expected shared sandcastle-issue group"
+    fi
+done
+
+for wf_file in "${pr_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'group: sandcastle-pr-${{ github.event.pull_request.number }}' "$wf_path"; then
+        _record_pass "$wf_label uses per-PR lifecycle concurrency"
+    else
+        _record_fail "$wf_label uses per-PR lifecycle concurrency" "expected shared sandcastle-pr group"
     fi
 done
 

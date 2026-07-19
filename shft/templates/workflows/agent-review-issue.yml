@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: agent-review-issue-${{ github.event.issue.number }}
+      group: sandcastle-issue-${{ github.event.issue.number }}
       cancel-in-progress: false
 
     permissions:
