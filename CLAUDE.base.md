@@ -5,11 +5,11 @@
      Only CLAUDE.md is symlinked to ~/.claude/ and read by Claude Code at runtime. -->
 
 <source-of-truth>
-~/dotfiles/ is the single source of truth for all agent configuration.
+`arndvs/ctrlshft` is the canonical public product repository for reusable agent configuration, automation, docs, and Sandcastle/shft code. `~/dotfiles/` is the local checkout that bootstrap uses as the on-machine source of truth.
 ~/.claude/, ~/.copilot/, and ~/.agents/ are consumer targets, not sources.
 NEVER edit files directly in ~/.claude/, ~/.copilot/, or ~/.agents/.
 ALL changes must be made in ~/dotfiles/ and propagated via bootstrap.sh.
-Repo topology: `origin` is private `dotfiles-private`; `public` is sanitized `ctrlshft`. See `REPO_TOPOLOGY.md` before changing remotes or publishing work.
+Public-safe product work starts in `ctrlshft`, then gets pulled back into `dotfiles-private` only for Aaron's private overlay. See `REPO_TOPOLOGY.md` before changing remotes or publishing work.
 </source-of-truth>
 
 Always read global rule instructions first and confirm that you have done so by writing "Read Claude." in the chat:
@@ -36,7 +36,7 @@ Output "Active Context: [list of detected contexts]." to chat (e.g. "Active Cont
 
 ## Client & Project Context (auto-generated)
 
-@~/dotfiles/working/active-client.md
+@~/dotfiles/working/runtime/active-client.md
 
 ## Service-Triggered Instructions
 

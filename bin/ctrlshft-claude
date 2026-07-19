@@ -11,7 +11,8 @@
 #   ctrlshft-claude --print "implement the auth feature"
 
 DOTFILES="${DOTFILES:-$HOME/dotfiles}"
-PIPE_PATH="$DOTFILES/working/hud.pipe"
+PIPE_PATH="$DOTFILES/working/runtime/hud.pipe"
+EVENTS_PATH="$DOTFILES/working/logs/events.jsonl"
 HTTP_PORT="${HUD_PORT:-7823}"
 PROJECT_ID=$(basename "$(pwd)" 2>/dev/null || echo "unknown")
 PROJECT_PATH="${PWD/$HOME/~}"
@@ -37,8 +38,8 @@ _push() {
             -d "$_p" > /dev/null 2>&1; then
         : # HTTP succeeded
     else
-        mkdir -p "$DOTFILES/working" 2>/dev/null || true
-        printf '%s\n' "$_p" >> "$DOTFILES/working/events.jsonl" 2>/dev/null || true
+        mkdir -p "$DOTFILES/working/logs" 2>/dev/null || true
+        printf '%s\n' "$_p" >> "$EVENTS_PATH" 2>/dev/null || true
     fi
 }
 

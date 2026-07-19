@@ -15,7 +15,7 @@
 
   Check status:
     launchctl list | grep ctrlshft
-    tail -f ~/dotfiles/working/hud-daemon.log
+    tail -f ~/dotfiles/working/logs/hud-daemon.log
 -->
 <plist version="1.0">
 <dict>
@@ -24,12 +24,9 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/bin/node</string>
-        <string>/Users/REPLACE_USERNAME/dotfiles/bin/hud-daemon.js</string>
-        <string>--port</string>
-        <string>7823</string>
-        <string>--ws-port</string>
-        <string>7822</string>
+        <string>/bin/sh</string>
+        <string>-lc</string>
+        <string>mkdir -p /Users/REPLACE_USERNAME/dotfiles/working/runtime /Users/REPLACE_USERNAME/dotfiles/working/logs &amp;&amp; exec /usr/local/bin/node /Users/REPLACE_USERNAME/dotfiles/bin/hud-daemon.js --port 7823 --ws-port 7822</string>
     </array>
 
     <key>RunAtLoad</key>
@@ -42,10 +39,10 @@
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/Users/REPLACE_USERNAME/dotfiles/working/hud-daemon.log</string>
+    <string>/Users/REPLACE_USERNAME/dotfiles/working/logs/hud-daemon.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/REPLACE_USERNAME/dotfiles/working/hud-daemon.log</string>
+    <string>/Users/REPLACE_USERNAME/dotfiles/working/logs/hud-daemon.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

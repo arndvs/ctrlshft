@@ -19,13 +19,15 @@ source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
 DOTFILES="${DOTFILES:-$HOME/dotfiles}"
 WORKING="$DOTFILES/working"
+RUNTIME_DIR="$WORKING/runtime"
+LOG_DIR="$WORKING/logs"
 DAEMON_JS="$DOTFILES/bin/hud-daemon.js"
-PID_FILE="$WORKING/hud-daemon.pid"
-LOG_FILE="$WORKING/hud-daemon.log"
+PID_FILE="$RUNTIME_DIR/hud-daemon.pid"
+LOG_FILE="$LOG_DIR/hud-daemon.log"
 HTTP_PORT="${HUD_PORT:-7823}"
 WS_PORT="${HUD_WS_PORT:-7822}"
 
-mkdir -p "$WORKING"
+mkdir -p "$RUNTIME_DIR" "$LOG_DIR"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 _daemon_running() {
@@ -107,9 +109,9 @@ fi
 # Stale PID?
 rm -f "$PID_FILE"
 # Stale lock dir from hard crash (kill -9, OOM)?
-rmdir "$WORKING/.hud.lock" 2>/dev/null || true
+rmdir "$RUNTIME_DIR/.hud.lock" 2>/dev/null || true
 # Stale pipe from crash (daemon didn't get to unlink it)?
-[[ -p "$WORKING/hud.pipe" ]] && rm -f "$WORKING/hud.pipe"
+[[ -p "$RUNTIME_DIR/hud.pipe" ]] && rm -f "$RUNTIME_DIR/hud.pipe"
 
 # Node.js check
 if ! command -v node &>/dev/null; then

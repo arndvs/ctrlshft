@@ -27,7 +27,7 @@ CLI scripts and infrastructure. Bootstrap symlinks `ctrl` and `shft` to `~/.loca
 | Script | Purpose |
 |--------|---------|
 | `detect-context.sh` | Scan `$PWD` for file signatures → export `$ACTIVE_CONTEXTS` |
-| `detect-client.sh` | Map `$PWD` to a client/project → write `working/active-client.md` |
+| `detect-client.sh` | Map `$PWD` to a client/project → write `working/runtime/active-client.md` |
 
 ## Secret Management
 

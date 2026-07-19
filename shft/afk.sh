@@ -77,7 +77,7 @@ _push_afk_event() {
     local _ts _td _pipe _proj _path _ctx
     _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
     _td=$(date +"%H:%M:%S" 2>/dev/null || echo "")
-    _pipe="$WORKING_DIR/hud.pipe"
+    _pipe="$WORKING_DIR/runtime/hud.pipe"
     _proj=$(basename "$(pwd)" 2>/dev/null || echo "unknown")
     _path="${PWD/$HOME/~}"
     _ctx="${ACTIVE_CONTEXTS:-general}"
@@ -87,7 +87,8 @@ _push_afk_event() {
     if [[ -p "$_pipe" ]]; then
         ( printf '%s\n' "$_payload" > "$_pipe" ) 2>/dev/null &
     else
-        printf '%s\n' "$_payload" >> "$WORKING_DIR/events.jsonl" 2>/dev/null || true
+        mkdir -p "$WORKING_DIR/logs" 2>/dev/null || true
+        printf '%s\n' "$_payload" >> "$WORKING_DIR/logs/events.jsonl" 2>/dev/null || true
     fi
 }
 
