@@ -20,7 +20,7 @@ the label; "Triggers" is the workflow the label fires (`—` = inert state marke
 | `agent:fix` | `#d93f0b` | Human (verdict gate, on PR) | `agent-fix-pr-feedback.yml` | PR re-reviewed |
 | `agent:merge` | `#0e8a16` | Human (verdict gate, on PR) | `agent-merge-pr.yml` | Issue closed |
 | `agent:update-branch` | `#5319e7` | Human (on PR) | `agent-update-branch.yml` | Branch updated |
-| `agent:implement-prd` | `#d4c5f9` | Human / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | Sub-issue created + implemented |
+| `agent:implement-prd` | `#d4c5f9` | Human / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | Next sub-issue or PR ready for Copilot review |
 | `agent:queued` | `#c5def5` | Human / skills (e.g. prd-to-issues) | `agent-promote-queued.yml` (on blocker close) | `agent:implement` when deps clear |
 | `agent:in-progress` | `#fbca04` | Any active workflow | — | Removed on completion |
 | `agent:blocked` | `#b60205` | Any workflow (on failure) | — | Human intervention |

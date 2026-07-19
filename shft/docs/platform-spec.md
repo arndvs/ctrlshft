@@ -9,7 +9,7 @@ GitHub Issue
   ↓ (Sandcastle label applied)
 agent:review → agent:implement → agent:pr-open
   ↓                                              ↓
-agent:blocked (human input needed)           agent:review (PR)
+agent:blocked (human input needed)           PR ready for Copilot review
                                                  ↓
                                           agent:fix (if feedback)
                                                  ↓
@@ -54,7 +54,7 @@ The full dogfood smoke-test contract for these workflows lives in `shft/docs/ful
 | `agent-review-issue.yml` | `Sandcastle` label | Reviews issue context and advances to `agent:review` |
 | `agent-plan-issue.yml` | `agent:review` label | Breaks issue into sub-tasks |
 | `agent-implement-issue.yml` | `agent:implement` label | Implements issue, opens PR |
-| `agent-implement-prd.yml` | `agent:implement-prd` label | Implements next sub-issue of a PRD |
+| `agent-implement-prd.yml` | `agent:implement-prd` label | Implements next sub-issue of a PRD; marks the PR ready when all sub-issues are complete |
 | `agent-fix-pr-feedback.yml` | `agent:fix` label | Addresses PR review comments |
 | `agent-architecture-review.yml` | Schedule + `workflow_dispatch` | Full architecture review |
 | `agent-merge-pr.yml` | `agent:merge` label | Merges PR after checks pass |
