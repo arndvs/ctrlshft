@@ -91,7 +91,6 @@ SANDCASTLE_WORKFLOWS=(
     "Integrity"
     "Labels: Sync"
     "PR: request Copilot review"
-    "Proxy canary"
     "Sandcastle CI"
 )
 

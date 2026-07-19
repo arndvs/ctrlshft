@@ -79,7 +79,7 @@ Each workflow is categorized by its coverage type:
 | Review Issue | `agent-review-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh` |
 | Update Branch | `agent-update-branch.yml` | Active | `smoke-sandcastle-pr-path.sh` |
 
-### Infrastructure Workflows (5 + central proxy canary)
+### Infrastructure Workflows (5)
 
 | Workflow | File | Coverage | Notes |
 |----------|------|----------|-------|
