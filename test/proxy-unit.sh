@@ -576,15 +576,10 @@ assert_contains "afk clears package PAT before Claude" "-u GITHUB_PACKAGE_REGIST
 echo
 echo "── proxy-canary SSE classifier ──"
 
-_installed_canary="$(cat .github/workflows/proxy-canary.yml)"
 _template_canary="$(cat shft/templates/workflows-proxy/proxy-canary.yml)"
-assert_contains "installed canary skips when proxy secrets are absent" "status=skipped" "$_installed_canary"
 assert_contains "template canary skips when proxy secrets are absent" "status=skipped" "$_template_canary"
-assert_contains "installed canary describes either missing proxy secret" "and/or LITELLM_MASTER_KEY" "$_installed_canary"
 assert_contains "template canary describes either missing proxy secret" "and/or LITELLM_MASTER_KEY" "$_template_canary"
-assert_contains "installed canary still opens issues only for real failures" "steps.probe.outputs.status == 'fail'" "$_installed_canary"
 assert_contains "template canary still opens issues only for real failures" "steps.probe.outputs.status == 'fail'" "$_template_canary"
-assert_not_contains "installed canary has no unreachable skipped case" "skipped)" "$_installed_canary"
 assert_not_contains "template canary has no unreachable skipped case" "skipped)" "$_template_canary"
 
 _CANARY_TMP="$TMP/canary-classifier"

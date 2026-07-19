@@ -97,7 +97,7 @@ render_workflow() {
     if [[ "$WITH_PROXY" == false ]]; then
         sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" \
             -e '/ANTHROPIC_BASE_URL:.*LITELLM_BASE_URL/d' \
-            -e 's/ANTHROPIC_AUTH_TOKEN: ${{ secrets\.LITELLM_MASTER_KEY }}/ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}/' \
+            -e '/ANTHROPIC_AUTH_TOKEN:.*LITELLM_MASTER_KEY/d' \
             "$tmpl"
     else
         sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" "$tmpl"

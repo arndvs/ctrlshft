@@ -60,10 +60,10 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: bash .sandcastle/scripts/proxy_preflight.sh
 
       - name: Sandcastle setup
-        if: steps.proxy-preflight.outputs.should_run == 'true'
         uses: ./.github/actions/sandcastle-setup
         with:
           trigger-label: agent:update-branch
@@ -71,8 +71,16 @@ jobs:
           object-number: ${{ env.PR_NUMBER }}
           checkout-ref: ${{ github.event.pull_request.head.sha }}
           checkout-fetch-depth: 0
+          skip-checkout: ${{ steps.proxy-preflight.outputs.should_run != 'true' }}
+          install-engine: ${{ steps.proxy-preflight.outputs.should_run }}
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
+
+      - name: Stop when proxy preflight skips
+        if: steps.proxy-preflight.outputs.should_run != 'true'
+        run: |
+          echo "Proxy preflight skipped agent run: ${{ steps.proxy-preflight.outputs.reason }}. ${{ steps.proxy-preflight.outputs.detail }}" > "${RUNNER_TEMP}/failure_reason.txt"
+          exit 1
 
       - name: Ensure branch is checked out by name
         if: steps.proxy-preflight.outputs.should_run == 'true'
@@ -89,6 +97,7 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           cd .sandcastle/engine
           pnpm --ignore-workspace exec tsx ../run.ts update-branch \

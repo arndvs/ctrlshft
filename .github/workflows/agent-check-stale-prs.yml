@@ -26,6 +26,7 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: bash .sandcastle/scripts/proxy_preflight.sh
 
       - name: Sandcastle setup
@@ -44,6 +45,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           cd .sandcastle/engine
           pnpm --ignore-workspace exec tsx ../run.ts check-stale-prs

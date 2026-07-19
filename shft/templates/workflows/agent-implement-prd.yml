@@ -126,10 +126,11 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: bash .sandcastle/scripts/proxy_preflight.sh
 
       - name: Sandcastle setup
-        if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run'
+        if: steps.shape.outputs.mode == 'run'
         uses: ./.github/actions/sandcastle-setup
         with:
           trigger-label: agent:implement-prd
@@ -137,9 +138,17 @@ jobs:
           object-number: ${{ env.PRD_NUMBER }}
           checkout-ref: {{DEFAULT_BRANCH}}
           checkout-fetch-depth: 0
+          skip-checkout: ${{ steps.proxy-preflight.outputs.should_run != 'true' }}
+          install-engine: ${{ steps.proxy-preflight.outputs.should_run }}
           checkout-token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
+
+      - name: Stop when proxy preflight skips
+        if: steps.shape.outputs.mode == 'run' && steps.proxy-preflight.outputs.should_run != 'true'
+        run: |
+          echo "Proxy preflight skipped agent run: ${{ steps.proxy-preflight.outputs.reason }}. ${{ steps.proxy-preflight.outputs.detail }}" > "${RUNNER_TEMP}/failure_reason.txt"
+          exit 1
 
       - name: Compute branch name
         if: steps.proxy-preflight.outputs.should_run == 'true' && steps.shape.outputs.mode == 'run'
@@ -177,6 +186,7 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           cd .sandcastle/engine
@@ -208,6 +218,7 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           cd .sandcastle/engine
           pnpm --ignore-workspace exec tsx ../run.ts write-prd-pr \
@@ -287,7 +298,9 @@ jobs:
           AGENT_PAT: ${{ secrets.AGENT_PAT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ! is_draft=$(gh pr view "$PR_NUMBER" -R "$GH_REPO" --json isDraft --jq '.isDraft'); then
+          if is_draft=$(gh pr view "$PR_NUMBER" -R "$GH_REPO" --json isDraft --jq '.isDraft'); then
+            :
+          else
             status=$?
             echo "Failed to determine draft state for PR #${PR_NUMBER} (status $status)." > "${RUNNER_TEMP}/failure_reason.txt"
             exit "$status"
@@ -313,6 +326,12 @@ jobs:
           SUB_ISSUE_NUMBER: ${{ steps.shape.outputs.next_open_number }}
         run: |
           gh issue comment "$SUB_ISSUE_NUMBER" --body "Implementation attempt failed. See PRD #${PRD_NUMBER} for status. Workflow run: $RUN_URL" || true
+
+      - name: Restore workflow actions
+        if: always() && steps.shape.outputs.mode == 'run'
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEFAULT_BRANCH}}
 
       - name: Sandcastle teardown
         if: always() && steps.shape.outputs.mode == 'run'
