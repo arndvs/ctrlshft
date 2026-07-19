@@ -553,6 +553,13 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
     else
         _record_fail "$wf_label keeps lifecycle setup on preflight skip" "setup must clear trigger labels while skipping engine install"
     fi
+
+    if grep -qF "name: Stop when proxy preflight skips" "$wf_path" &&
+        grep -qF "failure_reason.txt" "$wf_path"; then
+        _record_pass "$wf_label reports proxy preflight skips"
+    else
+        _record_fail "$wf_label reports proxy preflight skips" "missing explicit failure_reason.txt step for skipped agent runs"
+    fi
 done
 
 issue_lifecycle_workflows=(
@@ -659,6 +666,13 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
         _record_pass "$wf_label keeps lifecycle setup on preflight skip"
     else
         _record_fail "$wf_label keeps lifecycle setup on preflight skip" "setup must clear trigger labels while skipping engine install"
+    fi
+
+    if grep -qF "name: Stop when proxy preflight skips" "$wf_path" &&
+        grep -qF "failure_reason.txt" "$wf_path"; then
+        _record_pass "$wf_label reports proxy preflight skips"
+    else
+        _record_fail "$wf_label reports proxy preflight skips" "missing explicit failure_reason.txt step for skipped agent runs"
     fi
 done
 

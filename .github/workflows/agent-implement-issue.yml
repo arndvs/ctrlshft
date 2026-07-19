@@ -50,6 +50,12 @@ jobs:
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
 
+      - name: Stop when proxy preflight skips
+        if: steps.proxy-preflight.outputs.should_run != 'true'
+        run: |
+          echo "Proxy preflight skipped agent run: ${{ steps.proxy-preflight.outputs.reason }}. ${{ steps.proxy-preflight.outputs.detail }}" > "${RUNNER_TEMP}/failure_reason.txt"
+          exit 1
+
       - name: Compute branch name
         if: steps.proxy-preflight.outputs.should_run == 'true'
         id: branch
