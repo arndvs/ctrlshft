@@ -522,10 +522,10 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
         else
             _record_fail "$wf_label hands PRD output to ready-for-review workflow" "expected gh pr ready and no PR agent:review label"
         fi
-        if grep -qF "Failed to determine draft state" "$wf_path"; then
+        if grep -qF "Failed to determine draft state" "$wf_path" && ! grep -qF 'if ! is_draft=$(gh pr view' "$wf_path"; then
             _record_pass "$wf_label fails closed when PR draft lookup fails"
         else
-            _record_fail "$wf_label fails closed when PR draft lookup fails" "missing failure_reason.txt guard for gh pr view"
+            _record_fail "$wf_label fails closed when PR draft lookup fails" "missing failure_reason.txt guard or preserving negated assignment status bug"
         fi
     fi
 done
@@ -619,10 +619,10 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
         else
             _record_fail "$wf_label hands PRD output to ready-for-review workflow" "expected gh pr ready and no PR agent:review label"
         fi
-        if grep -qF "Failed to determine draft state" "$wf_path"; then
+        if grep -qF "Failed to determine draft state" "$wf_path" && ! grep -qF 'if ! is_draft=$(gh pr view' "$wf_path"; then
             _record_pass "$wf_label fails closed when PR draft lookup fails"
         else
-            _record_fail "$wf_label fails closed when PR draft lookup fails" "missing failure_reason.txt guard for gh pr view"
+            _record_fail "$wf_label fails closed when PR draft lookup fails" "missing failure_reason.txt guard or preserving negated assignment status bug"
         fi
     fi
 done
