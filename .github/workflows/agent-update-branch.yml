@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     concurrency:
-      group: agent-mutate-pr-${{ github.event.pull_request.number }}
+      group: sandcastle-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: false
 
     permissions:
