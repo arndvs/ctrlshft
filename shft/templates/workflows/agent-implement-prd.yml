@@ -344,4 +344,4 @@ jobs:
           repository: ${{ github.repository }}
           run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           job-status: ${{ job.status }}
-          failure-context: ${{ steps.shape.outputs.next_open_number != '' && format('while implementing sub-issue #{0}', steps.shape.outputs.next_open_number) || '' }}
+          failure-context: "${{ steps.shape.outputs.next_open_number != '' && format('while implementing sub-issue #{0}', steps.shape.outputs.next_open_number) || '' }}"
