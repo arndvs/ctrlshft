@@ -8,11 +8,14 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel 2>/dev/null || echo "$(dirname "$0")/../..")"
 
-SUITES=(
-    test/hooks/test-secret-guard.sh
-    test/hooks/test-git-workflow-gate.sh
-    test/hooks/test-test-gate.sh
+mapfile -t SUITES < <(
+    find test/hooks -maxdepth 1 -type f -name 'test-*.sh' ! -name 'test-helpers.sh' | sort
 )
+
+if [[ "${#SUITES[@]}" -eq 0 ]]; then
+    echo "No hook test suites found under test/hooks/test-*.sh"
+    exit 1
+fi
 
 TOTAL_SUITES=0
 FAILED_SUITES=0

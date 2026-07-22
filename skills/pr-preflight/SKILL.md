@@ -5,7 +5,7 @@ description: Exhaustive pre-PR audit that front-runs code review tools by catchi
 
 # PR Preflight (`/preflight`)
 
-Output "Read PR Preflight skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read PR Preflight skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Run this before every PR open or update. The goal is a review where the automated reviewer finds nothing, because you found it first.
 

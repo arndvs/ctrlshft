@@ -28,7 +28,16 @@ jobs:
         with:
           ref: dev
 
+      - name: Proxy preflight
+        id: proxy-preflight
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: bash .sandcastle/scripts/proxy_preflight.sh
+
       - name: Sandcastle setup
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         uses: ./.github/actions/sandcastle-setup
         with:
           checkout-ref: dev
@@ -39,9 +48,11 @@ jobs:
           manage-labels: false
 
       - name: Run architecture review
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
           cd .sandcastle/engine
@@ -60,6 +71,7 @@ jobs:
           exit 1
 
       - name: Publish PRD issue
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         id: publish
         env:
           OUTPUT_FILE: ${{ runner.temp }}/architecture_review_output.json

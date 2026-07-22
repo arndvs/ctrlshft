@@ -5,7 +5,7 @@ description: "Address GitHub Copilot review comments on the active PR by triagin
 
 # Review PR — Copilot
 
-Output "Read Review PR Copilot skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Review PR Copilot skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 > **Two paths, one policy.** This skill is the **local-interactive** path (you, in VS Code, with Confirm
 > prompts). Its unattended **CI** twin is the `agent:fix` workflow → `shft/engine/workflows/address-review.ts`,

@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: agent-review-issue-${{ github.event.issue.number }}
+      group: sandcastle-issue-${{ github.event.issue.number }}
       cancel-in-progress: false
 
     permissions:
@@ -26,6 +26,14 @@ jobs:
         with:
           ref: {{DEFAULT_BRANCH}}
 
+      - name: Proxy preflight
+        id: proxy-preflight
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: bash .sandcastle/scripts/proxy_preflight.sh
+
       - name: Sandcastle setup
         uses: ./.github/actions/sandcastle-setup
         with:
@@ -34,21 +42,30 @@ jobs:
           object-number: ${{ env.ISSUE_NUMBER }}
           checkout-ref: {{DEFAULT_BRANCH}}
           skip-checkout: true
+          install-engine: ${{ steps.proxy-preflight.outputs.should_run }}
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
 
+      - name: Stop when proxy preflight skips
+        if: steps.proxy-preflight.outputs.should_run != 'true'
+        run: |
+          echo "Proxy preflight skipped agent run: ${{ steps.proxy-preflight.outputs.reason }}. ${{ steps.proxy-preflight.outputs.detail }}" > "${RUNNER_TEMP}/failure_reason.txt"
+          exit 1
+
       - name: Run review
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           cd .sandcastle/engine
           pnpm --ignore-workspace exec tsx ../run.ts review-issue \
             --issue ${{ github.event.issue.number }}
 
       - name: Transition label
-        if: success()
+        if: steps.proxy-preflight.outputs.should_run == 'true' && success()
         env:
           AGENT_PAT: ${{ secrets.AGENT_PAT }}
         run: |

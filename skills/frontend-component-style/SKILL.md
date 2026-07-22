@@ -5,7 +5,7 @@ description: "Frontend component file structure, naming, and layer separation fo
 
 # Frontend Component Style
 
-Output "Read Frontend Component Style skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Frontend Component Style skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 ## When to use
 

@@ -5,7 +5,7 @@ description: "Use when encountering any bug, test failure, or unexpected behavio
 
 # Systematic Debugging
 
-Output "Read Systematic Debugging skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Systematic Debugging skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 ## Overview
 

@@ -38,7 +38,7 @@ if ! echo "$COMMAND" | grep -qiE '(^|;|&&|\|\||\|)[[:space:]]*([A-Za-z_][A-Za-z0
 fi
 
 # Skip if command already requested Copilot review explicitly.
-if echo "$COMMAND" | grep -qiE '--add-reviewer[[:space:]]+copilot-pull-request-reviewer'; then
+if echo "$COMMAND" | grep -qiE -- '--add-reviewer[[:space:]]+copilot-pull-request-reviewer'; then
     exit 0
 fi
 

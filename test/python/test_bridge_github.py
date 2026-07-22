@@ -253,7 +253,7 @@ class TestMintTokenShutdown(unittest.TestCase):
         proc.wait.side_effect = subprocess.TimeoutExpired("cmd", 0.5)
 
         with mock.patch("bridge.github.subprocess.Popen", return_value=proc), \
-                mock.patch("bridge.github._terminate_popen") as terminate, \
+                mock.patch("bridge.github.terminate_process_group") as terminate, \
                 mock.patch("bridge.github._time.monotonic", return_value=0):
             with self.assertRaises(GitHubError) as ctx:
                 mint_token(Path("/mint"), shutdown_check=lambda: True)
@@ -288,7 +288,7 @@ class TestMintTokenShutdown(unittest.TestCase):
         proc.wait.side_effect = subprocess.TimeoutExpired("cmd", 0.5)
 
         with mock.patch("bridge.github.subprocess.Popen", return_value=proc), \
-                mock.patch("bridge.github._terminate_popen") as terminate, \
+                mock.patch("bridge.github.terminate_process_group") as terminate, \
                 mock.patch("bridge.github._time.monotonic", side_effect=[0, 31]):
             with self.assertRaises(GitHubError) as ctx:
                 mint_token(Path("/mint"), shutdown_check=lambda: False)

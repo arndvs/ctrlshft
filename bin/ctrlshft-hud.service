@@ -21,11 +21,12 @@ After=network.target
 
 [Service]
 Type=simple
+ExecStartPre=/usr/bin/mkdir -p %h/dotfiles/working/runtime %h/dotfiles/working/logs
 ExecStart=/usr/bin/node %h/dotfiles/bin/hud-daemon.js --port 7823 --ws-port 7822
 Restart=on-failure
 RestartSec=10
-StandardOutput=append:%h/dotfiles/working/hud-daemon.log
-StandardError=append:%h/dotfiles/working/hud-daemon.log
+StandardOutput=append:%h/dotfiles/working/logs/hud-daemon.log
+StandardError=append:%h/dotfiles/working/logs/hud-daemon.log
 
 Environment=DOTFILES=%h/dotfiles
 Environment=NODE_ENV=production

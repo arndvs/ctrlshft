@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # init-sandcastle.sh — Scaffold a complete Sandcastle setup in any repo.
 #
-# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-proxy] [--force]
+# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-proxy] [--with-proxy-canary] [--force]
 #
 # Copies workflow YAMLs, vendors engine code, creates config, sets up prompt
 # directory, creates GitHub labels, and prints a checklist of manual steps.
@@ -18,6 +18,7 @@ SANDBOX="none"
 FORCE=false
 NO_ARTIFACTS=false
 WITH_PROXY=true
+WITH_PROXY_CANARY=false
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -27,18 +28,23 @@ while [[ $# -gt 0 ]]; do
         --sandbox) SANDBOX="$2"; shift 2 ;;
         --with-proxy) WITH_PROXY=true; shift ;;
         --no-proxy)   WITH_PROXY=false; shift ;;
+        --with-proxy-canary) WITH_PROXY_CANARY=true; shift ;;
+        --no-proxy-canary)   WITH_PROXY_CANARY=false; shift ;;
         --force)   FORCE=true; shift ;;
         --no-artifacts) NO_ARTIFACTS=true; shift ;;
         --help|-h)
-            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-proxy] [--no-artifacts] [--force]"
+            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-proxy] [--with-proxy-canary] [--no-artifacts] [--force]"
             echo ""
             echo "Also scaffolds the artifact lifecycle (working/, plans/, docs/) by calling"
             echo "'ctrl init-artifacts --gitignore'. Pass --no-artifacts to skip it."
             echo ""
             echo "Proxy: agents route through a LiteLLM->Copilot proxy by default (--with-proxy)."
-            echo "Pass --no-proxy to skip vendoring the proxy-canary monitor (records proxy=false"
-            echo "in sandcastle.config.json). Agents still read LITELLM_* secrets until the"
-            echo "proxy-optional auth toggle lands (tracked separately)."
+            echo "Pass --no-proxy to disable proxy routing (records proxy=false in"
+            echo "sandcastle.config.json) and use ANTHROPIC_API_KEY instead of LITELLM_*."
+            echo ""
+            echo "Proxy canary: the scheduled proxy-canary.yml monitor is NOT installed by"
+            echo "default. Pass --with-proxy-canary to opt in (records proxyCanary=true)."
+            echo "Pass --no-proxy-canary to explicitly disable (the default)."
             echo ""
             echo "Sandbox modes: only 'none' is currently supported by the TypeScript engine."
             exit 0
@@ -91,7 +97,7 @@ render_workflow() {
     if [[ "$WITH_PROXY" == false ]]; then
         sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" \
             -e '/ANTHROPIC_BASE_URL:.*LITELLM_BASE_URL/d' \
-            -e 's/ANTHROPIC_AUTH_TOKEN: ${{ secrets\.LITELLM_MASTER_KEY }}/ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}/' \
+            -e '/ANTHROPIC_AUTH_TOKEN:.*LITELLM_MASTER_KEY/d' \
             "$tmpl"
     else
         sed -e "s/{{DEFAULT_BRANCH}}/$BRANCH/g" "$tmpl"
@@ -146,8 +152,8 @@ echo "  Installing copilot-setup-steps.yml..."
 cp "$TEMPLATES/copilot-setup-steps.yml" ".github/copilot-setup-steps.yml"
 echo "    .github/copilot-setup-steps.yml"
 
-# ── 3b. Copy proxy monitoring workflows (only with --with-proxy) ─────────────
-if [[ "$WITH_PROXY" == true ]]; then
+# ── 3b. Copy proxy monitoring workflows (only with --with-proxy-canary) ──────
+if [[ "$WITH_PROXY_CANARY" == true ]]; then
     echo "  Installing proxy monitoring workflows..."
     for tmpl in "$TEMPLATES/workflows-proxy/"*.yml; do
         [[ -f "$tmpl" ]] || continue
@@ -156,7 +162,7 @@ if [[ "$WITH_PROXY" == true ]]; then
         echo "    .github/workflows/$fname"
     done
 else
-    yellow "  Skipping proxy monitoring workflows (--no-proxy)"
+    yellow "  Skipping proxy monitoring workflows (proxyCanary=false; pass --with-proxy-canary to install)"
 fi
 
 # ── 4. Vendor engine code ────────────────────────────────────────────────────
@@ -241,7 +247,8 @@ if [[ ! -f "sandcastle.config.json" ]]; then
   "contextDoc": "CONTEXT.md",
   "adrDir": "docs/adr",
   "packageManager": "pnpm",
-  "proxy": $WITH_PROXY
+  "proxy": $WITH_PROXY,
+  "proxyCanary": $WITH_PROXY_CANARY
 }
 CONFIGEOF
     echo "    sandcastle.config.json"

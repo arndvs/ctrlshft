@@ -5,7 +5,7 @@ description: "Focused review of staged or recent changes to find edge cases, log
 
 # Code Review
 
-Output "Read Code Review skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Code Review skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 You are a senior engineer doing a pre-merge code review. Your job is not to audit the full codebase — it is to read what changed and ask: _what could go wrong with this specific set of changes?_
 

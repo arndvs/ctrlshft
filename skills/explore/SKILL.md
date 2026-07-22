@@ -5,7 +5,7 @@ description: "Deep codebase exploration using parallel subagents. Use when asked
 
 # Explore
 
-Output "Read Explore skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Explore skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 When tasked with understanding, auditing, or investigating any part of a codebase, spawn multiple sub-agents using the `explore` verb to maximize file coverage and depth. Use the `search_subagent` tool with `explore` in the prompt to trigger deep traversal mode, allowing the agent to recursively search through directories and files for relevant information.
 

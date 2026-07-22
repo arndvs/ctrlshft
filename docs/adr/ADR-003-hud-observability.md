@@ -26,8 +26,8 @@ Event Producers                      HUD Daemon (hud-daemon.js)             Cons
 ─────────────                        ──────────────────────────             ─────────
 hooks/hud-session.sh    ──┐          port 7823 (HTTP REST API)      ──►    Browser UI (hud/index.html)
 hooks/hud-reads.sh      ──┤          port 7822 (WebSocket)          ──►    Real-time dashboard
-detect-context.sh       ──┼──►       Named pipe (working/hud.pipe)         SQLite persistence
-detect-client.sh        ──┤          JSONL fallback (events.jsonl)         In-memory buffers
+detect-context.sh       ──┼──►       Named pipe (working/runtime/hud.pipe) SQLite persistence
+detect-client.sh        ──┤          JSONL fallback (working/logs/events.jsonl) In-memory buffers
 skills (write_hud_event)──┤
 ctrlshft-claude wrapper ──┘
 ```
@@ -36,9 +36,9 @@ ctrlshft-claude wrapper ──┘
 
 Events are emitted via `write-hud-state.sh` (sourced, not executed). The emitter tries three transports in priority order — never blocks, never fails loudly:
 
-1. **Named pipe** (`working/hud.pipe`) — <1ms latency, real-time
+1. **Named pipe** (`working/runtime/hud.pipe`) — <1ms latency, real-time
 2. **HTTP POST** to `/api/event` — ~5ms fallback
-3. **JSONL append** to `working/events.jsonl` — file-based fallback for Docker/AFK environments
+3. **JSONL append** to `working/logs/events.jsonl` — file-based fallback for Docker/AFK environments
 
 ### Persistence
 

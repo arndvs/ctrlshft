@@ -116,6 +116,10 @@ WORKING_DIR="$DOTFILES/working"
 LOG_FILE="$WORKING_DIR/shft.log"
 STATE_FILE="$WORKING_DIR/shft-state.json"
 RUN_STATE_FILE="$WORKING_DIR/shft-run-${_SHFT_LOCK_ID}.json"
+
+_shft_quiet() {
+    [[ -n "${SHFT_QUIET:-}" ]]
+}
 PLAN_FILE="$WORKING_DIR/plan.md"
 
 # Proxy state (global — shared across all projects)
@@ -626,8 +630,10 @@ _require_docker() {
 
 # Validate AFK environment before running
 _validate_afk() {
-    green "Validating AFK environment..."
-    echo ""
+    if ! _shft_quiet; then
+        green "Validating AFK environment..."
+        echo ""
+    fi
 
     # Check proxy health if enabled
     _proxy_enabled=$(_proxy_get "enabled")
@@ -637,7 +643,7 @@ _validate_afk() {
             _port="${_port:-$PROXY_DEFAULT_PORT}"
             _health_wait_seconds="${SHFT_PROXY_HEALTH_WAIT_SECONDS:-30}"
             if _proxy_wait_healthy "$_port" "$_health_wait_seconds"; then
-                green "Copilot proxy: healthy (port $_port)"
+                _shft_quiet || green "Copilot proxy: healthy (port $_port)"
             else
                 red "Copilot proxy: PID exists but health check failed"
                 red "  AFK will not start while proxy routing is unhealthy."
@@ -651,23 +657,39 @@ _validate_afk() {
             red "  Or disable: shft proxy off"
             exit 1
         fi
-        echo ""
+        _shft_quiet || echo ""
     fi
 
     if [[ -f "$DOTFILES/bin/validate-env.sh" ]]; then
-        bash "$DOTFILES/bin/run-with-secrets.sh" \
-            --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
-            bash "$DOTFILES/bin/validate-env.sh" --afk || {
-            echo ""
-            red "AFK validation failed. Fix the above before running shft afk."
-            red "Run 'shft mint' to test GitHub App token minting."
-            exit 1
-        }
+        if _shft_quiet; then
+            _validate_out=$(mktemp)
+            bash "$DOTFILES/bin/run-with-secrets.sh" \
+                --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
+                bash "$DOTFILES/bin/validate-env.sh" --afk >"$_validate_out" 2>&1 || {
+                cat "$_validate_out" >&2
+                rm -f "$_validate_out"
+                echo "ERROR: AFK validation failed; rerun without SHFT_QUIET to see validation details." >&2
+                echo "ERROR: Run 'shft mint' to test GitHub App token minting." >&2
+                exit 1
+            }
+            rm -f "$_validate_out"
+        else
+            bash "$DOTFILES/bin/run-with-secrets.sh" \
+                --only GITHUB_APP_ID,GITHUB_APP_INSTALLATION_ID,GITHUB_APP_PRIVATE_KEY_B64 -- \
+                bash "$DOTFILES/bin/validate-env.sh" --afk || {
+                echo ""
+                red "AFK validation failed. Fix the above before running shft afk."
+                red "Run 'shft mint' to test GitHub App token minting."
+                exit 1
+            }
+        fi
     else
-        yellow "validate-env.sh not found — skipping validation"
-        yellow "Run 'ctrl bootstrap' to install validation scripts"
+        if ! _shft_quiet; then
+            yellow "validate-env.sh not found — skipping validation"
+            yellow "Run 'ctrl bootstrap' to install validation scripts"
+        fi
     fi
-    echo ""
+    _shft_quiet || echo ""
 }
 
 # ── Subcommand routing ────────────────────────────────────────────────────────
@@ -765,18 +787,22 @@ case "$CMD" in
             _require_docker
         else
             _has_sandbox=false
-            yellow "WARNING: No sandbox available on this platform (WSL/MSYS)."
-            yellow "  Claude will run with --dangerously-skip-permissions and NO containment."
-            yellow "  Deny rules still apply, but there is no defense-in-depth."
-            echo ""
+            if ! _shft_quiet; then
+                yellow "WARNING: No sandbox available on this platform (WSL/MSYS)."
+                yellow "  Claude will run with --dangerously-skip-permissions and NO containment."
+                yellow "  Deny rules still apply, but there is no defense-in-depth."
+                echo ""
+            fi
         fi
 
         # Validate unless --force
         if [[ "$_force" == false ]]; then
             _validate_afk
         else
-            yellow "Skipping validation (--force)"
-            echo ""
+            if ! _shft_quiet; then
+                yellow "Skipping validation (--force)"
+                echo ""
+            fi
         fi
 
         _afk_cwd="$PWD"
@@ -791,28 +817,30 @@ case "$CMD" in
             _afk_worktree_base_ref="$_AFK_WORKTREE_BASE_REF"
         fi
 
-        green "shft afk — AFK mode ($_iterations iterations max)"
-        echo ""
-        if [[ "$_has_sandbox" == true ]]; then
-            echo "  Claude runs in a Docker sandbox."
-        else
-            yellow "  Claude runs WITHOUT a sandbox (no containment)."
+        if ! _shft_quiet; then
+            green "shft afk — AFK mode ($_iterations iterations max)"
+            echo ""
+            if [[ "$_has_sandbox" == true ]]; then
+                echo "  Claude runs in a Docker sandbox."
+            else
+                yellow "  Claude runs WITHOUT a sandbox (no containment)."
+            fi
+            if [[ "$_use_worktree" == true ]]; then
+                green "  Git worktree isolation enabled."
+                echo "  Worktree: $_afk_worktree_path"
+                echo "  Branch:   $_afk_worktree_branch"
+                echo "  Base ref: $_afk_worktree_base_ref"
+            else
+                yellow "  AFK edits this checkout. Do not edit it in your IDE while AFK runs."
+            fi
+            echo "  Picks issues, implements, commits, closes, repeats."
+            echo "  Exits when backlog is empty or $_iterations iterations reached."
+            echo ""
+            echo "  Monitor:  shft status"
+            echo "  Stop:     shft stop"
+            echo "  Log:      shft log"
+            echo ""
         fi
-        if [[ "$_use_worktree" == true ]]; then
-            green "  Git worktree isolation enabled."
-            echo "  Worktree: $_afk_worktree_path"
-            echo "  Branch:   $_afk_worktree_branch"
-            echo "  Base ref: $_afk_worktree_base_ref"
-        else
-            yellow "  AFK edits this checkout. Do not edit it in your IDE while AFK runs."
-        fi
-        echo "  Picks issues, implements, commits, closes, repeats."
-        echo "  Exits when backlog is empty or $_iterations iterations reached."
-        echo ""
-        echo "  Monitor:  shft status"
-        echo "  Stop:     shft stop"
-        echo "  Log:      shft log"
-        echo ""
 
         _shft_state_set "mode" "afk"
         _shft_state_set "max_iterations" "$_iterations"
@@ -1633,6 +1661,10 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
         echo "  shft engine            show current engine (bash or ts)"
         echo "  shft engine on         switch to TypeScript engine (sandcastle)"
         echo "  shft engine off        switch back to bash pipeline"
+        echo ""
+        echo "  Environment"
+        echo "  ──────────────────────────────────────────────────────────────"
+        echo "  SHFT_QUIET=1           suppress AFK cosmetic output for unattended runs"
         echo ""
         echo "  Other"
         echo "  ──────────────────────────────────────────────────────────────"

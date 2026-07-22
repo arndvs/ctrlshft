@@ -36,9 +36,10 @@ gh workflow run nightly-smoke.yml \
 
 The report includes both success and failure paths:
 
-- **PASS example:** `Proxy canary` latest run succeeded:
-  https://github.com/arndvs/ctrlshft/actions/runs/<RUN_ID>
-- **FAIL example:** `Proxy canary` scheduled run failed:
+- **PASS example:** central `Proxy canary` latest run succeeded:
+  https://github.com/arndvs/claude-code-copilot/actions/runs/<RUN_ID>
+- **FAIL example:** historical repo-local `Proxy canary` scheduled run failed
+  before canary ownership moved to `claude-code-copilot`:
   https://github.com/arndvs/ctrlshft/actions/runs/<RUN_ID>
 
 Failure diagnostics are actionable from the run URL. The representative failed
@@ -51,9 +52,9 @@ Process completed with exit code 1.
 ```
 
 The wider verification window also detected historical failures for `Agent:
-Architecture Review`, `Agent: Promote Queued`, and `Proxy canary`. The latest
-run for each of those workflows is currently green, so the failures are baseline
-history rather than new regressions from this PR.
+Architecture Review`, `Agent: Promote Queued`, and the old repo-local `Proxy
+canary`. The agent workflows are currently green in this repo; proxy canary
+monitoring now belongs to `arndvs/claude-code-copilot`.
 
 ## Workflow Coverage Matrix
 
@@ -78,7 +79,7 @@ Each workflow is categorized by its coverage type:
 | Review Issue | `agent-review-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh` |
 | Update Branch | `agent-update-branch.yml` | Active | `smoke-sandcastle-pr-path.sh` |
 
-### Infrastructure Workflows (6)
+### Infrastructure Workflows (5)
 
 | Workflow | File | Coverage | Notes |
 |----------|------|----------|-------|
@@ -86,8 +87,11 @@ Each workflow is categorized by its coverage type:
 | Integrity | `integrity.yml` | Passive | Triggered by push to dev; queried by report aggregator |
 | Labels: Sync | `labels-sync.yml` | Passive | Triggered by label changes; queried by report aggregator |
 | PR: request Copilot review | `pr-auto-copilot-review.yml` | Passive | Triggered by PR open/ready; queried by report aggregator |
-| Proxy canary | `proxy-canary.yml` | Passive | Scheduled canary; queried by report aggregator |
 | Sandcastle CI | `sandcastle-ci.yml` | Passive | Triggered by push/PR; queried by report aggregator |
+
+Proxy canary monitoring is intentionally centralized in
+`arndvs/claude-code-copilot` (`proxy-canary.yml`) instead of being scheduled in
+this consumer repo.
 
 ## Smoke Scripts
 

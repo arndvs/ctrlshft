@@ -76,6 +76,19 @@ class TestBody(unittest.TestCase):
         b = self._body([_thread(path=None, line=None, diff_hunk=None)])
         self.assertIn("(no location)", b)
 
+    def test_instruction_block_is_compressed_but_preserves_contract(self):
+        b = self._body()
+        marker = issue.marker("org/repo", 7)
+        start = b.index("## Instructions")
+        end = b.index(marker)
+        instruction_block = b[start:end]
+        self.assertLessEqual(len(instruction_block.splitlines()), 4)
+        self.assertIn("atomic commit", instruction_block)
+        self.assertIn("Fixed in <sha>", instruction_block)
+        self.assertIn("resolve via GraphQL", instruction_block)
+        self.assertIn("relabel `hitl`", instruction_block)
+        self.assertIn("close this issue", instruction_block)
+
     def test_truncates_oversized_body_preserving_marker(self):
         b = self._body([_thread(body="z" * 100000)])
         self.assertLessEqual(len(b), issue.MAX_BODY_LEN)

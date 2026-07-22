@@ -62,20 +62,9 @@ def body(
 
     parts.extend(
         [
-            "## Instructions for the agent",
+            "## Instructions",
             "",
-            "Resolve each unresolved thread above using normal `do-work` flow.",
-            "For each thread:",
-            "",
-            "1. Read the comment in context of the diff hunk and surrounding code.",
-            "2. Decide: AFK-able fix, or escalate as `hitl`?",
-            "3. If AFK: implement, commit atomically (one commit per thread,",
-            "   scoped to the thread's file/line). Push to the PR branch, then",
-            "   reply to the thread with `Fixed in <sha>` and resolve it via GraphQL.",
-            "4. If HITL: remove the `afk` label from this issue, add `hitl`,",
-            "   post a summary comment on this issue explaining which thread(s)",
-            "   and why.",
-            "5. When all threads handled, close this issue.",
+            "Resolve each thread: read context \u2192 fix + atomic commit + reply `Fixed in <sha>` + resolve via GraphQL. If not AFK-able: relabel `hitl`, comment why. When all done, close this issue.",
             "",
             marker(repo_full_name, pr_number),
         ]

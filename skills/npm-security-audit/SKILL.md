@@ -5,7 +5,7 @@ description: "Layered security audit on npm/pnpm/yarn projects before installing
 
 # npm Security Audit Skill
 
-Output "Read npm Security Audit skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read npm Security Audit skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Performs a layered security audit on an npm/pnpm/yarn project to detect supply chain attack vectors,
 credential theft attempts, persistence mechanisms, and suspicious network behavior — before

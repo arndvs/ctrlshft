@@ -20,7 +20,7 @@ set -euo pipefail
 
 DOTFILES="${DOTFILES:-$HOME/dotfiles}"
 CMD_DIR="${CMD_DIR:-$HOME/cmd}"
-WORKING_DIR="$DOTFILES/working"
+WORKING_DIR="$DOTFILES/working/runtime"
 OUTPUT_FILE="$WORKING_DIR/active-client.md"
 
 _dcmd_client="${1:-}"
@@ -57,7 +57,7 @@ done < "$_dcmd_client_file"
 _dcmd_venture_dir="$CMD_DIR/ventures/$_dcmd_venture"
 [[ -d "$_dcmd_venture_dir" ]] || return 0 2>/dev/null || exit 0
 
-# Append cmd context to active-client.md
+# Append cmd context to working/runtime/active-client.md
 {
     printf '\n## cmd — Venture Context\n\n'
     printf 'Active venture: `%s`\n\n' "$_dcmd_venture"

@@ -4,12 +4,17 @@ on:
     paths:
       - "global.instructions.md"
       - "CLAUDE.base.md"
+      - ".github/copilot-instructions.md"
       - "bin/validate-symlinks.sh"
       - "bin/drift-detect.sh"
       - "skills/**"
       - ".claude/settings.json"
       - "hooks/**"
+      - "test/hooks/**"
+      - "test/hooks-integration.sh"
       - "test/config-consistency.sh"
+      - "test/copilot-instructions.sh"
+      - "test/copilot-repo-local-guard.sh"
       - "package.json"
       - "bin/pipeline-label-data.sh"
       - ".github/workflows/pr-auto-copilot-review.yml"
@@ -31,12 +36,17 @@ on:
     paths:
       - "global.instructions.md"
       - "CLAUDE.base.md"
+      - ".github/copilot-instructions.md"
       - "bin/validate-symlinks.sh"
       - "bin/drift-detect.sh"
       - "skills/**"
       - ".claude/settings.json"
       - "hooks/**"
+      - "test/hooks/**"
+      - "test/hooks-integration.sh"
       - "test/config-consistency.sh"
+      - "test/copilot-instructions.sh"
+      - "test/copilot-repo-local-guard.sh"
       - "package.json"
       - "bin/pipeline-label-data.sh"
       - ".github/workflows/pr-auto-copilot-review.yml"
@@ -92,10 +102,21 @@ jobs:
           set -euo pipefail
           bash bin/validate-symlinks.sh --ci
 
+      - name: Validate Copilot instruction mirror guard
+        run: |
+          set -euo pipefail
+          bash test/copilot-instructions.sh
+          bash test/copilot-repo-local-guard.sh
+
       - name: Config consistency (fail loud on source-of-truth drift)
         run: |
           set -euo pipefail
           bash test/config-consistency.sh
+
+      - name: Run hook unit and integration tests
+        run: |
+          set -euo pipefail
+          npm run test:hooks
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

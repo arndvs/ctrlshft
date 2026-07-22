@@ -5,7 +5,7 @@ description: Edit and punch up sales copy, marketing emails, landing pages, ads,
 
 # Halbert Copy Editor
 
-Output "Read Halbert Copy Editor skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Halbert Copy Editor skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 > **Core principle:** The goal is a "greased slide" — once a reader starts, they should fall effortlessly from one line to the next until they have an uncontrollable urge to act. Every edit either removes friction or adds pull.
 

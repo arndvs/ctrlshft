@@ -20,7 +20,7 @@ inputs:
     description: URL for the current workflow run.
     required: true
   job-status:
-    description: Caller job status, usually `${{ job.status }}`.
+    description: Caller job status supplied by the workflow.
     required: true
   failure-context:
     description: Optional context appended to the failure summary.
@@ -29,6 +29,14 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Remove trigger label
+      if: always()
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      run: |
+        gh "${{ inputs['object-type'] }}" edit "${{ inputs['object-number'] }}" --remove-label "${{ inputs['trigger-label'] }}" -R "${{ inputs.repository }}" || true
+
     - name: Mark blocked on failure
       if: ${{ inputs['job-status'] == 'failure' }}
       shell: bash

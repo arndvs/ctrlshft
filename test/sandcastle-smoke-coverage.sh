@@ -264,6 +264,66 @@ else
     _record_fail "installed agent workflows use isolated pnpm runner invocation" "found $installed_runner_count, expected 11"
 fi
 
+missing_template_preflight=""
+for wf in "${template_workflows[@]}"; do
+    if grep -qF "$stable_runner_pattern" "$wf" && ! grep -qF "id: proxy-preflight" "$wf"; then
+        missing_template_preflight+="$wf"$'\n'
+    fi
+done
+if [[ -z "$missing_template_preflight" ]]; then
+    _record_pass "template model workflows include proxy preflight"
+else
+    _record_fail "template model workflows include proxy preflight" "$missing_template_preflight"
+fi
+
+missing_installed_preflight=""
+for wf in "${installed_workflows[@]}"; do
+    if grep -qF "$stable_runner_pattern" "$wf" && ! grep -qF "id: proxy-preflight" "$wf"; then
+        missing_installed_preflight+="$wf"$'\n'
+    fi
+done
+if [[ -z "$missing_installed_preflight" ]]; then
+    _record_pass "installed model workflows include proxy preflight"
+else
+    _record_fail "installed model workflows include proxy preflight" "$missing_installed_preflight"
+fi
+
+find_ungated_dispatches() {
+    local wf
+    for wf in "$@"; do
+        awk -v file="$wf" -v pattern="$stable_runner_pattern" '
+            {
+                window[NR % 12] = $0
+                if (index($0, pattern) > 0) {
+                    gated = 0
+                    for (i = NR - 11; i <= NR; i++) {
+                        if (i > 0 && window[i % 12] ~ /steps\.proxy-preflight\.outputs\.should_run == '\''true'\''/) {
+                            gated = 1
+                        }
+                    }
+                    if (!gated) {
+                        print file ":" NR ": missing proxy preflight gate near run.ts dispatch"
+                    }
+                }
+            }
+        ' "$wf"
+    done
+}
+
+template_ungated_dispatches="$(find_ungated_dispatches "${template_workflows[@]}")"
+if [[ -z "$template_ungated_dispatches" ]]; then
+    _record_pass "template run.ts dispatches are gated by proxy preflight"
+else
+    _record_fail "template run.ts dispatches are gated by proxy preflight" "$template_ungated_dispatches"
+fi
+
+installed_ungated_dispatches="$(find_ungated_dispatches "${installed_workflows[@]}")"
+if [[ -z "$installed_ungated_dispatches" ]]; then
+    _record_pass "installed run.ts dispatches are gated by proxy preflight"
+else
+    _record_fail "installed run.ts dispatches are gated by proxy preflight" "$installed_ungated_dispatches"
+fi
+
 # ── 7b. Composite action template drift guard ─────────────────────────────────
 template_actions_dir="$ROOT/shft/templates/actions"
 installed_actions_dir="$ROOT/.github/actions"
@@ -323,10 +383,23 @@ else
     _record_fail "sandcastle-setup validates lifecycle inputs" "missing explicit validation step"
 fi
 
+if grep -qF "install-engine:" "$template_actions_dir/sandcastle-setup/action.yml" &&
+    grep -qF "inputs['install-engine'] == 'true'" "$template_actions_dir/sandcastle-setup/action.yml"; then
+    _record_pass "sandcastle-setup can skip engine install"
+else
+    _record_fail "sandcastle-setup can skip engine install" "missing install-engine input guard"
+fi
+
 if grep -Eq "default:[[:space:]]*\\$\\{\\{ github\\." "$template_actions_dir"/*/action.yml "$installed_actions_dir"/*/action.yml; then
     _record_fail "composite actions avoid expression defaults" "action inputs cannot use github.* expression defaults"
 else
     _record_pass "composite actions avoid expression defaults"
+fi
+
+if grep -Eq "description:.*\\$\\{\\{" "$template_actions_dir"/*/action.yml "$installed_actions_dir"/*/action.yml; then
+    _record_fail "composite action descriptions avoid expressions" "metadata descriptions are parsed before workflow contexts exist"
+else
+    _record_pass "composite action descriptions avoid expressions"
 fi
 
 if awk '
@@ -370,6 +443,19 @@ else
     _record_fail "sandcastle-teardown reads failure context from env" "failure-context is interpolated directly into shell"
 fi
 
+if grep -qF "name: Remove trigger label" "$template_actions_dir/sandcastle-teardown/action.yml"; then
+    _record_pass "sandcastle-teardown removes trigger labels"
+else
+    _record_fail "sandcastle-teardown removes trigger labels" "missing best-effort trigger label cleanup"
+fi
+
+if grep -qF "types: [opened, ready_for_review]" "$ROOT/.github/workflows/pr-auto-copilot-review.yml" &&
+    grep -qF -- "--add-reviewer copilot-pull-request-reviewer" "$ROOT/.github/workflows/pr-auto-copilot-review.yml"; then
+    _record_pass "ready PRs trigger Copilot review workflow"
+else
+    _record_fail "ready PRs trigger Copilot review workflow" "pr-auto-copilot-review.yml must consume ready_for_review and request Copilot"
+fi
+
 # Tracer migration guard for #155: migrated workflows should use the shared
 # lifecycle action contract instead of copied setup/teardown boilerplate.
 migrated_lifecycle_workflows=(
@@ -396,6 +482,8 @@ skip_checkout_workflows=(
 
 teardown_restore_workflows=(
     agent-fix-pr-feedback.yml
+    agent-implement-issue.yml
+    agent-implement-prd.yml
     agent-merge-pr.yml
     agent-update-branch.yml
 )
@@ -442,6 +530,69 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
             _record_fail "$wf_label preserves checkout token" "missing checkout-token"
         fi
     fi
+
+    if [ "$wf_file" = "agent-implement-prd.yml" ]; then
+        if grep -qF "gh pr ready" "$wf_path" && ! grep -qF -- '--add-label "agent:review"' "$wf_path"; then
+            _record_pass "$wf_label hands PRD output to ready-for-review workflow"
+        else
+            _record_fail "$wf_label hands PRD output to ready-for-review workflow" "expected gh pr ready and no PR agent:review label"
+        fi
+        if grep -qF "Failed to determine draft state" "$wf_path" && ! grep -qF 'if ! is_draft=$(gh pr view' "$wf_path"; then
+            _record_pass "$wf_label fails closed when PR draft lookup fails"
+        else
+            _record_fail "$wf_label fails closed when PR draft lookup fails" "missing failure_reason.txt guard or preserving negated assignment status bug"
+        fi
+    fi
+done
+
+for wf_file in "${migrated_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'install-engine: ${{ steps.proxy-preflight.outputs.should_run }}' "$wf_path"; then
+        _record_pass "$wf_label keeps lifecycle setup on preflight skip"
+    else
+        _record_fail "$wf_label keeps lifecycle setup on preflight skip" "setup must clear trigger labels while skipping engine install"
+    fi
+
+    if grep -qF "name: Stop when proxy preflight skips" "$wf_path" &&
+        grep -qF "failure_reason.txt" "$wf_path"; then
+        _record_pass "$wf_label reports proxy preflight skips"
+    else
+        _record_fail "$wf_label reports proxy preflight skips" "missing explicit failure_reason.txt step for skipped agent runs"
+    fi
+done
+
+issue_lifecycle_workflows=(
+    agent-plan-issue.yml
+    agent-review-issue.yml
+    agent-implement-issue.yml
+    agent-implement-prd.yml
+)
+
+pr_lifecycle_workflows=(
+    agent-fix-pr-feedback.yml
+    agent-merge-pr.yml
+    agent-update-branch.yml
+)
+
+for wf_file in "${issue_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'group: sandcastle-issue-${{ github.event.issue.number }}' "$wf_path"; then
+        _record_pass "$wf_label uses per-issue lifecycle concurrency"
+    else
+        _record_fail "$wf_label uses per-issue lifecycle concurrency" "expected shared sandcastle-issue group"
+    fi
+done
+
+for wf_file in "${pr_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/shft/templates/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'group: sandcastle-pr-${{ github.event.pull_request.number }}' "$wf_path"; then
+        _record_pass "$wf_label uses per-PR lifecycle concurrency"
+    else
+        _record_fail "$wf_label uses per-PR lifecycle concurrency" "expected shared sandcastle-pr group"
+    fi
 done
 
 for wf_file in "${shared_setup_workflows[@]}"; do
@@ -464,6 +615,7 @@ for wf_file in "${shared_setup_workflows[@]}"; do
     else
         _record_pass "$wf_label removes inline engine install"
     fi
+
 done
 
 for wf_file in "${migrated_lifecycle_workflows[@]}"; do
@@ -491,6 +643,56 @@ for wf_file in "${migrated_lifecycle_workflows[@]}"; do
         _record_fail "$wf_label removes inline engine install" "still contains copied install step"
     else
         _record_pass "$wf_label removes inline engine install"
+    fi
+
+    if [ "$wf_file" = "agent-implement-prd.yml" ]; then
+        if grep -qF "gh pr ready" "$wf_path" && ! grep -qF -- '--add-label "agent:review"' "$wf_path"; then
+            _record_pass "$wf_label hands PRD output to ready-for-review workflow"
+        else
+            _record_fail "$wf_label hands PRD output to ready-for-review workflow" "expected gh pr ready and no PR agent:review label"
+        fi
+        if grep -qF "Failed to determine draft state" "$wf_path" && ! grep -qF 'if ! is_draft=$(gh pr view' "$wf_path"; then
+            _record_pass "$wf_label fails closed when PR draft lookup fails"
+        else
+            _record_fail "$wf_label fails closed when PR draft lookup fails" "missing failure_reason.txt guard or preserving negated assignment status bug"
+        fi
+    fi
+done
+
+for wf_file in "${migrated_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'install-engine: ${{ steps.proxy-preflight.outputs.should_run }}' "$wf_path"; then
+        _record_pass "$wf_label keeps lifecycle setup on preflight skip"
+    else
+        _record_fail "$wf_label keeps lifecycle setup on preflight skip" "setup must clear trigger labels while skipping engine install"
+    fi
+
+    if grep -qF "name: Stop when proxy preflight skips" "$wf_path" &&
+        grep -qF "failure_reason.txt" "$wf_path"; then
+        _record_pass "$wf_label reports proxy preflight skips"
+    else
+        _record_fail "$wf_label reports proxy preflight skips" "missing explicit failure_reason.txt step for skipped agent runs"
+    fi
+done
+
+for wf_file in "${issue_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'group: sandcastle-issue-${{ github.event.issue.number }}' "$wf_path"; then
+        _record_pass "$wf_label uses per-issue lifecycle concurrency"
+    else
+        _record_fail "$wf_label uses per-issue lifecycle concurrency" "expected shared sandcastle-issue group"
+    fi
+done
+
+for wf_file in "${pr_lifecycle_workflows[@]}"; do
+    wf_path="$ROOT/.github/workflows/$wf_file"
+    wf_label="${wf_path#$ROOT/}"
+    if grep -qF 'group: sandcastle-pr-${{ github.event.pull_request.number }}' "$wf_path"; then
+        _record_pass "$wf_label uses per-PR lifecycle concurrency"
+    else
+        _record_fail "$wf_label uses per-PR lifecycle concurrency" "expected shared sandcastle-pr group"
     fi
 done
 
@@ -569,6 +771,12 @@ for wf_path in "$ROOT"/shft/templates/workflows/agent-*.yml; do
     else
         _record_pass "$wf_label relies on setup action for OUTPUT_DIR"
     fi
+
+    if grep -qF "id: proxy-preflight" "$wf_path" && ! grep -qF 'ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}' "$wf_path"; then
+        _record_fail "$wf_label wires direct provider key" "preflight callers must expose ANTHROPIC_API_KEY"
+    else
+        _record_pass "$wf_label wires direct provider key"
+    fi
 done
 
 for wf_path in "$ROOT"/.github/workflows/agent-*.yml; do
@@ -583,6 +791,12 @@ for wf_path in "$ROOT"/.github/workflows/agent-*.yml; do
         _record_fail "$wf_label relies on setup action for OUTPUT_DIR" "still sets OUTPUT_DIR manually"
     else
         _record_pass "$wf_label relies on setup action for OUTPUT_DIR"
+    fi
+
+    if grep -qF "id: proxy-preflight" "$wf_path" && ! grep -qF 'ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}' "$wf_path"; then
+        _record_fail "$wf_label wires direct provider key" "preflight callers must expose ANTHROPIC_API_KEY"
+    else
+        _record_pass "$wf_label wires direct provider key"
     fi
 done
 
@@ -606,6 +820,33 @@ if [[ -f "$installed_sandcastle_package" ]] && grep -q '"type"[[:space:]]*:[[:sp
 else
     _record_fail "installed Sandcastle dispatcher package pins ESM" "expected .sandcastle/package.json with type=module"
 fi
+
+for wf_path in "$ROOT/shft/templates/workflows/sandcastle-ci.yml" "$ROOT/.github/workflows/sandcastle-ci.yml"; do
+    wf_label="${wf_path#$ROOT/}"
+    package_path_count="$(grep -Ec '^[[:space:]]*-[[:space:]]*['\''"]?\.sandcastle/engine/package\.json['\''"]?[[:space:]]*$' "$wf_path" || true)"
+    run_path_count="$(grep -Ec '^[[:space:]]*-[[:space:]]*['\''"]?\.sandcastle/run\.ts['\''"]?[[:space:]]*$' "$wf_path" || true)"
+
+    if [[ "$package_path_count" -eq 2 ]]; then
+        _record_pass "$wf_label includes engine package path filters"
+    else
+        _record_fail "$wf_label includes engine package path filters" "expected path in push and pull_request filters"
+    fi
+
+    if [[ "$run_path_count" -eq 2 ]]; then
+        _record_pass "$wf_label includes dispatcher run path filters"
+    else
+        _record_fail "$wf_label includes dispatcher run path filters" "expected path in push and pull_request filters"
+    fi
+
+    if grep -qF "Smoke dispatcher module resolution" "$wf_path" \
+        && grep -qF "pnpm --ignore-workspace exec tsx ../run.ts __smoke__" "$wf_path" \
+        && grep -qF "ERR_PACKAGE_PATH_NOT_EXPORTED" "$wf_path" \
+        && grep -qF 'Unknown workflow: "__smoke__"' "$wf_path"; then
+        _record_pass "$wf_label verifies dispatcher module resolution"
+    else
+        _record_fail "$wf_label verifies dispatcher module resolution" "missing __smoke__ dispatch, expected Unknown workflow check, or module-resolution crash guard"
+    fi
+done
 
 # ── 8. Smoke test scripts exist for each smoke script ────────────────────────
 # Each bin/smoke-sandcastle-*.sh should have a corresponding test file.

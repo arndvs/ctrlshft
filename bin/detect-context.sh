@@ -141,7 +141,8 @@ echo "$contexts"
 # Inline push avoids subprocess overhead — this runs on every directory change.
 {
     _dc_dotfiles="${DOTFILES:-$HOME/dotfiles}"
-    _dc_pipe="$_dc_dotfiles/working/hud.pipe"
+    _dc_pipe="$_dc_dotfiles/working/runtime/hud.pipe"
+    _dc_events="$_dc_dotfiles/working/logs/events.jsonl"
     _dc_ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
     _dc_td=$(date +"%H:%M:%S" 2>/dev/null || echo "")
     _dc_proj=$(basename "$(pwd)" 2>/dev/null || echo "unknown")
@@ -161,8 +162,9 @@ echo "$contexts"
         ( printf '%s\n' "$_dc_payload" > "$_dc_pipe" ) 2>/dev/null &
         disown 2>/dev/null
     else
-        printf '%s\n' "$_dc_payload" >> "$_dc_dotfiles/working/events.jsonl" 2>/dev/null &
+        mkdir -p "$_dc_dotfiles/working/logs" 2>/dev/null || true
+        printf '%s\n' "$_dc_payload" >> "$_dc_events" 2>/dev/null &
         disown 2>/dev/null
     fi
-    unset _dc_dotfiles _dc_pipe _dc_ts _dc_td _dc_proj _dc_ide _dc_payload
+    unset _dc_dotfiles _dc_pipe _dc_events _dc_ts _dc_td _dc_proj _dc_ide _dc_payload
 } 2>/dev/null || true

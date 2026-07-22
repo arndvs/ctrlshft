@@ -5,7 +5,7 @@ description: Use when repeated Claude Code session errors need analysis; scans s
 
 # Error Audit
 
-Output "Read Error Audit skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Error Audit skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Scan every Claude Code session transcript for errors, cluster by root cause, surface the top offenders with suggested remediations.
 
@@ -98,8 +98,8 @@ git log --oneline --since="2 weeks ago" --grep="fix" --grep="revert" | head -30
 find ~/.claude/projects/ -name "*.jsonl" -mtime -14 2>/dev/null | head -10
 
 # HUD events
-if [[ -f "$HOME/dotfiles/working/events.jsonl" ]]; then
-  grep -i "error\|fail\|block" "$HOME/dotfiles/working/events.jsonl" | tail -30
+if [[ -f "$HOME/dotfiles/working/logs/events.jsonl" ]]; then
+  grep -i "error\|fail\|block" "$HOME/dotfiles/working/logs/events.jsonl" | tail -30
 fi
 ```
 

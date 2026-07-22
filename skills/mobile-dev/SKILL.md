@@ -6,7 +6,7 @@ contexts: [expo, react-native, mobile]
 
 # Mobile Dev Skill
 
-Output "Read Mobile Dev skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Mobile Dev skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Use this skill when:
 - Starting a new mobile dev session

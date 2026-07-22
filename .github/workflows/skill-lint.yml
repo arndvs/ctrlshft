@@ -2,6 +2,8 @@ name: Skill lint
 on:
   pull_request:
     paths:
+      - ".github/workflows/skill-lint.yml"
+      - "bin/validate-skills.sh"
       - "skills/**"
 
 jobs:
@@ -14,91 +16,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check skill file structure
-        run: |
-          set -euo pipefail
-          ERRORS=0
-
-          # Find all SKILL.md files outside _local (gitignored, not in PRs)
-          while IFS= read -r skill_file; do
-            skill_dir=$(dirname "$skill_file")
-            skill_name=$(basename "$skill_dir")
-
-            echo "Checking: $skill_file"
-
-            # First non-empty line must be opening front matter delimiter
-            first_non_empty=$(grep -m1 -v '^[[:space:]]*$' "$skill_file" || true)
-            if [[ ! "$first_non_empty" =~ ^---[[:space:]]*$ ]]; then
-              echo "  ✗ First non-empty line must be front matter delimiter (---): $skill_file"
-              ERRORS=$((ERRORS + 1))
-              continue
-            fi
-
-            # Must have a closing front matter delimiter
-            fm_delims=$(grep -c '^---[[:space:]]*$' "$skill_file" || true)
-            if [[ "$fm_delims" -lt 2 ]]; then
-              echo "  ✗ Missing closing front matter delimiter (---) in $skill_file"
-              ERRORS=$((ERRORS + 1))
-              continue
-            fi
-
-            # Extract front matter block only
-            front_matter=$(awk '
-              BEGIN { in_fm=0; delims=0 }
-              /^---[[:space:]]*$/ {
-                delims++
-                if (delims == 1) { in_fm=1; next }
-                if (delims == 2) { exit }
-              }
-              in_fm { print }
-            ' "$skill_file")
-
-            # Must have 'name' field
-            name=$(printf '%s\n' "$front_matter" | sed -n 's/^name:[[:space:]]*//p' | head -1)
-            if [[ -z "$name" ]]; then
-              echo "  ✗ Missing 'name:' field in front matter: $skill_file"
-              ERRORS=$((ERRORS + 1))
-            else
-              echo "  ✓ name field present"
-            fi
-
-            # Name should match skill directory name
-            if [[ -n "$name" && "$name" != "$skill_name" ]]; then
-              echo "  ✗ name ('${name}') does not match folder name ('${skill_name}') in $skill_file"
-              ERRORS=$((ERRORS + 1))
-            fi
-
-            # Must have 'description' field
-            desc=$(printf '%s\n' "$front_matter" | sed -n 's/^description:[[:space:]]*//p' | head -1)
-            if [[ -z "$desc" ]]; then
-              echo "  ✗ Missing 'description:' field in front matter: $skill_file"
-              ERRORS=$((ERRORS + 1))
-            else
-              echo "  ✓ description field present"
-            fi
-
-            # Description must not be empty
-            if [[ -z "$desc" || "$desc" == '""' || "$desc" == "''" ]]; then
-              echo "  ✗ description is empty in $skill_file"
-              ERRORS=$((ERRORS + 1))
-            fi
-
-            # File must have content beyond front matter (at least 10 lines)
-            line_count=$(wc -l < "$skill_file")
-            if [[ "$line_count" -lt 10 ]]; then
-              echo "  ✗ Skill file too short ($line_count lines) — likely a stub: $skill_file"
-              ERRORS=$((ERRORS + 1))
-            else
-              echo "  ✓ Content present ($line_count lines)"
-            fi
-
-          done < <(find skills -name "SKILL.md" -not -path "skills/_local/*")
-
-          if [[ "$ERRORS" -gt 0 ]]; then
-            echo ""
-            echo "✗ $ERRORS skill file error(s) found."
-            echo "See CONTRIBUTING.md for the required skill file format."
-            exit 1
-          else
-            echo ""
-            echo "✓ All skill files valid."
-          fi
+        run: bash bin/validate-skills.sh "$PWD"

@@ -5,7 +5,7 @@ description: "Comprehensive implementation planning with vertical slices. Use wh
 
 # Architect
 
-Output "Read Architect skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Architect skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Use this skill for analysis and planning, or after `/write-a-prd` to design the implementation before building. Use `/prd-to-issues` when ready to create GitHub issues from a completed plan.
 

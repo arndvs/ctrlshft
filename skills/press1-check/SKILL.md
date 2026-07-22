@@ -5,7 +5,7 @@ description: Use when Claude Code sessions had many manual approval ("press 1") 
 
 # /press1-check — Permission Audit
 
-Output "Read Press1 Check skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Press1 Check skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Audit which Bash commands triggered manual approval prompts in Claude Code sessions.
 

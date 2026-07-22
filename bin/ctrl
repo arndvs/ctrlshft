@@ -59,7 +59,7 @@ _require_sheal() {
 
 # Check if HUD is running
 _hud_running() {
-    local _pid_file="$DOTFILES/working/hud-daemon.pid"
+    local _pid_file="$DOTFILES/working/runtime/hud-daemon.pid"
     [[ -f "$_pid_file" ]] && kill -0 "$(cat "$_pid_file")" 2>/dev/null
 }
 
@@ -71,6 +71,15 @@ _open_browser() {
         windows) start "$url" 2>/dev/null || cmd.exe /c start "$url" 2>/dev/null ;;
         *)       xdg-open "$url" 2>/dev/null || echo "  Open: $url" ;;
     esac
+}
+
+_bridge_validate_worker_count() {
+    local _bridge_wcount="${WORKER_COUNT:-1}"
+    if [[ ! "$_bridge_wcount" =~ ^[0-9]+$ ]] || [[ "$_bridge_wcount" -ne 1 ]]; then
+        red "WORKER_COUNT must be exactly 1 for bridge start/restart."
+        echo "  Multiple bridge workers are blocked until the global shft AFK lock is removed."
+        exit 1
+    fi
 }
 
 # ── Version ───────────────────────────────────────────────────────────────────
@@ -182,7 +191,7 @@ case "$CMD" in
         fi
 
         # HUD status (no `local` — we're at case scope, not in a function)
-        _pid_file="$DOTFILES/working/hud-daemon.pid"
+        _pid_file="$DOTFILES/working/runtime/hud-daemon.pid"
         if [[ -f "$_pid_file" ]] && kill -0 "$(cat "$_pid_file")" 2>/dev/null; then
             green "  HUD: running — http://localhost:${HUD_PORT:-7823}"
         else
@@ -217,7 +226,7 @@ case "$CMD" in
             restart)    bash "$DOTFILES/bin/start-hud.sh" --restart "$@" ;;
             --fg|foreground) bash "$DOTFILES/bin/start-hud.sh" --fg "$@" ;;
             log|logs)
-                _log="$DOTFILES/working/hud-daemon.log"
+                _log="$DOTFILES/working/logs/hud-daemon.log"
                 if [[ ! -f "$_log" ]]; then
                     yellow "No log file found at $_log"
                     exit 0
@@ -254,7 +263,7 @@ except:
     print('  Could not parse API response.')
 " 2>/dev/null || echo "  API query failed — try: ctrl hud logs"
                 else
-                    _events_file="$DOTFILES/working/events.jsonl"
+                    _events_file="$DOTFILES/working/logs/events.jsonl"
                     if [[ ! -f "$_events_file" ]]; then
                         yellow "No events file found."
                         exit 0
@@ -267,7 +276,7 @@ except:
                 _project="${1:-${ACTIVE_PROJECT:-default}}"
                 read -rp "  Clear events for '$_project'? [y/N]: " _confirm
                 if [[ "$_confirm" =~ ^[Yy]$ ]]; then
-                    _events_file="$DOTFILES/working/events.jsonl"
+                    _events_file="$DOTFILES/working/logs/events.jsonl"
                     if [[ -f "$_events_file" ]]; then
                         grep -v "\"project\":\"$_project\"" "$_events_file" > "$_events_file.tmp" 2>/dev/null || true
                         mv "$_events_file.tmp" "$_events_file"
@@ -346,25 +355,21 @@ except:
 
         case "$_bridge_cmd" in
             start)
+                _bridge_validate_worker_count
                 systemctl --user start bridge-webhook.service
-                _wcount="${WORKER_COUNT:-1}"
-                for _i in $(seq 1 "$_wcount"); do
-                    systemctl --user start "bridge-worker@${_i}.service"
-                done
-                green "Bridge started ($_wcount worker$([ "$_wcount" -gt 1 ] && echo s))"
+                systemctl --user start bridge-worker@1.service
+                green "Bridge started (1 worker)"
                 ;;
             stop)
                 systemctl --user stop 'bridge-worker@*.service' bridge-webhook.service 2>/dev/null || true
                 green "Bridge stopped"
                 ;;
             restart)
+                _bridge_validate_worker_count
                 systemctl --user stop 'bridge-worker@*.service' bridge-webhook.service 2>/dev/null || true
                 systemctl --user start bridge-webhook.service
-                _wcount="${WORKER_COUNT:-1}"
-                for _i in $(seq 1 "$_wcount"); do
-                    systemctl --user start "bridge-worker@${_i}.service"
-                done
-                green "Bridge restarted ($_wcount worker$([ "$_wcount" -gt 1 ] && echo s))"
+                systemctl --user start bridge-worker@1.service
+                green "Bridge restarted (1 worker)"
                 ;;
             status)
                 echo ""

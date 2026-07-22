@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     concurrency:
-      group: agent-mutate-pr-${{ github.event.pull_request.number }}
+      group: sandcastle-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: false
 
     permissions:
@@ -45,6 +45,14 @@ jobs:
         with:
           ref: {{DEFAULT_BRANCH}}
 
+      - name: Proxy preflight
+        id: proxy-preflight
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: bash .sandcastle/scripts/proxy_preflight.sh
+
       - name: Sandcastle setup
         uses: ./.github/actions/sandcastle-setup
         with:
@@ -52,14 +60,24 @@ jobs:
           object-type: pr
           object-number: ${{ env.PR_NUMBER }}
           checkout-ref: ${{ github.event.pull_request.head.ref }}
+          skip-checkout: ${{ steps.proxy-preflight.outputs.should_run != 'true' }}
+          install-engine: ${{ steps.proxy-preflight.outputs.should_run }}
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
 
+      - name: Stop when proxy preflight skips
+        if: steps.proxy-preflight.outputs.should_run != 'true'
+        run: |
+          echo "Proxy preflight skipped agent run: ${{ steps.proxy-preflight.outputs.reason }}. ${{ steps.proxy-preflight.outputs.detail }}" > "${RUNNER_TEMP}/failure_reason.txt"
+          exit 1
+
       - name: Run fix feedback
+        if: steps.proxy-preflight.outputs.should_run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           cd .sandcastle/engine
           pnpm --ignore-workspace exec tsx ../run.ts fix-pr-feedback \

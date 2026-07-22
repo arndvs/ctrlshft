@@ -5,7 +5,7 @@ description: "Atomic commits on a feature branch with conventional messages — 
 
 # Atomic Commits
 
-Output "Read Atomic Commits skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Atomic Commits skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 ## When to use
 

@@ -9,7 +9,7 @@ set -euo pipefail
 
 DOTFILES="${DOTFILES:-$HOME/dotfiles}"
 CLIENTS_DIR="$DOTFILES/clients"
-WORKING_DIR="$DOTFILES/working"
+WORKING_DIR="$DOTFILES/working/runtime"
 OUTPUT_FILE="$WORKING_DIR/active-client.md"
 
 ACTIVE_CLIENT=""
@@ -116,7 +116,8 @@ if _detect_client_project; then
 
     # HUD event — client context change (inline, non-blocking)
     {
-        _dc_pipe="${DOTFILES}/working/hud.pipe"
+        _dc_pipe="${DOTFILES}/working/runtime/hud.pipe"
+        _dc_events="${DOTFILES}/working/logs/events.jsonl"
         _dc_ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
         _dc_td=$(date +"%H:%M:%S" 2>/dev/null || echo "")
         _dc_msg="Client: ${ACTIVE_CLIENT}"
@@ -128,10 +129,11 @@ if _detect_client_project; then
             ( printf '%s\n' "$_dc_payload" > "$_dc_pipe" ) 2>/dev/null &
             disown 2>/dev/null
         else
-            printf '%s\n' "$_dc_payload" >> "${DOTFILES}/working/events.jsonl" 2>/dev/null &
+            mkdir -p "${DOTFILES}/working/logs" 2>/dev/null || true
+            printf '%s\n' "$_dc_payload" >> "$_dc_events" 2>/dev/null &
             disown 2>/dev/null
         fi
-        unset _dc_pipe _dc_ts _dc_td _dc_msg _dc_ctx _dc_payload
+        unset _dc_pipe _dc_events _dc_ts _dc_td _dc_msg _dc_ctx _dc_payload
     } 2>/dev/null || true
 else
     export ACTIVE_CLIENT=""

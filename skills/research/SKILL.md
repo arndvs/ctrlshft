@@ -5,7 +5,7 @@ description: "Cache expensive exploration into a research document before buildi
 
 # Research
 
-Output "Read Research skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Research skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Cache expensive exploration into a persistent `working/research/<topic>.md` so implementation conversations can start with full context instead of re-exploring.
 

@@ -5,7 +5,7 @@ description: "Write, update, or audit documentation. Use when asked to 'document
 
 # Document
 
-Output "Read Document skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Document skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Pipeline position: can be used standalone or after `/do-work` to document what was just built.
 
