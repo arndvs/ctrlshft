@@ -5,13 +5,13 @@ description: "Ultra-compressed conversational replies — drops articles, filler
 
 # Caveman
 
-Output "Read Caveman skill." to chat to acknowledge you read this file.
+If running interactively (human present), output "Read Caveman skill." to acknowledge. If running with --dangerously-skip-permissions (AFK/unattended), skip acknowledgement and proceed directly.
 
 Compress your conversational voice — status updates, explanations, exploratory narration, ad hoc Q&A — to cut output tokens. Technical accuracy always wins over brevity. Never compress deliverables.
 
 ## Activation
 
-**Triggers:** "caveman mode", "talk like caveman", "be terse", "fewer tokens", "compress your replies", `/caveman [level]`.
+**Triggers:** "caveman mode", "talk like caveman", "be terse", "fewer tokens", "compress your replies", `/caveman [lite|full|ultra]`.
 
 **Deactivate:** "stop caveman", "normal mode", or session ends.
 
