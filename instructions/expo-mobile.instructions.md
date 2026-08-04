@@ -64,7 +64,7 @@ Expo Dev Client (native shell installed on emulator/device)
 
 ## pnpm Script Reference
 
-All commands run from the **monorepo root** via workspace scripts:
+All commands run from the **monorepo root** via workspace scripts. The `cd apps/mobile && ...` lines below describe what the root script does internally — when running commands directly with an agent tool, use the tool's `cwd` parameter to target `apps/mobile` instead of chaining `cd &&`.
 
 ```bash
 # Start Metro in dev-client mode (most common)
