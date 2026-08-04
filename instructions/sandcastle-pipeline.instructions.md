@@ -28,7 +28,7 @@ the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`).
 | `agent:fix` | **Human** (verdict gate, on PR) | `agent-fix-pr-feedback.yml` | pushes fixes → PR re-reviewed |
 | `agent:merge` | **Human** (verdict gate, on PR) | `agent-merge-pr.yml` | PR merged → issue closed |
 | `agent:update-branch` | **Human** (on PR) | `agent-update-branch.yml` | branch updated |
-| `agent:implement-prd` | **Human** / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | `agent:implement-prd` while sub-issues remain; otherwise marks the PR ready for Copilot review |
+| `agent:implement-prd` | **Human** / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | `agent:implement-prd` (sub-issues remain) / `agent:review` (PR ready) / `agent:implement` |
 | `agent:queued` | **Human** / skills | `agent-promote-queued.yml` (when a blocker closes) | `agent:implement` once deps clear |
 | `agent:in-progress` | any active workflow | — (state marker) | removed on completion |
 | `agent:blocked` | any workflow on failure | — | needs human intervention |

@@ -33,7 +33,7 @@ export const LABELS: Record<string, LabelDef> = {
     description: "Entry point — triggers agent review pipeline",
   },
   "agent:review": {
-    appliesTo: ["issue"],
+    appliesTo: ["issue", "pr"],
     color: "0075ca",
     description: "Agent is reviewing the issue",
   },
@@ -124,10 +124,12 @@ export const TRANSITIONS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ],
   // Queued → implement (promoted when blockers clear)
   ["agent:queued", new Set(["agent:implement"])],
-  // PRD loop — can re-apply itself while sub-issues remain.
+  // PRD loop — can re-apply itself while sub-issues remain, and when the PRD is
+  // complete it marks the PR ready for review (agent:review on the PR) or
+  // produces a follow-up implement.
   [
     "agent:implement-prd",
-    new Set(["agent:implement-prd"]),
+    new Set(["agent:implement-prd", "agent:review", "agent:implement"]),
   ],
   // PR verdict paths
   ["agent:fix", new Set([])], // fix just pushes commits; no label added

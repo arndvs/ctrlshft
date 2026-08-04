@@ -163,10 +163,15 @@ describe("pipeline-states", () => {
       expect(result.errors[0]).toContain("cannot be applied to issue");
     });
 
-    it("rejects agent:review on a PR", () => {
-      const result = validateTransition([], { add: ["agent:review"] }, "pr");
-      expect(result.valid).toBe(false);
-      expect(result.errors[0]).toContain("cannot be applied to pr");
+    it("accepts agent:review on both issue and PR", () => {
+      // agent:review is applied to a PR by agent-implement-prd.yml when a PRD
+      // completes, so it must be valid on PRs as well as issues.
+      expect(
+        validateTransition([], { add: ["agent:review"] }, "issue").valid,
+      ).toBe(true);
+      expect(
+        validateTransition([], { add: ["agent:review"] }, "pr").valid,
+      ).toBe(true);
     });
 
     it("accepts agent:in-progress on both issue and PR", () => {
