@@ -164,6 +164,25 @@
             "command": "\"$HOME/.claude/hooks/test-gate.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Read|Grep|Glob|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/exploration-scope-guard.sh\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/session-scope-warning.sh\""
+          }
+        ]
       }
     ],
     "Stop": [
