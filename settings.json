@@ -150,7 +150,7 @@
 	"github.copilot.chat.exploreAgent.model": "claude-opus-4-6",
 	"github.copilot.chat.feedback.onChange": true,
 	"github.copilot.chat.getSearchViewResultsSkill.enabled": true,
-	"github.copilot.chat.githubMcpServer.enabled": true,
+	"github.copilot.chat.githubMcpServer.enabled": false,
 	"github.copilot.chat.gpt5AlternativePatch": true,
 	"github.copilot.chat.growthMessages.enabled": false,
 	"github.copilot.chat.inlineEdits.chatSessionContextProvider.enabled": true,
