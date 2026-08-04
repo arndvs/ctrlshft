@@ -173,4 +173,57 @@ jobs:
     expect(result.stdout).toContain("agent-multiline-test.yml:11");
     expect(result.code).toBe(1);
   });
+
+  it("fails on an illegal transition (trigger agent:fix → add agent:implement)", () => {
+    const dir = makeFixtureDir();
+    writeFixture(
+      dir,
+      "agent-illegal-transition-test.yml",
+      `name: "Agent: Test Illegal Transition"
+on:
+  issues:
+    types: [labeled]
+jobs:
+  bad:
+    if: github.event.label.name == 'agent:fix'
+    steps:
+      - name: Illegal transition
+        run: |
+          gh issue edit "$N" --add-label "agent:implement"
+`,
+    );
+
+    const result = runLinter(dir);
+    cleanFixtureDir(dir);
+    expect(result.stdout).toContain("❌");
+    expect(result.stdout).toContain("agent:fix");
+    expect(result.stdout).toContain("agent:implement");
+    expect(result.code).toBe(1);
+  });
+
+  it("passes a legal transition (trigger agent:review → add agent:implement)", () => {
+    const dir = makeFixtureDir();
+    writeFixture(
+      dir,
+      "agent-legal-transition-test.yml",
+      `name: "Agent: Test Legal Transition"
+on:
+  issues:
+    types: [labeled]
+jobs:
+  plan:
+    if: github.event.label.name == 'agent:review'
+    steps:
+      - name: Legal transition
+        run: |
+          gh issue edit "$N" --remove-label "agent:review" || true
+          gh issue edit "$N" --add-label "agent:implement"
+`,
+    );
+
+    const result = runLinter(dir);
+    cleanFixtureDir(dir);
+    expect(result.stdout).toContain("✅");
+    expect(result.code).toBe(0);
+  });
 });
