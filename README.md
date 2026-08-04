@@ -381,6 +381,8 @@ Claude Code lifecycle hooks — shell scripts that fire on tool use and session 
 | `format-check.sh`     | Stop             | Detects Biome/Prettier/ESLint and formats modified files (non-blocking)                        |
 | `typecheck.sh`        | Stop             | Runs `tsc --noEmit` on TypeScript projects; blocks stop until types pass                       |
 | `context-warning.sh`  | UserPromptSubmit | Stub: graduated warnings at 40/70% context (pending statusLine experiment)                     |
+| `exploration-scope-guard.sh` | PreToolUse | Nudges toward subagent delegation after 15+ raw Read/Grep/Glob calls without a `Task` spawn |
+| `session-scope-warning.sh` | UserPromptSubmit | Graduated turn-count warnings (20/40+) — works without the statusLine bridge |
 
 Hooks communicate via exit codes: **0** = allow, **2** = block. See [hooks/README.md](hooks/README.md) for full documentation, customization, and the `experiments/` directory for in-progress prototypes.
 

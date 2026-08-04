@@ -183,6 +183,27 @@ make_posttooluse_json() {
     }'
 }
 
+# --- Build PreToolUse JSON for an arbitrary tool name + session id ---
+# Used by hooks that key state off tool_name/session_id rather than a Bash
+# command (e.g. exploration-scope-guard.sh).
+make_pretooluse_tool_json() {
+    local tool_name="$1"
+    local session_id="${2:-test-session}"
+    jq -cn --arg tool "$tool_name" --arg sid "$session_id" '{
+        "tool_name": $tool,
+        "session_id": $sid,
+        "tool_input": {}
+    }'
+}
+
+# --- Build UserPromptSubmit JSON for an arbitrary session id ---
+make_userpromptsubmit_json() {
+    local session_id="${1:-test-session}"
+    jq -cn --arg sid "$session_id" '{
+        "session_id": $sid
+    }'
+}
+
 # --- Report ---
 report() {
     echo ""

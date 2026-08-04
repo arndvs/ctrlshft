@@ -22,9 +22,24 @@ _fail() {
     printf "  \033[31m✗\033[0m %s — %s\n" "$1" "$2"
 }
 
+# On Windows/MSYS without Developer Mode, `ln -sf` cannot create real symlinks
+# (it silently copies or fails), so the `-L` symlink assertions below are
+# meaningless there. Skip the symlink-dependent checks but keep the
+# content-generation and idempotency checks, which don't depend on symlinks.
+_is_windows() {
+    case "$(uname -s)" in
+        MINGW*|MSYS*|CYGWIN*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 echo
 echo "Claude-to-Copilot mirror regression"
 echo "════════════════════════════════════════════════"
+
+if _is_windows; then
+    echo "  (Windows detected — skipping symlink assertions; ln -sf cannot create real symlinks without Developer Mode)"
+fi
 
 # ── Setup: run bootstrap in a temp HOME ─────────────────────────────────────
 FAKE_HOME="$(mktemp -d 2>/dev/null || mktemp -d -t mirror)"
