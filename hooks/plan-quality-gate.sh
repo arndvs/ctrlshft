@@ -42,9 +42,13 @@ if [[ -n "$EVENT_CWD" ]]; then
     cd "$EVENT_CWD" || exit 0  # fail-open
 fi
 
-TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
-[[ "$TOOL_NAME" == "Bash" ]] || exit 0
-
+# Note: no tool_name check here. Copilot Chat sends its own native tool name
+# (run_in_terminal, not Bash) and doesn't enforce settings.json's matcher, so
+# a `tool_name == "Bash"` gate would silently dead-end this hook there (found
+# 2026-07-27 via raw debug-log analysis). tool_input.command presence below
+# is the correct, environment-agnostic filter — every other Bash-oriented
+# hook in this repo (secret-guard.sh, migration-guard.sh, test-gate.sh)
+# already relies on it instead of tool_name.
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 [[ -n "$COMMAND" ]] || exit 0
 
