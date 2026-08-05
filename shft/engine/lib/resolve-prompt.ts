@@ -54,6 +54,7 @@ export function configPromptArgs(config: SandcastleConfig): Record<string, strin
   return {
     CONTEXT_DOC: config.contextDoc,
     CODING_STANDARDS: config.codingStandards,
+    TESTING_PRINCIPLES: config.testingPrinciples,
     ADR_DIR: config.adrDir,
     BASE_BRANCH: config.baseBranch,
   };

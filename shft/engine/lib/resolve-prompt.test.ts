@@ -12,6 +12,7 @@ function makeConfig(overrides: Partial<SandcastleConfig> = {}): SandcastleConfig
     sandbox: "none",
     promptDir: ".sandcastle/prompts",
     codingStandards: ".sandcastle/CODING_STANDARDS.md",
+    testingPrinciples: ".sandcastle/testing-principles.md",
     contextDoc: "CONTEXT.md",
     adrDir: "docs/adr",
     packageManager: "pnpm",
@@ -109,6 +110,7 @@ describe("configPromptArgs", () => {
     const config = makeConfig({
       contextDoc: "MY_CTX.md",
       codingStandards: "STANDARDS.md",
+      testingPrinciples: "PRINCIPLES.md",
       adrDir: "adrs",
       baseBranch: "dev",
     });
@@ -118,6 +120,7 @@ describe("configPromptArgs", () => {
     expect(args).toEqual({
       CONTEXT_DOC: "MY_CTX.md",
       CODING_STANDARDS: "STANDARDS.md",
+      TESTING_PRINCIPLES: "PRINCIPLES.md",
       ADR_DIR: "adrs",
       BASE_BRANCH: "dev",
     });
