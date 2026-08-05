@@ -33,6 +33,7 @@ directly.
 | Label | Color | Purpose |
 |-------|-------|---------|
 | `source:architecture-review` | `#5319e7` | PRDs proposed by automated architecture review |
+| `source:keep-tests-tight` | `#1d76db` | Test-trim PRs opened by the automated keep-tests-tight workflow |
 
 ## State transitions
 

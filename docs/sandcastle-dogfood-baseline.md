@@ -64,7 +64,7 @@ Each workflow is categorized by its coverage type:
 - **Passive:** The report aggregator queries run history without triggering.
 - **Infrastructure:** CI/CD workflows exercised by normal development flow.
 
-### Agent Workflows (10)
+### Agent Workflows (11)
 
 | Workflow | File | Coverage | Smoke Script |
 |----------|------|----------|--------------|
@@ -73,6 +73,7 @@ Each workflow is categorized by its coverage type:
 | Fix PR Feedback | `agent-fix-pr-feedback.yml` | Active | `smoke-sandcastle-pr-path.sh` |
 | Implement Issue | `agent-implement-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh`, `smoke-sandcastle-promote-queued.sh` |
 | Implement PRD | `agent-implement-prd.yml` | Passive | `smoke-sandcastle-report.sh` (query only) |
+| Keep Tests Tight | `agent-keep-tests-tight.yml` | Active | `smoke-sandcastle-scheduled.sh` |
 | Merge PR | `agent-merge-pr.yml` | Active | `smoke-sandcastle-pr-path.sh` |
 | Plan Issue | `agent-plan-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh` |
 | Promote Queued | `agent-promote-queued.yml` | Active | `smoke-sandcastle-promote-queued.sh` |
