@@ -158,6 +158,7 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 | `merge-pr` | `--pr N` | Squash-merge and delete the branch |
 | `architecture-review` | — | Run the scheduled architecture review pass and write PRD output files |
 | `check-stale-prs` | — | List stale open PRs for scheduled maintenance |
+| `keep-tests-tight` | `--branch REF` | Trim low-signal tests and write the keep-tests-tight output file |
 
 ### GitHub Actions templates
 
@@ -175,6 +176,7 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 | `agent-architecture-review.yml` | `schedule`, `workflow_dispatch` | Creates `source:architecture-review` PRD issues |
 | `agent-promote-queued.yml` | `issues:closed` | Promotes unblocked `agent:queued` issues |
 | `agent-check-stale-prs.yml` | `schedule`, `workflow_dispatch` | Scheduled maintenance |
+| `agent-keep-tests-tight.yml` | `schedule`, `workflow_dispatch` | Opens `source:keep-tests-tight` draft PRs trimming low-signal tests |
 | `sandcastle-ci.yml` | `push`/`pull_request` on `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck); always vendored |
 | `proxy-canary.yml` (in `workflows-proxy/`) | `schedule`, `workflow_dispatch` | Proxy health probe; vendored only with `--with-proxy-canary` |
 
@@ -190,7 +192,7 @@ Init creates the labels from `shft/templates/labels.json` when the GitHub CLI is
 
 - Entry/control labels: `Sandcastle`, `agent:review`, `agent:implement`, `agent:implement-prd`, `agent:fix`, `agent:update-branch`, `agent:merge`
 - Status labels: `agent:in-progress`, `agent:pr-open`, `agent:queued`, `agent:blocked`
-- Provenance labels: `source:architecture-review`
+- Provenance labels: `source:architecture-review`, `source:keep-tests-tight`
 
 Required GitHub Actions secrets:
 

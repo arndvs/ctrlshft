@@ -28,7 +28,7 @@ agent:blocked (human input needed)           PR ready for Copilot review
 ### Engine internals
 
 - **`lib/`** — Shared utilities: shell helpers, config loader, prompt resolver, diff parser, retry/extraction wrappers, PR comment fetcher, thread resolver, scoring, semaphore
-- **`workflows/`** — One runner per workflow: review, implement-pr, to-issues-prd, update-branch, architecture-review, implement-issue, merge-pr
+- **`workflows/`** — One runner per workflow: review, implement-pr, to-issues-prd, update-branch, architecture-review, implement-issue, merge-pr, keep-tests-tight
 - **`schemas/`** — Zod schemas for structured output from each workflow
 
 ### Retry strategy
@@ -60,6 +60,7 @@ The full dogfood smoke-test contract for these workflows lives in `shft/docs/ful
 | `agent-merge-pr.yml` | `agent:merge` label | Merges PR after checks pass |
 | `agent-update-branch.yml` | `agent:update-branch` label | Rebases/merges branch against base |
 | `agent-check-stale-prs.yml` | Schedule | Finds stale PRs needing attention |
+| `agent-keep-tests-tight.yml` | Schedule + `workflow_dispatch` | Trims low-signal tests and opens a draft PR |
 | `agent-promote-queued.yml` | Issue closed | Unblocks queued issues when dependencies close |
 | `sandcastle-ci.yml` | Push/PR touching `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck). Always vendored |
 | `proxy-canary.yml` (in `workflows-proxy/`) | Schedule every 30m + `workflow_dispatch` | Probes the proxy for real completions. Vendored only with `--with-proxy-canary` |
