@@ -156,10 +156,15 @@ function validateOps(ops: LabelOp[], triggerLabel?: string): Violation[] {
     }
 
     // Transition legality + mutual exclusions via the shared state machine.
-    // `current` = labels being removed (they are on the object now); the
-    // proposed mutation adds/removes them. The trigger label drives legality.
+    // `current` = labels on the object when the job starts: the trigger label
+    // (always present) plus any labels being removed on this line. Seeding the
+    // trigger label ensures the mutual-exclusion check catches a workflow that
+    // adds a label mutually exclusive with the trigger but forgets to remove it.
+    const current = new Set<string>(removes.map((o) => o.label));
+    if (triggerLabel) current.add(triggerLabel);
+
     const result = validateTransition(
-      removes.map((o) => o.label),
+      [...current],
       {
         add: adds.map((o) => o.label),
         remove: removes.map((o) => o.label),
