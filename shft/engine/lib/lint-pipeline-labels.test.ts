@@ -226,4 +226,33 @@ jobs:
     expect(result.stdout).toContain("✅");
     expect(result.code).toBe(0);
   });
+
+  it("fails when a workflow adds a label mutually exclusive with the trigger but forgets to remove it", () => {
+    // Trigger is agent:fix; the workflow adds agent:merge (mutually exclusive
+    // with agent:fix) but never removes the trigger label. Seeding `current`
+    // with the trigger label must catch this conflict.
+    const dir = makeFixtureDir();
+    writeFixture(
+      dir,
+      "agent-mutual-exclusion-trigger-test.yml",
+      `name: "Agent: Test Mutual Exclusion with Trigger"
+on:
+  pull_request_target:
+    types: [labeled]
+jobs:
+  bad:
+    if: github.event.label.name == 'agent:fix'
+    steps:
+      - name: Adds mutually-exclusive label without removing trigger
+        run: |
+          gh pr edit "$N" --add-label "agent:merge"
+`,
+    );
+
+    const result = runLinter(dir);
+    cleanFixtureDir(dir);
+    expect(result.stdout).toContain("❌");
+    expect(result.stdout).toContain("Mutual exclusion");
+    expect(result.code).toBe(1);
+  });
 });
