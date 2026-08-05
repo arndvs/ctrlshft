@@ -58,5 +58,10 @@
     "name": "source:architecture-review",
     "color": "5319e7",
     "description": "PRDs proposed by the automated architecture-review workflow"
+  },
+  {
+    "name": "source:keep-tests-tight",
+    "color": "1d76db",
+    "description": "Test-trim PRs opened by the automated keep-tests-tight workflow"
   }
 ]

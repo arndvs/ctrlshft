@@ -95,6 +95,18 @@ jobs:
     steps:
       - run: echo ok
 YAML
+    cat > "$repo/.github/workflows/agent-keep-tests-tight.yml" <<'YAML'
+name: "Agent: Keep Tests Tight"
+on:
+  schedule:
+    - cron: "0 3 * * 1-5"
+  workflow_dispatch:
+jobs:
+  keep-tests-tight:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok
+YAML
 
     # The dispatch harness must also be available
     mkdir -p "$repo/bin"
@@ -120,6 +132,9 @@ run_case "list discovers schedule-backed workflows" pass "agent-architecture-rev
     bash -c "cd '$repo' && DOTFILES='$ROOT' '$SCRIPT' --list"
 
 run_case "list includes agent-check-stale-prs.yml" pass "agent-check-stale-prs.yml" \
+    bash -c "cd '$repo' && DOTFILES='$ROOT' '$SCRIPT' --list"
+
+run_case "list includes agent-keep-tests-tight.yml" pass "agent-keep-tests-tight.yml" \
     bash -c "cd '$repo' && DOTFILES='$ROOT' '$SCRIPT' --list"
 
 # ── Dry run previews dispatches ───────────────────────────────────────────────

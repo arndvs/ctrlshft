@@ -36,6 +36,7 @@ describe("loadConfig", () => {
     expect(config.sandbox).toBe("none");
     expect(config.promptDir).toBe(".sandcastle/prompts");
     expect(config.codingStandards).toBe(".sandcastle/CODING_STANDARDS.md");
+    expect(config.testingPrinciples).toBe(".sandcastle/testing-principles.md");
     expect(config.contextDoc).toBe("CONTEXT.md");
     expect(config.adrDir).toBe("docs/adr");
     expect(config.packageManager).toBe("pnpm");
