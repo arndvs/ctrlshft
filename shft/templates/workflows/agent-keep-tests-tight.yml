@@ -131,6 +131,7 @@ jobs:
           existing_pr=$(gh pr list -R ${{ github.repository }} --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing_pr" ]; then
             echo "PR #${existing_pr} already exists for $BRANCH"
+            gh pr edit "$existing_pr" -R ${{ github.repository }} --add-label "source:keep-tests-tight" >/dev/null 2>&1 || true
             exit 0
           fi
 
@@ -153,7 +154,8 @@ jobs:
             --base {{DEFAULT_BRANCH}} \
             --head "$BRANCH" \
             --title "$PR_TITLE" \
-            --body-file "${RUNNER_TEMP}/pr_body.md"
+            --body-file "${RUNNER_TEMP}/pr_body.md" \
+            --label "source:keep-tests-tight"
 
       - name: Summarise run
         if: always()
