@@ -28,7 +28,7 @@ export function hasRecentCommits(repoDir: string, since = "24 hours"): boolean {
 
 export async function runKeepTestsTight(opts: {
   repoDir: string;
-  branch?: string;
+  branch: string;
   model?: string;
   templatesDir?: string;
   extractionsDir?: string;
@@ -55,7 +55,7 @@ export async function runKeepTestsTight(opts: {
     promptFile,
     promptArgs: filterPromptArgs(promptFile, {
       ...configPromptArgs(config),
-      BRANCH: opts.branch ?? "",
+      BRANCH: opts.branch,
     }),
     output: Output.object({ tag: "output", schema: KeepTestsTightOutput }),
     extractionPrompt,
