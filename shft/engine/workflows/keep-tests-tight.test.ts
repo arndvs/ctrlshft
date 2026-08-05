@@ -74,7 +74,7 @@ describe("runKeepTestsTight", () => {
   it("returns no-changes without invoking the agent when there are no recent commits", async () => {
     mockShFile.mockReturnValueOnce("");
 
-    const result = await runKeepTestsTight({ repoDir: "/repo" });
+    const result = await runKeepTestsTight({ repoDir: "/repo", branch: "agent/keep-tests-tight-2026-08-05" });
 
     expect(result).toEqual({ status: "no-changes", reason: "no commits in last 24 hours" });
     expect(mockRunWithExtraction).not.toHaveBeenCalled();
@@ -93,7 +93,7 @@ describe("runKeepTestsTight", () => {
       },
     } as never);
 
-    const result = await runKeepTestsTight({ repoDir: "/repo" });
+    const result = await runKeepTestsTight({ repoDir: "/repo", branch: "agent/keep-tests-tight-2026-08-05" });
 
     expect(result).toEqual({
       status: "changed",
