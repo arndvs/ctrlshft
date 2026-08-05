@@ -82,6 +82,7 @@ SANDCASTLE_WORKFLOWS=(
     "Agent: Fix PR Feedback"
     "Agent: Implement Issue"
     "Agent: Implement PRD"
+    "Agent: Keep Tests Tight"
     "Agent: Merge PR"
     "Agent: Plan Issue"
     "Agent: Promote Queued"

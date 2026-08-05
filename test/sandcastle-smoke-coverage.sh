@@ -229,6 +229,34 @@ else
     _record_fail "architecture review retry guard inputs exist" "installed workflow or template missing"
 fi
 
+# ── 6b. Keep-tests-tight workflow retry guard ────────────────────────────────
+keep_tests_installed="$ROOT/.github/workflows/agent-keep-tests-tight.yml"
+keep_tests_template="$ROOT/shft/templates/workflows/agent-keep-tests-tight.yml"
+if [[ -f "$keep_tests_installed" && -f "$keep_tests_template" ]]; then
+    installed_keep_tests="$(cat "$keep_tests_installed")"
+    template_keep_tests="$(cat "$keep_tests_template")"
+
+    if [[ "$installed_keep_tests" == *"max_attempts=2"* && "$installed_keep_tests" == *"retrying once in 30 seconds"* ]]; then
+        _record_pass "installed keep-tests-tight retries transient agent failures"
+    else
+        _record_fail "installed keep-tests-tight retries transient agent failures" "missing bounded retry wrapper"
+    fi
+
+    if [[ "$template_keep_tests" == *"max_attempts=2"* && "$template_keep_tests" == *"retrying once in 30 seconds"* ]]; then
+        _record_pass "template keep-tests-tight retries transient agent failures"
+    else
+        _record_fail "template keep-tests-tight retries transient agent failures" "missing bounded retry wrapper"
+    fi
+
+    if [[ "$installed_keep_tests" == *"timeout-minutes: 45"* && "$template_keep_tests" == *"timeout-minutes: 45"* ]]; then
+        _record_pass "keep-tests-tight timeout accommodates retry"
+    else
+        _record_fail "keep-tests-tight timeout accommodates retry" "expected timeout-minutes: 45 in installed workflow and template"
+    fi
+else
+    _record_fail "keep-tests-tight retry guard inputs exist" "installed workflow or template missing"
+fi
+
 # ── 7. Sandcastle runner invocation drift guard ──────────────────────────────
 stable_runner_pattern="pnpm --ignore-workspace exec tsx ../run.ts"
 direct_binary_pattern="node_modules/.bin/tsx"
@@ -251,17 +279,17 @@ else
 fi
 
 template_runner_count="$({ grep -hF "$stable_runner_pattern" "${template_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
-if [[ "$template_runner_count" == "11" ]]; then
-    _record_pass "template agent workflows use isolated pnpm runner invocation (11)"
+if [[ "$template_runner_count" == "12" ]]; then
+    _record_pass "template agent workflows use isolated pnpm runner invocation (12)"
 else
-    _record_fail "template agent workflows use isolated pnpm runner invocation" "found $template_runner_count, expected 11"
+    _record_fail "template agent workflows use isolated pnpm runner invocation" "found $template_runner_count, expected 12"
 fi
 
 installed_runner_count="$({ grep -hF "$stable_runner_pattern" "${installed_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
-if [[ "$installed_runner_count" == "11" ]]; then
-    _record_pass "installed agent workflows use isolated pnpm runner invocation (11)"
+if [[ "$installed_runner_count" == "12" ]]; then
+    _record_pass "installed agent workflows use isolated pnpm runner invocation (12)"
 else
-    _record_fail "installed agent workflows use isolated pnpm runner invocation" "found $installed_runner_count, expected 11"
+    _record_fail "installed agent workflows use isolated pnpm runner invocation" "found $installed_runner_count, expected 12"
 fi
 
 missing_template_preflight=""
@@ -471,6 +499,7 @@ migrated_lifecycle_workflows=(
 shared_setup_workflows=(
     agent-architecture-review.yml
     agent-check-stale-prs.yml
+    agent-keep-tests-tight.yml
 )
 
 skip_checkout_workflows=(
@@ -478,6 +507,7 @@ skip_checkout_workflows=(
     agent-review-issue.yml
     agent-architecture-review.yml
     agent-check-stale-prs.yml
+    agent-keep-tests-tight.yml
 )
 
 teardown_restore_workflows=(
