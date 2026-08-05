@@ -49,6 +49,7 @@ describe("resolveWorkflow", () => {
     expect(WORKFLOW_NAMES).toContain("merge-pr");
     expect(WORKFLOW_NAMES).toContain("architecture-review");
     expect(WORKFLOW_NAMES).toContain("check-stale-prs");
+    expect(WORKFLOW_NAMES).toContain("keep-tests-tight");
   });
 
   it("wraps resolved runners with StructuredOutputError diagnostics", async () => {
