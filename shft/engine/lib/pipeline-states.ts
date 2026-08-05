@@ -90,6 +90,12 @@ export const LABELS: Record<string, LabelDef> = {
     description: "PRDs proposed by the automated architecture-review workflow",
     stateMarker: true,
   },
+  "source:keep-tests-tight": {
+    appliesTo: ["pr"],
+    color: "1d76db",
+    description: "Test-trim PRs opened by the automated keep-tests-tight workflow",
+    stateMarker: true,
+  },
 };
 
 // ── Mutual exclusions ────────────────────────────────────────────────────────
