@@ -16,7 +16,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { LABELS, validateTransition } from "./pipeline-states.js";
+import { validateTransition } from "./pipeline-states.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -142,24 +142,12 @@ function validateOps(ops: LabelOp[], triggerLabel?: string): Violation[] {
     const removes = group.filter((o) => o.action === "remove");
     const objectType = group[0]!.objectType;
 
-    // Object-type check for each added label.
-    for (const op of adds) {
-      const def = LABELS[op.label];
-      if (!def) continue; // unknown label — warning, not a violation
-      if (!def.appliesTo.includes(op.objectType)) {
-        violations.push({
-          file: op.file,
-          line: op.line,
-          message: `Label "${op.label}" applied to ${op.objectType} but only allowed on: ${def.appliesTo.join(", ")}`,
-        });
-      }
-    }
-
-    // Transition legality + mutual exclusions via the shared state machine.
-    // `current` = labels on the object when the job starts: the trigger label
-    // (always present) plus any labels being removed on this line. Seeding the
-    // trigger label ensures the mutual-exclusion check catches a workflow that
-    // adds a label mutually exclusive with the trigger but forgets to remove it.
+    // Transition legality, object-type constraints, and mutual exclusions are
+    // all validated by the shared state machine. `current` = labels on the
+    // object when the job starts: the trigger label (always present) plus any
+    // labels being removed on this line. Seeding the trigger label ensures the
+    // mutual-exclusion check catches a workflow that adds a label mutually
+    // exclusive with the trigger but forgets to remove it.
     const current = new Set<string>(removes.map((o) => o.label));
     if (triggerLabel) current.add(triggerLabel);
 
