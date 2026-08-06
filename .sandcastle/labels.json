@@ -63,5 +63,15 @@
     "name": "source:keep-tests-tight",
     "color": "1d76db",
     "description": "Test-trim PRs opened by the automated keep-tests-tight workflow"
+  },
+  {
+    "name": "shft",
+    "color": "7057ff",
+    "description": "Issues created by the Sandcastle engine (e.g. HITL review deferrals)"
+  },
+  {
+    "name": "hitl",
+    "color": "d4c5f9",
+    "description": "Human-in-the-loop — requires human review or decision"
   }
 ]
