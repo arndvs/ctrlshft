@@ -36,6 +36,12 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: bash .sandcastle/scripts/proxy_preflight.sh
 
+      - name: Stop when proxy preflight skips
+        if: steps.proxy-preflight.outputs.should_run != 'true'
+        run: |
+          echo "Proxy preflight skipped agent run: ${{ steps.proxy-preflight.outputs.reason }}. ${{ steps.proxy-preflight.outputs.detail }}" > "${RUNNER_TEMP}/failure_reason.txt"
+          exit 1
+
       - name: Sandcastle setup
         if: steps.proxy-preflight.outputs.should_run == 'true'
         uses: ./.github/actions/sandcastle-setup

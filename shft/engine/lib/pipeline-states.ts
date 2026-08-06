@@ -96,6 +96,18 @@ export const LABELS: Record<string, LabelDef> = {
     description: "Test-trim PRs opened by the automated keep-tests-tight workflow",
     stateMarker: true,
   },
+  shft: {
+    appliesTo: ["issue"],
+    color: "7057ff",
+    description: "Issues created by the Sandcastle engine (e.g. HITL review deferrals)",
+    stateMarker: true,
+  },
+  hitl: {
+    appliesTo: ["issue"],
+    color: "d4c5f9",
+    description: "Human-in-the-loop — requires human review or decision",
+    stateMarker: true,
+  },
 };
 
 // ── Mutual exclusions ────────────────────────────────────────────────────────
