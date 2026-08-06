@@ -34,6 +34,8 @@ directly.
 |-------|-------|---------|
 | `source:architecture-review` | `#5319e7` | PRDs proposed by automated architecture review |
 | `source:keep-tests-tight` | `#1d76db` | Test-trim PRs opened by the automated keep-tests-tight workflow |
+| `repo-hygiene` | `#7057ff` | Backlog issues proposed by the nightly repo-hygiene workflow |
+| `phase-0` … `phase-5` | `#c5def5` | Repo-hygiene phase markers (which phase the task belongs to) |
 
 ## State transitions
 
