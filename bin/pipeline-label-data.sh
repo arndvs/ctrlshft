@@ -16,6 +16,8 @@ declare -A LABEL_APPLIES_TO=(
   ['agent:blocked']='issue,pr'
   ['source:architecture-review']='issue'
   ['source:keep-tests-tight']='pr'
+  ['shft']='issue'
+  ['hitl']='issue'
 )
 
 MUTUAL_EXCLUSIONS=(

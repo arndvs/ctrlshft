@@ -34,6 +34,8 @@ the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`).
 | `agent:blocked` | any workflow on failure | — | needs human intervention |
 | `source:architecture-review` | `agent-architecture-review.yml` | — (proposal marker) | human triages before applying a start label |
 | `source:keep-tests-tight` | `agent-keep-tests-tight.yml` | — (provenance marker on PR) | human reviews the test-trim PR before merging |
+| `shft` | `defer-to-issue` (engine) | — (review-metadata marker) | — |
+| `hitl` | `defer-to-issue` (engine) | — (review-metadata marker) | — |
 
 There is no separate planning-state label — `agent-plan-issue.yml` promotes
 `agent:review` → `agent:implement` directly.
