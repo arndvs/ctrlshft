@@ -35,7 +35,7 @@ export const LABELS: Record<string, LabelDef> = {
   "agent:review": {
     appliesTo: ["issue", "pr"],
     color: "0075ca",
-    description: "Agent is reviewing the issue",
+    description: "Agent is reviewing the issue or PR",
   },
   "agent:implement": {
     appliesTo: ["issue"],
@@ -94,6 +94,18 @@ export const LABELS: Record<string, LabelDef> = {
     appliesTo: ["pr"],
     color: "1d76db",
     description: "Test-trim PRs opened by the automated keep-tests-tight workflow",
+    stateMarker: true,
+  },
+  shft: {
+    appliesTo: ["issue"],
+    color: "7057ff",
+    description: "Issues created by the Sandcastle engine (e.g. HITL review deferrals)",
+    stateMarker: true,
+  },
+  hitl: {
+    appliesTo: ["issue"],
+    color: "d4c5f9",
+    description: "Human-in-the-loop — requires human review or decision",
     stateMarker: true,
   },
 };

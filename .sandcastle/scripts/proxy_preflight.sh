@@ -24,12 +24,14 @@ emit() {
 base="${ANTHROPIC_BASE_URL:-}"
 token="${ANTHROPIC_AUTH_TOKEN:-}"
 api_key="${ANTHROPIC_API_KEY:-}"
+config_path="${SANDCASTLE_CONFIG_PATH:-sandcastle.config.json}"
 
 proxy_enabled="$("$python_bin" - <<'PY' 2>/dev/null || echo "true"
 import json
+import os
 
 try:
-    with open("sandcastle.config.json", encoding="utf-8") as handle:
+    with open(os.environ.get("SANDCASTLE_CONFIG_PATH") or "sandcastle.config.json", encoding="utf-8") as handle:
         config = json.load(handle)
 except Exception:
     print("true", end="")
@@ -45,7 +47,7 @@ if [[ "$proxy_enabled" == "false" ]]; then
         exit 0
     fi
     echo "Proxy preflight: direct provider mode; running agent."
-    emit "true" "direct-provider" "sandcastle.config.json proxy=false"
+    emit "true" "direct-provider" "$config_path proxy=false"
     exit 0
 fi
 
@@ -66,9 +68,10 @@ base="${base%/v1}"
 
 model="$("$python_bin" - <<'PY' 2>/dev/null || echo "claude-opus-4-6"
 import json
+import os
 
 try:
-    with open("sandcastle.config.json", encoding="utf-8") as handle:
+    with open(os.environ.get("SANDCASTLE_CONFIG_PATH") or "sandcastle.config.json", encoding="utf-8") as handle:
         config = json.load(handle)
 except Exception:
     print("claude-opus-4-6", end="")
