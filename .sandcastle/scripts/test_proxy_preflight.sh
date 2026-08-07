@@ -8,7 +8,12 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+# Resolve the repo root robustly from either the template location
+# (shft/templates/scripts) or the installed dogfood location
+# (.sandcastle/scripts). Walk up until we find the .git marker. Use -e
+# (exists) rather than -d (directory) so git worktrees/submodules, where
+# .git is a file, are also recognized as the repo root.
+ROOT="$(cd "$SCRIPT_DIR" && while [[ ! -e .git && "$PWD" != "/" ]]; do cd ..; done && pwd)"
 
 PASS=0
 FAIL=0
@@ -138,6 +143,22 @@ run_suite() {
   out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" run_preflight "$probe")
   assert_field "$label missing model config uses default model" "$out" "should_run" "false"
   assert_field "$label missing model config probes default model" "$out" "reason" "model-unavailable"
+
+  # SANDCASTLE_CONFIG_PATH override wins over the workspace-root config.
+  write_config "claude-sonnet-4-6" "true"
+  override_path="$TMPDIR_ROOT/$label-override.json"
+  printf '{"model":"claude-sonnet-4-6","proxy":false}\n' > "$override_path"
+  out=$(ANTHROPIC_BASE_URL="" ANTHROPIC_AUTH_TOKEN="" ANTHROPIC_API_KEY="direct-key" \
+    SANDCASTLE_CONFIG_PATH="$override_path" run_preflight "$probe")
+  assert_field "$label override path wins over workspace config" "$out" "should_run" "true"
+  assert_field "$label override path reason" "$out" "reason" "direct-provider"
+
+  # SANDCASTLE_CONFIG_PATH pointing at a nonexistent path falls back to the
+  # existing "missing config" default behavior (proxy=true / default model).
+  out=$(ANTHROPIC_BASE_URL="https://proxy.test/v1" ANTHROPIC_AUTH_TOKEN="secret-token" \
+    SANDCASTLE_CONFIG_PATH="$TMPDIR_ROOT/$label-does-not-exist.json" run_preflight "$probe")
+  assert_field "$label missing override path falls back to default model" "$out" "should_run" "false"
+  assert_field "$label missing override path probes default model" "$out" "reason" "model-unavailable"
 }
 
 echo "── proxy_preflight.sh tests ──"
