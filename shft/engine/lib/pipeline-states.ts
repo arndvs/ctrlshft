@@ -35,7 +35,7 @@ export const LABELS: Record<string, LabelDef> = {
   "agent:review": {
     appliesTo: ["issue", "pr"],
     color: "0075ca",
-    description: "Agent is reviewing the issue",
+    description: "Agent is reviewing the issue or PR",
   },
   "agent:implement": {
     appliesTo: ["issue"],

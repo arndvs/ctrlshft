@@ -9,7 +9,7 @@ GitHub Issue
   ↓ (Sandcastle label applied)
 agent:review → agent:implement → agent:pr-open
   ↓                                              ↓
-agent:blocked (human input needed)           PR ready for Copilot review
+agent:blocked (human input needed)           agent:review (PR)
                                                  ↓
                                           agent:fix (if feedback)
                                                  ↓
@@ -54,7 +54,7 @@ The full dogfood smoke-test contract for these workflows lives in `shft/docs/ful
 | `agent-review-issue.yml` | `Sandcastle` label | Reviews issue context and advances to `agent:review` |
 | `agent-plan-issue.yml` | `agent:review` label | Breaks issue into sub-tasks |
 | `agent-implement-issue.yml` | `agent:implement` label | Implements issue, opens PR |
-| `agent-implement-prd.yml` | `agent:implement-prd` label | Implements next sub-issue of a PRD; marks the PR ready when all sub-issues are complete |
+| `agent-implement-prd.yml` | `agent:implement-prd` label | Implements next sub-issue of a PRD |
 | `agent-fix-pr-feedback.yml` | `agent:fix` label | Addresses PR review comments |
 | `agent-architecture-review.yml` | Schedule + `workflow_dispatch` | Full architecture review |
 | `agent-merge-pr.yml` | `agent:merge` label | Merges PR after checks pass |
@@ -63,17 +63,9 @@ The full dogfood smoke-test contract for these workflows lives in `shft/docs/ful
 | `agent-keep-tests-tight.yml` | Schedule + `workflow_dispatch` | Trims low-signal tests and opens a draft PR |
 | `agent-promote-queued.yml` | Issue closed | Unblocks queued issues when dependencies close |
 | `sandcastle-ci.yml` | Push/PR touching `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck). Always vendored |
-| `proxy-canary.yml` (in `workflows-proxy/`) | Schedule every 30m + `workflow_dispatch` | Probes the proxy for real completions. Vendored only with `--with-proxy-canary` |
+| `proxy-canary.yml` (in `workflows-proxy/`) | Schedule every 30m + `workflow_dispatch` | Probes the proxy for real completions. Vendored only with `--with-proxy` (default) |
 
-Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` into `.github/workflows/agent-*.yml` (the `pnpm --ignore-workspace install --frozen-lockfile` step is baked directly into the templates); publishing or installing raw templates without that substitution produces broken workflows. The universal `sandcastle-ci.yml` is always vendored.
-
-Proxy routing and proxy monitoring are intentionally separate:
-
-- `proxy` defaults to true and controls runtime model routing. Proxy-mode workflows set `ANTHROPIC_BASE_URL`/`ANTHROPIC_AUTH_TOKEN` from `LITELLM_*`; no-proxy workflows use `ANTHROPIC_API_KEY`.
-- `proxyCanary` defaults to false and controls whether `proxy-canary.yml` is vendored from `shft/templates/workflows-proxy/`.
-- Model-backed workflows run `.sandcastle/scripts/proxy_preflight.sh` before installing dependencies or dispatching `.sandcastle/run.ts`; proxy-mode runs skip expensive agent work when required proxy secrets, readiness, auth, or model availability checks fail.
-
-The scheduled proxy canary should normally live in one canonical proxy owner repository. Consumer repos inherit the cheap per-run preflight and should only opt into the scheduled canary when they intentionally own monitoring coverage for that proxy.
+Workflow files under `shft/templates/workflows/` are source templates, not copy-paste-ready installed workflows. `init-sandcastle.sh` stamps `{{DEFAULT_BRANCH}}` into `.github/workflows/agent-*.yml` (the `pnpm install --frozen-lockfile` step is baked directly into the templates); publishing or installing raw templates without that substitution produces broken workflows. The universal `sandcastle-ci.yml` is always vendored; proxy monitors in `shft/templates/workflows-proxy/` are vendored only with `--with-proxy` (default on).
 
 ### Workflow security contract
 
@@ -117,9 +109,8 @@ Sandcastle expects these repository secrets after `ctrl init-sandcastle`:
 
 | Secret | Required for | Notes |
 |--------|--------------|-------|
-| `LITELLM_BASE_URL` | Model-backed workflows when `proxy` is true | Claude-compatible proxy endpoint used through `ANTHROPIC_BASE_URL`. |
-| `LITELLM_MASTER_KEY` | Model-backed workflows when `proxy` is true | Proxy auth token used through `ANTHROPIC_AUTH_TOKEN`. |
-| `ANTHROPIC_API_KEY` | Model-backed workflows when `proxy` is false | Direct-provider key used when proxy routing is disabled. |
+| `LITELLM_BASE_URL` | All model-backed workflows | Claude-compatible proxy endpoint used through `ANTHROPIC_BASE_URL`. |
+| `LITELLM_MASTER_KEY` | All model-backed workflows | Proxy auth token used through `ANTHROPIC_AUTH_TOKEN`. |
 | `AGENT_PAT` | Workflow-to-workflow label handoffs and reliable branch/PR mutations | Required for the label-driven state machine because `GITHUB_TOKEN` label changes do not trigger follow-up workflow runs. Use a classic PAT with `repo` scope for private repositories, or equivalent fine-grained issue/PR/content scopes. |
 
 ## Vendoring model
@@ -153,11 +144,7 @@ For the current private-to-public Sandcastle promotion, the private `shft/engine
 | Missing `vitest` and `test` script | Promote them in `shft/engine` so source tests are runnable; keep only the rendered no-op test script in `.sandcastle/engine`. |
 | `start` still pointing at the legacy `main.ts` runner | Promote the dispatcher-oriented `start` script because workflow runners now execute via `.sandcastle/run.ts`. |
 
-No package dependency is private-only by itself. Host-managed Sandcastle files
-such as `sandcastle.config.json` and installed
-`.github/workflows/agent-*.yml` / `.github/workflows/agent-*.yaml` workflows
-are allowed in ctrl+shft, but repository secrets and local runtime state remain
-private.
+No package dependency is private-only by itself. Private dogfood assumptions live in `sandcastle.config.json`, installed `.github/workflows/agent-*.yml`, repository secrets, and local runtime state; those remain excluded from public promotion.
 
 ## Public promotion shape
 
@@ -166,16 +153,9 @@ The public ctrl+shft repository should carry both Sandcastle source and the sani
 | Path | Public role | Promotion rule |
 |------|-------------|----------------|
 | `shft/engine/**` | Product source for the TypeScript engine | Preserve safe commit history where `preflight-public-promotion.sh` passes. |
-| `shft/templates/**` | Product source for workflows, prompts, scripts, hooks, and setup templates | Preserve safe commit history; promote reusable workflow behavior as templates. |
+| `shft/templates/**` | Product source for workflows, prompts, scripts, hooks, and setup templates | Preserve safe commit history; promote installed workflow behavior as templates, not as `.github/workflows/agent-*.yml`. |
 | `shft/docs/**` | Public product documentation | Preserve safe commit history. |
 | `bin/*sandcastle*.sh`, `test/sandcastle-*.sh` | Public CLI/update/preflight and smoke-test tooling | Preserve safe commit history after private wording is sanitized. |
 | `.sandcastle/**` | Sanitized generated runtime snapshot for dogfooding and public inspection | Add from the reviewed final tree as a snapshot; do not replay private dogfood runtime history. |
 
-Private install state stays private. Do not publish working/runtime artifacts,
-non-example local env files, private secret paths, or secret values.
-Host-managed `sandcastle.config.json` and installed
-`.github/workflows/agent-*.yml` / `.github/workflows/agent-*.yaml` workflows
-are allowed in ctrl+shft when their content is public-safe. Validate the exact
-promotion branch with `bin/validate-public-promotion.sh` and
-`bin/preflight-public-promotion.sh --range public/main..HEAD` before pushing to
-public.
+Private install state stays private. Do not publish `sandcastle.config.json`, installed `.github/workflows/agent-*.yml`, working/runtime artifacts, local env files, or secret values. Validate the exact promotion branch with `bin/validate-public-promotion.sh` and `bin/preflight-public-promotion.sh --range public/main..HEAD` before pushing to public.
