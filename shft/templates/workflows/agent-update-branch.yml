@@ -28,6 +28,24 @@ jobs:
           gh pr edit "$PR_NUMBER" --add-label "agent:blocked" -R ${{ github.repository }} || true
           gh pr comment "$PR_NUMBER" -R ${{ github.repository }} --body "Refused to run \`agent:update-branch\`: this workflow uses \`pull_request_target\` and cannot safely execute agent code for fork PRs. Recreate the PR from a branch in this repository, or update the branch manually."
 
+  refuse-non-owner:
+    if: github.event.label.name == 'agent:update-branch' && github.event.pull_request.head.repo.full_name == github.repository && !contains(fromJSON('["OWNER","MEMBER"]'), github.event.sender.type)
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Block non-owner execution
+        run: |
+          gh pr edit "$PR_NUMBER" --remove-label "agent:update-branch" -R ${{ github.repository }} || true
+          gh pr edit "$PR_NUMBER" --add-label "agent:blocked" -R ${{ github.repository }} || true
+          gh pr comment "$PR_NUMBER" -R ${{ github.repository }} --body "Refused to run \`agent:update-branch\`: only repository OWNER or MEMBER can trigger this workflow. Re-apply the label from an authorized account."
+
   update-branch:
     if: github.event.label.name == 'agent:update-branch' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -55,13 +73,32 @@ jobs:
         with:
           ref: {{DEFAULT_BRANCH}}
 
+      - name: Fetch PR head sandcastle.config.json
+        id: fetch-pr-head-config
+        env:
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -H "Accept: application/vnd.github.raw" \
+            "repos/${{ github.repository }}/contents/sandcastle.config.json?ref=${{ env.BRANCH_HEAD_SHA }}" \
+            > "$RUNNER_TEMP/pr-head-sandcastle.config.json" 2>/dev/null || true
+          if [ -s "$RUNNER_TEMP/pr-head-sandcastle.config.json" ]; then
+            echo "config_path=$RUNNER_TEMP/pr-head-sandcastle.config.json" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Proxy preflight
         id: proxy-preflight
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.LITELLM_MASTER_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: bash .sandcastle/scripts/proxy_preflight.sh
+        run: |
+          # Only point preflight at the PR-head config when the fetch step
+          # actually produced one; otherwise leave SANDCASTLE_CONFIG_PATH unset
+          # so preflight falls back to the checked-out {{DEFAULT_BRANCH}} config.
+          if [ -n "${{ steps.fetch-pr-head-config.outputs.config_path }}" ]; then
+            export SANDCASTLE_CONFIG_PATH="${{ steps.fetch-pr-head-config.outputs.config_path }}"
+          fi
+          bash .sandcastle/scripts/proxy_preflight.sh
 
       - name: Sandcastle setup
         uses: ./.github/actions/sandcastle-setup
@@ -78,8 +115,11 @@ jobs:
 
       - name: Stop when proxy preflight skips
         if: steps.proxy-preflight.outputs.should_run != 'true'
+        env:
+          PREFLIGHT_REASON: ${{ steps.proxy-preflight.outputs.reason }}
+          PREFLIGHT_DETAIL: ${{ steps.proxy-preflight.outputs.detail }}
         run: |
-          echo "Proxy preflight skipped agent run: ${{ steps.proxy-preflight.outputs.reason }}. ${{ steps.proxy-preflight.outputs.detail }}" > "${RUNNER_TEMP}/failure_reason.txt"
+          echo "Proxy preflight skipped agent run: ${PREFLIGHT_REASON}. ${PREFLIGHT_DETAIL}" > "${RUNNER_TEMP}/failure_reason.txt"
           exit 1
 
       - name: Ensure branch is checked out by name

@@ -7,7 +7,7 @@
   {
     "name": "agent:review",
     "color": "0075ca",
-    "description": "Agent is reviewing the issue"
+    "description": "Agent is reviewing the issue or PR"
   },
   {
     "name": "agent:implement",

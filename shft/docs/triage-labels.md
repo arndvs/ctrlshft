@@ -5,7 +5,8 @@ The agent-facing contract — the two human gates, `AGENT_PAT`, and how local sk
 pipeline — is [`instructions/sandcastle-pipeline.instructions.md`](../../instructions/sandcastle-pipeline.instructions.md).
 
 State lives on **two objects**: the **issue** carries state up to `agent:pr-open`; the **PR** carries
-the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`). "Applied by" is what writes
+the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`) and, as a PR-ready/review gate,
+`agent:review` (applied by `agent-implement-prd.yml` when a PRD completes). "Applied by" is what writes
 the label; "Triggers" is the workflow the label fires (`—` = inert state marker). Chaining writes use
 `AGENT_PAT`, since `GITHUB_TOKEN` label writes do not re-trigger workflows.
 
