@@ -4,6 +4,8 @@ on:
     paths:
       - ".github/workflows/skill-lint.yml"
       - "bin/validate-skills.sh"
+      - "bin/validate-skills-lock.sh"
+      - "bin/generate-skills-lock.sh"
       - "skills/**"
 
 jobs:
@@ -13,7 +15,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Check skill file structure
         run: bash bin/validate-skills.sh "$PWD"
+
+      - name: Check skills-lock provenance
+        run: bash bin/validate-skills-lock.sh "$PWD"
