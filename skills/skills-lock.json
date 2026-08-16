@@ -138,6 +138,12 @@
       "source": "arndvs/ctrlshft",
       "sourceType": "local"
     },
+    "repo-hygiene": {
+      "computedHash": "fb368d6bfd6d6aa57f87664c59632fe0829c6cf49def15ec540b982887545292",
+      "skillPath": "skills/repo-hygiene/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
     "research": {
       "computedHash": "844cf28e456800dae1e27638b279bc1ab07779dd116067d43326216aa5ae2fff",
       "skillPath": "skills/research/SKILL.md",
