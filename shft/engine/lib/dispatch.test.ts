@@ -50,6 +50,7 @@ describe("resolveWorkflow", () => {
     expect(WORKFLOW_NAMES).toContain("architecture-review");
     expect(WORKFLOW_NAMES).toContain("check-stale-prs");
     expect(WORKFLOW_NAMES).toContain("keep-tests-tight");
+    expect(WORKFLOW_NAMES).toContain("repo-hygiene");
   });
 
   it("wraps resolved runners with StructuredOutputError diagnostics", async () => {

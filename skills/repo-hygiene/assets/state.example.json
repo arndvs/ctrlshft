@@ -1,0 +1,56 @@
+{
+  "$comment": "The ledger holds only what the code cannot tell you. Never record metrics here that audit.mjs can measure — they will drift and be trusted anyway.",
+  "version": 1,
+  "stack": "astro",
+  "phase": 1,
+  "phaseEnteredAt": "2026-08-05T02:30:00Z",
+
+  "tasks": [
+    {
+      "issue": 412,
+      "phase": 1,
+      "title": "Create BaseLayout.astro from the index.astro head block",
+      "status": "merged",
+      "proposedAt": "2026-08-05T02:31:00Z",
+      "closedAt": "2026-08-06T14:02:00Z",
+      "pr": 415,
+      "note": "Merged as specified. Analytics script moved to a named head slot."
+    },
+    {
+      "issue": 418,
+      "phase": 1,
+      "title": "Migrate 8 marketing pages to BaseLayout",
+      "status": "proposed",
+      "proposedAt": "2026-08-07T02:30:00Z"
+    }
+  ],
+
+  "rejected": [
+    {
+      "title": "Convert global.css to Tailwind",
+      "reason": "Proposed during phase 1. Out of order — markup is still duplicated, so this would convert the same blocks repeatedly.",
+      "rejectedAt": "2026-08-01T09:00:00Z",
+      "reproposeIf": "Phase 3 entry criteria met"
+    }
+  ],
+
+  "deferred": [
+    {
+      "title": "Refactor src/pages/legacy-checkout.astro",
+      "reason": "Owned by the payments contractor until September; do not touch.",
+      "deferredUntil": "2026-09-15"
+    }
+  ],
+
+  "offLimits": [
+    "src/pages/legacy-checkout.astro",
+    "src/components/vendor/**"
+  ],
+
+  "conventions": {
+    "$comment": "Decisions made during the refactor that later tasks must stay consistent with.",
+    "componentNaming": "PascalCase, no prefix",
+    "headDivergence": "named slots, not boolean props",
+    "layoutCount": "BaseLayout + DocsLayout only"
+  }
+}

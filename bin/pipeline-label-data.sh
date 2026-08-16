@@ -18,6 +18,13 @@ declare -A LABEL_APPLIES_TO=(
   ['source:keep-tests-tight']='pr'
   ['shft']='issue'
   ['hitl']='issue'
+  ['repo-hygiene']='issue'
+  ['phase-0']='issue'
+  ['phase-1']='issue'
+  ['phase-2']='issue'
+  ['phase-3']='issue'
+  ['phase-4']='issue'
+  ['phase-5']='issue'
 )
 
 MUTUAL_EXCLUSIONS=(

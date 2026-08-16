@@ -13,7 +13,7 @@ const promptDirs = [
   { label: "sandcastle overrides", path: join(repoRoot, ".sandcastle", "prompts") },
 ] as const;
 
-const extractionWorkflows = ["architecture-review", "implement-pr", "update-branch", "keep-tests-tight"] as const;
+const extractionWorkflows = ["architecture-review", "implement-pr", "update-branch", "keep-tests-tight", "repo-hygiene"] as const;
 const workflowPromptArgs = {
   "address-review": ["PR_NUMBER", "BRANCH", "COMMENTS_JSON"],
   "architecture-review": [],
@@ -21,6 +21,7 @@ const workflowPromptArgs = {
   "implement-pr": ["PR_NUMBER", "BRANCH", "ISSUE_NUMBER", "ISSUE_TITLE", "PR_COMMENTS_JSON"],
   "implement-prd": ["PRD_NUMBER", "PRD_TITLE", "SUB_ISSUE_NUMBER", "SUB_ISSUE_TITLE", "BRANCH"],
   "keep-tests-tight": ["BRANCH", "TESTING_PRINCIPLES"],
+  "repo-hygiene": ["DRY_RUN"],
   review: ["PR_NUMBER", "PR_COMMENTS_JSON"],
   "to-issues-prd": ["ISSUE_NUMBER"],
   "update-branch": ["PR_NUMBER", "BRANCH", "BASE_REF"],
