@@ -8,7 +8,7 @@
 #   1. .sandcastle/engine/ vs shft/engine/ in the source checkout (excluding tests/node_modules)
 #   2. .sandcastle/templates/ vs shft/templates/{prompts,extractions}/ in the source checkout
 #   3. .sandcastle/{scripts,hooks}/ vs shft/templates/{scripts,hooks}/ in the source checkout
-#   4. .github/workflows/agent-*.yml vs shft/templates/workflows/ in the source checkout
+#   4. .github/workflows/{agent,check,copilot,labels,require,sandcastle}-*.yml vs shft/templates/workflows/ in the source checkout
 #   5. .github/copilot-setup-steps.yml vs shft/templates/copilot-setup-steps.yml in the source checkout
 #   6. Removed source files do not linger in managed vendored directories
 #
@@ -142,10 +142,13 @@ check_stale_dir_files() {
 check_stale_workflow_files() {
     local vendored_file fname
 
-    for vendored_file in .github/workflows/agent-*.yml .github/workflows/labels-sync.yml .github/workflows/sandcastle-ci.yml; do
+    # Every managed workflow prefix is expected only if its source template
+    # exists. Non-managed workflows (bridge-tests, integrity, ci-*, nightly,
+    # pr-*, user-owned) are never flagged or touched.
+    for vendored_file in .github/workflows/agent-*.yml .github/workflows/check-*.yml .github/workflows/copilot-*.yml .github/workflows/labels-*.yml .github/workflows/require-*.yml .github/workflows/sandcastle-*.yml; do
         [[ -f "$vendored_file" ]] || continue
         fname="$(basename "$vendored_file")"
-        if [[ ! -f "$TEMPLATES/workflows/$fname" ]]; then
+        if [[ ! -f "$TEMPLATES/workflows/$fname" ]] && [[ ! -f "$TEMPLATES/workflows-proxy/$fname" ]]; then
             DRIFTED_FILES+=("workflows/$fname (removed from source)")
             DIFF_OUTPUT+="$(printf '\n── workflows/%s (removed from source) ──\n' "$fname")"
         fi
@@ -471,10 +474,10 @@ apply_stale_dir_files() {
 apply_stale_workflow_files() {
     local vendored_file fname
 
-    for vendored_file in .github/workflows/agent-*.yml .github/workflows/labels-sync.yml .github/workflows/sandcastle-ci.yml; do
+    for vendored_file in .github/workflows/agent-*.yml .github/workflows/check-*.yml .github/workflows/copilot-*.yml .github/workflows/labels-*.yml .github/workflows/require-*.yml .github/workflows/sandcastle-*.yml; do
         [[ -f "$vendored_file" ]] || continue
         fname="$(basename "$vendored_file")"
-        if [[ ! -f "$TEMPLATES/workflows/$fname" ]]; then
+        if [[ ! -f "$TEMPLATES/workflows/$fname" ]] && [[ ! -f "$TEMPLATES/workflows-proxy/$fname" ]]; then
             apply_remove_file "$vendored_file" "workflows/$fname"
         fi
     done

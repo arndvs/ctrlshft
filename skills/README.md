@@ -6,6 +6,16 @@ Multi-step workflow definitions — the brains of ctrl+shft. Each skill is a `SK
 
 Skills are auto-discovered from `skills/*/SKILL.md`. The agent reads each skill's `description` frontmatter and loads the SKILL.md when the user's task matches. Skills can also be invoked explicitly via [commands/](../commands/README.md).
 
+## Provenance & Drift Detection
+
+`skills-lock.json` records a SHA-256 hash of every skill's `SKILL.md` plus its source provenance. After adding or editing a skill, regenerate the lock so changes are provably intentional:
+
+```bash
+bash bin/generate-skills-lock.sh "$PWD"
+```
+
+`ctrl check` and CI verify the lock. If content drifts without regeneration, `bin/validate-skills-lock.sh "$PWD"` fails — a convention enforced as a lint rule rather than a comment.
+
 ## Skill Inventory
 
 | Skill | Triggers | Purpose |
@@ -27,6 +37,7 @@ Skills are auto-discovered from `skills/*/SKILL.md`. The agent reads each skill'
 | `prd-to-issues` | "break this PRD into issues", "create a kanban" | PRD → vertical slices → GitHub issues (AFK/HITL labeled) |
 | `pr-preflight` | "/preflight", "pre-PR audit" | Exhaustive pre-PR audit that front-runs review tools |
 | `research` | "research", "investigate before building", "flush unknowns" | Cache exploration into a research document |
+| `repo-hygiene` | "improve repo hygiene", "clean up this repo", "what should I clean up next" | Stack-aware incremental refactor → one backlog issue per night |
 | `review-pr-copilot` | "address review comments", "fix PR comments" | Triage Copilot review comments, fix, resolve threads |
 | `sanity-best-practices` | Working with Sanity CMS content, schemas, GROQ | Sanity development patterns and framework integrations |
 | `session-close` | "/check", before ending a session | Pre-flight checklist: quality gates before session end |
@@ -55,6 +66,7 @@ Skills chain together for end-to-end feature delivery:
 2. Add YAML frontmatter with `name` and `description` (description contains trigger phrases). Quote the description or use block style if it contains YAML syntax such as `: `.
 3. Define the workflow steps, output format, and rules
 4. Auto-discovered — no registration needed
+5. Regenerate the provenance lock: `bash bin/generate-skills-lock.sh "$PWD"`
 
 See [ADR-001](../docs/adr/ADR-001-vendor-boundary.md) for what belongs in `skills/` (universal workflow) vs `_local/` (stack-specific).
 
@@ -62,4 +74,5 @@ Validate before restarting an agent:
 
 ```bash
 bash bin/validate-skills.sh "$PWD"
+bash bin/validate-skills-lock.sh "$PWD"
 ```

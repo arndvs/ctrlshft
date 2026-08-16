@@ -257,6 +257,34 @@ else
     _record_fail "keep-tests-tight retry guard inputs exist" "installed workflow or template missing"
 fi
 
+# ── 6c. Repo-hygiene workflow retry guard ────────────────────────────────────
+repo_hygiene_installed="$ROOT/.github/workflows/agent-repo-hygiene.yml"
+repo_hygiene_template="$ROOT/shft/templates/workflows/agent-repo-hygiene.yml"
+if [[ -f "$repo_hygiene_installed" && -f "$repo_hygiene_template" ]]; then
+    installed_repo_hygiene="$(cat "$repo_hygiene_installed")"
+    template_repo_hygiene="$(cat "$repo_hygiene_template")"
+
+    if [[ "$installed_repo_hygiene" == *"max_attempts=2"* && "$installed_repo_hygiene" == *"retrying once in 30 seconds"* ]]; then
+        _record_pass "installed repo-hygiene retries transient agent failures"
+    else
+        _record_fail "installed repo-hygiene retries transient agent failures" "missing bounded retry wrapper"
+    fi
+
+    if [[ "$template_repo_hygiene" == *"max_attempts=2"* && "$template_repo_hygiene" == *"retrying once in 30 seconds"* ]]; then
+        _record_pass "template repo-hygiene retries transient agent failures"
+    else
+        _record_fail "template repo-hygiene retries transient agent failures" "missing bounded retry wrapper"
+    fi
+
+    if [[ "$template_repo_hygiene" == *"timeout-minutes: 45"* ]]; then
+        _record_pass "repo-hygiene timeout accommodates retry"
+    else
+        _record_fail "repo-hygiene timeout accommodates retry" "expected timeout-minutes: 45 in template"
+    fi
+else
+    _record_fail "repo-hygiene retry guard inputs exist" "installed workflow or template missing"
+fi
+
 # ── 7. Sandcastle runner invocation drift guard ──────────────────────────────
 stable_runner_pattern="pnpm --ignore-workspace exec tsx ../run.ts"
 direct_binary_pattern="node_modules/.bin/tsx"
@@ -279,17 +307,17 @@ else
 fi
 
 template_runner_count="$({ grep -hF "$stable_runner_pattern" "${template_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
-if [[ "$template_runner_count" == "12" ]]; then
-    _record_pass "template agent workflows use isolated pnpm runner invocation (12)"
+if [[ "$template_runner_count" == "13" ]]; then
+    _record_pass "template agent workflows use isolated pnpm runner invocation (13)"
 else
-    _record_fail "template agent workflows use isolated pnpm runner invocation" "found $template_runner_count, expected 12"
+    _record_fail "template agent workflows use isolated pnpm runner invocation" "found $template_runner_count, expected 13"
 fi
 
 installed_runner_count="$({ grep -hF "$stable_runner_pattern" "${installed_workflows[@]}" 2>/dev/null || true; } | wc -l | tr -d ' ')"
-if [[ "$installed_runner_count" == "12" ]]; then
-    _record_pass "installed agent workflows use isolated pnpm runner invocation (12)"
+if [[ "$installed_runner_count" == "13" ]]; then
+    _record_pass "installed agent workflows use isolated pnpm runner invocation (13)"
 else
-    _record_fail "installed agent workflows use isolated pnpm runner invocation" "found $installed_runner_count, expected 12"
+    _record_fail "installed agent workflows use isolated pnpm runner invocation" "found $installed_runner_count, expected 13"
 fi
 
 missing_template_preflight=""
@@ -500,6 +528,7 @@ shared_setup_workflows=(
     agent-architecture-review.yml
     agent-check-stale-prs.yml
     agent-keep-tests-tight.yml
+    agent-repo-hygiene.yml
 )
 
 skip_checkout_workflows=(
@@ -508,6 +537,7 @@ skip_checkout_workflows=(
     agent-architecture-review.yml
     agent-check-stale-prs.yml
     agent-keep-tests-tight.yml
+    agent-repo-hygiene.yml
 )
 
 teardown_restore_workflows=(
