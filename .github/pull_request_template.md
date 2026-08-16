@@ -11,6 +11,15 @@
 - [ ] Tooling / scripts
 - [ ] Other (describe below)
 
+## For bug fixes — regression guard (required)
+
+<!-- Every fix PR must state its regression-guard verdict. The CI workflow
+     require-regression-guard.yml enforces this line. Choose one: -->
+
+Regression guard: added `<test-name>`
+Regression guard: covered by `<existing-test-name>`
+Regression guard: not warranted, `<one-line reason>`
+
 ## Checklist
 
 - [ ] Branch name follows the convention (`skill/`, `fix/`, `docs/`, etc.)
