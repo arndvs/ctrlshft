@@ -33,6 +33,13 @@ the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`).
 | `agent:in-progress` | any active workflow | — (state marker) | removed on completion |
 | `agent:blocked` | any workflow on failure | — | needs human intervention |
 | `source:architecture-review` | `agent-architecture-review.yml` | — (proposal marker) | human triages before applying a start label |
+| `repo-hygiene` | `agent-repo-hygiene.yml` | — (proposal marker) | human triages before applying a start label |
+| `phase-0` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 0 — safety net |
+| `phase-1` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 1 — structure/layout |
+| `phase-2` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 2 — DRY extraction |
+| `phase-3` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 3 — styling/typing |
+| `phase-4` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 4 — content/data |
+| `phase-5` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 5 — ratchet |
 | `source:keep-tests-tight` | `agent-keep-tests-tight.yml` | — (provenance marker on PR) | human reviews the test-trim PR before merging |
 | `shft` | `defer-to-issue` (engine) | — (review-metadata marker) | — |
 | `hitl` | `defer-to-issue` (engine) | — (review-metadata marker) | — |

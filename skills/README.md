@@ -37,6 +37,7 @@ bash bin/generate-skills-lock.sh "$PWD"
 | `prd-to-issues` | "break this PRD into issues", "create a kanban" | PRD → vertical slices → GitHub issues (AFK/HITL labeled) |
 | `pr-preflight` | "/preflight", "pre-PR audit" | Exhaustive pre-PR audit that front-runs review tools |
 | `research` | "research", "investigate before building", "flush unknowns" | Cache exploration into a research document |
+| `repo-hygiene` | "improve repo hygiene", "clean up this repo", "what should I clean up next" | Stack-aware incremental refactor → one backlog issue per night |
 | `review-pr-copilot` | "address review comments", "fix PR comments" | Triage Copilot review comments, fix, resolve threads |
 | `sanity-best-practices` | Working with Sanity CMS content, schemas, GROQ | Sanity development patterns and framework integrations |
 | `session-close` | "/check", before ending a session | Pre-flight checklist: quality gates before session end |

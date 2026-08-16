@@ -86,6 +86,7 @@ SANDCASTLE_WORKFLOWS=(
     "Agent: Merge PR"
     "Agent: Plan Issue"
     "Agent: Promote Queued"
+    "Agent: Repo Hygiene"
     "Agent: Review Issue"
     "Agent: Update Branch"
     "Bridge Tests"
