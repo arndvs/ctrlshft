@@ -116,6 +116,15 @@ case "$CMD" in
         fi
 
         echo ""
+
+        # Skills-lock provenance
+        if [[ -f "$DOTFILES/bin/validate-skills-lock.sh" ]]; then
+            bash "$DOTFILES/bin/validate-skills-lock.sh" "$DOTFILES" || _fail=1
+        else
+            yellow "  validate-skills-lock.sh not found"
+        fi
+
+        echo ""
         if [[ "$_fail" -eq 0 ]]; then
             green "All checks passed."
         else
