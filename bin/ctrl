@@ -675,6 +675,15 @@ except:
         bash "$DOTFILES/bin/update-artifacts.sh" "$@"
         ;;
 
+    # ── worktree ──────────────────────────────────────────────────────────────
+    worktree|wt)
+        if [[ ! -f "$DOTFILES/bin/ctrl-worktree.sh" ]]; then
+            red "ctrl-worktree.sh not found."
+            exit 1
+        fi
+        bash "$DOTFILES/bin/ctrl-worktree.sh" "$@"
+        ;;
+
     # ── new-client ─────────────────────────────────────────────────────────────
     new-client|client)
         if [[ ! -f "$DOTFILES/bin/new-client.sh" ]]; then

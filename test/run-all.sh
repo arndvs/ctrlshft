@@ -18,6 +18,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SUITES=(
   "consistency:test/config-consistency.sh"
   "branch-guard:test/branch-write-guard.sh"
+  "worktree-safety:test/worktree-safety.sh"
   "instructions:test/claude-instructions.sh"
   "skills:test/skills.sh"
   "copilot-skills:test/copilot-skills-materialize.sh"
