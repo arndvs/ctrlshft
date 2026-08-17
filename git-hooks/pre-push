@@ -70,6 +70,43 @@ fi
 # Restore stdin from the buffered content so delegation hooks see the ref lines.
 exec 0<<< "$REFS_INPUT"
 
+# ── Wrong-base-merge guard (ctrlshft remotes) ────────────────────────────────
+# Prevents the eval's exact failure: an agent merged origin/dev into a PR whose
+# base was main, dragging ~125 unrelated files into a 4-file PR and pushing it
+# to the remote. This git-native check covers every local tool (including agents
+# whose PreToolUse hooks never fire). It resolves the branch's authoritative
+# base and fails if the branch contains commits from a sibling base that aren't
+# in the PR's actual base.
+#
+# Conditional on gh auth (like the ruleset check in test/branch-write-guard.sh)
+# so offline/CI pushes stay green. Scoped to ctrlshft remotes so unrelated repos
+# on this machine are unaffected.
+if { is_public_ctrlshft_remote_url "$REMOTE_URL" || is_private_ctrlshft_remote_url "$REMOTE_URL"; } \
+    && [[ "${CTRL_ALLOW_MAIN_PUSH:-}" != "1" ]] \
+    && command -v gh >/dev/null 2>&1 \
+    && gh auth status >/dev/null 2>&1; then
+    # Only check the branch being pushed (skip base-branch pushes like dev/main).
+    while read -r _local_ref _ _remote_ref _; do
+        _branch="${_remote_ref#refs/heads/}"
+        [[ "$_branch" == "$_remote_ref" ]] && continue  # not a branch ref
+        case "$_branch" in dev|main|master) continue ;; esac
+        if ! bash "$(pwd)/bin/verify-pr-base.sh" --branch "$_branch" --check-ancestry --quiet; then
+            cat >&2 <<MSG
+pre-push: blocked push of '$_branch' — wrong base merged in.
+
+The branch contains commits from a sibling base that are not in its PR's actual
+base. This is the wrong-base-merge failure mode (an agent once merged origin/dev
+into a main-based PR, dragging ~125 unrelated files in). Rebase onto the correct
+base and drop the foreign merge before pushing.
+
+If you are a human certain this is intentional, re-run with:
+  CTRL_ALLOW_MAIN_PUSH=1 git push <remote> <refspec>
+MSG
+            exit 1
+        fi
+    done <<< "$REFS_INPUT"
+fi
+
 # ── 1. Delegate to Husky if present ──────────────────────────────────────────
 if [[ -f ".husky/$HOOK_NAME" ]] && [[ -x ".husky/$HOOK_NAME" ]]; then
     exec ".husky/$HOOK_NAME" "$@"

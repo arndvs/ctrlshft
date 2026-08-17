@@ -26,6 +26,7 @@ SUITES=(
   "hooks:test/hooks-integration.sh"
   "lifecycle:test/lifecycle.sh"
   "main-pr-source:test/main-pr-source-guard.sh"
+  "verify-pr-base:test/verify-pr-base.sh"
   "pipeline-label:test/pipeline-label-wrapper.sh"
   "bridge-lifecycle:test/bridge-lifecycle.sh"
   "bridge-python:test/bridge-python.sh"
