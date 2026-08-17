@@ -97,11 +97,25 @@ if [[ ${#_local_instructions[@]} -gt 0 ]]; then
     done
 fi
 
-# Deploy to Claude consumer
-ln -sf "$DOTFILES/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+# Detect Windows (mirrors bootstrap.sh detect_os): file symlinks require admin
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) IS_WINDOWS=1 ;;
+    *)                    IS_WINDOWS=0 ;;
+esac
+
+# Deploy to Claude consumer (mirrors bootstrap.sh: cp fallback on Windows)
+if [[ "$IS_WINDOWS" == 1 ]]; then
+    cp "$DOTFILES/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+else
+    ln -sf "$DOTFILES/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+fi
 
 # Deploy to Copilot consumer (mirrors bootstrap.sh copilot step)
-ln -sf "$DOTFILES/CLAUDE.md" "$COPILOT_DIR/copilot-instructions.md"
+if [[ "$IS_WINDOWS" == 1 ]]; then
+    cp "$DOTFILES/CLAUDE.md" "$COPILOT_DIR/copilot-instructions.md"
+else
+    ln -sf "$DOTFILES/CLAUDE.md" "$COPILOT_DIR/copilot-instructions.md"
+fi
 SCRIPT
 chmod +x "$FAKE_HOME/run-mirror.sh"
 
@@ -115,7 +129,8 @@ else
 fi
 
 # ── Test 2: Claude consumer has identical content ───────────────────────────
-if [[ -L "$FAKE_HOME/.claude/CLAUDE.md" ]]; then
+# Accept either a symlink (Unix) or a byte-identical copy (Windows fallback).
+if [[ -L "$FAKE_HOME/.claude/CLAUDE.md" ]] || [[ -f "$FAKE_HOME/.claude/CLAUDE.md" ]]; then
     CLAUDE_CONTENT=$(cat "$FAKE_HOME/.claude/CLAUDE.md")
     SOURCE_CONTENT=$(cat "$FAKE_DOTFILES/CLAUDE.md")
     if [[ "$CLAUDE_CONTENT" == "$SOURCE_CONTENT" ]]; then
@@ -124,11 +139,11 @@ if [[ -L "$FAKE_HOME/.claude/CLAUDE.md" ]]; then
         _fail "Claude consumer instructions match" "content differs"
     fi
 else
-    _fail "Claude consumer instructions" "~/.claude/CLAUDE.md is not a symlink"
+    _fail "Claude consumer instructions" "~/.claude/CLAUDE.md is not a symlink or file"
 fi
 
 # ── Test 3: Copilot consumer has identical content ──────────────────────────
-if [[ -L "$FAKE_HOME/.copilot/copilot-instructions.md" ]]; then
+if [[ -L "$FAKE_HOME/.copilot/copilot-instructions.md" ]] || [[ -f "$FAKE_HOME/.copilot/copilot-instructions.md" ]]; then
     COPILOT_CONTENT=$(cat "$FAKE_HOME/.copilot/copilot-instructions.md")
     SOURCE_CONTENT=$(cat "$FAKE_DOTFILES/CLAUDE.md")
     if [[ "$COPILOT_CONTENT" == "$SOURCE_CONTENT" ]]; then
@@ -137,20 +152,30 @@ if [[ -L "$FAKE_HOME/.copilot/copilot-instructions.md" ]]; then
         _fail "Copilot consumer instructions match" "content differs from CLAUDE.md"
     fi
 else
-    _fail "Copilot consumer instructions" "~/.copilot/copilot-instructions.md is not a symlink"
+    _fail "Copilot consumer instructions" "~/.copilot/copilot-instructions.md is not a symlink or file"
 fi
 
 # ── Test 4: Claude and Copilot point to the same source ─────────────────────
-CLAUDE_TARGET=$(readlink "$FAKE_HOME/.claude/CLAUDE.md")
-COPILOT_TARGET=$(readlink "$FAKE_HOME/.copilot/copilot-instructions.md")
-if [[ "$CLAUDE_TARGET" == "$COPILOT_TARGET" ]]; then
+# On Unix both are symlinks to the same target. On Windows both are byte-identical
+# copies of CLAUDE.md — verify content equality instead of readlink targets.
+CLAUDE_TARGET=$(readlink "$FAKE_HOME/.claude/CLAUDE.md" 2>/dev/null || true)
+COPILOT_TARGET=$(readlink "$FAKE_HOME/.copilot/copilot-instructions.md" 2>/dev/null || true)
+if [[ -n "$CLAUDE_TARGET" && -n "$COPILOT_TARGET" && "$CLAUDE_TARGET" == "$COPILOT_TARGET" ]]; then
     _ok "Claude and Copilot symlinks resolve to the same file"
+elif [[ -z "$CLAUDE_TARGET" && -z "$COPILOT_TARGET" ]]; then
+    # Windows fallback: both are copies — verify identical content
+    if cmp -s "$FAKE_HOME/.claude/CLAUDE.md" "$FAKE_HOME/.copilot/copilot-instructions.md"; then
+        _ok "Claude and Copilot copies are byte-identical (Windows fallback)"
+    else
+        _fail "same source" "Claude and Copilot copies differ on Windows"
+    fi
 else
     _fail "same source" "Claude -> $CLAUDE_TARGET, Copilot -> $COPILOT_TARGET"
 fi
 
 # ── Test 5: Copilot is NOT separately generated (no divergent source) ───────
-# The copilot file must be a symlink to CLAUDE.md, NOT an independent file
+# The copilot file must be a symlink to CLAUDE.md (Unix) or a byte-identical
+# copy of it (Windows fallback) — never an independently generated file.
 if [[ -L "$FAKE_HOME/.copilot/copilot-instructions.md" ]]; then
     _target=$(readlink "$FAKE_HOME/.copilot/copilot-instructions.md")
     if [[ "$_target" == "$FAKE_DOTFILES/CLAUDE.md" ]]; then
@@ -158,6 +183,8 @@ if [[ -L "$FAKE_HOME/.copilot/copilot-instructions.md" ]]; then
     else
         _fail "Copilot not separately generated" "points to $_target instead of CLAUDE.md"
     fi
+elif cmp -s "$FAKE_HOME/.copilot/copilot-instructions.md" "$FAKE_DOTFILES/CLAUDE.md"; then
+    _ok "Copilot instructions are not separately generated (Windows fallback copy matches CLAUDE.md)"
 else
     _fail "Copilot not separately generated" "is a regular file, not a symlink"
 fi
