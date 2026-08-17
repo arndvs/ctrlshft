@@ -7,7 +7,7 @@
       "sourceType": "local"
     },
     "atomic-commits": {
-      "computedHash": "3f233789d8628b6328e1278f51542acd330d0566ae420ce8b284fa4323cffabb",
+      "computedHash": "1348d0dbdedd3eb222f3d1b4b1520ed69236089b897fff9abdffd473d8160fd9",
       "skillPath": "skills/atomic-commits/SKILL.md",
       "source": "arndvs/ctrlshft",
       "sourceType": "local"
@@ -121,7 +121,7 @@
       "sourceType": "local"
     },
     "pr-preflight": {
-      "computedHash": "ffb6ffb2d0022f8dce11c2cf6d87dfe05ba5688be0a9ed3073bea6c624a93160",
+      "computedHash": "20243a442eff548249ef3017af1d6905aa5d357446ca2c98aa5c6fdb9007d62c",
       "skillPath": "skills/pr-preflight/SKILL.md",
       "source": "arndvs/ctrlshft",
       "sourceType": "local"
