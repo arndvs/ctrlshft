@@ -101,17 +101,22 @@ Never use `git add .` blindly — always confirm what's staged before committing
 
 ### 4. Sync with base branch (Ship mode only)
 
-After all commits are made, rebase onto the base branch to catch conflicts early:
+After all commits are made, rebase onto the base branch to catch conflicts early.
+
+**Resolve the base authoritatively — never guess it.** The base is the PR's
+actual base (`gh pr view --json baseRefName`), falling back to
+`sandcastle.config.json` `baseBranch`, then the repo default. Guessing which of
+`dev`/`main`/`master` exists on the remote is exactly what caused a real
+incident: an agent merged `origin/dev` into a PR whose base was `main`, dragging
+~125 unrelated files into a 4-file PR and pushing it to the remote. Use the
+shared resolver:
 
 ```bash
-# Detect the base branch — check which of dev/main/master exists on remote
-for candidate in dev main master; do
-  if git rev-parse --verify "origin/$candidate" >/dev/null 2>&1; then
-    BASE_BRANCH="$candidate"
-    break
-  fi
-done
-BASE_BRANCH="${BASE_BRANCH:-main}"
+BASE_BRANCH="$(bash bin/verify-pr-base.sh --branch "$(git branch --show-current)")"
+# If the branch has an open PR, prefer its authoritative base:
+#   BASE_BRANCH="$(bash bin/verify-pr-base.sh --pr <PR_NUMBER>)"
+# verify-pr-base.sh exits 1 (fails loud) if it cannot resolve the base — do not
+# proceed with a guessed base.
 
 git fetch origin "$BASE_BRANCH"
 git rebase "origin/$BASE_BRANCH"
@@ -128,10 +133,17 @@ If conflicts arise:
 **Pre-push gate — run before `git push`. Do not push while any gate is red.**
 
 1. **Branch safety** — confirm you are NOT on a base branch (`dev`, `main`, `master`).
-2. **Quality gates** — run the repo's detected feedback loops (tests, lint, typecheck via `package.json` scripts, `Makefile`, etc.). If none exist, say so explicitly rather than skipping silently.
-3. **Secret scan** — scan the staged/recent diff for secret-like content and filenames (`*.pem`, `*.key`, `.env`, `ghp_`/`github_pat_`/`sk-`/`AKIA`, private keys). Abort the push if anything matches.
+2. **Base verification** — confirm the branch's base is correct and no wrong base was merged in:
+   ```bash
+   bash bin/verify-pr-base.sh --branch "$(git branch --show-current)" --check-ancestry
+   ```
+   This resolves the authoritative base and fails loud (exit 1) if the branch
+   contains commits from a sibling base that aren't in the PR's actual base —
+   the exact wrong-base-merge failure mode. Do not push while this is red.
+3. **Quality gates** — run the repo's detected feedback loops (tests, lint, typecheck via `package.json` scripts, `Makefile`, etc.). If none exist, say so explicitly rather than skipping silently.
+4. **Secret scan** — scan the staged/recent diff for secret-like content and filenames (`*.pem`, `*.key`, `.env`, `ghp_`/`github_pat_`/`sk-`/`AKIA`, private keys). Abort the push if anything matches.
 
-Only after all three pass:
+Only after all four pass:
 
 ```bash
 git push -u origin HEAD

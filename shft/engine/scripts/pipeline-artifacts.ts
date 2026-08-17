@@ -39,7 +39,8 @@ function parseMode(): Mode {
   const mode = process.argv[2] ?? "--check";
   if (mode === "--check" || mode === "--write") return mode;
 
-  console.error("Usage: pnpm pipeline-artifacts:check|pipeline-artifacts:write");
+  console.error("Usage: pnpm pipeline-artifacts:check");
+  console.error("   or: pnpm pipeline-artifacts:write");
   process.exit(2);
 }
 

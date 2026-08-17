@@ -129,7 +129,7 @@ export ANTHROPIC_MODEL="claude-opus-4-6"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 
-[[ -n "${SHFT_QUIET:-}" ]] || echo "  Routing: Copilot proxy (${_proxy_host}:${_proxy_port})"
+echo "  Routing: Copilot proxy (${_proxy_host}:${_proxy_port})"
 
 # Clean up locals
 unset _PROXY_MODE _PROXY_STATE _PROXY_DEFAULT_PORT

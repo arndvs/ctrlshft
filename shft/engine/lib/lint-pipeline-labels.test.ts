@@ -173,4 +173,86 @@ jobs:
     expect(result.stdout).toContain("agent-multiline-test.yml:11");
     expect(result.code).toBe(1);
   });
+
+  it("fails on an illegal transition (trigger agent:fix → add agent:implement)", () => {
+    const dir = makeFixtureDir();
+    writeFixture(
+      dir,
+      "agent-illegal-transition-test.yml",
+      `name: "Agent: Test Illegal Transition"
+on:
+  issues:
+    types: [labeled]
+jobs:
+  bad:
+    if: github.event.label.name == 'agent:fix'
+    steps:
+      - name: Illegal transition
+        run: |
+          gh issue edit "$N" --add-label "agent:implement"
+`,
+    );
+
+    const result = runLinter(dir);
+    cleanFixtureDir(dir);
+    expect(result.stdout).toContain("❌");
+    expect(result.stdout).toContain("agent:fix");
+    expect(result.stdout).toContain("agent:implement");
+    expect(result.code).toBe(1);
+  });
+
+  it("passes a legal transition (trigger agent:review → add agent:implement)", () => {
+    const dir = makeFixtureDir();
+    writeFixture(
+      dir,
+      "agent-legal-transition-test.yml",
+      `name: "Agent: Test Legal Transition"
+on:
+  issues:
+    types: [labeled]
+jobs:
+  plan:
+    if: github.event.label.name == 'agent:review'
+    steps:
+      - name: Legal transition
+        run: |
+          gh issue edit "$N" --remove-label "agent:review" || true
+          gh issue edit "$N" --add-label "agent:implement"
+`,
+    );
+
+    const result = runLinter(dir);
+    cleanFixtureDir(dir);
+    expect(result.stdout).toContain("✅");
+    expect(result.code).toBe(0);
+  });
+
+  it("fails when a workflow adds a label mutually exclusive with the trigger but forgets to remove it", () => {
+    // Trigger is agent:fix; the workflow adds agent:merge (mutually exclusive
+    // with agent:fix) but never removes the trigger label. Seeding `current`
+    // with the trigger label must catch this conflict.
+    const dir = makeFixtureDir();
+    writeFixture(
+      dir,
+      "agent-mutual-exclusion-trigger-test.yml",
+      `name: "Agent: Test Mutual Exclusion with Trigger"
+on:
+  pull_request_target:
+    types: [labeled]
+jobs:
+  bad:
+    if: github.event.label.name == 'agent:fix'
+    steps:
+      - name: Adds mutually-exclusive label without removing trigger
+        run: |
+          gh pr edit "$N" --add-label "agent:merge"
+`,
+    );
+
+    const result = runLinter(dir);
+    cleanFixtureDir(dir);
+    expect(result.stdout).toContain("❌");
+    expect(result.stdout).toContain("Mutual exclusion");
+    expect(result.code).toBe(1);
+  });
 });

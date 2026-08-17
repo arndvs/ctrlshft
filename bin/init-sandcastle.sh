@@ -244,6 +244,7 @@ if [[ ! -f "sandcastle.config.json" ]]; then
   "sandbox": "$SANDBOX",
   "promptDir": ".sandcastle/prompts",
   "codingStandards": ".sandcastle/CODING_STANDARDS.md",
+  "testingPrinciples": ".sandcastle/testing-principles.md",
   "contextDoc": "CONTEXT.md",
   "adrDir": "docs/adr",
   "packageManager": "pnpm",
@@ -282,6 +283,33 @@ CSEOF
     echo "    .sandcastle/CODING_STANDARDS.md"
 else
     yellow "  .sandcastle/CODING_STANDARDS.md already exists — skipping"
+fi
+
+# ── 9b. Create testing-principles.md skeleton ────────────────────────────────
+if [[ ! -f ".sandcastle/testing-principles.md" ]]; then
+    echo "  Creating testing-principles.md skeleton..."
+    cat > .sandcastle/testing-principles.md <<'TPEOF'
+# Testing Principles
+
+<!-- Project-specific testing principles for the keep-tests-tight pass. -->
+<!-- Add your conventions for what makes a high-signal test here. -->
+
+## High-signal tests
+
+- Prefer fewer, longer tests that assert meaningful behavior.
+- Keep tests that validate real end-user journeys and documented business rules.
+
+## Low-signal tests to trim
+
+- Tiny one-assertion tests.
+- Duplicate coverage.
+- Pinned error strings or incidental copy.
+- Tests for type-system guarantees.
+- Edge cases that cannot happen.
+TPEOF
+    echo "    .sandcastle/testing-principles.md"
+else
+    yellow "  .sandcastle/testing-principles.md already exists — skipping"
 fi
 
 # ── 10. Create GitHub labels ─────────────────────────────────────────────────

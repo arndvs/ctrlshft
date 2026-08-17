@@ -121,6 +121,27 @@ const workflows: Record<string, WorkflowRunner> = {
     const { runCheckStalePrs } = await import("../workflows/check-stale-prs.js");
     await runCheckStalePrs({ repoDir });
   },
+
+  "keep-tests-tight": async ({ args, repoDir, templatesDir }) => {
+    if (!args.branch) throw new Error("keep-tests-tight requires --branch <ref>");
+    const { runKeepTestsTight } = await import("../workflows/keep-tests-tight.js");
+    const result = await runKeepTestsTight({ branch: args.branch, repoDir, templatesDir });
+    const fs = await import("node:fs");
+    const outputDir = outputDirPath();
+    fs.writeFileSync(join(outputDir, "keep_tests_tight_output.json"), JSON.stringify(result, null, 2));
+  },
+
+  "repo-hygiene": async ({ args, repoDir, templatesDir }) => {
+    const { runRepoHygiene } = await import("../workflows/repo-hygiene.js");
+    const result = await runRepoHygiene({ repoDir, templatesDir, dryRun: args.dryRun });
+    const fs = await import("node:fs");
+    const outputDir = outputDirPath();
+    fs.writeFileSync(join(outputDir, "repo_hygiene_output.json"), JSON.stringify(result, null, 2));
+    if (result.status === "proposed") {
+      fs.writeFileSync(join(outputDir, "hygiene_title.txt"), result.title);
+      fs.writeFileSync(join(outputDir, "hygiene_body.md"), result.body);
+    }
+  },
 };
 
 export const WORKFLOW_NAMES = Object.keys(workflows);

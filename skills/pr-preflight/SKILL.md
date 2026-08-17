@@ -23,18 +23,25 @@ This skill is diff-aware: it knows what changed, audits those files completely (
 
 ## Phase 1 — Understand the Change
 
-Before anything else, map what this PR actually touches.
+Before anything else, map what this PR actually touches. **Resolve the base
+branch authoritatively** — never assume `main`. The PR's base may be `dev` (as
+in ctrlshft), and guessing wrong makes the diff meaningless.
 
 ```bash
+# Resolve the authoritative base (PR base → sandcastle.config.json → repo default)
+BASE_BRANCH="$(bash bin/verify-pr-base.sh --branch "$(git branch --show-current)")"
+# If the branch has an open PR, prefer its authoritative base:
+#   BASE_BRANCH="$(bash bin/verify-pr-base.sh --pr <PR_NUMBER>)"
+
 # What branch and base?
 git branch --show-current
-git log --oneline main..HEAD 2>/dev/null || git log --oneline HEAD~5..HEAD
+git log --oneline "$BASE_BRANCH"..HEAD 2>/dev/null || git log --oneline HEAD~5..HEAD
 
 # What files changed?
-git diff --name-only main..HEAD 2>/dev/null || git diff --name-only HEAD~1..HEAD
+git diff --name-only "$BASE_BRANCH"..HEAD 2>/dev/null || git diff --name-only HEAD~1..HEAD
 
 # Full diff (for context)
-git diff main..HEAD 2>/dev/null || git diff HEAD~1..HEAD
+git diff "$BASE_BRANCH"..HEAD 2>/dev/null || git diff HEAD~1..HEAD
 ```
 
 From this, answer:
@@ -142,7 +149,7 @@ Apply the full codebase-audit categories to each changed file:
 Now look at only what changed, with fresh eyes.
 
 ```bash
-git diff main..HEAD 2>/dev/null || git diff HEAD~1..HEAD
+git diff "$BASE_BRANCH"..HEAD 2>/dev/null || git diff HEAD~1..HEAD
 ```
 
 For each hunk in the diff:
@@ -202,12 +209,12 @@ git status --porcelain
 git diff --cached | grep -iE 'SECRET|PASSWORD|API_KEY|TOKEN|PRIVATE_KEY' | head -5 || true
 git diff HEAD | grep -iE 'SECRET|PASSWORD|API_KEY|TOKEN|PRIVATE_KEY' | head -5 || true
 
-# Branch is up to date with base
-git fetch origin main 2>/dev/null || true
-git log --oneline HEAD..origin/main 2>/dev/null | head -5
+# Branch is up to date with base (BASE_BRANCH resolved in Phase 1)
+git fetch origin "$BASE_BRANCH" 2>/dev/null || true
+git log --oneline HEAD..origin/"$BASE_BRANCH" 2>/dev/null | head -5
 
 # Commit messages are clean
-git log --oneline main..HEAD 2>/dev/null || git log --oneline HEAD~5..HEAD
+git log --oneline "$BASE_BRANCH"..HEAD 2>/dev/null || git log --oneline HEAD~5..HEAD
 ```
 
 ---

@@ -28,11 +28,21 @@ the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`).
 | `agent:fix` | **Human** (verdict gate, on PR) | `agent-fix-pr-feedback.yml` | pushes fixes → PR re-reviewed |
 | `agent:merge` | **Human** (verdict gate, on PR) | `agent-merge-pr.yml` | PR merged → issue closed |
 | `agent:update-branch` | **Human** (on PR) | `agent-update-branch.yml` | branch updated |
-| `agent:implement-prd` | **Human** / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | `agent:implement-prd` while sub-issues remain; otherwise marks the PR ready for Copilot review |
+| `agent:implement-prd` | **Human** / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | `agent:implement-prd` (sub-issues remain) / `agent:review` (PR ready) / `agent:implement` |
 | `agent:queued` | **Human** / skills | `agent-promote-queued.yml` (when a blocker closes) | `agent:implement` once deps clear |
 | `agent:in-progress` | any active workflow | — (state marker) | removed on completion |
 | `agent:blocked` | any workflow on failure | — | needs human intervention |
 | `source:architecture-review` | `agent-architecture-review.yml` | — (proposal marker) | human triages before applying a start label |
+| `repo-hygiene` | `agent-repo-hygiene.yml` | — (proposal marker) | human triages before applying a start label |
+| `phase-0` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 0 — safety net |
+| `phase-1` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 1 — structure/layout |
+| `phase-2` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 2 — DRY extraction |
+| `phase-3` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 3 — styling/typing |
+| `phase-4` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 4 — content/data |
+| `phase-5` | `agent-repo-hygiene.yml` | — (phase marker) | repo-hygiene phase 5 — ratchet |
+| `source:keep-tests-tight` | `agent-keep-tests-tight.yml` | — (provenance marker on PR) | human reviews the test-trim PR before merging |
+| `shft` | `defer-to-issue` (engine) | — (review-metadata marker) | — |
+| `hitl` | `defer-to-issue` (engine) | — (review-metadata marker) | — |
 
 There is no separate planning-state label — `agent-plan-issue.yml` promotes
 `agent:review` → `agent:implement` directly.

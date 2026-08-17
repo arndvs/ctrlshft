@@ -1,0 +1,115 @@
+name: Nightly repo hygiene
+
+on:
+  schedule:
+    # 02:30 UTC. GitHub cron is UTC-only and can be delayed under load —
+    # treat the time as approximate.
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Print the proposed issue instead of creating it"
+        type: boolean
+        default: false
+
+# Least privilege: the pilot reads code and writes issues. It never pushes
+# branches or opens PRs — a human or a separate agent executes the task.
+permissions:
+  contents: write      # only to commit the ledger update
+  issues: write
+
+concurrency:
+  group: repo-hygiene
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # --- Guard: bail out early if a task is already open. -------------
+      # This is the single most important step. Without it you get one issue
+      # per night forever, regardless of whether anything is being merged.
+      - name: Check for an open task
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          OPEN=$(gh issue list --label repo-hygiene --state open --json number --jq 'length')
+          echo "open_count=$OPEN" >> "$GITHUB_OUTPUT"
+          if [ "$OPEN" -gt 0 ]; then
+            echo "::notice::$OPEN task(s) already open — skipping proposal."
+          fi
+
+      - name: Install dependencies
+        if: steps.guard.outputs.open_count == '0'
+        run: npm ci
+
+      - name: Run audit
+        if: steps.guard.outputs.open_count == '0'
+        run: |
+          node .refactor/audit.mjs --json > /tmp/audit.json
+          node .refactor/audit.mjs   # human-readable copy in the log
+
+      # Verify the build is green before proposing work. Proposing a refactor
+      # on top of a broken build produces tasks nobody can verify.
+      - name: Build check
+        if: steps.guard.outputs.open_count == '0'
+        id: build
+        continue-on-error: true
+        run: npm run build
+
+      - name: Install Claude Code
+        if: steps.guard.outputs.open_count == '0'
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Propose next task
+        if: steps.guard.outputs.open_count == '0'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          BUILD_OK: ${{ steps.build.outcome }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          claude -p "$(cat <<'PROMPT'
+          Use the repo-hygiene skill in issue mode.
+
+          The audit output is at /tmp/audit.json and the ledger is at
+          .refactor/state.json. The build status of this commit is in $BUILD_OK.
+
+          Determine the stack from the audit, determine the current phase,
+          select exactly one task within the size budget, and create a single
+          GitHub issue using the skill's issue template via `gh issue create`.
+          Label it `repo-hygiene` and `phase-<n>`. Then append the task to the
+          ledger.
+
+          If DRY_RUN is true, print the proposed issue body instead of creating
+          it, and do not touch the ledger.
+
+          If the build is failing, the only acceptable task is a Phase 0 task
+          to fix the build. Do not propose refactoring on a red build.
+          PROMPT
+          )" \
+            --allowedTools "Bash,Read,Glob,Grep,Edit" \
+            --permission-mode acceptEdits
+
+      - name: Commit ledger update
+        if: steps.guard.outputs.open_count == '0' && github.event.inputs.dry_run != 'true'
+        run: |
+          if [ -n "$(git status --porcelain .refactor/)" ]; then
+            git config user.name  "repo-hygiene[bot]"
+            git config user.email "repo-hygiene@users.noreply.github.com"
+            git add .refactor/
+            git commit -m "chore(refactor): record proposed task"
+            git push
+          fi

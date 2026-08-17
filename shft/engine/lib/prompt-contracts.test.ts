@@ -13,13 +13,15 @@ const promptDirs = [
   { label: "sandcastle overrides", path: join(repoRoot, ".sandcastle", "prompts") },
 ] as const;
 
-const extractionWorkflows = ["architecture-review", "implement-pr", "update-branch"] as const;
+const extractionWorkflows = ["architecture-review", "implement-pr", "update-branch", "keep-tests-tight", "repo-hygiene"] as const;
 const workflowPromptArgs = {
   "address-review": ["PR_NUMBER", "BRANCH", "COMMENTS_JSON"],
   "architecture-review": [],
   "implement-issue": ["ISSUE_NUMBER", "ISSUE_TITLE", "BRANCH"],
   "implement-pr": ["PR_NUMBER", "BRANCH", "ISSUE_NUMBER", "ISSUE_TITLE", "PR_COMMENTS_JSON"],
   "implement-prd": ["PRD_NUMBER", "PRD_TITLE", "SUB_ISSUE_NUMBER", "SUB_ISSUE_TITLE", "BRANCH"],
+  "keep-tests-tight": ["BRANCH", "TESTING_PRINCIPLES"],
+  "repo-hygiene": ["DRY_RUN"],
   review: ["PR_NUMBER", "PR_COMMENTS_JSON"],
   "to-issues-prd": ["ISSUE_NUMBER"],
   "update-branch": ["PR_NUMBER", "BRANCH", "BASE_REF"],
@@ -34,6 +36,7 @@ const configArgNames = Object.keys(configPromptArgs({
   sandbox: "none",
   promptDir: ".sandcastle/prompts",
   codingStandards: ".sandcastle/CODING_STANDARDS.md",
+  testingPrinciples: ".sandcastle/testing-principles.md",
   contextDoc: "CONTEXT.md",
   adrDir: "docs/adr",
   packageManager: "pnpm",
@@ -45,6 +48,9 @@ function promptCases(): Array<{ label: string; name: keyof typeof workflowPrompt
 
     return readdirSync(dir.path)
       .filter((filename) => filename.endsWith(".md"))
+      // Referenced artifacts (e.g. testing-principles.md) are not workflow
+      // prompts and have no prompt-arg contract.
+      .filter((filename) => filename !== "testing-principles.md")
       .map((filename) => ({
         label: `${dir.label}/${filename}`,
         name: filename.replace(/\.md$/, "") as keyof typeof workflowPromptArgs,

@@ -33,9 +33,9 @@ export const LABELS: Record<string, LabelDef> = {
     description: "Entry point — triggers agent review pipeline",
   },
   "agent:review": {
-    appliesTo: ["issue"],
+    appliesTo: ["issue", "pr"],
     color: "0075ca",
-    description: "Agent is reviewing the issue",
+    description: "Agent is reviewing the issue or PR",
   },
   "agent:implement": {
     appliesTo: ["issue"],
@@ -90,6 +90,66 @@ export const LABELS: Record<string, LabelDef> = {
     description: "PRDs proposed by the automated architecture-review workflow",
     stateMarker: true,
   },
+  "source:keep-tests-tight": {
+    appliesTo: ["pr"],
+    color: "1d76db",
+    description: "Test-trim PRs opened by the automated keep-tests-tight workflow",
+    stateMarker: true,
+  },
+  shft: {
+    appliesTo: ["issue"],
+    color: "7057ff",
+    description: "Issues created by the Sandcastle engine (e.g. HITL review deferrals)",
+    stateMarker: true,
+  },
+  hitl: {
+    appliesTo: ["issue"],
+    color: "d4c5f9",
+    description: "Human-in-the-loop — requires human review or decision",
+    stateMarker: true,
+  },
+  "repo-hygiene": {
+    appliesTo: ["issue"],
+    color: "7057ff",
+    description: "Backlog issues proposed by the nightly repo-hygiene workflow",
+    stateMarker: true,
+  },
+  "phase-0": {
+    appliesTo: ["issue"],
+    color: "c5def5",
+    description: "Repo-hygiene phase 0 — safety net",
+    stateMarker: true,
+  },
+  "phase-1": {
+    appliesTo: ["issue"],
+    color: "c5def5",
+    description: "Repo-hygiene phase 1 — structure/layout",
+    stateMarker: true,
+  },
+  "phase-2": {
+    appliesTo: ["issue"],
+    color: "c5def5",
+    description: "Repo-hygiene phase 2 — DRY extraction",
+    stateMarker: true,
+  },
+  "phase-3": {
+    appliesTo: ["issue"],
+    color: "c5def5",
+    description: "Repo-hygiene phase 3 — styling/typing",
+    stateMarker: true,
+  },
+  "phase-4": {
+    appliesTo: ["issue"],
+    color: "c5def5",
+    description: "Repo-hygiene phase 4 — content/data",
+    stateMarker: true,
+  },
+  "phase-5": {
+    appliesTo: ["issue"],
+    color: "c5def5",
+    description: "Repo-hygiene phase 5 — ratchet",
+    stateMarker: true,
+  },
 };
 
 // ── Mutual exclusions ────────────────────────────────────────────────────────
@@ -124,10 +184,12 @@ export const TRANSITIONS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ],
   // Queued → implement (promoted when blockers clear)
   ["agent:queued", new Set(["agent:implement"])],
-  // PRD loop — can re-apply itself while sub-issues remain.
+  // PRD loop — can re-apply itself while sub-issues remain, and when the PRD is
+  // complete it marks the PR ready for review (agent:review on the PR) or
+  // produces a follow-up implement.
   [
     "agent:implement-prd",
-    new Set(["agent:implement-prd"]),
+    new Set(["agent:implement-prd", "agent:review", "agent:implement"]),
   ],
   // PR verdict paths
   ["agent:fix", new Set([])], // fix just pushes commits; no label added

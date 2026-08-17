@@ -8,7 +8,7 @@ This document records the dogfood test coverage state for all Sandcastle
 workflows installed in this repository. It serves as the reference for
 regression detection and coverage gap analysis.
 
-- **Workflows tracked:** 16 (10 agent + 6 infrastructure)
+- **Workflows tracked:** 17 (11 agent + 6 infrastructure)
 - **Smoke/report scripts:** 6 (5 exercisers + 1 report aggregator)
 - **Report aggregators:** 1 (`bin/smoke-sandcastle-report.sh`)
 - **Harness tests:** 6 (unit tests for each smoke script)
@@ -30,7 +30,7 @@ gh workflow run nightly-smoke.yml \
 - **Run URL:** https://github.com/arndvs/ctrlshft/actions/runs/<RUN_ID>
 - **Artifact:** `smoke-report-3` (`report.json` + `report.md`)
 - **Generated:** 2026-07-03T17:33:36Z
-- **Coverage:** 100.0% (16 / 16 workflows with runs)
+- **Coverage:** 100.0% (17 / 17 workflows with runs)
 - **Runs inspected:** 252
 - **Observed pass/fail/skip:** 155 pass / 17 fail / 80 skip
 
@@ -64,7 +64,7 @@ Each workflow is categorized by its coverage type:
 - **Passive:** The report aggregator queries run history without triggering.
 - **Infrastructure:** CI/CD workflows exercised by normal development flow.
 
-### Agent Workflows (10)
+### Agent Workflows (12)
 
 | Workflow | File | Coverage | Smoke Script |
 |----------|------|----------|--------------|
@@ -73,9 +73,11 @@ Each workflow is categorized by its coverage type:
 | Fix PR Feedback | `agent-fix-pr-feedback.yml` | Active | `smoke-sandcastle-pr-path.sh` |
 | Implement Issue | `agent-implement-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh`, `smoke-sandcastle-promote-queued.sh` |
 | Implement PRD | `agent-implement-prd.yml` | Passive | `smoke-sandcastle-report.sh` (query only) |
+| Keep Tests Tight | `agent-keep-tests-tight.yml` | Active | `smoke-sandcastle-scheduled.sh` |
 | Merge PR | `agent-merge-pr.yml` | Active | `smoke-sandcastle-pr-path.sh` |
 | Plan Issue | `agent-plan-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh` |
 | Promote Queued | `agent-promote-queued.yml` | Active | `smoke-sandcastle-promote-queued.sh` |
+| Repo Hygiene | `agent-repo-hygiene.yml` | Active | `smoke-sandcastle-scheduled.sh` |
 | Review Issue | `agent-review-issue.yml` | Active | `smoke-sandcastle-issue-labels.sh` |
 | Update Branch | `agent-update-branch.yml` | Active | `smoke-sandcastle-pr-path.sh` |
 

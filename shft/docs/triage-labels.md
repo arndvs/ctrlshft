@@ -5,7 +5,8 @@ The agent-facing contract — the two human gates, `AGENT_PAT`, and how local sk
 pipeline — is [`instructions/sandcastle-pipeline.instructions.md`](../../instructions/sandcastle-pipeline.instructions.md).
 
 State lives on **two objects**: the **issue** carries state up to `agent:pr-open`; the **PR** carries
-the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`). "Applied by" is what writes
+the review verdict (`agent:fix` / `agent:merge` / `agent:update-branch`) and, as a PR-ready/review gate,
+`agent:review` (applied by `agent-implement-prd.yml` when a PRD completes). "Applied by" is what writes
 the label; "Triggers" is the workflow the label fires (`—` = inert state marker). Chaining writes use
 `AGENT_PAT`, since `GITHUB_TOKEN` label writes do not re-trigger workflows.
 
@@ -20,7 +21,7 @@ the label; "Triggers" is the workflow the label fires (`—` = inert state marke
 | `agent:fix` | `#d93f0b` | Human (verdict gate, on PR) | `agent-fix-pr-feedback.yml` | PR re-reviewed |
 | `agent:merge` | `#0e8a16` | Human (verdict gate, on PR) | `agent-merge-pr.yml` | Issue closed |
 | `agent:update-branch` | `#5319e7` | Human (on PR) | `agent-update-branch.yml` | Branch updated |
-| `agent:implement-prd` | `#d4c5f9` | Human / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | Next sub-issue or PR ready for Copilot review |
+| `agent:implement-prd` | `#d4c5f9` | Human / `agent-implement-prd.yml` *(AGENT_PAT)* | `agent-implement-prd.yml` | `agent:implement-prd` (sub-issues remain) / `agent:review` (PR ready) / `agent:implement` |
 | `agent:queued` | `#c5def5` | Human / skills (e.g. prd-to-issues) | `agent-promote-queued.yml` (on blocker close) | `agent:implement` when deps clear |
 | `agent:in-progress` | `#fbca04` | Any active workflow | — | Removed on completion |
 | `agent:blocked` | `#b60205` | Any workflow (on failure) | — | Human intervention |
@@ -33,6 +34,9 @@ directly.
 | Label | Color | Purpose |
 |-------|-------|---------|
 | `source:architecture-review` | `#5319e7` | PRDs proposed by automated architecture review |
+| `source:keep-tests-tight` | `#1d76db` | Test-trim PRs opened by the automated keep-tests-tight workflow |
+| `repo-hygiene` | `#7057ff` | Backlog issues proposed by the nightly repo-hygiene workflow |
+| `phase-0` … `phase-5` | `#c5def5` | Repo-hygiene phase markers (which phase the task belongs to) |
 
 ## State transitions
 

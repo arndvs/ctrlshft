@@ -1,0 +1,215 @@
+{
+  "skills": {
+    "architect": {
+      "computedHash": "bf2dcf41e1a3253b6551f3ea7175eac9e6cefed35fc155469611cec27e5f1dbe",
+      "skillPath": "skills/architect/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "atomic-commits": {
+      "computedHash": "1348d0dbdedd3eb222f3d1b4b1520ed69236089b897fff9abdffd473d8160fd9",
+      "skillPath": "skills/atomic-commits/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "caveman": {
+      "computedHash": "aca7ab745064b44c98d937e5260c0a3d5ab95432c90f3674f56366fce6496bdc",
+      "skillPath": "skills/caveman/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "code-review": {
+      "computedHash": "77ceca92ebaca3366c8b2ace8fe9d24662e2409ada95bb08a9ab416f4e80f19c",
+      "skillPath": "skills/code-review/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "codebase-audit": {
+      "computedHash": "567aad32c35f376bfa8f88ec6e57c6f41e8613a8d6fe5404fbf709efda734097",
+      "skillPath": "skills/codebase-audit/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "compliance-audit": {
+      "computedHash": "a16da62382745ff4a1191f3bf7c86357a5f8595977855ca04a2b4d97e5775b0c",
+      "skillPath": "skills/compliance-audit/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "data-object-conventions": {
+      "computedHash": "a583a9763bb02b63741636e682f7db3b822a9da934f32372063a95d788a778bd",
+      "skillPath": "skills/data-object-conventions/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "do-work": {
+      "computedHash": "39f9b7c48ae54f92367f1ff25cc55a9f3fffa6d2962aa667be8b0e1f5ac80aab",
+      "skillPath": "skills/do-work/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "document": {
+      "computedHash": "25630a24fc27fabc0cbdce882b177aeb981d9db4c22a4064c34e21acc18dc91d",
+      "skillPath": "skills/document/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "error-audit": {
+      "computedHash": "cf1fa46df60837863f51574a7786d77da7441ebee1bf97e0121c641b28e26a70",
+      "skillPath": "skills/error-audit/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "explore": {
+      "computedHash": "7d219b171e2fd15365381a4634bd6a9d14c883fcf808663122e5a8e6077554d9",
+      "skillPath": "skills/explore/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "frontend-component-style": {
+      "computedHash": "9eada30cb4f8f6879e1e2c91df7e3ceca5d2a9f4440325e066ab3bd6dc8c159a",
+      "skillPath": "skills/frontend-component-style/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "grill-me": {
+      "computedHash": "1a743f2e0b7e1be59757b17b7fcb7cbd0ac482da95bbea3eb474f2cb8e4914f3",
+      "skillPath": "skills/grill-me/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "grill-with-docs": {
+      "computedHash": "8518cf050b5cef0619d8f1c181ff6859acc44173442796d3121011c5817c85c0",
+      "skillPath": "skills/grill-with-docs/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "halbert-copy-editor": {
+      "computedHash": "2a89792e57c1de9e64974ced8d68b870357666952c2d30dfb737683c46c2a8c6",
+      "skillPath": "skills/halbert-copy-editor/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "improve-architecture": {
+      "computedHash": "4f0dc178794bca43f6af97481436370a78b7ab8713194059f1c8e4725f526c27",
+      "skillPath": "skills/improve-architecture/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "mobile-dev": {
+      "computedHash": "dc24404764821925d2b7769dcc603a35beb4e4d1fb73c6b56cf366b0a824d389",
+      "skillPath": "skills/mobile-dev/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "npm-security-audit": {
+      "computedHash": "2aabd8fd3a68757f09dc788046d5ea7313790cf23e298e64b8962da28bb764c7",
+      "skillPath": "skills/npm-security-audit/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "performance-audit": {
+      "computedHash": "cfa3df8b0a65f41c7d85c7cae129c872875d9c3cdcddafff943bbfa2cda7e2ac",
+      "skillPath": "skills/performance-audit/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "plan-archive": {
+      "computedHash": "29378a20df2277940e8325594d3b9cc4deef4074dbafac64de9cf68a0ce90057",
+      "skillPath": "skills/plan-archive/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "pr-preflight": {
+      "computedHash": "20243a442eff548249ef3017af1d6905aa5d357446ca2c98aa5c6fdb9007d62c",
+      "skillPath": "skills/pr-preflight/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "prd-to-issues": {
+      "computedHash": "d54ed11f36c267de43bd0a6eaacc929a38adf22f6f7d27460f1431e7f73d789e",
+      "skillPath": "skills/prd-to-issues/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "press1-check": {
+      "computedHash": "aefa5a3c32f51a1d4906d42a5db40f63a2822427e4361d3f0d933d7f2f50aa00",
+      "skillPath": "skills/press1-check/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "repo-hygiene": {
+      "computedHash": "fb368d6bfd6d6aa57f87664c59632fe0829c6cf49def15ec540b982887545292",
+      "skillPath": "skills/repo-hygiene/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "research": {
+      "computedHash": "844cf28e456800dae1e27638b279bc1ab07779dd116067d43326216aa5ae2fff",
+      "skillPath": "skills/research/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "review-pr-copilot": {
+      "computedHash": "15848b7ccf6c7659b287d21fbf50fb0ef111f4875ad734d57e738e0c5639e0d0",
+      "skillPath": "skills/review-pr-copilot/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "sanity-best-practices": {
+      "computedHash": "50f5643ca8010171d1307b2537092f379e643c20a5d0ea91476f446a71cc0a88",
+      "skillPath": "skills/sanity-best-practices/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "session-close": {
+      "computedHash": "0059290fdfcf6c7a8f9b561605c2c433403a25423eec1d4b25ace302c6448013",
+      "skillPath": "skills/session-close/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "sketch-the-solution": {
+      "computedHash": "5979acf9d07055724e7ffb1726b5fed5b712fbabcd3606170fb6b05ec8add4b2",
+      "skillPath": "skills/sketch-the-solution/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "skill-scaffolder": {
+      "computedHash": "efa22191688c00763013c35385419c1eef9ac3bdd50c974d1669b617379e6b25",
+      "skillPath": "skills/skill-scaffolder/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "stress-test": {
+      "computedHash": "477e0db5ddfd3de8893c3f24286bd95e4dbbebbb8d9ff62465af1f7ae115b95b",
+      "skillPath": "skills/stress-test/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "systematic-debugging": {
+      "computedHash": "ce3970823fc4eda7a3b8fa34720e1146991738d3db03a05c437e33b48977b532",
+      "skillPath": "skills/systematic-debugging/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "tdd": {
+      "computedHash": "b8cf8a5e11bab1fabe170afb25085e0f3f90946cac83de80ff42c85337580575",
+      "skillPath": "skills/tdd/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "visual-feedback": {
+      "computedHash": "a33aae63d37f30ff1445bbc10a22127b0b0d080b727db81c995994fd0d6f4651",
+      "skillPath": "skills/visual-feedback/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "write-a-prd": {
+      "computedHash": "3c32f7f32255a899f776805087a995d17cf4b143ad561698f37a9a7d6499192d",
+      "skillPath": "skills/write-a-prd/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    }
+  },
+  "version": 1
+}

@@ -4,7 +4,7 @@
 
 declare -A LABEL_APPLIES_TO=(
   ['Sandcastle']='issue'
-  ['agent:review']='issue'
+  ['agent:review']='issue,pr'
   ['agent:implement']='issue'
   ['agent:pr-open']='issue'
   ['agent:fix']='pr'
@@ -15,6 +15,16 @@ declare -A LABEL_APPLIES_TO=(
   ['agent:in-progress']='issue,pr'
   ['agent:blocked']='issue,pr'
   ['source:architecture-review']='issue'
+  ['source:keep-tests-tight']='pr'
+  ['shft']='issue'
+  ['hitl']='issue'
+  ['repo-hygiene']='issue'
+  ['phase-0']='issue'
+  ['phase-1']='issue'
+  ['phase-2']='issue'
+  ['phase-3']='issue'
+  ['phase-4']='issue'
+  ['phase-5']='issue'
 )
 
 MUTUAL_EXCLUSIONS=(
