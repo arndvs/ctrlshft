@@ -40,6 +40,8 @@ const configArgNames = Object.keys(configPromptArgs({
   contextDoc: "CONTEXT.md",
   adrDir: "docs/adr",
   packageManager: "pnpm",
+  excludedPaths: [],
+  disabledWorkflows: [],
 }));
 
 function promptCases(): Array<{ label: string; name: keyof typeof workflowPromptArgs; content: string }> {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { loadConfig } from "./config.js";
+import { loadConfig, resolveExcludedPaths } from "./config.js";
 
 describe("loadConfig", () => {
   let tempDir: string;
@@ -119,5 +119,43 @@ describe("loadConfig", () => {
     process.env["ANTHROPIC_MODEL"] = "claude-opus-4-6";
     const config = await loadConfig({ cwd: tempDir });
     expect(config.model).toBe("claude-haiku");
+  });
+
+  it("defaults excludedPaths to empty and resolveExcludedPaths returns vendored defaults", async () => {
+    const config = await loadConfig({ cwd: tempDir });
+    expect(config.excludedPaths).toEqual([]);
+    expect(config.disabledWorkflows).toEqual([]);
+
+    const excluded = resolveExcludedPaths(config);
+    expect(excluded).toContain(".sandcastle");
+    expect(excluded).toContain(".github/workflows/agent-*");
+    expect(excluded).toContain(".refactor");
+  });
+
+  it("merges project excludedPaths with vendored defaults (deduped)", async () => {
+    writeFileSync(
+      join(tempDir, "sandcastle.config.json"),
+      JSON.stringify({ excludedPaths: ["docs/private/", ".sandcastle"] }),
+    );
+
+    const config = await loadConfig({ cwd: tempDir });
+    const excluded = resolveExcludedPaths(config);
+
+    expect(excluded).toContain("docs/private/");
+    expect(excluded).toContain(".sandcastle");
+    // Deduped: .sandcastle appears once
+    expect(excluded.filter((p) => p === ".sandcastle")).toHaveLength(1);
+    // Defaults still present
+    expect(excluded).toContain(".github/workflows/agent-*");
+  });
+
+  it("reads disabledWorkflows from config", async () => {
+    writeFileSync(
+      join(tempDir, "sandcastle.config.json"),
+      JSON.stringify({ disabledWorkflows: ["architecture-review", "repo-hygiene"] }),
+    );
+
+    const config = await loadConfig({ cwd: tempDir });
+    expect(config.disabledWorkflows).toEqual(["architecture-review", "repo-hygiene"]);
   });
 });
