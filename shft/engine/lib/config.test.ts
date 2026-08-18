@@ -124,6 +124,7 @@ describe("loadConfig", () => {
   it("defaults excludedPaths to empty and resolveExcludedPaths returns vendored defaults", async () => {
     const config = await loadConfig({ cwd: tempDir });
     expect(config.excludedPaths).toEqual([]);
+    expect(config.disabledWorkflows).toEqual([]);
 
     const excluded = resolveExcludedPaths(config);
     expect(excluded).toContain(".sandcastle");
@@ -146,5 +147,15 @@ describe("loadConfig", () => {
     expect(excluded.filter((p) => p === ".sandcastle")).toHaveLength(1);
     // Defaults still present
     expect(excluded).toContain(".github/workflows/agent-*");
+  });
+
+  it("reads disabledWorkflows from config", async () => {
+    writeFileSync(
+      join(tempDir, "sandcastle.config.json"),
+      JSON.stringify({ disabledWorkflows: ["architecture-review", "repo-hygiene"] }),
+    );
+
+    const config = await loadConfig({ cwd: tempDir });
+    expect(config.disabledWorkflows).toEqual(["architecture-review", "repo-hygiene"]);
   });
 });

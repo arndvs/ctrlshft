@@ -17,6 +17,7 @@ function makeConfig(overrides: Partial<SandcastleConfig> = {}): SandcastleConfig
     adrDir: "docs/adr",
     packageManager: "pnpm",
     excludedPaths: [],
+    disabledWorkflows: [],
     ...overrides,
   };
 }

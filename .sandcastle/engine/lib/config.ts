@@ -44,6 +44,13 @@ const SandcastleConfigSchema = z.object({
    * always-on vendored defaults. Glob patterns are supported.
    */
   excludedPaths: z.array(z.string()).default([]),
+  /**
+   * Nightly agent workflows to disable in this repo (e.g. "architecture-review",
+   * "repo-hygiene", "keep-tests-tight"). A repo owner can turn off an agent pass
+   * entirely without editing the vendored workflow file — the workflow's first
+   * step exits early when its name appears here.
+   */
+  disabledWorkflows: z.array(z.string()).default([]),
 });
 
 export type SandcastleConfig = z.infer<typeof SandcastleConfigSchema>;

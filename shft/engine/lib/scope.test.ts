@@ -13,6 +13,7 @@ const makeConfig = (): SandcastleConfig => ({
   adrDir: "docs/adr",
   packageManager: "pnpm",
   excludedPaths: [],
+  disabledWorkflows: [],
 });
 
 describe("isPathExcluded", () => {
