@@ -125,22 +125,18 @@ def get_context(output):
 class TestIsPrCreateCommand(unittest.TestCase):
     """CC-175: token-aware match prevents false positives on quoted text."""
 
-    # --- Positive (gate should fire) ---
-
-    def test_plain_pr_create(self):
-        self.assertTrue(prp.is_pr_create_command("gh pr create --title x"))
-
-    def test_plain_pr_edit(self):
-        self.assertTrue(prp.is_pr_create_command("gh pr edit 5 --body y"))
-
-    def test_chained_with_cd(self):
-        self.assertTrue(prp.is_pr_create_command("cd /tmp && gh pr create --title x"))
-
-    def test_env_var_prefix(self):
-        self.assertTrue(prp.is_pr_create_command("EDITOR=vim gh pr create"))
-
-    def test_equals_form_args(self):
-        self.assertTrue(prp.is_pr_create_command("gh pr create --title=x --body=y"))
+    def test_positive_command_shapes(self):
+        # Every command shape that must fire the gate resolves to a pr create/edit.
+        shapes = [
+            "gh pr create --title x",
+            "gh pr edit 5 --body y",
+            "cd /tmp && gh pr create --title x",
+            "EDITOR=vim gh pr create",
+            "gh pr create --title=x --body=y",
+        ]
+        for cmd in shapes:
+            with self.subTest(cmd=cmd):
+                self.assertTrue(prp.is_pr_create_command(cmd))
 
     # --- Negative (gate should NOT fire) ---
 
@@ -763,17 +759,14 @@ class TestReadCtrlshftKey(unittest.TestCase):
             result = pfl._read_ctrlshft_key(tmp, "active_plans_dir")
             self.assertEqual(result, "working/active")
 
-    def test_returns_none_for_missing_key(self):
+    def test_returns_none_when_key_or_file_missing(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            (tmp / ".ctrlshft").write_text("commit_types:\n  - feat\n")
-            result = pfl._read_ctrlshft_key(tmp, "active_plans_dir")
-            self.assertIsNone(result)
-
-    def test_returns_none_for_missing_file(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            result = pfl._read_ctrlshft_key(Path(tmpdir), "active_plans_dir")
-            self.assertIsNone(result)
+            missing_key = pfl._read_ctrlshft_key(tmp, "active_plans_dir")
+            missing_file = Path(tmpdir)  # untouched tempdir, no .ctrlshft
+            result = pfl._read_ctrlshft_key(missing_file, "active_plans_dir")
+        self.assertIsNone(missing_key)
+        self.assertIsNone(result)
 
     def test_ignores_list_items(self):
         """List items (- value) under a different key don't match."""

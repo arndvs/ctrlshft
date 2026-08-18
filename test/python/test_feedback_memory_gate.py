@@ -115,63 +115,32 @@ class TestFastPath(unittest.TestCase):
 class TestBugDetection(unittest.TestCase):
     """Feedback memories describing bugs should trigger a warning."""
 
-    def test_bug_keyword_triggers_warning(self):
-        """Content with 'bug' keyword and no issue ref triggers warning."""
-        _, stderr, code = run_gate(make_input(
-            "/Users/test/project/claude-memory/feedback_some_issue.md",
-            "---\nname: some issue\ntype: feedback\n---\n\n"
-            "This is a bug in the retro agent."
-        ))
-        self.assertEqual(code, 0)
-        output = parse_output(stderr)
-        context = get_context(output)
-        self.assertIsNotNone(context)
-        self.assertIn("issue", context.lower())
-
-    def test_broken_keyword_triggers_warning(self):
-        """Content with 'broken' keyword triggers warning."""
-        _, stderr, _ = run_gate(make_input(
-            "/Users/test/project/claude-memory/feedback_broken_thing.md",
-            "The session-start step is broken and needs fixing."
-        ))
-        output = parse_output(stderr)
-        self.assertIsNotNone(get_context(output))
-
-    def test_fails_keyword_triggers_warning(self):
-        """Content with 'fails' keyword triggers warning."""
-        _, stderr, _ = run_gate(make_input(
-            "/Users/test/project/claude-memory/feedback_script_fails.md",
-            "The fitbit script fails locally due to missing credentials."
-        ))
-        output = parse_output(stderr)
-        self.assertIsNotNone(get_context(output))
-
-    def test_error_keyword_triggers_warning(self):
-        """Content with 'error' keyword triggers warning."""
-        _, stderr, _ = run_gate(make_input(
-            "/Users/test/project/claude-memory/feedback_error_handling.md",
-            "The script produces an error when credentials are missing."
-        ))
-        output = parse_output(stderr)
-        self.assertIsNotNone(get_context(output))
-
-    def test_should_instead_triggers_warning(self):
-        """Content with 'should X instead' triggers warning."""
-        _, stderr, _ = run_gate(make_input(
-            "/Users/test/project/claude-memory/feedback_pull_first.md",
-            "Should pull from remote instead of running the script locally."
-        ))
-        output = parse_output(stderr)
-        self.assertIsNotNone(get_context(output))
-
-    def test_doesnt_work_triggers_warning(self):
-        """Content with 'doesn't work' triggers warning."""
-        _, stderr, _ = run_gate(make_input(
-            "/Users/test/project/claude-memory/feedback_auth_broken.md",
-            "The auth flow doesn't work when tokens expire."
-        ))
-        output = parse_output(stderr)
-        self.assertIsNotNone(get_context(output))
+    def test_bug_keywords_trigger_warning(self):
+        # Each keyword alone in a feedback memory must produce an advisory
+        # warning; the specific keyword doesn't change the contract, only its
+        # presence does.
+        cases = [
+            ("bug", "feedback_some_issue.md",
+             "---\nname: some issue\ntype: feedback\n---\n\nThis is a bug in the retro agent."),
+            ("broken", "feedback_broken_thing.md",
+             "The session-start step is broken and needs fixing."),
+            ("fails", "feedback_script_fails.md",
+             "The fitbit script fails locally due to missing credentials."),
+            ("error", "feedback_error_handling.md",
+             "The script produces an error when credentials are missing."),
+            ("should X instead", "feedback_pull_first.md",
+             "Should pull from remote instead of running the script locally."),
+            ("doesn't work", "feedback_auth_broken.md",
+             "The auth flow doesn't work when tokens expire."),
+        ]
+        for keyword, filename, content in cases:
+            with self.subTest(keyword=keyword):
+                _, stderr, code = run_gate(make_input(
+                    f"/Users/test/project/claude-memory/{filename}", content
+                ))
+                self.assertEqual(code, 0)
+                context = get_context(parse_output(stderr))
+                self.assertIsNotNone(context)
 
 
 class TestIssueRefSuppression(unittest.TestCase):

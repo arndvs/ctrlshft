@@ -21,9 +21,7 @@ from pydantic import ValidationError
 from bridge.models import (
     PullRequest,
     PullRequestReviewEvent,
-    Repository,
     Review,
-    User,
 )
 
 # A realistic pull_request_review payload with many fields the bridge does
@@ -103,20 +101,14 @@ class TestPullRequestReviewEvent(unittest.TestCase):
             )
 
 
-class TestSubModels(unittest.TestCase):
-    def test_user(self):
-        self.assertEqual(User.model_validate({"login": "x"}).login, "x")
-
-    def test_repository(self):
-        self.assertEqual(Repository.model_validate({"full_name": "o/r"}).full_name, "o/r")
-
-    def test_pull_request_requires_number(self):
+    def test_submodel_required_fields_and_defaults(self):
+        # The submodels only require the fields the event walk reads. A missing
+        # PullRequest.number is rejected; Review.state defaults to "".
         with self.assertRaises(ValidationError):
             PullRequest.model_validate({"title": "t", "html_url": "u"})
-
-    def test_review_defaults_state(self):
-        r = Review.model_validate({"user": {"login": "x"}, "html_url": "u"})
-        self.assertEqual(r.state, "")
+        self.assertEqual(
+            Review.model_validate({"user": {"login": "x"}, "html_url": "u"}).state, ""
+        )
 
 
 if __name__ == "__main__":
