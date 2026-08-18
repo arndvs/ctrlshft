@@ -16,6 +16,7 @@ function makeConfig(overrides: Partial<SandcastleConfig> = {}): SandcastleConfig
     contextDoc: "CONTEXT.md",
     adrDir: "docs/adr",
     packageManager: "pnpm",
+    excludedPaths: [],
     ...overrides,
   };
 }
@@ -123,6 +124,18 @@ describe("configPromptArgs", () => {
       TESTING_PRINCIPLES: "PRINCIPLES.md",
       ADR_DIR: "adrs",
       BASE_BRANCH: "dev",
+      OUT_OF_SCOPE_PATHS: [
+        ".sandcastle",
+        ".github/actions/sandcastle-setup",
+        ".github/actions/sandcastle-teardown",
+        ".github/workflows/agent-*",
+        ".github/workflows/check-*",
+        ".github/workflows/labels-*",
+        ".github/workflows/require-*",
+        ".github/workflows/sandcastle-*",
+        ".github/copilot-setup-steps.yml",
+        ".refactor",
+      ].join(", "),
     });
   });
 

@@ -14,6 +14,14 @@ This is an unattended CI run. There is no user to interview and no HTML report t
 
 The workflow will create the GitHub issue and apply the `repo-hygiene` and `phase-<n>` labels. Do not create the issue yourself.
 
+# OUT OF SCOPE — VENDORED/PRODUCER-OWNED PATHS
+
+The following paths are **vendored or producer-owned** and are managed outside the repo. Do **NOT** propose tasks that touch anything under them:
+
+- {{OUT_OF_SCOPE_PATHS}}
+
+These paths are re-vendored on every build; hygiene tasks here would be overwritten upstream. The audit must exclude them from phase scoring and task selection.
+
 # CORE PRINCIPLE
 
 The code is the state; the ledger is the memory. When the audit and the ledger disagree about progress, the audit wins — update the ledger to match and say so.

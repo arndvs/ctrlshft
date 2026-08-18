@@ -9,6 +9,7 @@ import { loadConfig } from "../lib/config.js";
 import { resolvePrompt, configPromptArgs, filterPromptArgs } from "../lib/resolve-prompt.js";
 import { resolveDefaultExtractionsDir, resolveDefaultTemplatesDir } from "../lib/default-template-paths.js";
 import { shFile } from "../lib/shell-helpers.js";
+import { isProposalOutOfScope } from "../lib/scope.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesDir = resolveDefaultTemplatesDir({ workflowDir: __dirname });
@@ -66,6 +67,15 @@ export async function runRepoHygiene(opts: {
     extractionPrompt,
     logging: { type: "stdout" },
   });
+
+  // Backstop: never propose changes to vendored/producer-owned paths even if
+  // the model ignored the prompt's OUT_OF_SCOPE_PATHS section.
+  if (result.output.status === "proposed" && isProposalOutOfScope(result.output, config)) {
+    console.warn(
+      "[repo-hygiene] Proposal references an out-of-scope (vendored/producer-owned) path — refusing to publish.",
+    );
+    return { status: "skipped", reason: "proposal targets an out-of-scope path" };
+  }
 
   if (result.output.status === "proposed") {
     console.log(`[repo-hygiene] Proposed P${result.output.phase} (${result.output.stack}): ${result.output.title}`);
