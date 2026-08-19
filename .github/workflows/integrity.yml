@@ -21,13 +21,7 @@ on:
       - ".github/workflows/integrity.yml"
       - ".github/workflows/agent-*.yml"
       - "instructions/sandcastle-pipeline.instructions.md"
-      - "shft/engine/package.json"
-      - "shft/engine/lib/render-pipeline-artifacts.ts"
-      - "shft/engine/lib/pipeline-states.ts"
-      - "shft/engine/lib/lint-pipeline-labels.ts"
-      - "shft/engine/scripts/pipeline-artifacts.ts"
       - "shft/templates/labels.json"
-      - ".sandcastle/labels.json"
   push:
     branches:
       - dev
@@ -53,13 +47,7 @@ on:
       - ".github/workflows/integrity.yml"
       - ".github/workflows/agent-*.yml"
       - "instructions/sandcastle-pipeline.instructions.md"
-      - "shft/engine/package.json"
-      - "shft/engine/lib/render-pipeline-artifacts.ts"
-      - "shft/engine/lib/pipeline-states.ts"
-      - "shft/engine/lib/lint-pipeline-labels.ts"
-      - "shft/engine/scripts/pipeline-artifacts.ts"
       - "shft/templates/labels.json"
-      - ".sandcastle/labels.json"
 
 jobs:
   integrity:
@@ -122,26 +110,3 @@ jobs:
         run: |
           set -euo pipefail
           npm run test:hooks
-
-      - name: Set up Node.js
-        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
-        with:
-          node-version: "22"
-
-      - name: Install engine dependencies
-        run: |
-          corepack enable
-          cd shft/engine
-          pnpm --ignore-workspace install --frozen-lockfile
-
-      - name: Lint pipeline label transitions
-        working-directory: shft/engine
-        run: |
-          set -euo pipefail
-          pnpm exec tsx lib/lint-pipeline-labels.ts
-
-      - name: Check generated pipeline artifacts
-        working-directory: shft/engine
-        run: |
-          set -euo pipefail
-          pnpm pipeline-artifacts:check

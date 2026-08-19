@@ -1,7 +1,0 @@
-{
-  "extends": "./engine/tsconfig.json",
-  "compilerOptions": {
-    "rootDir": "."
-  },
-  "include": ["run.ts"]
-}
