@@ -85,7 +85,7 @@ if [[ "$1" == "run" && "${2:-}" == "list" ]]; then
     done
 
     case "$workflow" in
-        "Agent: Architecture Review"|"Agent: Check Stale PRs"|"Bridge Tests"|"Integrity"|"Labels: Sync"|"Sandcastle CI")
+        "Agent: Architecture Review"|"Agent: Check Stale PRs"|"Bridge Tests"|"Integrity"|"Labels: Sync"|"Sandcastle CI"|"Proxy canary")
             cat <<JSON
 [{"databaseId":100,"url":"https://github.com/owner/repo/actions/runs/100","status":"completed","conclusion":"success","createdAt":"2026-06-10T00:00:00Z","displayTitle":"$workflow","event":"push"}]
 JSON
@@ -184,18 +184,18 @@ else
     _record_fail "JSON summary has required metric keys" "missing summary keys"
 fi
 
-# Check total_workflows equals the repo-local Sandcastle inventory.
+# Check total_workflows equals 16
 if python3 -c "
 import json, sys
 with open(sys.argv[1]) as f:
     s = json.load(f)['summary']
-if s['total_workflows'] != 15:
+if s['total_workflows'] != 16:
     print(f'total_workflows={s[\"total_workflows\"]}', file=sys.stderr)
     sys.exit(1)
 " "$json_output" 2>/dev/null; then
-    _record_pass "report tracks all 15 repo-local Sandcastle workflows"
+    _record_pass "report tracks all 16 Sandcastle workflows"
 else
-    _record_fail "report tracks all 15 repo-local Sandcastle workflows" "unexpected total_workflows count"
+    _record_fail "report tracks all 16 Sandcastle workflows" "unexpected total_workflows count"
 fi
 
 # Check covered_workflows > 0 (at least some have run data)

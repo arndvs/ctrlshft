@@ -29,14 +29,14 @@ while [[ $# -gt 0 ]]; do
             echo "Validates Sandcastle readiness before workflow smoke testing."
             echo ""
             echo "Checks:"
-            echo "  CONFIG   install shape, config JSON, vendored drift, package manager"
+            echo "  CONFIG   install shape, config JSON, hub-version pin, package manager"
             echo "  SYNTAX   installed agent workflow YAML shape"
             echo "  SECRETS  LITELLM_BASE_URL, LITELLM_MASTER_KEY, AGENT_PAT"
             echo "  PERMS    workflow permissions blocks"
             echo ""
             echo "Options:"
-            echo "  --skip-drift   Skip ctrl update-sandcastle --dry-run drift check"
-            echo "  --skip-engine  Skip .sandcastle/engine typecheck/test commands"
+            echo "  --skip-drift   Skip hub SHA-drift check"
+            echo "  --skip-engine  Skip hub engine reachability check"
             echo "  --skip-github  Do not query GitHub repo secrets; require env vars only"
             exit 0
             ;;
@@ -174,7 +174,8 @@ for name in sorted(os.listdir(workflow_dir)):
 
     found = False
     for index, raw_line in enumerate(lines):
-        if re.match(r"^\s{4}permissions:\s*$", raw_line):
+        # Accept top-level (0-indent) or job-level (4-indent) permissions blocks.
+        if re.match(r"^\s{0,4}permissions:\s*$", raw_line):
             base_indent = len(raw_line) - len(raw_line.lstrip(" "))
             for child in lines[index + 1:]:
                 stripped = child.strip()
@@ -186,9 +187,10 @@ for name in sorted(os.listdir(workflow_dir)):
                 if re.match(r"^\s+[a-z-]+:\s+(read|write|none)\s*$", child):
                     found = True
                     break
-            break
+            if found:
+                break
     if not found:
-        errors.append(f"{name}: missing job permissions block")
+        errors.append(f"{name}: missing permissions block (top-level or job-level)")
 
 if errors:
     for error in errors:
@@ -273,80 +275,6 @@ _secret_available() {
     return 1
 }
 
-_check_engine() {
-    local package_manager="$1"
-    local engine_dir=".sandcastle/engine"
-
-    case "$package_manager" in
-        npm|pnpm|yarn|bun) ;;
-        *) _fail_class "CONFIG" "Invalid package manager in sandcastle.config.json: $package_manager"; return 0 ;;
-    esac
-
-    if ! command -v "$package_manager" >/dev/null 2>&1; then
-        _fail_class "CONFIG" "Package manager not found: $package_manager"
-        return 0
-    fi
-
-    if [[ ! -f "$engine_dir/package.json" ]]; then
-        _fail_class "CONFIG" "Missing $engine_dir/package.json"
-        return 0
-    fi
-
-    if [[ ! -d "$engine_dir/node_modules" ]]; then
-        case "$package_manager" in
-            pnpm) (cd "$engine_dir" && pnpm --ignore-workspace install --frozen-lockfile >/tmp/sandcastle-preflight-install.log 2>&1) ;;
-            npm)
-                if [[ -f "$engine_dir/package-lock.json" ]]; then
-                    (cd "$engine_dir" && npm ci >/tmp/sandcastle-preflight-install.log 2>&1)
-                else
-                    (cd "$engine_dir" && npm install >/tmp/sandcastle-preflight-install.log 2>&1)
-                fi
-                ;;
-            yarn) (cd "$engine_dir" && yarn install --frozen-lockfile >/tmp/sandcastle-preflight-install.log 2>&1) ;;
-            bun) (cd "$engine_dir" && bun install --frozen-lockfile >/tmp/sandcastle-preflight-install.log 2>&1) ;;
-        esac || {
-            _fail_class "CONFIG" "Engine dependency install failed; see /tmp/sandcastle-preflight-install.log"
-            return 0
-        }
-        _pass_class "CONFIG" "Engine dependencies installed"
-    fi
-
-    if (cd "$engine_dir" && "$package_manager" run typecheck >/tmp/sandcastle-preflight-typecheck.log 2>&1); then
-        _pass_class "CONFIG" "Engine typecheck passed"
-    else
-        _fail_class "CONFIG" "Engine typecheck failed; see /tmp/sandcastle-preflight-typecheck.log"
-    fi
-
-    if (cd "$engine_dir" && "$package_manager" test >/tmp/sandcastle-preflight-test.log 2>&1); then
-        _pass_class "CONFIG" "Engine tests passed"
-    else
-        _fail_class "CONFIG" "Engine tests failed; see /tmp/sandcastle-preflight-test.log"
-    fi
-}
-
-_check_dispatcher_package() {
-    local package_file=".sandcastle/package.json"
-
-    if [[ ! -f "$package_file" ]]; then
-        _fail_class "CONFIG" "Missing $package_file"
-        return 0
-    fi
-
-    if node -e "
-const fs = require('fs');
-try {
-  const pkg = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
-  process.exit(pkg.type === 'module' ? 0 : 2);
-} catch {
-  process.exit(1);
-}
-" "$package_file" >/dev/null 2>&1; then
-        _pass_class "CONFIG" "$package_file declares type=module"
-    else
-        _fail_class "CONFIG" "$package_file must declare \"type\": \"module\""
-    fi
-}
-
 green "Sandcastle preflight"
 echo ""
 
@@ -373,14 +301,31 @@ else
     fi
 fi
 
-for required_path in ".sandcastle/engine" ".github/workflows" ".sandcastle/run.ts"; do
+for required_path in ".sandcastle/hub-version.json" ".github/workflows" "sandcastle.config.json"; do
     if [[ -e "$required_path" ]]; then
         _pass_class "CONFIG" "Found $required_path"
     else
         _fail_class "CONFIG" "Missing $required_path"
     fi
 done
-_check_dispatcher_package
+
+# Hub model: the engine lives in arndvs/sandcastle-hub, not vendored here.
+# Verify the consumer references the hub and the hub is reachable.
+if [[ -f ".sandcastle/hub-version.json" ]]; then
+    if node -e "JSON.parse(require('fs').readFileSync('.sandcastle/hub-version.json', 'utf8'))" >/dev/null 2>&1; then
+        _pass_class "CONFIG" ".sandcastle/hub-version.json parses"
+    else
+        _fail_class "CONFIG" ".sandcastle/hub-version.json is not valid JSON"
+    fi
+fi
+
+if [[ "$SKIP_ENGINE" == false ]] && command -v gh >/dev/null 2>&1; then
+    if gh api repos/arndvs/sandcastle-hub/contents/actions/agent-run/action.yml --jq '.size' >/dev/null 2>&1; then
+        _pass_class "CONFIG" "Hub engine action reachable (arndvs/sandcastle-hub)"
+    else
+        _fail_class "CONFIG" "Hub engine action not reachable (arndvs/sandcastle-hub)"
+    fi
+fi
 
 workflow_count=0
 if [[ -d ".github/workflows" ]]; then
@@ -414,34 +359,24 @@ if [[ "$_fail" -ne 0 ]]; then
 fi
 
 if [[ "$SKIP_DRIFT" == true ]]; then
-    _warn_class "CONFIG" "Skipped Sandcastle drift check"
-elif [[ -f "$DOTFILES/bin/update-sandcastle.sh" ]]; then
-    if drift_output="$(bash "$DOTFILES/bin/update-sandcastle.sh" --dry-run 2>&1)"; then
-        if grep -q "Drift detected" <<<"$drift_output"; then
-            _fail_class "CONFIG" "Sandcastle drift detected; run ctrl update-sandcastle --dry-run"
-        else
-            _pass_class "CONFIG" "No Sandcastle drift detected"
-        fi
+    _warn_class "CONFIG" "Skipped hub SHA-drift check"
+elif [[ -f ".sandcastle/hub-version.json" ]] && command -v gh >/dev/null 2>&1; then
+    pinned="$(jq -r '.lastPinnedSha' .sandcastle/hub-version.json 2>/dev/null || echo "unknown")"
+    latest="$(gh api repos/arndvs/sandcastle-hub/commits/main --jq '.sha' 2>/dev/null | cut -c1-7 || echo "unknown")"
+    if [[ "$pinned" == "$latest" ]]; then
+        _pass_class "CONFIG" "Hub SHA in sync (pinned ${pinned})"
     else
-        _fail_class "CONFIG" "Drift check failed: $drift_output"
+        _warn_class "CONFIG" "Hub SHA drift: pinned ${pinned}, hub latest ${latest}. Run the SHA-drift workflow or update .sandcastle/hub-version.json."
     fi
 else
-    _fail_class "CONFIG" "Missing $DOTFILES/bin/update-sandcastle.sh"
-fi
-
-if [[ "$SKIP_ENGINE" == true ]]; then
-    _warn_class "CONFIG" "Skipped engine typecheck/tests"
-elif [[ -f "sandcastle.config.json" ]]; then
-    package_manager="$(_read_config_value packageManager 2>/dev/null || true)"
-    package_manager="${package_manager:-pnpm}"
-    _check_engine "$package_manager"
+    _fail_class "CONFIG" "Cannot check hub SHA drift: missing .sandcastle/hub-version.json or gh unavailable. Install gh or pass --skip-drift."
 fi
 
 echo ""
 if [[ "$_fail" -eq 0 ]]; then
     green "Sandcastle preflight passed."
     if [[ "$_warn" -ne 0 ]]; then
-        yellow "Completed with skipped checks; run without skip flags for full validation."
+        yellow "Completed with warnings/skips; review above."
     fi
     exit 0
 fi
