@@ -93,7 +93,6 @@ SANDCASTLE_WORKFLOWS=(
     "Integrity"
     "Labels: Sync"
     "PR: request Copilot review"
-    "Sandcastle CI"
 )
 
 # Smoke scripts that correspond to workflow coverage areas

@@ -3,13 +3,23 @@
 #
 # Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-proxy] [--with-proxy-canary] [--force]
 #
-# Copies workflow YAMLs, vendors engine code, creates config, sets up prompt
-# directory, creates GitHub labels, and prints a checklist of manual steps.
+# Installs thin workflow stubs that reference the Sandcastle hub engine remotely
+# (uses: arndvs/sandcastle-hub/actions/agent-run@<ref>), writes a hub-version pin,
+# creates config, sets up prompt directory, creates GitHub labels, and prints a
+# checklist of manual steps. The engine is NOT vendored — it lives in the hub.
 
 set -euo pipefail
 
 DOTFILES="${DOTFILES:-$HOME/dotfiles}"
 source "$DOTFILES/bin/_lib.sh"
+
+# Producer source of truth for Sandcastle templates. Defaults to the ctrlshft-public
+# checkout (the durable public product home); falls back to dotfiles-private if not
+# present. Override with SANDBOX_PRODUCER=/path/to/producer.
+SANDBOX_PRODUCER="${SANDBOX_PRODUCER:-$HOME/dev/clients/ctrlshft-public}"
+if [[ ! -d "$SANDBOX_PRODUCER/shft" ]]; then
+    SANDBOX_PRODUCER="$DOTFILES"
+fi
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
 BRANCH="main"
@@ -77,17 +87,17 @@ if [[ -d ".sandcastle" ]] && [[ "$FORCE" != true ]]; then
 fi
 
 # ── Source paths ──────────────────────────────────────────────────────────────
-TEMPLATES="$DOTFILES/shft/templates"
-ENGINE="$DOTFILES/shft/engine"
+TEMPLATES="$SANDBOX_PRODUCER/shft/templates"
 
 if [[ ! -d "$TEMPLATES" ]]; then
     red "Templates not found at $TEMPLATES"
     exit 1
 fi
-if [[ ! -d "$ENGINE" ]]; then
-    red "Engine not found at $ENGINE"
-    exit 1
-fi
+
+# Hub reference for the engine. Consumers reference the hub action remotely;
+# the engine is never vendored. Override with SANDBOX_HUB_REF (branch/tag/SHA).
+SANDBOX_HUB_REF="${SANDBOX_HUB_REF:-main}"
+SANDBOX_HUB_ACTION="arndvs/sandcastle-hub/actions/agent-run@${SANDBOX_HUB_REF}"
 
 # Render a workflow template with variable + auth-mode substitution.
 # Proxy mode (default): keeps LITELLM_* env vars (routes through the proxy).
@@ -104,48 +114,21 @@ render_workflow() {
     fi
 }
 
-render_vendored_engine_package() {
-    if ! command -v node &>/dev/null; then
-        red "Node.js is required to render .sandcastle/engine/package.json."
-        exit 1
-    fi
-
-    ENGINE_PACKAGE="$ENGINE/package.json" node <<'NODE'
-const fs = require("fs");
-
-const pkg = JSON.parse(fs.readFileSync(process.env.ENGINE_PACKAGE, "utf8"));
-pkg.scripts = {
-  ...pkg.scripts,
-  test: 'echo "Vendored Sandcastle engine excludes test files; run the repo typecheck script (for example, pnpm run typecheck) to validate runtime sources."',
-};
-
-process.stdout.write(`${JSON.stringify(pkg, null, 2)}\n`);
-NODE
-}
-
 green "Initializing Sandcastle in $(basename "$REPO_ROOT")..."
 echo ""
 
 # ── 1. Create directories ────────────────────────────────────────────────────
 mkdir -p .github/workflows
-mkdir -p .github/actions
 mkdir -p .sandcastle/prompts
 
-# ── 2. Copy workflow YAML templates ──────────────────────────────────────────
-echo "  Installing workflow YAMLs..."
+# ── 2. Install thin workflow stubs (hub model) ───────────────────────────────
+# Each stub references the hub action remotely. The engine is never vendored.
+echo "  Installing workflow stubs (hub model)..."
 for tmpl in "$TEMPLATES/workflows/"*.yml; do
     fname="$(basename "$tmpl")"
     render_workflow "$tmpl" > ".github/workflows/$fname"
     echo "    .github/workflows/$fname"
 done
-
-# ── 2b. Copy composite action templates ──────────────────────────────────────
-if [[ -d "$TEMPLATES/actions" ]]; then
-    echo "  Installing composite actions..."
-    rm -rf .github/actions/sandcastle-setup .github/actions/sandcastle-teardown
-    cp -R "$TEMPLATES/actions/." .github/actions/
-    echo "    .github/actions/"
-fi
 
 # ── 3. Copy copilot-setup-steps.yml ──────────────────────────────────────────
 echo "  Installing copilot-setup-steps.yml..."
@@ -165,54 +148,20 @@ else
     yellow "  Skipping proxy monitoring workflows (proxyCanary=false; pass --with-proxy-canary to install)"
 fi
 
-# ── 4. Vendor engine code ────────────────────────────────────────────────────
-echo "  Vendoring engine code..."
-# Remove old vendored engine (but not prompts/config)
-rm -rf .sandcastle/engine
+# ── 4. Write hub-version pin (provenance + staleness detection) ──────────────
+# Consumers pin the hub ref they run from. The sandcastle-drift workflow compares
+# this to the hub's latest main and opens a review PR when stale.
+echo "  Writing hub-version pin..."
+cat > .sandcastle/hub-version.json <<HUBEOF
+{
+  "ref": "${SANDBOX_HUB_REF}",
+  "lastPinnedSha": "unknown",
+  "reviewedAt": "$(date -u +%Y-%m-%d)"
+}
+HUBEOF
+echo "    .sandcastle/hub-version.json (ref: $SANDBOX_HUB_REF)"
 
-# Copy engine, excluding node_modules and tests
-mkdir -p .sandcastle/engine
-render_vendored_engine_package > .sandcastle/engine/package.json
-cp "$ENGINE/tsconfig.json" .sandcastle/engine/
-[[ -f "$ENGINE/pnpm-lock.yaml" ]] && cp "$ENGINE/pnpm-lock.yaml" .sandcastle/engine/
-
-mkdir -p .sandcastle/engine/lib
-for f in "$ENGINE/lib/"*.ts; do
-    fname="$(basename "$f")"
-    # Skip test files
-    [[ "$fname" == *.test.ts ]] && continue
-    cp "$f" ".sandcastle/engine/lib/$fname"
-done
-
-mkdir -p .sandcastle/engine/schemas
-cp "$ENGINE/schemas/"*.ts .sandcastle/engine/schemas/ 2>/dev/null || true
-
-mkdir -p .sandcastle/engine/workflows
-for f in "$ENGINE/workflows/"*.ts; do
-    [[ -f "$f" ]] || continue
-    fname="$(basename "$f")"
-    [[ "$fname" == *.test.ts ]] && continue
-    cp "$f" ".sandcastle/engine/workflows/$fname"
-done
-
-echo "    .sandcastle/engine/ (vendored)"
-
-# ── 4b. Write source version stamp (provenance + staleness detection) ────────
-SOURCE_SHA="$(git -C "$DOTFILES" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)"
-cat > .sandcastle/.sandcastle-version <<VEREOF
-sourceSha=$SOURCE_SHA
-vendoredAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-VEREOF
-echo "    .sandcastle/.sandcastle-version ($SOURCE_SHA)"
-
-# ── 5. Create run.ts dispatcher ──────────────────────────────────────────────
-echo "  Creating dispatcher..."
-cp "$TEMPLATES/package.json" .sandcastle/package.json
-echo "    .sandcastle/package.json"
-cp "$TEMPLATES/run.ts" .sandcastle/run.ts
-echo "    .sandcastle/run.ts"
-
-# ── 6. Copy runtime templates ────────────────────────────────────────────────
+# ── 5. Copy runtime templates (prompts + extractions) ────────────────────────
 echo "  Installing runtime templates..."
 mkdir -p .sandcastle/templates
 rm -rf .sandcastle/templates/prompts .sandcastle/templates/extractions
@@ -225,16 +174,7 @@ echo "    .sandcastle/templates/extractions/"
 cp "$TEMPLATES/labels.json" .sandcastle/labels.json
 echo "    .sandcastle/labels.json"
 
-# ── 7. Copy helper scripts and hooks ─────────────────────────────────────────
-echo "  Installing helper scripts and hooks..."
-rm -rf .sandcastle/scripts .sandcastle/hooks
-cp -R "$TEMPLATES/scripts" .sandcastle/scripts
-cp -R "$TEMPLATES/hooks" .sandcastle/hooks
-chmod +x .sandcastle/scripts/*.sh .sandcastle/hooks/*.sh 2>/dev/null || true
-echo "    .sandcastle/scripts/"
-echo "    .sandcastle/hooks/"
-
-# ── 8. Create config (only if not exists or --force without existing) ────────
+# ── 6. Create config (only if not exists or --force without existing) ────────
 if [[ ! -f "sandcastle.config.json" ]]; then
     echo "  Creating config..."
     cat > sandcastle.config.json <<CONFIGEOF
@@ -244,7 +184,6 @@ if [[ ! -f "sandcastle.config.json" ]]; then
   "sandbox": "$SANDBOX",
   "promptDir": ".sandcastle/prompts",
   "codingStandards": ".sandcastle/CODING_STANDARDS.md",
-  "testingPrinciples": ".sandcastle/testing-principles.md",
   "contextDoc": "CONTEXT.md",
   "adrDir": "docs/adr",
   "packageManager": "pnpm",
@@ -257,7 +196,7 @@ else
     yellow "  sandcastle.config.json already exists — skipping"
 fi
 
-# ── 9. Create CODING_STANDARDS.md skeleton ───────────────────────────────────
+# ── 7. Create CODING_STANDARDS.md skeleton ───────────────────────────────────
 if [[ ! -f ".sandcastle/CODING_STANDARDS.md" ]]; then
     echo "  Creating CODING_STANDARDS.md skeleton..."
     cat > .sandcastle/CODING_STANDARDS.md <<'CSEOF'
@@ -285,34 +224,7 @@ else
     yellow "  .sandcastle/CODING_STANDARDS.md already exists — skipping"
 fi
 
-# ── 9b. Create testing-principles.md skeleton ────────────────────────────────
-if [[ ! -f ".sandcastle/testing-principles.md" ]]; then
-    echo "  Creating testing-principles.md skeleton..."
-    cat > .sandcastle/testing-principles.md <<'TPEOF'
-# Testing Principles
-
-<!-- Project-specific testing principles for the keep-tests-tight pass. -->
-<!-- Add your conventions for what makes a high-signal test here. -->
-
-## High-signal tests
-
-- Prefer fewer, longer tests that assert meaningful behavior.
-- Keep tests that validate real end-user journeys and documented business rules.
-
-## Low-signal tests to trim
-
-- Tiny one-assertion tests.
-- Duplicate coverage.
-- Pinned error strings or incidental copy.
-- Tests for type-system guarantees.
-- Edge cases that cannot happen.
-TPEOF
-    echo "    .sandcastle/testing-principles.md"
-else
-    yellow "  .sandcastle/testing-principles.md already exists — skipping"
-fi
-
-# ── 10. Create GitHub labels ─────────────────────────────────────────────────
+# ── 8. Create GitHub labels ─────────────────────────────────────────────────
 echo "  Creating GitHub labels..."
 if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
     LABELS_FILE="$TEMPLATES/labels.json"
@@ -343,15 +255,7 @@ else
     echo "    Run manually: gh label create <name> --color <hex> --description <desc>"
 fi
 
-# ── 11. Install engine dependencies ──────────────────────────────────────────
-echo "  Installing engine dependencies..."
-if ! (cd .sandcastle/engine && pnpm --ignore-workspace install --frozen-lockfile); then
-    red "    pnpm install failed in .sandcastle/engine/ — engine dependencies are required to run agents."
-    red "    Fix the error above, then re-run: (cd .sandcastle/engine && pnpm --ignore-workspace install --frozen-lockfile)"
-    exit 1
-fi
-
-# ── 11b. Secrets preflight ───────────────────────────────────────────────────
+# ── 9. Secrets preflight ─────────────────────────────────────────────────────
 # Warn (never fail) if required Actions secrets are missing. Names only — gh never
 # exposes secret values. A missing AGENT_PAT is the most common cause of "every issue
 # lands in agent:blocked", so surface it now instead of at first workflow run.
@@ -378,7 +282,7 @@ else
     yellow "    Skipped secret check (gh not authenticated or no GitHub repo resolved)"
 fi
 
-# ── 12. Scaffold artifact lifecycle (additive; opt out with --no-artifacts) ──
+# ── 10. Scaffold artifact lifecycle (additive; opt out with --no-artifacts) ──
 # Delegates to the shared lifecycle scaffold rather than owning lifecycle files
 # here, so Sandcastle does not become the owner of the lifecycle concept.
 if [[ "$NO_ARTIFACTS" != true ]]; then
@@ -413,6 +317,7 @@ echo "  2. Add repo secret: AGENT_PAT  (the 'Checking repo secrets' step above f
 echo "     Required for label changes to trigger downstream workflows."
 echo "     GITHUB_TOKEN-created labels do not fire follow-up workflow runs."
 echo ""
+echo ""
 echo "  3. Review sandcastle.config.json and adjust values"
 echo ""
 echo "  4. Add project-specific prompt overrides in .sandcastle/prompts/"
@@ -421,7 +326,10 @@ echo "  5. Update .sandcastle/CODING_STANDARDS.md with your conventions"
 echo ""
 echo "  6. Create a CONTEXT.md at the repo root (optional but recommended)"
 echo ""
-echo "  7. Commit the generated files:"
+echo "  7. Review .sandcastle/hub-version.json — it pins the hub ref ($SANDBOX_HUB_REF)."
+echo "     The sandcastle-drift workflow opens a review PR when the hub advances."
+echo ""
+echo "  8. Commit the generated files:"
 echo "     git add .github/workflows/ .github/copilot-setup-steps.yml"
 echo "     git add .sandcastle/ sandcastle.config.json"
 echo "     git commit -m 'feat: initialize Sandcastle agent platform'"
