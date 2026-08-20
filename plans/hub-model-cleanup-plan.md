@@ -74,9 +74,8 @@ Size: M
 Blocked by: none
 Steps:
 1. For each of the 11 stale `templates/workflows/agent-*.yml` on the hub, replace
-   the vendored body (.sandcastle/engine, pnpm exec tsx ../run.ts, local
-   composite actions, `{{DEFAULT_BRANCH}}` substitutes) with the thin stub
-   contract:
+   the vendored body (.storyt/engine, pnpm exec tsx ../run.ts, local composite
+   actions, `{{DEFAULT_BRANCH}}` substitutes) with the thin stub contract:
    - agent-run style (7): `uses: arndvs/sandcastle-hub/actions/agent-run@main`
      with `workflow: <name>`, `ref: main`, `token:`, optional `extra-args`.
    - reusable-workflow style (6): `jobs: <name>: uses:
@@ -253,7 +252,7 @@ S1 → S2, S1 → S3, S4 ∥ S1..S3, S4 → S5.
 
 The final QA slice (HITL) verifies the whole system after S1-S5 merge:
 
-1. On a fresh consumer (e.g. a throwaway branch of `llm-gateway`),
+1. On a fresh consumer (e.g. a throwaway branch of `claude-code-copilot`),
    run `ctrl init-sandcastle --force` and confirm `.github/workflows/agent-*.yml`
    are thin stubs referencing `arndvs/sandcastle-hub` — no `.sandcastle/engine`,
    no local composite actions.
