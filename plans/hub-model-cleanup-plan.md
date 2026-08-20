@@ -74,8 +74,9 @@ Size: M
 Blocked by: none
 Steps:
 1. For each of the 11 stale `templates/workflows/agent-*.yml` on the hub, replace
-   the vendored body (.storyt/engine, pnpm exec tsx ../run.ts, local composite
-   actions, `{{DEFAULT_BRANCH}}` substitutes) with the thin stub contract:
+   the vendored body (.sandcastle/engine, pnpm exec tsx ../run.ts, local
+   composite actions, `{{DEFAULT_BRANCH}}` substitutes) with the thin stub
+   contract:
    - agent-run style (7): `uses: arndvs/sandcastle-hub/actions/agent-run@main`
      with `workflow: <name>`, `ref: main`, `token:`, optional `extra-args`.
    - reusable-workflow style (6): `jobs: <name>: uses:
