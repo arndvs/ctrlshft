@@ -7,46 +7,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Integrity](https://github.com/arndvs/ctrlshft/actions/workflows/integrity.yml/badge.svg)](https://github.com/arndvs/ctrlshft/actions/workflows/integrity.yml)
 
-> An operating system for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across every machine — and runs them in CI.
+> Dotfiles for AI coding agents. One repo syncs instructions, skills, secrets, and autonomous loops across every machine.
 >
-> **ctrl** is the structure — instructions, skills, rules, secrets, context. **shft** is the autonomous loop — it picks issues, implements, commits, repeats. **Sandcastle** is the platform — it runs those loops in GitHub Actions, driven by labels, on a single-source-of-truth engine.
+> **ctrl** is the structure — instructions, skills, rules, secrets, context. **shft** is the autonomous loop — it picks issues, implements, commits, repeats.
 
 Every developer using Claude Code or Copilot hits the same walls. Context degrades mid-task — the agent repeats itself, compaction loses nuance, quality drops. Instructions drift between your laptop and VPS. Secrets leak into agent context. Irrelevant rules load for every project regardless of stack.
 
-ctrl+shft fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and AFK iteration tokens (short-lived GitHub App installation tokens) minted per loop. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
+ctrl+shft fixes all four. Clone it once, `bootstrap.sh` symlinks your instructions, skills, agents, and rules into `~/.claude/`, and `git pull` updates every machine. `detect-context.sh` loads only the rules that match your current stack. Secrets split into three tiers — config the agent can see, credentials that exist only inside a child process and vanish when it exits (`run-with-secrets.sh`), and AFK iteration tokens (short-lived GitHub App installation tokens) minted per loop. When context gets high, the agent persists its plan to `working/` so a fresh conversation continues exactly where the old one left off.
 
-Then Sandcastle takes the loop further: label an issue `agent:implement` and a GitHub Actions workflow picks it up, implements it, opens a PR, and waits for your verdict — no local machine required.
-
-**Source of truth:** `arndvs/ctrlshft` is the canonical public product repository for reusable agent configuration, automation, docs, and Sandcastle/shft code. `~/dotfiles/` is the local checkout bootstrap uses as the on-machine source of truth; `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlink, Windows fallback copy). Public-safe product work starts in `ctrlshft`, then gets pulled back into `dotfiles-private` only for Aaron's private overlay. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [REPO_TOPOLOGY.md](REPO_TOPOLOGY.md).
+**Source of truth:** `arndvs/ctrlshft` is the canonical public product repository for reusable agent configuration, automation, docs, and Sandcastle/shft code. `~/dotfiles/` is the local checkout bootstrap uses as the on-machine source of truth; `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Public-safe product work starts in `ctrlshft`, then gets pulled back into `dotfiles-private` only for Aaron's private overlay. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [REPO_TOPOLOGY.md](REPO_TOPOLOGY.md).
 
 **Quick start:** fork, clone to `~/dotfiles`, run `bash ~/dotfiles/bin/bootstrap.sh`. Full local/VPS/manual walkthroughs in [Installation](#installation).
-
----
-
-## The ecosystem
-
-ctrl+shft is one part of a connected system. The repos work together:
-
-```mermaid
-graph LR
-    HUB["sandcastle-hub<br/>engine + templates<br/>(single source of truth)"]
-    PROD["ctrlshft-public<br/>product source + producer"]
-    DOT["dotfiles-private<br/>private overlay"]
-    CMD["cmd<br/>business knowledge layer"]
-    PROXY["llm-gateway<br/>LiteLLM → Copilot/OpenRouter"]
-
-    PROD -->|"publishes engine"| HUB
-    HUB -->|"one-way copy out"| PROD
-    PROD -->|"pull-back (public-safe)"| DOT
-    CMD -->|"CMD_DIR + cmd-venture"| DOT
-    PROXY -->|"shft proxy daemon"| PROD
-```
-
-- **`arndvs/ctrlshft`** — the public product source (this repo). Producer of the Sandcastle engine, mirror of the hub's templates.
-- **`arndvs/sandcastle-hub`** — single source of truth for the Sandcastle engine, templates, actions, and labels. Consumers reference it remotely via `uses: arndvs/sandcastle-hub/...@main`; nothing is vendored.
-- **`dotfiles-private`** — Aaron's private overlay: secrets, `_local/` skills and instructions, machine-local state. Never promoted to public.
-- **`arndvs/cmd`** — the business knowledge layer. "ctrl+shft+cmd": ctrl configures how agents code, cmd configures what agents know about your business.
-- **`arndvs/llm-gateway`** — the runtime proxy that lets Claude Code reach Copilot/OpenRouter models. Infrastructure, not product content.
 
 ---
 
@@ -160,8 +131,6 @@ All agents use read-only tools (Read, Grep, Glob, Bash) and `memory: user` for p
 | `tailwind-shadcn`             | `**/*.{tsx,jsx}`                                |
 | `framer-motion`               | `**/*.{tsx,jsx}`                                |
 | `server-vs-client-components` | `**/app/**/*.{tsx,jsx}`                         |
-| `resource-management`        | `**/*.{ts,tsx,js,jsx,mjs,cjs}`                  |
-| `tooling-conventions`        | `bin/**`, `hooks/**`, `**/*.sh`, `**/*.bash`, `package.json` |
 
 Rules without `paths:` load every session. Add your own: `rules/your-rule.md` — auto-discovered. See [rules/README.md](rules/README.md) for the full inventory.
 
@@ -181,13 +150,12 @@ Re-shelve aggressively: if a rule applies only to `.tsx` files, it belongs in `r
 
 ### Hardened secrets
 
-Four tiers. Agents see config, never credentials — and AFK loops use AFK iteration tokens instead of long-lived auth tokens.
+Three tiers. Agents see config, never credentials — and AFK loops use AFK iteration tokens instead of long-lived auth tokens.
 
 | File                   | In shell? | Agent-visible? | Contains                     |
 | ---------------------- | --------- | -------------- | ---------------------------- |
 | `secrets/.env.agent`   | Yes       | Yes            | Usernames, hosts, IDs        |
 | `secrets/.env.secrets` | No        | No             | API keys, tokens, passwords  |
-| `secrets/.env.bridge`  | No        | No             | `WEBHOOK_SECRET` for the Copilot Review Bridge |
 | AFK iteration token    | No        | No             | Minted per loop, expires ~1h |
 
 `run-with-secrets.sh` injects credentials into a child process only — they vanish when it exits. Claude Code deny rules block `env`, `printenv`, `cat secrets/*`, and `echo $*KEY*` at the agent level. Agents can't accidentally inherit what they can't see. See [secrets/README.md](secrets/README.md) for the full tier model.
@@ -277,18 +245,28 @@ Every skill's `description` is loaded into the agent's system prompt at session 
 
 The benefit: ⚡ skills act as passive guardrails. You don't remember to say "use the debugging skill" — the agent recognizes an error and loads the root-cause-first investigation protocol on its own. Same rigorous process every time, without you thinking about it.
 
-**56 skills** ship in the box, organized by role:
-
-| Category | Skills |
-| -------- | ------ |
-| **Core loop** | `do-work`, `tdd`, `systematic-debugging`, `atomic-commits`, `code-review`, `codebase-audit`, `compliance-audit`, `session-close`, `error-audit` |
-| **Planning** | `grill-me`, `grill-with-docs`, `write-a-prd`, `architect` ⚡, `prd-to-issues`, `plan-archive`, `skill-scaffolder` |
-| **Exploration** | `explore` ⚡, `research` ⚡, `improve-architecture` ⚡, `codebase-audit` ⚡ |
-| **Frontend** | `frontend-design`, `frontend-component-style`, `visual-feedback`, `sketch-the-solution`, `blog-image-ideas` |
-| **Audits** | `performance-audit`, `npm-security-audit`, `logging-audit`, `jsonld-schema-audit`, `error-audit`, `press1-check` |
-| **Auth & data** | `better-auth-best-practices`, `better-auth-security-best-practices`, `create-auth-skill`, `email-and-password-best-practices`, `two-factor-authentication-best-practices`, `organization-best-practices`, `sanity-best-practices`, `groq-query-instructions`, `data-object-conventions` |
-| **Content** | `anti-ai-slop`, `halbert-copy-editor`, `blog-image-ideas`, `github-weekly-digest`, `citation-builder-skill` |
-| **Agent ops** | `repo-hygiene`, `pr-preflight`, `review-pr-copilot`, `agent-assets`, `agent-navigability`, `agent-session-friction`, `agent-testability`, `mobile-dev`, `aihc-scraping`, `linear`, `cloudflare`, `npm-security-audit` |
+| Skill                     | What it does                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `do-work`                 | Detect your stack's feedback loops. Understand → Plan → Implement → Validate → Commit.                  |
+| `grill-me`                | Interrogate you about a plan until shared understanding. One question at a time, recommended answers.   |
+| `write-a-prd`             | Explore codebase, interview you, sketch module boundaries, write PRD, submit as GitHub issue.           |
+| `prd-to-issues`           | Break a PRD into vertical slices. Label each AFK or HITL. Create GitHub issues with dependencies.       |
+| `architect` ⚡            | Plan implementation — vertical slices, dependency graphs, acceptance criteria.                          |
+| `skill-scaffolder`        | Scaffold new agent skills from production-tested patterns. Interview → architecture → directory.        |
+| `explore` ⚡              | Decompose a topic, spawn parallel sub-agents, synthesize a summary.                                     |
+| `research` ⚡             | Cache expensive exploration into `research.md`. Staleness checks, lifecycle management.                 |
+| `codebase-audit` ⚡       | Ruthless code audit — real problems only, grouped by severity. No manufactured issues.                  |
+| `improve-architecture` ⚡ | Find shallow-module clusters, spawn parallel design agents, file a GitHub RFC.                          |
+| `tdd`                     | Red-green refactor. Failing test → implement → refactor. Backend only.                                  |
+| `systematic-debugging` ⚡ | Root-cause-first — investigate → pattern analysis → hypothesis → fix.                                   |
+| `atomic-commits` ⚡       | Branch-isolated atomic commits. Survey diff, group by seam, commit or ship (push + PR).                 |
+| `code-review`             | Focused review of staged or recent changes. Edge cases, logic errors, integration risks.                |
+| `document`                | Write, update, or audit documentation. Accurate, minimal, audience-appropriate.                         |
+| `compliance-audit` ⚡     | Auto-invoked after do-work/tdd/debugging. Rule-by-rule review, violation flagging, skill gap detection. |
+| `stress-test`             | Adversarial 19-scenario protocol across 6 categories. Validates rule compliance boundaries.             |
+| `sanity-best-practices`   | Sanity schema design, GROQ, TypeGen, Visual Editing, Portable Text, framework integrations.             |
+| `session-close`           | Pre-flight checklist — quality gates before ending a coding session.                                    |
+| `error-audit`             | Analyze cross-session error patterns to surface systemic issues worth automating.                        |
 
 Add your own: `skills/_local/your-skill/SKILL.md` — auto-discovered, gitignored. See [skills/README.md](skills/README.md) for the full catalog with trigger phrases.
 
@@ -309,13 +287,6 @@ Thin launchers in `commands/` that load a skill with your arguments. Type the co
 | `/document` | `document`       | Write, update, or audit documentation.                               |
 | `/check`    | `session-close`  | Pre-flight checklist — quality gates before session end.             |
 | `/address-review` | `review-pr-copilot` | Fetch and address Copilot review comments on active PR.     |
-| `/commit`   | `atomic-commits` | Atomic commits on a feature branch.                                  |
-| `/ship`     | `atomic-commits` | Push + open a PR.                                                    |
-| `/preflight` | `pr-preflight`  | Exhaustive pre-PR audit.                                              |
-| `/compliance-audit` | `compliance-audit` | Rule-by-rule diff review.                                   |
-| `/stress-test` | `stress-test`  | Adversarial rule-boundary validation.                                 |
-| `/cmd`      | cmd instructions | Open the cmd business operating system context.                       |
-| `/mobile-fresh` | `mobile-dev` | Clean-state reset for Expo mobile dev.                                |
 
 Add your own: `commands/your-command.md` — auto-discovered. Each file is a prompt template with `$ARGUMENTS` passthrough. See [commands/README.md](commands/README.md) for the full command reference.
 
@@ -406,16 +377,6 @@ Claude Code lifecycle hooks — shell scripts that fire on tool use and session 
 | `context-warning.sh`  | UserPromptSubmit | Stub: graduated warnings at 40/70% context (pending statusLine experiment)                     |
 | `exploration-scope-guard.sh` | PreToolUse | Nudges toward subagent delegation after 15+ raw Read/Grep/Glob calls without a `Task` spawn |
 | `session-scope-warning.sh` | UserPromptSubmit | Graduated turn-count warnings (20/40+) — works without the statusLine bridge |
-| `git-workflow-gate.sh` | PreToolUse | Enforces branch/protected-path rules during git operations |
-| `plan-quality-gate.sh` | PreToolUse | Validates plan files against quality criteria |
-| `test-gate.sh`        | PreToolUse       | Blocks commits when tests fail |
-| `feedback-memory-gate.py` | PreToolUse | Persists feedback to memory |
-| `git-post-commit.sh`  | PostToolUse      | Post-commit hygiene |
-| `git-post-push.sh`    | PostToolUse      | Post-push hygiene |
-| `gh-pr-auto-copilot-review.sh` | PostToolUse | Auto-request Copilot review on PR |
-| `stale-branches.sh`   | SessionStart     | Flags stale branches |
-| `hud-reads.sh`        | PreToolUse       | Emits HUD read events |
-| `hud-session.sh`      | SessionStart     | Emits HUD session events |
 
 Hooks communicate via exit codes: **0** = allow, **2** = block. See [hooks/README.md](hooks/README.md) for full documentation, customization, and the `experiments/` directory for in-progress prototypes.
 
@@ -467,105 +428,6 @@ srt claude .
 
 ---
 
-## Sandcastle: autonomous agents in CI
-
-> `shft` runs the loop on your machine. **Sandcastle** runs it in GitHub Actions — label-driven, event-triggered, no local machine required.
-
-Sandcastle is the CI-triggered evolution of the `shft` bash loop. Instead of a local process polling your backlog, GitHub Actions workflows watch for labels and run Claude Code agents against your repo — in a sandbox, with structured output validated against schemas.
-
-### The hub model
-
-The engine is **not vendored** into consumers. It lives in one place — [`arndvs/sandcastle-hub`](https://github.com/arndvs/sandcastle-hub) — and consumers reference it remotely:
-
-```yaml
-uses: arndvs/sandcastle-hub/actions/agent-run@main
-```
-
-A consumer repo keeps only three things:
-
-- **`sandcastle.config.json`** — model, base branch, prompt dir, coding standards, excluded paths
-- **`.sandcastle/hub-version.json`** — a SHA-lock pinning the hub ref (drift detection opens a review PR when the hub advances)
-- **Thin workflow stubs** — `agent-*.yml` files that call the hub's reusable workflows
-
-This replaces an older model where ~101 engine files were vendored into every consumer, causing drift and weekly re-vendor churn.
-
-### The label state machine
-
-Sandcastle is label-driven. Applying a label to an issue or PR triggers a workflow:
-
-```mermaid
-graph LR
-    H["Human applies Sandcastle"] --> R["agent:review"]
-    R --> I["agent:implement"]
-    I --> P["agent:pr-open"]
-    P --> V{"Human verdict"}
-    V -->|"agent:merge"| M["merge-pr"]
-    V -->|"agent:fix"| F["fix-pr-feedback"]
-    V -->|"agent:update-branch"| U["update-branch"]
-    F --> P
-    U --> P
-```
-
-Two human gates by design: the **start gate** (applying `Sandcastle`) and the **verdict gate** (choosing merge/fix/update). There is no auto-merge.
-
-> **Security note:** chaining labels requires `AGENT_PAT` (not `GITHUB_TOKEN`). If the wrong token is used, the chain fails closed into `agent:blocked`.
-
-### Workflow templates
-
-`shft/templates/workflows/` mirrors the hub's canonical templates (synced via `bin/sync-hub-templates.sh`). The 12 `agent-*.yml` stubs cover the lifecycle:
-
-| Workflow | Trigger | What it does |
-| -------- | ------- | ------------ |
-| `agent-review-issue` | label `agent:review` | Review an issue before implementation |
-| `agent-plan-issue` | label `agent:plan` | Break an issue into a plan |
-| `agent-implement-issue` | label `agent:implement` | Implement an issue, open a draft PR |
-| `agent-implement-prd` | label `agent:implement-prd` | Implement a PRD's next sub-issue, chain onward |
-| `agent-fix-pr-feedback` | label `agent:fix` | Address review feedback on a PR |
-| `agent-merge-pr` | label `agent:merge` | Squash-merge a PR, close linked issues |
-| `agent-update-branch` | label `agent:update-branch` | Rebase a PR head onto its base |
-| `agent-architecture-review` | cron (weekdays) | Weekly architecture review |
-| `agent-repo-hygiene` | cron (weekdays) | Nightly hygiene backlog |
-| `agent-code-health` | cron (weekly) | Weekly code-health audit (7 lenses) |
-| `agent-keep-tests-tight` | cron (weekdays) | Prune/strengthen weak tests |
-| `agent-check-stale-prs` | cron (weekdays) | Flag stale PRs |
-| `agent-promote-queued` | label `agent:promote` | Promote queued issues when blockers close |
-
-Plus `labels-sync.yml` (weekly label reconciliation) and `sandcastle-drift.yml` (hub-version drift detection).
-
-### Install
-
-```bash
-bash ~/dotfiles/bin/init-sandcastle.sh   # install the Sandcastle consumer contract
-```
-
-See [shft/README.md](shft/README.md) and the hub's [docs](https://github.com/arndvs/sandcastle-hub) for the full platform spec.
-
----
-
-## Copilot Review Bridge
-
-> An automated pipeline that receives **GitHub Copilot review events** and dispatches them to the `shft afk` agent loop for resolution.
-
-The bridge closes the loop between Copilot's PR reviews and the autonomous agent:
-
-```
-GitHub webhook → FastAPI (bridge-webhook.service)
-                     ↓ SQLite queue
-              Worker (bridge-worker@1.service)
-                     ↓
-              shft afk 1 (Claude Code in srt sandbox)
-```
-
-- **`bridge/`** — Python package: FastAPI receiver, SQLite queue, GitHub token minting, per-PR workspace lifecycle, HUD event emission
-- **`systemd/`** — `bridge-webhook.service` + `bridge-worker@.service` units
-- **`bin/bridge-install.sh`** — idempotent installer
-- **`ctrl bridge`** — start/stop/restart/status/queue/logs/replay/validate/run
-- **Secrets:** `WEBHOOK_SECRET` (`.env.bridge`), GitHub App creds (`.env.secrets`)
-
-See [bridge/README.md](bridge/README.md) for the full reference.
-
----
-
 ## CLI — `ctrl` & `shft`
 
 After bootstrap, two commands are available system-wide. `ctrl` manages your environment, `shft` manages your work queue. Both are symlinked to `~/.local/bin/` by bootstrap. See [bin/README.md](bin/README.md) for the full script inventory.
@@ -613,20 +475,6 @@ shft help     # autonomous execution commands
 | `ctrl uninstall`    | Safely remove all ctrl+shft symlinks + shell integration |
 | `ctrl verify-token` | Test-mint a GitHub App token                             |
 
-#### ctrl bridge (Copilot Review Bridge)
-
-| Command               | What it does                                        |
-| --------------------- | --------------------------------------------------- |
-| `ctrl bridge start`   | Start the webhook receiver + worker services         |
-| `ctrl bridge stop`    | Stop the bridge services                             |
-| `ctrl bridge restart` | Stop + start                                         |
-| `ctrl bridge status`  | Show service state                                   |
-| `ctrl bridge queue`   | Show queued review jobs                              |
-| `ctrl bridge logs`    | Show bridge logs                                     |
-| `ctrl bridge replay`  | Replay a failed job                                  |
-| `ctrl bridge validate`| Validate bridge configuration                        |
-| `ctrl bridge run`     | Run a single review job directly                     |
-
 #### ctrl session analysis (requires [sheal](https://github.com/liwala/sheal))
 
 | Command               | What it does                                            |
@@ -645,7 +493,6 @@ shft help     # autonomous execution commands
 | ----------------- | ----------------------------------------------- |
 | `shft run`        | HITL — run once while you watch                 |
 | `shft afk [n]`    | AFK — autonomous loop (default 5 iterations)    |
-| `shft afk --worktree [n]` | AFK in an isolated git worktree/branch |
 | `shft status`     | Is a loop running? How many issues open?        |
 | `shft stop`       | Stop a running AFK loop after current iteration |
 | `shft log [-f]`   | Show shft log (add `-f` to follow)              |
@@ -656,9 +503,6 @@ shft help     # autonomous execution commands
 | `shft plan`       | View `working/plan.md`                          |
 | `shft plan edit`  | Open plan in `$EDITOR`                          |
 | `shft plan clear` | Clear the plan file                             |
-| `shft worktrees`  | List or remove AFK-created git worktrees        |
-| `shft engine on\|off\|status` | Switch between bash and TypeScript engines |
-| `shft proxy on\|off\|start\|stop\|status` | Toggle routing and manage the LiteLLM/Copilot proxy daemon |
 | `shft validate`   | Run AFK pre-flight checks                       |
 | `shft mint`       | Test-mint a GitHub App token                    |
 | `shft prompt`     | Show `shft/prompt.md`                           |
@@ -689,27 +533,14 @@ shft help     # autonomous execution commands
 │   ├── sentry.instructions.md
 │   ├── google-docs.instructions.md
 │   ├── css.instructions.md
-│   ├── better-auth.instructions.md
-│   ├── expo-mobile.instructions.md
-│   ├── hud.instructions.md
-│   ├── sandcastle-pipeline.instructions.md
 │   ├── handoff.instructions.md      ← cross-conversation persistence protocol
 │   └── _local/                      ← GITIGNORED — your private instructions
 ├── commands/
-│   ├── address-review.md             /address-review → review-pr-copilot skill
-│   ├── audit.md                      /audit → codebase-audit skill
-│   ├── check.md                      /check → session-close skill
-│   ├── cmd.md                        /cmd → cmd business OS
-│   ├── commit.md                     /commit → atomic-commits skill
-│   ├── compliance-audit.md           /compliance-audit → compliance-audit skill
+│   ├── audit.md                     /audit → codebase-audit skill
 │   ├── document.md                  /document → document skill
 │   ├── explore.md                   /explore → explore skill
-│   ├── mobile-fresh.md               /mobile-fresh → mobile-dev skill
 │   ├── plan.md                      /plan → architect skill
-│   ├── preflight.md                  /preflight → pr-preflight skill
 │   ├── review.md                    /review → code-review skill
-│   ├── ship.md                       /ship → atomic-commits skill
-│   ├── stress-test.md                /stress-test → stress-test skill
 │   ├── test.md                      /test → tdd skill
 │   └── work.md                      /work → do-work skill
 ├── agents/
@@ -719,44 +550,23 @@ shft help     # autonomous execution commands
 │   ├── researcher.md                subagent: deep codebase exploration (sonnet)
 │   ├── researcher-opus.md           subagent: complex architecture analysis (opus)
 │   ├── researcher-haiku.md          subagent: fast bulk scanning (haiku)
-│   ├── security-auditor.md          subagent: OWASP, secrets, config (sonnet)
-│   └── gemini-safety.json           safety config for Gemini models
-├── rules/                            ← 14 path-gated convention files
+│   └── security-auditor.md          subagent: OWASP, secrets, config (sonnet)
+├── rules/
 │   ├── test-conventions.md          scoped to tests and service code
 │   ├── migration-safety.md          scoped to **/migrations/**
 │   ├── env-security.md              scoped to **/.env*, **/secrets/**
-│   ├── terminal-workarounds.md      scoped to terminal sessions
-│   ├── git-conventions.md           scoped to source files
-│   ├── typescript-conventions.md    scoped to **/*.{ts,tsx}
-│   ├── javascript-modern.md         scoped to JS/TS files
-│   ├── frontend-conventions.md      scoped to frontend files
-│   ├── dark-mode.md                 scoped to **/*.{tsx,jsx,css,scss}
-│   ├── tailwind-shadcn.md           scoped to **/*.{tsx,jsx}
-│   ├── framer-motion.md             scoped to **/*.{tsx,jsx}
-│   ├── server-vs-client-components.md  scoped to **/app/**/*.{tsx,jsx}
-│   ├── resource-management.md       scoped to JS/TS files
-│   └── tooling-conventions.md       scoped to bin/, hooks/, shell scripts
-├── hooks/                            ← 20+ lifecycle guards
+│   └── terminal-workarounds.md      scoped to terminal sessions
+├── hooks/
 │   ├── README.md                    hook documentation
 │   ├── settings-hooks.json          hook configuration for Claude Code
 │   ├── compaction-guard.sh          blocks auto-compaction, enforces handoff
 │   ├── context-warning.sh           graduated warnings at 40/70% context
-│   ├── format-check.sh              auto-formats modified files on stop
+│   ├── format-check.sh             auto-formats modified files on stop
 │   ├── migration-guard.sh           blocks unsafe migration commands
 │   ├── secret-guard.sh              blocks credential exposure in agent output
 │   ├── typecheck.sh                 runs tsc --noEmit before stop
-│   ├── git-workflow-gate.sh         enforces branch/protected-path rules
-│   ├── plan-quality-gate.sh         validates plan files
-│   ├── test-gate.sh                 blocks commits when tests fail
-│   ├── feedback-memory-gate.py      persists feedback to memory
-│   ├── git-post-commit.sh           post-commit hygiene
-│   ├── git-post-push.sh             post-push hygiene
-│   ├── gh-pr-auto-copilot-review.sh auto-request Copilot review on PR
-│   ├── stale-branches.sh            flags stale branches
-│   ├── hud-reads.sh                 emits HUD read events
-│   ├── hud-session.sh               emits HUD session events
 │   └── experiments/                 experimental hook prototypes
-├── skills/                           ← 56 public skills + _local/
+├── skills/
 │   ├── do-work/
 │   ├── grill-me/
 │   ├── write-a-prd/
@@ -775,7 +585,6 @@ shft help     # autonomous execution commands
 │   ├── compliance-audit/
 │   ├── stress-test/
 │   ├── sanity-best-practices/
-│   ├── skills-lock.json             ← SHA-256 provenance lock
 │   └── _local/                      ← GITIGNORED — your private skills
 ├── clients/
 │   ├── README.md                    per-client instruction isolation guide
@@ -785,13 +594,7 @@ shft help     # autonomous execution commands
 │   ├── afk.sh                       AFK autonomous loop
 │   ├── once.sh                      HITL single-run
 │   ├── _build_prompt.sh             prompt assembly for shft runs
-│   ├── prompt.md                    shared agent prompt
-│   └── templates/                   ← Sandcastle consumer contract (mirror of hub)
-│       ├── workflows/               16 workflow templates
-│       ├── prompts/                 prompt templates
-│       ├── extractions/             structured-output prompts
-│       ├── scripts/                 helper scripts
-│       └── run.ts                   TS dispatcher
+│   └── prompt.md                    shared agent prompt
 ├── bin/
 │   ├── ctrl                         CLI entry point — infrastructure management
 │   ├── _lib.sh                      shared shell library
@@ -803,63 +606,16 @@ shft help     # autonomous execution commands
 │   ├── run-with-secrets.sh          process-scoped secret injection
 │   ├── detect-context.sh            exports ACTIVE_CONTEXTS
 │   ├── detect-client.sh             per-client context detection
-│   ├── detect-cmd.sh                cmd venture detection
 │   ├── new-client.sh                scaffold new client instruction set
 │   ├── migrate.sh                   safe migration from manual setup
-│   ├── migrate-bashrc.sh            bashrc migration helper
 │   ├── uninstall.sh                 clean removal of all symlinks + shell integration
 │   ├── validate-env.sh              env + hardening validation
 │   ├── validate-symlinks.sh         verify bootstrap symlinks
-│   ├── validate-remotes.sh          verify remote topology
-│   ├── validate-git-hooks.sh        verify global git hooks
-│   ├── validate-skills.sh           validate skill structure
-│   ├── validate-skills-lock.sh      verify skills-lock provenance
-│   ├── generate-skills-lock.sh      regenerate skills-lock.json
 │   ├── mint_github_app_token.py     AFK token minting
 │   ├── verify-github-app-token.sh   safe token verification
-│   ├── sandcastle-wire-secrets.sh   wire Sandcastle secrets
-│   ├── init-sandcastle.sh           install Sandcastle consumer contract
-│   ├── update-sandcastle.sh         update Sandcastle install
-│   ├── preflight-sandcastle.sh      Sandcastle pre-flight checks
-│   ├── sync-hub-templates.sh        mirror hub templates to producer
-│   ├── smoke-sandcastle-*.sh        Sandcastle smoke tests
-│   ├── preflight-public-promotion.sh  validate promotion range
-│   ├── validate-public-promotion.sh   validate public tree
-│   ├── validate-main-pr-source.sh   validate PR source branch
-│   ├── verify-pr-base.sh            resolve PR base authoritatively
-│   ├── apply-branch-ruleset.sh      apply branch protection ruleset
-│   ├── drift-detect.sh              detect instruction drift
-│   ├── artifact-lifecycle-audit.sh  audit artifact lifecycle
-│   ├── afk-throughput.sh            AFK throughput analysis
-│   ├── gh-assignee-preflight.sh     assignee preflight
-│   ├── pipeline-label.sh            pipeline label helper
-│   ├── pipeline-label-data.sh       pipeline label data
-│   ├── bridge-install.sh            install the Copilot Review Bridge
-│   ├── ctrl-worktree.sh             worktree management
-│   ├── hud-daemon.js                HUD HTTP + WebSocket server
-│   ├── start-hud.sh                 daemon lifecycle (start/stop/status/restart)
-│   ├── write-hud-state.sh           non-blocking compliance event emitter
-│   ├── ctrlshft-claude              event-producing Claude wrapper
-│   ├── com.ctrlshft.hud.plist       macOS HUD launch agent
-│   ├── ctrlshft-hud.service         systemd HUD unit
-│   └── perf/                        performance analysis scripts
-├── bridge/                           ← Copilot Review Bridge (Python)
-│   ├── README.md
-│   ├── webhook.py                   FastAPI webhook receiver
-│   ├── worker.py                    queue worker
-│   ├── db.py                        SQLite queue
-│   ├── github.py                    GitHub token minting
-│   ├── workspace.py                 per-PR workspace lifecycle
-│   ├── hud.py                       HUD event emission
-│   └── requirements.txt
-├── git-hooks/                        ← global git hook dispatchers
-│   ├── pre-commit
-│   └── generic-hook
-├── lib/
-│   └── plan_files_lib.py            shared plan-file helper
-├── systemd/
-│   ├── bridge-webhook.service
-│   └── bridge-worker@.service
+│   ├── hud-daemon.js          HUD HTTP server
+│   ├── start-hud.sh           daemon lifecycle (start/stop/status/restart)
+│   └── write-hud-state.sh     non-blocking compliance event emitter
 ├── hud/                       ← HUD UI
 │   ├── README.md                    HUD architecture + API reference
 │   └── index.html
@@ -868,26 +624,14 @@ shft help     # autonomous execution commands
 │   ├── CNAME
 │   └── assets/
 ├── docs/
-│   ├── ARCHITECTURE.md              internal system map
-│   ├── ARTIFACT-LIFECYCLE.md        artifact path policy
-│   ├── adr/                         architecture decision records (8)
+│   ├── adr/                         architecture decision records
 │   ├── audits/                      dated assessment artifacts
 │   ├── reference/                   durable reference material
 │   └── research/                    durable synthesis and research
-├── plans/                           ← formal PRDs + issue breakdowns
-├── templates/
-│   └── lifecycle/                   lifecycle templates
-├── test/                             ← shell + Python test suites
-├── .sandcastle/                      ← Sandcastle consumer config
-│   ├── hub-version.json             SHA-lock pinning the hub engine
-│   └── prompts/                     project prompt overrides
-├── .github/                          ← CI workflows, rulesets, issue templates
-├── .ctrlshft                         ← per-repo hook config
 ├── working/                         ← active/refs/research tracked; runtime/tmp/logs ignored
 └── secrets/                         ← GITIGNORED
     ├── .env.agent
     ├── .env.secrets
-    ├── .env.bridge
     └── .venv/
 ```
 
