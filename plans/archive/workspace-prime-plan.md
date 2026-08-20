@@ -1,4 +1,5 @@
 # Architecture Plan — Workspace Prime & Ownership Scaffold
+> **Archived** — implemented; see git history for the shipping commits. This plan is kept for reference only.
 
 **Status:** Proposed — awaiting approval
 **Date:** 2026-08-20

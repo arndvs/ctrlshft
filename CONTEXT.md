@@ -22,10 +22,14 @@
 
 ## Sandcastle dogfood
 
-This repo is the first Sandcastle consumer. `.sandcastle/` is intentionally vendored from `shft/` so GitHub Actions can run without depending on a local dotfiles checkout.
+This repo is a Sandcastle consumer under the hub model. The engine is NOT
+vendored — it runs from `arndvs/sandcastle-hub` via the `agent-run` composite
+action. `.sandcastle/` holds only a `hub-version.json` SHA-lock (plus local
+prompt overrides); the engine is referenced remotely, never copied in.
 
-- Use `ctrl update-sandcastle --dry-run` to detect drift between `.sandcastle/` and `shft/`.
-- Project-specific files are `sandcastle.config.json`, `.sandcastle/CODING_STANDARDS.md`, and `.sandcastle/prompts/` overrides.
+- `.sandcastle/hub-version.json` pins the hub ref/SHA; the `sandcastle-drift`
+  workflow opens a review PR when the hub advances.
+- Project-specific files are `sandcastle.config.json` and `.sandcastle/prompts/` overrides.
 - Default branch for dogfood workflows is `dev`.
 - Required GitHub Actions secrets are `LITELLM_BASE_URL` and `LITELLM_MASTER_KEY`; `AGENT_PAT` is recommended for label-driven workflow chaining.
 

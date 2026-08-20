@@ -17,13 +17,7 @@ ctrl+shft fixes all four. Clone it once, `bootstrap.sh` symlinks your instructio
 
 **Source of truth:** `arndvs/ctrlshft` is the canonical public product repository for reusable agent configuration, automation, docs, and Sandcastle/shft code. `~/dotfiles/` is the local checkout bootstrap uses as the on-machine source of truth; `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlinked where possible, Windows fallback copy when needed). Public-safe product work starts in `ctrlshft`, then gets pulled back into `dotfiles-private` only for Aaron's private overlay. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [REPO_TOPOLOGY.md](REPO_TOPOLOGY.md).
 
-```bash
-# Fork at github.com/arndvs/ctrlshft/fork, then:
-git clone https://github.com/YOUR_USERNAME/ctrlshft.git ~/dotfiles
-bash ~/dotfiles/bin/bootstrap.sh   # or after install: ctrl bootstrap
-```
-
-Bootstrap is idempotent and cross-platform. It symlinks `~/.claude/CLAUDE.md`, `~/.claude/skills/`, `~/.claude/agents/`, and `~/.claude/rules/`, wires shell integration into `~/.bashrc`/`~/.zshrc`, creates `secrets/` from templates, installs Python dependencies from `skills/_local/requirements.txt` into `secrets/.venv` (including `PyJWT` for AFK GitHub App token minting), and adds supply chain protection to `~/.npmrc` and `uv.toml`. Full details in the [Installation](#installation) section.
+**Quick start:** fork, clone to `~/dotfiles`, run `bash ~/dotfiles/bin/bootstrap.sh`. Full local/VPS/manual walkthroughs in [Installation](#installation).
 
 ---
 

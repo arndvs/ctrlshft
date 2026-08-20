@@ -152,3 +152,7 @@ The planning pipeline chains skills end-to-end:
 | [ADR-002](adr/ADR-002-four-tier-disclosure.md) | Four-tier progressive disclosure model |
 | [ADR-003](adr/ADR-003-hud-observability.md) | HUD observability architecture |
 | [ADR-004](adr/ADR-004-sandcastle-hosted-proxy.md) | Sandcastle hosted proxy baseline |
+| [ADR-005](adr/ADR-005-sandcastle-agent-parity.md) | Sandcastle agent config parity (local ↔ CI) |
+| [ADR-006](adr/ADR-006-decision-ledger.md) | Verifiable decision history & the Decision Ledger |
+| [ADR-007](adr/ADR-007-executable-doc-policy.md) | Executable documentation policy |
+| [ADR-008](adr/ADR-008-sandcastle-hub.md) | Single-source-of-truth hub for the Sandcastle engine |
