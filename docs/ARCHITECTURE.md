@@ -14,14 +14,15 @@ graph TB
     subgraph "~/dotfiles (source of truth)"
         RULES["rules/<br/>path-gated conventions"]
         INST["instructions/<br/>context/service/task files"]
-        SKILLS["skills/<br/>26 public workflows"]
+        SKILLS["skills/<br/>56 public workflows"]
         AGENTS["agents/<br/>6 subagent personas"]
-        CMDS["commands/<br/>14 slash dispatchers"]
+        CMDS["commands/<br/>16 slash dispatchers"]
         HOOKS["hooks/<br/>lifecycle guards"]
         BIN["bin/<br/>tools"]
         SHFT["shft/<br/>autonomous loop"]
-        SECRETS["secrets/<br/>3-tier credentials"]
+        SECRETS["secrets/<br/>4-tier credentials"]
         HUD["hud/<br/>observability dashboard"]
+        BRIDGE["bridge/<br/>Copilot Review Bridge"]
     end
 
     BIN -->|"bootstrap.sh<br/>13-step idempotent"| CONSUMERS
@@ -35,6 +36,8 @@ graph TB
     SKILLS -->|"spawn"| AGENTS
     HOOKS -->|"emit events"| HUD
     SHFT -->|"consumes"| ISSUES["GitHub Issues backlog"]
+    BRIDGE -->|"webhook → queue → worker"| SHFT
+    SHFT -->|"runs engine via"| HUB["sandcastle-hub<br/>(single source of truth)"]
 ```
 
 ---
@@ -45,9 +48,9 @@ graph TB
 |-----------|---------|---------|
 | [rules/](../rules/README.md) | Path-gated coding conventions (T3) | Load when edited file matches `paths` glob |
 | [instructions/](../instructions/README.md) | Context, service, and task-triggered knowledge (T1–T2) | `_local/` overlay, tiered loading |
-| [skills/](../skills/README.md) | Multi-step workflow definitions (T4) | 26 public skills, triggered by task description |
+| [skills/](../skills/README.md) | Multi-step workflow definitions (T4) | 56 public skills, triggered by task description |
 | [agents/](../agents/README.md) | Read-only subagent personas | 6 agents across 3 model tiers (Haiku/Sonnet/Opus) |
-| [commands/](../commands/README.md) | `/slash` command dispatchers | 14 commands, each loads one skill |
+| [commands/](../commands/README.md) | `/slash` command dispatchers | 16 commands, each loads one skill |
 | [hooks/](../hooks/README.md) | Claude Code lifecycle guards | Block secrets, migrations, auto-compaction; format on stop |
 | [bin/](../bin/README.md) | CLI scripts and infrastructure | Bootstrap, context detection, HUD daemon, secret management |
 | [shft/](../shft/README.md) | Autonomous execution loop | HITL and AFK modes, `srt`-sandboxed, issue-driven |
