@@ -67,19 +67,29 @@ Never sourced into interactive shells.
 > **Note:** The webhook receiver only needs `WEBHOOK_SECRET` (from `.env.bridge`).
 > GitHub App credentials are required only by the worker (from `.env.secrets`).
 
+## Capabilities
+
+- **Multi-worker** — `WORKER_COUNT` (default 1) spawns N workers. PR-scoped
+  locks (per `claim_key`) let different PRs in the same repo process in
+  parallel; same-PR jobs serialize.
+- **Retry with backoff** — transient failures are marked `retryable` with an
+  exponential backoff `retry_at` (1 min, 2 min, 4 min, capped at 30 min).
+  Past `MAX_RETRY_ATTEMPTS` (3), a job lands in terminal `failed`. Manual
+  replay via `ctrl bridge replay <id>`.
+- **Run/step store** — each job claim creates a parent `runs` row with child
+  `steps` (claimed → token_minted → threads_found → iteration →
+  workspace_prepared → shft_invoked → done/failed/retryable), tracking
+  per-step cost. This is the seed of the orchestrator platform's observability.
+
 ## MVP Constraints (Accepted)
 
 These are known limitations of the MVP, documented and accepted:
 
-1. **Repo-scoped lock directory** — `${TMPDIR:-/tmp}/shft-afk-<repo-hash>.lock` limits to one concurrent `shft` invocation per repository (uses atomic `mkdir`/`rmdir`). Legacy `/tmp/shft-afk.lock` may still appear and is surfaced as a stale-lock warning for compatibility.
+1. **Per-PR workspace isolation** — each job gets `~/bridge/workspaces/<owner>--<repo>--pr<num>/`. The `shft` lock is per-workspace (hash-based on git common-dir), so different PRs don't contend.
 
 2. **Global working directory** — `~/dotfiles/working/` is shared. HUD events don't distinguish bridge vs manual sessions. Phase 2: per-workspace isolation (ADR pending).
 
-3. **Single worker** — Only `bridge-worker@1` is supported. `Config.from_env()` refuses `WORKER_COUNT>1`. The `@` template supports future multi-worker, but the lockfile constraint makes it moot until Phase 2.
-
-4. **No retry with backoff** — Failed jobs are marked `failed` and stay in the queue. Manual replay via `ctrl bridge replay <id>`.
-
-5. **30-minute hard cap** — `shft afk 1` subprocess times out after 30 minutes. Adjust `SHFT_RUN_TIMEOUT_SECONDS` in `worker.py` if needed.
+3. **30-minute hard cap** — `shft afk 1` subprocess times out after 30 minutes. Adjust `SHFT_RUN_TIMEOUT_SECONDS` in `worker.py` if needed.
 
 ## Files
 
