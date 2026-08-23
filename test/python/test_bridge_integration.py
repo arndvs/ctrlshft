@@ -319,7 +319,10 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
             row = conn.execute("SELECT * FROM jobs").fetchone()
             iteration = db.read_iteration(conn, "org/repo#7")
 
-        self.assertEqual(row["status"], "failed")
+        # First dispatch failure is retryable (backoff), not terminal failed.
+        self.assertEqual(row["status"], "retryable")
+        self.assertEqual(row["retry_count"], 1)
+        self.assertIsNotNone(row["retry_at"])
         self.assertIn("dispatch failed", row["error"])
         self.assertEqual(row["tracking_issue_number"], 123)
         self.assertEqual(row["workspace_path"], str(ws_path))
@@ -328,7 +331,7 @@ class TestBridgeWebhookWorkerIntegration(unittest.TestCase):
         self.assertFalse(ws_path.exists())
 
         emitted_events = [call.args[1] for call in self.hud_emit.call_args_list]
-        self.assertIn("bridge.job.failed", emitted_events)
+        self.assertIn("bridge.job.retryable", emitted_events)
         self.assertIn("bridge.workspace.cleaned", emitted_events)
 
     def test_worker_startup_requeues_stale_claim_and_reaps_orphan_workspace(self):
