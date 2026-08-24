@@ -102,6 +102,16 @@ class TestClaimNextJob(unittest.TestCase):
             self.assertIsNotNone(job2)
             self.assertEqual(job2.delivery_id, "d-2")
 
+    def test_claim_skips_same_pr_claimed_by_another_worker(self):
+        # With PHASE_2_CONCURRENT_CLAIMS on, a second worker must not claim
+        # a job whose claim_key (repo#pr) is already held by another worker.
+        with db.connect(self.db_path) as conn:
+            _enqueue_sample(conn, delivery_id="d-1", pr=42)
+            _enqueue_sample(conn, delivery_id="d-2", pr=42)
+            db.claim_next_job(conn, worker_id="w-1")
+            job2 = db.claim_next_job(conn, worker_id="w-2")
+            self.assertIsNone(job2)
+
     def test_claim_returns_none_when_empty(self):
         with db.connect(self.db_path) as conn:
             job = db.claim_next_job(conn, worker_id="w-1")
@@ -217,6 +227,85 @@ class TestRequeueStaleClaims(unittest.TestCase):
             db.claim_next_job(conn, worker_id="w-1")
             count = db.requeue_stale_claims(conn, timeout_seconds=1800)
             self.assertEqual(count, 0)
+
+
+class TestRetryable(unittest.TestCase):
+    def setUp(self):
+        self.db_path, self._tmpdir = _make_db()
+
+    def tearDown(self):
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_mark_retryable_sets_status_and_increments(self):
+        with db.connect(self.db_path) as conn:
+            _enqueue_sample(conn)
+            job = db.claim_next_job(conn, worker_id="w-1")
+            db.mark_retryable(conn, job.id, "transient", retry_count=1)
+            row = conn.execute("SELECT * FROM jobs WHERE id=?", (job.id,)).fetchone()
+            self.assertEqual(row["status"], "retryable")
+            self.assertEqual(row["retry_count"], 1)
+            self.assertEqual(row["error"], "transient")
+
+    def test_claim_returns_retryable_job(self):
+        with db.connect(self.db_path) as conn:
+            _enqueue_sample(conn)
+            job = db.claim_next_job(conn, worker_id="w-1")
+            db.mark_retryable(conn, job.id, "boom", retry_count=1)
+            job2 = db.claim_next_job(conn, worker_id="w-2")
+            self.assertIsNotNone(job2)
+            self.assertEqual(job2.id, job.id)
+            self.assertEqual(job2.status, "claimed")
+
+    def test_claim_skips_retryable_before_retry_at(self):
+        with db.connect(self.db_path) as conn:
+            _enqueue_sample(conn)
+            job = db.claim_next_job(conn, worker_id="w-1")
+            db.mark_retryable(conn, job.id, "boom", retry_count=1, retry_at="2099-01-01 00:00:00")
+            job2 = db.claim_next_job(conn, worker_id="w-2")
+            self.assertIsNone(job2)
+
+
+class TestRunSteps(unittest.TestCase):
+    def setUp(self):
+        self.db_path, self._tmpdir = _make_db()
+
+    def tearDown(self):
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_create_run_and_append_steps(self):
+        with db.connect(self.db_path) as conn:
+            _enqueue_sample(conn)
+            job = db.claim_next_job(conn, worker_id="w-1")
+            run_id = db.create_run(conn, job.id, worker_id="w-1")
+            self.assertIsNotNone(run_id)
+            db.append_step(conn, run_id, "claimed", cost_usd=0.0)
+            db.append_step(conn, run_id, "token_minted", cost_usd=0.0)
+            steps = db.get_run_steps(conn, run_id)
+            self.assertEqual(len(steps), 2)
+            self.assertEqual(steps[0]["step_name"], "claimed")
+            self.assertEqual(steps[1]["step_name"], "token_minted")
+
+    def test_complete_run_sets_status_and_cost(self):
+        with db.connect(self.db_path) as conn:
+            _enqueue_sample(conn)
+            job = db.claim_next_job(conn, worker_id="w-1")
+            run_id = db.create_run(conn, job.id, worker_id="w-1")
+            db.append_step(conn, run_id, "claimed", cost_usd=0.0)
+            db.append_step(conn, run_id, "shft_completed", cost_usd=0.42)
+            db.complete_run(conn, run_id, status="done")
+            row = conn.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
+            self.assertEqual(row["status"], "done")
+            self.assertIsNotNone(row["finished_at"])
+            self.assertGreater(row["total_cost_usd"], 0.0)
+
+    def test_fetch_runs_by_job(self):
+        with db.connect(self.db_path) as conn:
+            _enqueue_sample(conn)
+            job = db.claim_next_job(conn, worker_id="w-1")
+            run_id = db.create_run(conn, job.id, worker_id="w-1")
+            runs = db.fetch_runs_for_job(conn, job.id)
+            self.assertEqual(len(runs), 1)
+            self.assertEqual(runs[0]["id"], run_id)
 
 
 if __name__ == "__main__":

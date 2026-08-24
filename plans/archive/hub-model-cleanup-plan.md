@@ -1,4 +1,5 @@
 # Architecture Plan — Hub-Model Completion & Cross-Repo Reconciliation
+> **Archived** — implemented; see git history for the shipping commits. This plan is kept for reference only.
 
 **Status:** Proposed — awaiting approval
 **Date:** 2026-08-20
@@ -253,7 +254,7 @@ S1 → S2, S1 → S3, S4 ∥ S1..S3, S4 → S5.
 
 The final QA slice (HITL) verifies the whole system after S1-S5 merge:
 
-1. On a fresh consumer (e.g. a throwaway branch of `llm-gateway`),
+1. On a fresh consumer (e.g. a throwaway branch of `claude-code-copilot`),
    run `ctrl init-sandcastle --force` and confirm `.github/workflows/agent-*.yml`
    are thin stubs referencing `arndvs/sandcastle-hub` — no `.sandcastle/engine`,
    no local composite actions.

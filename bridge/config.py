@@ -75,13 +75,11 @@ class Config:
         if not bot_login:
             raise ConfigError("COPILOT_BOT_LOGIN must not be empty")
 
-        # MVP: only single worker is supported (global lockfile constraint).
+        # Multi-worker supported since PR-scoped locks (per claim_key) and
+        # PHASE_2_CONCURRENT_CLAIMS. Validate it's a positive integer.
         worker_count = int(opt("WORKER_COUNT", "1"))
-        if worker_count != 1:
-            raise ConfigError(
-                "WORKER_COUNT must be exactly 1 in MVP (global lockfile at "
-                "/tmp/shft-afk.lock). See README.md MVP Constraints #3."
-            )
+        if worker_count < 1:
+            raise ConfigError("WORKER_COUNT must be a positive integer")
 
         return cls(
             github_app_id=os.environ.get("GITHUB_APP_ID") or None,

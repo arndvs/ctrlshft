@@ -1,5 +1,29 @@
 {
   "skills": {
+    "agent-assets": {
+      "computedHash": "0cf1c01eae3443c48a4883046b5e5e994219b20b5d6383beb416e9708f5e6ca0",
+      "skillPath": "skills/agent-assets/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "agent-navigability": {
+      "computedHash": "1fa5bf0a25f138f7da4e28ee7f815ff6de73831ed0eebb68a3527f254188f5e4",
+      "skillPath": "skills/agent-navigability/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "agent-session-friction": {
+      "computedHash": "07af2e19a7b90ac9f96ec6277fc4a6d8768a083cd2af0591614d75d476b60082",
+      "skillPath": "skills/agent-session-friction/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "agent-testability": {
+      "computedHash": "83b97a2f25f869ab29fc4e6d3c712deb4c81804595b177e545c22ce0392973a3",
+      "skillPath": "skills/agent-testability/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
     "architect": {
       "computedHash": "bf2dcf41e1a3253b6551f3ea7175eac9e6cefed35fc155469611cec27e5f1dbe",
       "skillPath": "skills/architect/SKILL.md",
@@ -93,6 +117,12 @@
     "improve-architecture": {
       "computedHash": "4f0dc178794bca43f6af97481436370a78b7ab8713194059f1c8e4725f526c27",
       "skillPath": "skills/improve-architecture/SKILL.md",
+      "source": "arndvs/ctrlshft",
+      "sourceType": "local"
+    },
+    "logging-audit": {
+      "computedHash": "22a1c578fb1be57f81c389b64bc546faabc3ab1b0dd8b176f8fdae9e37ac8764",
+      "skillPath": "skills/logging-audit/SKILL.md",
       "source": "arndvs/ctrlshft",
       "sourceType": "local"
     },

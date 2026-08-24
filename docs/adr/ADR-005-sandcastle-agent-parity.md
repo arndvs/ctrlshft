@@ -87,7 +87,7 @@ When the prerequisite is met, the work is sliced as:
 - Slice 4 — vendor the payload in `init-sandcastle.sh` (`.sandcastle/agent/` + scripts).
 - Slice 5 — `materialize-agent.sh` + the "Materialize agent config" workflow step.
 - Slice 6 — agent-payload drift detection in `update-sandcastle.sh` / `preflight-sandcastle.sh`.
-- Slice 7 — dogfood end-to-end on claude-code-copilot; compare CI vs local behavior parity.
+- Slice 7 — dogfood end-to-end on llm-gateway; compare CI vs local behavior parity.
 
 Slice 1 is the load-bearing spike: the one behavior that cannot be confirmed without a runner test is whether Claude Code honors `.claude/rules/` `applyTo` globs in non-interactive print mode. Everything downstream is gated on that result.
 

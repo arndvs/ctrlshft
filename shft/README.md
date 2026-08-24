@@ -43,7 +43,10 @@ The agent picks issues in this order (defined in `prompt.md`):
 
 ## Sandcastle Platform
 
-Sandcastle is the CI-triggered AFK agent platform extracted under `shft/`. It stamps workflow YAMLs and a vendored TypeScript engine into any repository, then drives issue planning, implementation, PR review, feedback fixes, branch updates, and merge handoffs through GitHub labels.
+Sandcastle is the CI-triggered AFK agent platform. Under the **hub model**, the
+engine lives in `arndvs/sandcastle-hub` (single source of truth) and consumers
+reference it remotely via `uses: arndvs/sandcastle-hub/...@<ref>` — nothing is
+vendored into consumer repos.
 
 ### Install in a repo
 
@@ -53,46 +56,34 @@ Run this from the target repository root:
 ctrl init-sandcastle --branch main --model claude-opus-4-6 --sandbox none
 ```
 
-`ctrl init-sandcastle` is a stamp-and-own installer. It copies files into the target repo instead of symlinking them, which keeps GitHub Actions independent of `~/dotfiles`:
+`ctrl init-sandcastle` installs thin workflow stubs + a SHA-lock. It copies
+files into the target repo instead of symlinking them, which keeps GitHub
+Actions independent of `~/dotfiles`:
 
 ```
 <repo>/
 ├── .github/
-│   ├── workflows/agent-*.yml
+│   ├── workflows/agent-*.yml     ← thin stubs referencing the hub action
 │   └── copilot-setup-steps.yml
 ├── .sandcastle/
-│   ├── engine/                    ← vendored TypeScript runners
-│   ├── prompts/                   ← project-specific prompt overrides
-│   ├── templates/                 ← default prompts + extraction prompts
-│   ├── scripts/                   ← setup and validation helpers
-│   ├── hooks/                     ← optional Claude Code hooks
-│   ├── run.ts                     ← workflow dispatcher
-│   └── CODING_STANDARDS.md
+│   ├── hub-version.json          ← SHA-lock pinning the hub ref
+│   └── prompts/                  ← project-specific prompt overrides
 └── sandcastle.config.json
 ```
 
-If `.sandcastle/` already exists, init refuses to overwrite it unless `--force` is passed. Existing `sandcastle.config.json`, `.sandcastle/prompts/`, and `.sandcastle/CODING_STANDARDS.md` are preserved.
+If `.sandcastle/` already exists, init refuses to overwrite it unless `--force`
+is passed. Existing `sandcastle.config.json` and `.sandcastle/prompts/` are
+preserved.
 
-### Keep vendored files current
+### Keep current with the hub
 
-Run this from an initialized repo:
+The engine is never vendored, so there is no re-vendor drift. Consumers pin the
+hub ref in `.sandcastle/hub-version.json`; the `sandcastle-drift` workflow
+compares that pin to the hub's latest `main` and opens a review PR when the hub
+advances. To release a new hub version, run `hub/release.sh` in the hub repo.
 
-```bash
-ctrl update-sandcastle --dry-run
-```
-
-`ctrl update-sandcastle` compares the repo-owned files against `~/dotfiles/shft/` and shows drift for:
-
-- `.sandcastle/engine/lib/`, `schemas/`, and `workflows/`
-- `.sandcastle/engine/package.json` and `tsconfig.json`
-- `.sandcastle/templates/prompts/` and `extractions/`
-- `.sandcastle/scripts/` and `hooks/`
-- `.github/workflows/agent-*.yml`
-- `.github/copilot-setup-steps.yml`
-
-Project-specific prompts, config, and coding standards are never overwritten by drift updates.
-
-The vendored engine intentionally excludes source test files. Its `package.json` is rendered with a no-op `test` script and a working `typecheck` script, so consumer repos can run package checks without a false Vitest failure from an empty test suite. The engine package also lists reviewed pnpm build approvals for native dependencies used by `tsx`/Vitest, avoiding a blanket lifecycle-script allow-all while still letting runtime binaries initialize correctly.
+`ctrl update-sandcastle` is deprecated — the engine is no longer vendored, so
+there is nothing to re-vendor. Releases are managed in the hub.
 
 ### Source layout in dotfiles
 
@@ -135,13 +126,11 @@ Prompt resolution checks `.sandcastle/prompts/` first, then falls back to the te
 
 ### Workflow dispatcher
 
-All GitHub Actions install engine dependencies with the configured package manager, then call the vendored dispatcher with the engine-local `tsx` binary:
-
-```bash
-./.sandcastle/engine/node_modules/.bin/tsx .sandcastle/run.ts <workflow-name> [args]
-```
-
-Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
+Consumers never invoke the engine directly. Each thin stub calls the hub's
+`agent-run` composite action (`uses: arndvs/sandcastle-hub/actions/agent-run@main`),
+which checks out the hub at the pinned ref, installs engine deps, runs the
+engine against the consumer workspace, and summarizes the run. The engine's
+registered workflow names live in the hub (`engine/lib/dispatch.ts`):
 
 | Workflow | Required args | Purpose |
 |----------|---------------|---------|
@@ -177,10 +166,13 @@ Registered workflow names are defined in `shft/engine/lib/dispatch.ts`:
 | `agent-check-stale-prs.yml` | `schedule`, `workflow_dispatch` | Scheduled maintenance |
 | `agent-keep-tests-tight.yml` | `schedule`, `workflow_dispatch` | Opens `source:keep-tests-tight` draft PRs trimming low-signal tests |
 | `agent-repo-hygiene.yml` | `schedule`, `workflow_dispatch` | Creates `repo-hygiene` + `phase-<n>` backlog issues |
-| `sandcastle-ci.yml` | `push`/`pull_request` on `.sandcastle/engine/**` | Validates the vendored engine (frozen install + typecheck); always vendored |
-| `proxy-canary.yml` (in `workflows-proxy/`) | `schedule`, `workflow_dispatch` | Proxy health probe; vendored only with `--with-proxy` (the default) |
+| `proxy-canary.yml` (in `workflows-proxy/`) | `schedule`, `workflow_dispatch` | Proxy health probe; installed only with `--with-proxy` (the default) |
 
-Workflow templates use `{{DEFAULT_BRANCH}}`; init and update resolve it from `--branch` or `sandcastle.config.json`. Proxy monitors live in `workflows-proxy/` and are vendored only when `--with-proxy` is set (the default); pass `--no-proxy` to skip them.
+Workflow templates use `{{DEFAULT_BRANCH}}`; init resolves it from `--branch` or
+`sandcastle.config.json`. Proxy monitors live in `workflows-proxy/` and are
+installed only when `--with-proxy` is set (the default); pass `--no-proxy` to
+skip them. Engine CI (typecheck + tests) is owned by the hub's `engine-ci.yml`,
+not by consumer repos.
 
 The canonical dogfood smoke-test contract for these templates is documented in `shft/docs/full-smoke-matrix.md`.
 

@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 
-CURRENT_SCHEMA_VERSION = 2
+CURRENT_SCHEMA_VERSION = 4
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -36,9 +36,29 @@ CREATE TABLE IF NOT EXISTS jobs (
   workspace_path TEXT,
   worker_id TEXT,
   error TEXT,
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  retry_at TIMESTAMP,
   enqueued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   claimed_at TIMESTAMP,
   finished_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id INTEGER NOT NULL,
+  worker_id TEXT,
+  status TEXT NOT NULL DEFAULT 'in_progress',
+  total_cost_usd REAL NOT NULL DEFAULT 0.0,
+  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  finished_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS steps (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id INTEGER NOT NULL,
+  step_name TEXT NOT NULL,
+  cost_usd REAL NOT NULL DEFAULT 0.0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS claim_keys (
@@ -55,8 +75,8 @@ CREATE INDEX IF NOT EXISTS idx_jobs_pr ON jobs(repo_full_name, pr_number);
 
 # Phase 2 toggle. When True, the claim query filters out any claim_key
 # already held by another worker, enabling parallel processing across
-# different PRs. MVP runs with this False.
-PHASE_2_CONCURRENT_CLAIMS = False
+# different PRs. Enabled — PR-scoped locks make concurrent claims safe.
+PHASE_2_CONCURRENT_CLAIMS = True
 
 
 @dataclass
@@ -73,6 +93,8 @@ class Job:
     tracking_issue_number: Optional[int]
     workspace_path: Optional[str]
     worker_id: Optional[str]
+    retry_count: int = 0
+    retry_at: Optional[str] = None
 
     @classmethod
     def from_row(cls, row: sqlite3.Row) -> Job:
@@ -89,6 +111,8 @@ class Job:
             tracking_issue_number=row["tracking_issue_number"],
             workspace_path=row["workspace_path"],
             worker_id=row["worker_id"],
+            retry_count=row["retry_count"] if "retry_count" in row.keys() else 0,
+            retry_at=row["retry_at"] if "retry_at" in row.keys() else None,
         )
 
 
@@ -130,6 +154,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
             ("workspace_path", "TEXT"),
             ("worker_id", "TEXT"),
             ("error", "TEXT"),
+            ("retry_count", "INTEGER NOT NULL DEFAULT 0"),
+            ("retry_at", "TIMESTAMP"),
         ]
         for col, typedef in migrations:
             if col not in existing:
@@ -237,10 +263,11 @@ def enqueue(
 
 
 def claim_next_job(conn: sqlite3.Connection, worker_id: str) -> Optional[Job]:
-    """Atomically claim the next queued job.
+    """Atomically claim the next claimable job.
 
-    MVP: FIFO across all queued jobs.
-    Phase 2: skip jobs whose claim_key is already held by another worker.
+    Claims the oldest queued job, or a retryable job whose retry_at has
+    passed. With PHASE_2_CONCURRENT_CLAIMS, skips jobs whose claim_key is
+    already held by another worker (parallel processing across PRs).
     """
     conn.execute("BEGIN IMMEDIATE;")
     try:
@@ -265,6 +292,20 @@ def claim_next_job(conn: sqlite3.Connection, worker_id: str) -> Optional[Job]:
                   LIMIT 1
                 """
             ).fetchone()
+
+        if row is None:
+            # No queued job — check for a retryable job whose retry_at has passed.
+            retry_row = conn.execute(
+                """
+                SELECT * FROM jobs
+                  WHERE status = 'retryable'
+                    AND (retry_at IS NULL OR retry_at <= datetime('now'))
+                  ORDER BY id
+                  LIMIT 1
+                """
+            ).fetchone()
+            if retry_row is not None:
+                row = retry_row
 
         if row is None:
             conn.execute("COMMIT;")
@@ -320,6 +361,33 @@ def mark_failed(conn: sqlite3.Connection, job_id: int, error: str) -> None:
           WHERE id=?
         """,
         (error[:4000], job_id),
+    )
+
+
+def mark_retryable(
+    conn: sqlite3.Connection,
+    job_id: int,
+    error: str,
+    *,
+    retry_count: int,
+    retry_at: Optional[str] = None,
+) -> None:
+    """Mark a job retryable with a backoff retry_at timestamp.
+
+    The job returns to the claimable pool once retry_at passes. retry_count
+    is the attempt number (1-based) that just failed.
+    """
+    conn.execute(
+        """
+        UPDATE jobs
+          SET status='retryable',
+              error=?,
+              retry_count=?,
+              retry_at=?,
+              finished_at=NULL
+          WHERE id=?
+        """,
+        (error[:4000], retry_count, retry_at, job_id),
     )
 
 
@@ -383,3 +451,86 @@ def requeue_stale_claims(
         (f"-{timeout_seconds}",),
     )
     return cursor.rowcount
+
+
+# ── Run/step store (orchestrator seed) ───────────────────────────────────────
+
+def create_run(
+    conn: sqlite3.Connection,
+    job_id: int,
+    *,
+    worker_id: str,
+) -> int:
+    """Create a parent run row for a claimed job. Returns the run id."""
+    cur = conn.execute(
+        """
+        INSERT INTO runs (job_id, worker_id, status)
+        VALUES (?, ?, 'in_progress')
+        """,
+        (job_id, worker_id),
+    )
+    return cur.lastrowid
+
+
+def append_step(
+    conn: sqlite3.Connection,
+    run_id: int,
+    step_name: str,
+    *,
+    cost_usd: float = 0.0,
+) -> None:
+    """Append a step row to a run, accumulating cost."""
+    conn.execute(
+        """
+        INSERT INTO steps (run_id, step_name, cost_usd)
+        VALUES (?, ?, ?)
+        """,
+        (run_id, step_name, cost_usd),
+    )
+    conn.execute(
+        """
+        UPDATE runs
+          SET total_cost_usd = total_cost_usd + ?
+          WHERE id = ?
+        """,
+        (cost_usd, run_id),
+    )
+
+
+def complete_run(
+    conn: sqlite3.Connection,
+    run_id: int,
+    *,
+    status: str,
+) -> None:
+    """Mark a run complete with a terminal status."""
+    conn.execute(
+        """
+        UPDATE runs
+          SET status=?, finished_at=CURRENT_TIMESTAMP
+          WHERE id=?
+        """,
+        (status, run_id),
+    )
+
+
+def get_run_steps(conn: sqlite3.Connection, run_id: int) -> list[dict]:
+    """Return all steps for a run, oldest first."""
+    rows = conn.execute(
+        """
+        SELECT * FROM steps WHERE run_id=? ORDER BY id
+        """,
+        (run_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def fetch_runs_for_job(conn: sqlite3.Connection, job_id: int) -> list[dict]:
+    """Return all runs for a job, oldest first."""
+    rows = conn.execute(
+        """
+        SELECT * FROM runs WHERE job_id=? ORDER BY id
+        """,
+        (job_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]

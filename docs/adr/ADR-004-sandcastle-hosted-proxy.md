@@ -9,7 +9,7 @@
 
 ## Context
 
-Sandcastle GitHub Actions run on GitHub-hosted runners. Those runners cannot reach the local `shft` or `claude-code-copilot` proxy on the maintainer's workstation, so workflows that depend on `ANTHROPIC_BASE_URL` and `ANTHROPIC_AUTH_TOKEN` need a reachable proxy endpoint.
+Sandcastle GitHub Actions run on GitHub-hosted runners. Those runners cannot reach the local `shft` or `llm-gateway` proxy on the maintainer's workstation, so workflows that depend on `ANTHROPIC_BASE_URL` and `ANTHROPIC_AUTH_TOKEN` need a reachable proxy endpoint.
 
 The proxy must preserve the existing security boundary: Actions should call an Anthropic-compatible LiteLLM endpoint backed by Copilot auth, without storing direct Anthropic keys in repository secrets or printing credential values in logs.
 
@@ -17,7 +17,7 @@ The proxy must preserve the existing security boundary: Actions should call an A
 
 ## Decision
 
-Use a small **EC2 proxy-only host** that exposes `claude-code-copilot` through authenticated HTTPS while continuing to run Sandcastle workflows on GitHub-hosted runners.
+Use a small **EC2 proxy-only host** that exposes `llm-gateway` through authenticated HTTPS while continuing to run Sandcastle workflows on GitHub-hosted runners.
 
 Do not move Sandcastle to an EC2 self-hosted runner for this slice. Self-hosted runners would expand the trust boundary by placing repository checkout, workflow execution, and model proxy state on the same host. The selected baseline keeps GitHub Actions ephemeral and gives the EC2 instance one job: terminate TLS and forward authenticated model calls to the local proxy runtime.
 
