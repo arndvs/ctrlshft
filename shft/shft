@@ -1292,7 +1292,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
             init)
                 _path="${1:-}"
                 if [[ -z "$_path" ]]; then
-                    red "Usage: shft proxy init <path-to-claude-code-copilot>"
+                    red "Usage: shft proxy init <path-to-llm-gateway>"
                     exit 1
                 fi
 
@@ -1304,7 +1304,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
                 }
 
                 if [[ ! -f "$_path/litellm_config.yaml" ]]; then
-                    red "Not a claude-code-copilot directory: missing litellm_config.yaml"
+                    red "Not an llm-gateway directory: missing litellm_config.yaml"
                     exit 1
                 fi
                 if [[ ! -f "$_path/.env" ]]; then
@@ -1463,7 +1463,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
 
                 if [[ -z "$_proxy_dir" ]]; then
                     yellow "  Not configured"
-                    echo "  Run: shft proxy init <path-to-claude-code-copilot>"
+                    echo "  Run: shft proxy init <path-to-llm-gateway>"
                     echo ""
                     exit 0
                 fi
@@ -1514,7 +1514,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
                 echo ""
                 echo "  Setup"
                 echo "  ──────────────────────────────────────────────────────────────"
-                echo "  shft proxy init <path>  set path to claude-code-copilot repo"
+                echo "  shft proxy init <path>  set path to llm-gateway repo"
                 echo "  shft proxy on           enable proxy routing"
                 echo "  shft proxy off          disable proxy env injection"
                 echo ""
@@ -1623,7 +1623,7 @@ print(f'  ... ({len(issues)} shown, use shft issues for full list)')
         echo "  Proxy (Copilot routing)"
         echo "  ──────────────────────────────────────────────────────────────"
         echo "  shft proxy             proxy subcommand help"
-        echo "  shft proxy init <path> set path to claude-code-copilot repo"
+        echo "  shft proxy init <path> set path to llm-gateway repo"
         echo "  shft proxy on/off      toggle Copilot routing"
         echo "  shft proxy start/stop  manage proxy daemon"
         echo "  shft proxy status      show proxy state and health"

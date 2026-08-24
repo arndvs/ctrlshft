@@ -37,9 +37,9 @@ gh workflow run nightly-smoke.yml \
 The report includes both success and failure paths:
 
 - **PASS example:** central `Proxy canary` latest run succeeded:
-  https://github.com/arndvs/claude-code-copilot/actions/runs/<RUN_ID>
+  https://github.com/arndvs/llm-gateway/actions/runs/<RUN_ID>
 - **FAIL example:** historical repo-local `Proxy canary` scheduled run failed
-  before canary ownership moved to `claude-code-copilot`:
+  before canary ownership moved to `llm-gateway`:
   https://github.com/arndvs/ctrlshft/actions/runs/<RUN_ID>
 
 Failure diagnostics are actionable from the run URL. The representative failed
@@ -54,7 +54,7 @@ Process completed with exit code 1.
 The wider verification window also detected historical failures for `Agent:
 Architecture Review`, `Agent: Promote Queued`, and the old repo-local `Proxy
 canary`. The agent workflows are currently green in this repo; proxy canary
-monitoring now belongs to `arndvs/claude-code-copilot`.
+monitoring now belongs to `arndvs/llm-gateway`.
 
 ## Workflow Coverage Matrix
 
@@ -92,7 +92,7 @@ Each workflow is categorized by its coverage type:
 | Sandcastle CI | `sandcastle-ci.yml` | Passive | Triggered by push/PR; queried by report aggregator |
 
 Proxy canary monitoring is intentionally centralized in
-`arndvs/claude-code-copilot` (`proxy-canary.yml`) instead of being scheduled in
+`arndvs/llm-gateway` (`proxy-canary.yml`) instead of being scheduled in
 this consumer repo.
 
 ## Smoke Scripts
