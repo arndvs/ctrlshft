@@ -33,7 +33,7 @@ graph LR
     PROD["ctrlshft-public<br/>product source + producer"]
     DOT["dotfiles-private<br/>private overlay"]
     CMD["cmd<br/>business knowledge layer"]
-    PROXY["claude-code-copilot<br/>LiteLLM → Copilot/OpenRouter"]
+    PROXY["llm-gateway<br/>LiteLLM → Copilot/OpenRouter"]
 
     PROD -->|"publishes engine"| HUB
     HUB -->|"one-way copy out"| PROD
@@ -46,7 +46,7 @@ graph LR
 - **`arndvs/sandcastle-hub`** — single source of truth for the Sandcastle engine, templates, actions, and labels. Consumers reference it remotely via `uses: arndvs/sandcastle-hub/...@main`; nothing is vendored.
 - **`dotfiles-private`** — Aaron's private overlay: secrets, `_local/` skills and instructions, machine-local state. Never promoted to public.
 - **`arndvs/cmd`** — the business knowledge layer. "ctrl+shft+cmd": ctrl configures how agents code, cmd configures what agents know about your business.
-- **`arndvs/claude-code-copilot`** — the runtime proxy that lets Claude Code reach Copilot/OpenRouter models. Infrastructure, not product content.
+- **`arndvs/llm-gateway`** — the runtime proxy that lets Claude Code reach Copilot/OpenRouter models. Infrastructure, not product content.
 
 ---
 

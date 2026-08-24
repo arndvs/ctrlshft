@@ -87,7 +87,7 @@ The engine's own code was already designed to be hub-compatible: `resolveDefault
 4. Author `hub/release.sh` (SHA-lock bump, tagging).
 5. Pilot: migrate `cmd-public` to stubs; baseline-compare all workflows.
 6. Observe 1–2 weeks; verify zero drift and no engine-change proposals.
-7. Roll out to launch, aligned, PUSH, mcrdse-ops, rise-awake, arndvs, claude-code-copilot.
+7. Roll out to launch, aligned, PUSH, mcrdse-ops, rise-awake, arndvs, llm-gateway.
 8. Retire `update-sandcastle.sh` consumer-side; migrate `sandcastle-drift.yml` to SHA-drift.
 9. Add hub CI running the engine test suite on every PR.
 

@@ -138,11 +138,11 @@ chosen DNS name, for example `sandcastle-proxy.example.com`, at that Elastic IP.
 The GitHub Actions secret `LITELLM_BASE_URL` should later use the HTTPS URL for
 that DNS name.
 
-## 5. Deploy `claude-code-copilot`
+## 5. Deploy `llm-gateway`
 
 Install Docker and Caddy on the host, then clone or fetch a pinned
-`claude-code-copilot` revision under an operational path such as
-`/opt/claude-code-copilot`.
+`llm-gateway` revision under an operational path such as
+`/opt/llm-gateway`.
 
 From the proxy repo:
 
@@ -189,11 +189,11 @@ COPILOT_CACHE_DIR="${COPILOT_CACHE_DIR:?set COPILOT_CACHE_DIR to the OAuth user'
 docker run --env-file .env \
   -v "${COPILOT_CACHE_DIR}:/root/.config/litellm/github_copilot:ro" \
   -p "127.0.0.1:${LITELLM_PORT:-4000}:4000" \
-  claude-code-copilot:<pinned-tag-or-digest>
+  llm-gateway:<pinned-tag-or-digest>
 ```
 
 Use an explicit image tag or digest that matches the audited
-`claude-code-copilot` revision on the host.
+`llm-gateway` revision on the host.
 If running `docker` via `sudo`, set `COPILOT_CACHE_DIR` explicitly because
 `$HOME` may resolve to `/root`.
 

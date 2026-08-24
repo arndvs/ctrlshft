@@ -27,7 +27,7 @@ Resolve these here, then pull back to dotfiles (Direction A in
 - `skills/_local/**`, `instructions/_local/**`
 - `sandcastle.config.json` + installed `.github/workflows/agent-*.yml` —
   host-managed consumer assets, never promoted FROM private
-- `claude-code-copilot` — runtime, unrelated to product CI
+- `llm-gateway` — runtime, unrelated to product CI
 
 ## Push policy
 

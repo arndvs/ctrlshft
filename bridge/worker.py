@@ -40,6 +40,8 @@ SHFT_RUN_TIMEOUT_SECONDS = 60 * 30  # 30 min hard cap per shft invocation
 SUBPROCESS_POLL_SECONDS = 0.5
 PROCESS_TERMINATE_GRACE_SECONDS = DEFAULT_TERMINATE_GRACE_SECONDS
 PROCESS_KILL_WAIT_SECONDS = DEFAULT_KILL_WAIT_SECONDS
+MAX_RETRY_ATTEMPTS = 3  # retry budget — past this, a job lands in 'failed'
+RETRY_BACKOFF_BASE_SECONDS = 60  # 1 min, 2 min, 4 min (exponential, capped)
 _shutdown_event = threading.Event()
 _shutdown_signum: int | None = None
 
@@ -61,6 +63,20 @@ def _shutdown_requested() -> bool:
 
 class WorkerShutdown(RuntimeError):
     """Raised when a worker shutdown interrupts active subprocess work."""
+
+
+def _retry_at_for(attempt: int) -> str:
+    """Compute the retry_at timestamp for a failed attempt (1-based).
+
+    Exponential backoff: 2^(attempt-1) * base, capped at 30 min.
+    Returns an ISO-8601 UTC timestamp for the next allowed attempt.
+    """
+    import datetime as _dt
+
+    delay = min(RETRY_BACKOFF_BASE_SECONDS * (2 ** (attempt - 1)), 1800)
+    return (_dt.datetime.now(_dt.timezone.utc) + _dt.timedelta(seconds=delay)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
 
 def _process_job(cfg: Config, job: db.Job, worker_id: str) -> None:
@@ -466,14 +482,23 @@ def process_one_job(cfg: Config, worker_id: str) -> bool:
     if job is None:
         return False
 
+    # Orchestrator seed: create a parent run row for this claim.
+    with db.connect(cfg.db_path) as conn:
+        run_id = db.create_run(conn, job.id, worker_id=worker_id)
+        db.append_step(conn, run_id, "claimed")
+
     try:
         _process_job(cfg, job, worker_id)
         with db.connect(cfg.db_path) as conn:
             db.mark_done(conn, job.id)
+            db.append_step(conn, run_id, "done")
+            db.complete_run(conn, run_id, status="done")
     except WorkerShutdown:
         logger.info("Job %s interrupted by worker shutdown", job.id)
         with db.connect(cfg.db_path) as conn:
             db.mark_failed(conn, job.id, "worker_shutdown")
+            db.append_step(conn, run_id, "failed", cost_usd=0.0)
+            db.complete_run(conn, run_id, status="failed")
         try:
             hud.emit(
                 cfg.hud_script,
@@ -489,22 +514,52 @@ def process_one_job(cfg: Config, worker_id: str) -> bool:
             logger.warning("HUD failure event failed for %s", job.claim_key, exc_info=True)
     except Exception as e:
         tb = traceback.format_exc()
-        logger.error("Job %s failed: %s\n%s", job.id, e, tb)
-        with db.connect(cfg.db_path) as conn:
-            db.mark_failed(conn, job.id, tb)
-        try:
-            hud.emit(
-                cfg.hud_script,
-                "bridge.job.failed",
-                project=job.repo_full_name,
-                workspace_id=job.claim_key,
-                worker_id=worker_id,
-                delivery_id=job.delivery_id,
-                pr_number=job.pr_number,
-                error=str(e),
+        next_attempt = job.retry_count + 1
+        if next_attempt < MAX_RETRY_ATTEMPTS:
+            retry_at = _retry_at_for(next_attempt)
+            logger.warning(
+                "Job %s failed (attempt %d/%d); retrying at %s: %s",
+                job.id, next_attempt, MAX_RETRY_ATTEMPTS, retry_at, e,
             )
-        except Exception:
-            logger.warning("HUD failure event failed for %s", job.claim_key, exc_info=True)
+            with db.connect(cfg.db_path) as conn:
+                db.mark_retryable(conn, job.id, tb, retry_count=next_attempt, retry_at=retry_at)
+                db.append_step(conn, run_id, "retryable")
+                db.complete_run(conn, run_id, status="retryable")
+            try:
+                hud.emit(
+                    cfg.hud_script,
+                    "bridge.job.retryable",
+                    project=job.repo_full_name,
+                    workspace_id=job.claim_key,
+                    worker_id=worker_id,
+                    delivery_id=job.delivery_id,
+                    pr_number=job.pr_number,
+                    attempt=next_attempt,
+                    retry_at=retry_at,
+                    error=str(e),
+                )
+            except Exception:
+                logger.warning("HUD retry event failed for %s", job.claim_key, exc_info=True)
+        else:
+            logger.error("Job %s failed permanently after %d attempts: %s\n%s",
+                         job.id, next_attempt, e, tb)
+            with db.connect(cfg.db_path) as conn:
+                db.mark_failed(conn, job.id, tb)
+                db.append_step(conn, run_id, "failed")
+                db.complete_run(conn, run_id, status="failed")
+            try:
+                hud.emit(
+                    cfg.hud_script,
+                    "bridge.job.failed",
+                    project=job.repo_full_name,
+                    workspace_id=job.claim_key,
+                    worker_id=worker_id,
+                    delivery_id=job.delivery_id,
+                    pr_number=job.pr_number,
+                    error=str(e),
+                )
+            except Exception:
+                logger.warning("HUD failure event failed for %s", job.claim_key, exc_info=True)
     finally:
         # Workspace cleanup — prevents unbounded disk growth.
         try:
