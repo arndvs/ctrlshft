@@ -33,14 +33,7 @@ record_fail() {
     printf "  \033[31m✗\033[0m %s — %s\n" "$1" "$2"
 }
 
-# ── Test 1: guard script exists and is executable ───────────────────────────
-if [[ -x "$GUARD" ]]; then
-    record_pass "verify-pr-base.sh exists and is executable"
-else
-    record_fail "verify-pr-base.sh exists and is executable" "$GUARD missing or not executable"
-fi
-
-# ── Test 2: sandcastle.config.json baseBranch fallback ──────────────────────
+# ── Test 1: sandcastle.config.json baseBranch fallback ──────────────────────
 # Run in a temp dir with a sandcastle.config.json but no gh on PATH, so the
 # resolver must fall back to the config's baseBranch.
 TMP="$(mktemp -d 2>/dev/null || mktemp -d -t verifyprbase)"

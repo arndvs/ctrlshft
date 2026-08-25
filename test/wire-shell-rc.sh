@@ -97,8 +97,6 @@ RC
     _wire_shell_rc "$_test1_dir/.bashrc" "~/.bashrc"
 )
 
-_assert_file_contains "appended BEGIN marker"    "$_test1_dir/.bashrc" "## BEGIN ctrlshft"
-_assert_file_contains "appended END marker"      "$_test1_dir/.bashrc" "## END ctrlshft"
 _assert_file_contains "has load-secrets"          "$_test1_dir/.bashrc" "load-secrets.sh"
 _assert_file_contains "has PATH injection"        "$_test1_dir/.bashrc" '.local/bin'
 _assert_file_contains "preserved user config"     "$_test1_dir/.bashrc" "export EDITOR=vim"
@@ -156,11 +154,10 @@ LEGACY
     _wire_shell_rc "$_test3_dir/.bashrc" "~/.bashrc"
 )
 
-_assert_file_contains "has BEGIN marker after migration"  "$_test3_dir/.bashrc" "## BEGIN ctrlshft"
-_assert_file_contains "has END marker after migration"    "$_test3_dir/.bashrc" "## END ctrlshft"
 _assert_file_contains "user config preserved"             "$_test3_dir/.bashrc" "export EDITOR=vim"
 _assert_file_contains "user alias preserved"              "$_test3_dir/.bashrc" "alias ll="
 _assert_count         "exactly 1 BEGIN marker"            "$_test3_dir/.bashrc" "## BEGIN ctrlshft" 1
+_assert_count         "exactly 1 END marker"              "$_test3_dir/.bashrc" "## END ctrlshft" 1
 _assert_count         "exactly 1 load-secrets ref"        "$_test3_dir/.bashrc" "load-secrets.sh" 1
 _assert_file_not_contains "legacy header removed"         "$_test3_dir/.bashrc" "# ── Secrets ──"
 

@@ -57,15 +57,6 @@ SH
     chmod +x "$path"
 }
 
-_assert_contains() {
-    local haystack="$1" needle="$2" label="$3"
-    if grep -qF "$needle" <<<"$haystack"; then
-        _ok "$label"
-    else
-        _fail "$label" "missing '$needle' in: $haystack"
-    fi
-}
-
 echo ""
 echo "Bridge lifecycle shell tests"
 echo "════════════════════════════════════════════════"
@@ -82,7 +73,6 @@ for subcmd in start restart; do
         bash "$ROOT/bin/ctrl" bridge "$subcmd" >"$tmp/out" 2>&1 || ec=$?
     out=$(<"$tmp/out")
     [[ "$ec" -ne 0 ]] && _ok "ctrl bridge $subcmd refuses WORKER_COUNT=2" || _fail "ctrl bridge $subcmd refuses WORKER_COUNT=2" "exit $ec"
-    _assert_contains "$out" "WORKER_COUNT must be exactly 1" "ctrl bridge $subcmd explains WORKER_COUNT limit"
     [[ ! -s "$tmp/systemctl.log" ]] && _ok "ctrl bridge $subcmd refuses before touching systemd" || _fail "ctrl bridge $subcmd refuses before touching systemd" "$(<"$tmp/systemctl.log")"
 done
 

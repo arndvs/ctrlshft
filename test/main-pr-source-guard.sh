@@ -47,12 +47,6 @@ echo
 echo "Main PR source guard tests"
 echo "════════════════════════════════════════════════"
 
-if [[ -x "$GUARD" ]]; then
-    record_pass "guard script exists and is executable"
-else
-    record_fail "guard script exists and is executable" "$GUARD missing or not executable"
-fi
-
 if [[ -f "$WORKFLOW" ]] &&
     grep -qE '^[[:space:]]*pull_request:' "$WORKFLOW" &&
     grep -qE '^[[:space:]]*-[[:space:]]*main[[:space:]]*$' "$WORKFLOW" &&

@@ -22,20 +22,12 @@ echo
 echo "Copilot instruction drift tests"
 echo "════════════════════════════════════════════════"
 
-# ── Test: drift-detect.sh includes copilot-instructions.md target ─────────────
-
-if grep -q 'copilot-instructions.md' "$ROOT/bin/drift-detect.sh"; then
-    record_pass "drift-detect.sh references copilot-instructions.md"
-else
-    record_fail "drift-detect.sh references copilot-instructions.md" "not found in script"
-fi
-
-# ── Test: source for copilot-instructions.md is CLAUDE.md ─────────────────────
+# ── Test: drift-detect.sh maps copilot-instructions.md to CLAUDE.md ───────────
 
 if grep 'copilot-instructions.md' "$ROOT/bin/drift-detect.sh" | grep -q 'CLAUDE.md'; then
-    record_pass "copilot-instructions.md source is CLAUDE.md"
+    record_pass "drift-detect.sh maps copilot-instructions.md to CLAUDE.md"
 else
-    record_fail "copilot-instructions.md source is CLAUDE.md" "mapping not found"
+    record_fail "drift-detect.sh maps copilot-instructions.md to CLAUDE.md" "mapping not found"
 fi
 
 # ── Test: content drift is detected ──────────────────────────────────────────

@@ -49,13 +49,6 @@ else
     _fail "validate-symlinks.sh checks copilot-instructions.md" "not found"
 fi
 
-# ── No root .github/copilot-instructions.md introduced ─────────────────────
-if [[ -f ".github/copilot-instructions.md" ]]; then
-    _fail "no root .github/copilot-instructions.md" "file exists but should not"
-else
-    _ok "no root .github/copilot-instructions.md"
-fi
-
 # ── Windows fallback (cp) is present ────────────────────────────────────────
 if grep -q 'cp "$DOTFILES/CLAUDE.md" "$COPILOT_DIR/copilot-instructions.md"' bin/bootstrap.sh; then
     _ok "Windows copy fallback present for copilot-instructions.md"

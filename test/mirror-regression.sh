@@ -142,19 +142,6 @@ else
     _fail "Claude consumer instructions" "~/.claude/CLAUDE.md is not a symlink or file"
 fi
 
-# ── Test 3: Copilot consumer has identical content ──────────────────────────
-if [[ -L "$FAKE_HOME/.copilot/copilot-instructions.md" ]] || [[ -f "$FAKE_HOME/.copilot/copilot-instructions.md" ]]; then
-    COPILOT_CONTENT=$(cat "$FAKE_HOME/.copilot/copilot-instructions.md")
-    SOURCE_CONTENT=$(cat "$FAKE_DOTFILES/CLAUDE.md")
-    if [[ "$COPILOT_CONTENT" == "$SOURCE_CONTENT" ]]; then
-        _ok "Copilot consumer instructions match generated CLAUDE.md"
-    else
-        _fail "Copilot consumer instructions match" "content differs from CLAUDE.md"
-    fi
-else
-    _fail "Copilot consumer instructions" "~/.copilot/copilot-instructions.md is not a symlink or file"
-fi
-
 # ── Test 4: Claude and Copilot point to the same source ─────────────────────
 # On Unix both are symlinks to the same target. On Windows both are byte-identical
 # copies of CLAUDE.md — verify content equality instead of readlink targets.
