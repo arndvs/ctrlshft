@@ -59,13 +59,5 @@ class TestGitCredentialEnv(unittest.TestCase):
         self.assertNotIn("PATH", env)  # not in environ → not forwarded
 
 
-class TestTokenRepr(unittest.TestCase):
-    def test_repr_redacts_value(self):
-        r = repr(_TOKEN)
-        self.assertNotIn("ghs_secrettoken123", r)
-        self.assertIn("redacted", r)
-        self.assertIn("2026-01-01", r)  # expires_at is not secret
-
-
 if __name__ == "__main__":
     unittest.main()

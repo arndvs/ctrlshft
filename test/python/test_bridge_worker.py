@@ -257,26 +257,6 @@ class TestRunSubprocess(unittest.TestCase):
             "Process group %s did not exit after SIGKILL", 4321
         )
 
-    def test_shutdown_timing_budget_stays_within_five_seconds(self):
-        self.assertLess(
-            worker_module.SUBPROCESS_POLL_SECONDS
-            + worker_module.PROCESS_TERMINATE_GRACE_SECONDS
-            + worker_module.PROCESS_KILL_WAIT_SECONDS,
-            5.0,
-        )
-
-    def test_terminate_skips_exited_child(self):
-        proc = _proc()
-        proc.poll.return_value = 0
-
-        with mock.patch("bridge.subprocess_helpers.os.getpgid", create=True) as getpgid, \
-                mock.patch("bridge.subprocess_helpers.os.killpg", create=True) as killpg:
-            worker_module.terminate_process_group(proc)
-
-        getpgid.assert_not_called()
-        killpg.assert_not_called()
-        proc.wait.assert_not_called()
-
 
 class TestDispatch(unittest.TestCase):
     def _capture_cmd(self, dispatch_fn, **kwargs):

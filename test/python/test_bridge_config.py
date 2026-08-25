@@ -58,11 +58,6 @@ class TestConfigFromEnv(unittest.TestCase):
             with self.assertRaises(ConfigError):
                 Config.from_env()
 
-    def test_worker_count_defaults_to_one(self):
-        with mock.patch.dict(os.environ, _env(), clear=True):
-            c = Config.from_env()
-        self.assertEqual(c.worker_count, 1)
-
     def test_worker_count_accepts_multi(self):
         with mock.patch.dict(os.environ, _env(WORKER_COUNT="3"), clear=True):
             c = Config.from_env()

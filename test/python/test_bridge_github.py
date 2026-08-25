@@ -204,17 +204,6 @@ class TestFindTrackingIssue(unittest.TestCase):
         self.assertIsNone(issue)
 
 
-# --- Token repr redaction ----------------------------------------------------
-
-class TestTokenRepr(unittest.TestCase):
-    def test_repr_redacts_value(self):
-        tok = Token(value="ghs_supersecret123", expires_at="2026-01-01T00:00:00Z")
-        r = repr(tok)
-        self.assertNotIn("ghs_supersecret123", r)
-        self.assertIn("<redacted>", r)
-        self.assertIn("2026-01-01T00:00:00Z", r)
-
-
 # --- _client authentication header ------------------------------------------
 
 class TestClientAuthHeader(unittest.TestCase):

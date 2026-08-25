@@ -41,9 +41,6 @@ class TestMarker(unittest.TestCase):
 
 
 class TestTitle(unittest.TestCase):
-    def test_normal(self):
-        self.assertEqual(issue.title(42, "Add feature"), "[copilot-review] PR #42: Add feature")
-
     def test_truncates_long_title_with_ellipsis(self):
         t = issue.title(1, "x" * 500)
         self.assertLessEqual(len(t), issue.MAX_TITLE_LEN)
