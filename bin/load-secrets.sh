@@ -60,4 +60,15 @@ if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || "$OSTYPE" == win32* ]]; then
     unset _gh_dir
 fi
 
+# Ensure jq is available in Git Bash sessions on Windows (used by git hooks
+# and the ctrl/shft CLIs for JSON inspection). Installed locally to C:\Tools\jq
+# on this machine (winget wasn't available); add it if present.
+if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || "$OSTYPE" == win32* ]]; then
+    _jq_dir="/c/Tools/jq"
+    if [[ -x "$_jq_dir/jq.exe" ]] && ! command -v jq >/dev/null 2>&1; then
+        export PATH="$_jq_dir:$PATH"
+    fi
+    unset _jq_dir
+fi
+
 unset _DOTFILES_ENV_AGENT
