@@ -37,7 +37,7 @@ graph TB
     HOOKS -->|"emit events"| HUD
     SHFT -->|"consumes"| ISSUES["GitHub Issues backlog"]
     BRIDGE -->|"webhook → queue → worker"| SHFT
-    SHFT -->|"runs engine via"| HUB["sandcastle-hub<br/>(single source of truth)"]
+    SHFT -->|"runs engine via"| HUB["ctrlshft-hub<br/>(single source of truth)"]
 ```
 
 ---
@@ -158,4 +158,4 @@ The planning pipeline chains skills end-to-end:
 | [ADR-005](adr/ADR-005-sandcastle-agent-parity.md) | Sandcastle agent config parity (local ↔ CI) |
 | [ADR-006](adr/ADR-006-decision-ledger.md) | Verifiable decision history & the Decision Ledger |
 | [ADR-007](adr/ADR-007-executable-doc-policy.md) | Executable documentation policy |
-| [ADR-008](adr/ADR-008-sandcastle-hub.md) | Single-source-of-truth hub for the Sandcastle engine |
+| [ADR-008](adr/ADR-008-ctrlshft-hub.md) | Single-source-of-truth hub for the Sandcastle engine |

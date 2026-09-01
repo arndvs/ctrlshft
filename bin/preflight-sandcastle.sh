@@ -309,7 +309,7 @@ for required_path in ".sandcastle/hub-version.json" ".github/workflows" "sandcas
     fi
 done
 
-# Hub model: the engine lives in arndvs/sandcastle-hub, not vendored here.
+# Hub model: the engine lives in arndvs/ctrlshft-hub, not vendored here.
 # Verify the consumer references the hub and the hub is reachable.
 if [[ -f ".sandcastle/hub-version.json" ]]; then
     if node -e "JSON.parse(require('fs').readFileSync('.sandcastle/hub-version.json', 'utf8'))" >/dev/null 2>&1; then
@@ -320,10 +320,10 @@ if [[ -f ".sandcastle/hub-version.json" ]]; then
 fi
 
 if [[ "$SKIP_ENGINE" == false ]] && command -v gh >/dev/null 2>&1; then
-    if gh api repos/arndvs/sandcastle-hub/contents/actions/agent-run/action.yml --jq '.size' >/dev/null 2>&1; then
-        _pass_class "CONFIG" "Hub engine action reachable (arndvs/sandcastle-hub)"
+    if gh api repos/arndvs/ctrlshft-hub/contents/actions/agent-run/action.yml --jq '.size' >/dev/null 2>&1; then
+        _pass_class "CONFIG" "Hub engine action reachable (arndvs/ctrlshft-hub)"
     else
-        _fail_class "CONFIG" "Hub engine action not reachable (arndvs/sandcastle-hub)"
+        _fail_class "CONFIG" "Hub engine action not reachable (arndvs/ctrlshft-hub)"
     fi
 fi
 
@@ -362,7 +362,7 @@ if [[ "$SKIP_DRIFT" == true ]]; then
     _warn_class "CONFIG" "Skipped hub SHA-drift check"
 elif [[ -f ".sandcastle/hub-version.json" ]] && command -v gh >/dev/null 2>&1; then
     pinned="$(jq -r '.lastPinnedSha' .sandcastle/hub-version.json 2>/dev/null || echo "unknown")"
-    latest="$(gh api repos/arndvs/sandcastle-hub/commits/main --jq '.sha' 2>/dev/null | cut -c1-7 || echo "unknown")"
+    latest="$(gh api repos/arndvs/ctrlshft-hub/commits/main --jq '.sha' 2>/dev/null | cut -c1-7 || echo "unknown")"
     if [[ "$pinned" == "$latest" ]]; then
         _pass_class "CONFIG" "Hub SHA in sync (pinned ${pinned})"
     else

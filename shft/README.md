@@ -44,8 +44,8 @@ The agent picks issues in this order (defined in `prompt.md`):
 ## Sandcastle Platform
 
 Sandcastle is the CI-triggered AFK agent platform. Under the **hub model**, the
-engine lives in `arndvs/sandcastle-hub` (single source of truth) and consumers
-reference it remotely via `uses: arndvs/sandcastle-hub/...@<ref>` — nothing is
+engine lives in `arndvs/ctrlshft-hub` (single source of truth) and consumers
+reference it remotely via `uses: arndvs/ctrlshft-hub/...@<ref>` — nothing is
 vendored into consumer repos.
 
 ### Install in a repo
@@ -127,7 +127,7 @@ Prompt resolution checks `.sandcastle/prompts/` first, then falls back to the te
 ### Workflow dispatcher
 
 Consumers never invoke the engine directly. Each thin stub calls the hub's
-`agent-run` composite action (`uses: arndvs/sandcastle-hub/actions/agent-run@main`),
+`agent-run` composite action (`uses: arndvs/ctrlshft-hub/actions/agent-run@main`),
 which checks out the hub at the pinned ref, installs engine deps, runs the
 engine against the consumer workspace, and summarizes the run. The engine's
 registered workflow names live in the hub (`engine/lib/dispatch.ts`):

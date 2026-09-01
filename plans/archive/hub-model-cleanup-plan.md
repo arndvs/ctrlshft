@@ -3,7 +3,7 @@
 
 **Status:** Proposed — awaiting approval
 **Date:** 2026-08-20
-**Derived from:** `docs/sandcastle-hub-architecture.md`, `docs/adr/ADR-008-sandcastle-hub.md`, `sandcastle-hub/docs/adr/ADR-001-hub-single-source.md`
+**Derived from:** `docs/sandcastle-hub-architecture.md`, `docs/adr/ADR-008-ctrlshft-hub.md`, `ctrlshft-hub/docs/adr/ADR-001-hub-single-source.md`
 **Executed by:** AFK agents (shft) for AFK slices; human for HITL slices
 
 ---
@@ -11,7 +11,7 @@
 ## 1. Context
 
 The hub-model migration is functionally complete: the producer (ctrlshft-public)
-removed its vendored engine, and consumers reference `arndvs/sandcastle-hub`
+removed its vendored engine, and consumers reference `arndvs/ctrlshft-hub`
 remotely. This session fixed the producer's stale smoke-coverage test, rebuilt
 its `shft/templates/workflows/*` as hub stubs, deleted its stale composite
 actions and `sandcastle-ci.yml`, and synced everything across dotfiles + public
@@ -78,10 +78,10 @@ Steps:
    the vendored body (.sandcastle/engine, pnpm exec tsx ../run.ts, local
    composite actions, `{{DEFAULT_BRANCH}}` substitutes) with the thin stub
    contract:
-   - agent-run style (7): `uses: arndvs/sandcastle-hub/actions/agent-run@main`
+   - agent-run style (7): `uses: arndvs/ctrlshft-hub/actions/agent-run@main`
      with `workflow: <name>`, `ref: main`, `token:`, optional `extra-args`.
    - reusable-workflow style (6): `jobs: <name>: uses:
-     arndvs/sandcastle-hub/.github/workflows/reusable-*.yml@main` with `secrets:
+     arndvs/ctrlshft-hub/.github/workflows/reusable-*.yml@main` with `secrets:
      inherit`.
    - Match the exact stub bodies the producer now uses (see
      `ctrlshft-public/.github/workflows/` for the reference contract).
@@ -115,7 +115,7 @@ Steps:
    `test/sandcastle-smoke-coverage.sh` shape (dotfiles version — the 227-line
    template-coverage gate), adapted:
    - `agent_workflow_templates` glob → hub `templates/workflows/agent-*.yml`.
-   - Assert every template contains a `sandcastle-hub` reference
+   - Assert every template contains a `ctrlshft-hub` reference
      (`agent-run` composite or `reusable-*.yml` call).
    - Assert every template avoids old-model tokens
      (`.sandcastle/engine`, `pnpm --ignore-workspace exec tsx`, `uses:
@@ -256,7 +256,7 @@ The final QA slice (HITL) verifies the whole system after S1-S5 merge:
 
 1. On a fresh consumer (e.g. a throwaway branch of `claude-code-copilot`),
    run `ctrl init-sandcastle --force` and confirm `.github/workflows/agent-*.yml`
-   are thin stubs referencing `arndvs/sandcastle-hub` — no `.sandcastle/engine`,
+   are thin stubs referencing `arndvs/ctrlshft-hub` — no `.sandcastle/engine`,
    no local composite actions.
 2. Confirm `templates/workflows` dirs identical between hub and producer.
 3. Run producer sandcastle suite: smoke-coverage 35, init 26, report-smoke 15

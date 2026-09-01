@@ -14,7 +14,7 @@ file-writing tasks.
 
 - `shft/templates/workflows/**` — product workflow templates (mirror of hub)
 - `shft/templates/actions/**`, `shft/templates/prompts/**`, `shft/templates/extractions/**`
-- `shft/engine/**` — engine source (publishes to `sandcastle-hub`)
+- `shft/engine/**` — engine source (publishes to `ctrlshft-hub`)
 - `test/**`, `docs/adr/**`, `plans/**`, `bin/**`
 - `REPO_TOPOLOGY.md` — canonical topology doc
 
@@ -39,6 +39,6 @@ Resolve these here, then pull back to dotfiles (Direction A in
 
 ## Hub relationship
 
-Engine + canonical templates live in `arndvs/sandcastle-hub`. Changes to engine
+Engine + canonical templates live in `arndvs/ctrlshft-hub`. Changes to engine
 or templates go hub-first (edit hub, run `test/hub-smoke-coverage.sh`, mirror
 back via `bin/sync-hub-templates.sh`). See `~/dotfiles/seams/vendor-sandcastle.md`.

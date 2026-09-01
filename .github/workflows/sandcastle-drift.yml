@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           pinned=$(jq -r '.lastPinnedSha' .sandcastle/hub-version.json 2>/dev/null || echo "unknown")
-          latest=$(gh api repos/arndvs/sandcastle-hub/commits/main --jq '.sha' | cut -c1-7)
+          latest=$(gh api repos/arndvs/ctrlshft-hub/commits/main --jq '.sha' | cut -c1-7)
           echo "pinned=$pinned"
           echo "latest=$latest"
           if [ "$pinned" != "$latest" ]; then
@@ -61,7 +61,7 @@ jobs:
               continue
             fi
             tmpl="${checks[$local]}"
-            curl -fsSL "https://raw.githubusercontent.com/arndvs/sandcastle-hub/main/$tmpl" -o /tmp/hub-template 2>/dev/null || { echo "  ? cannot fetch hub template $tmpl" >&2; continue; }
+            curl -fsSL "https://raw.githubusercontent.com/arndvs/ctrlshft-hub/main/$tmpl" -o /tmp/hub-template 2>/dev/null || { echo "  ? cannot fetch hub template $tmpl" >&2; continue; }
             if ! diff -q "$local" /tmp/hub-template >/dev/null 2>&1; then
               echo "  DRIFTED: $local vs hub $tmpl" >> ./wf-drift-report.txt
               drifted=1
@@ -86,7 +86,7 @@ jobs:
           for entry in ".github/workflows/proxy-canary.yml templates/workflows-proxy/proxy-canary.yml" ".github/workflows/check-attribution.yml templates/workflows/check-attribution.yml"; do
             set -- $entry
             local="$1"; tmpl="$2"
-            curl -fsSL "https://raw.githubusercontent.com/arndvs/sandcastle-hub/main/$tmpl" -o "$local"
+            curl -fsSL "https://raw.githubusercontent.com/arndvs/ctrlshft-hub/main/$tmpl" -o "$local"
           done
           git add .github/workflows/proxy-canary.yml .github/workflows/check-attribution.yml
           git commit -m "chore(sandcastle): re-sync hub-synced workflows from hub templates" || true
@@ -95,7 +95,7 @@ jobs:
             --base main \
             --head "$branch" \
             --title "chore(sandcastle): re-sync hub-synced workflows" \
-            --body "Detected drift in hub-synced workflows. Re-synced from \`arndvs/sandcastle-hub\` templates." || true
+            --body "Detected drift in hub-synced workflows. Re-synced from \`arndvs/ctrlshft-hub\` templates." || true
 
       - name: Open review PR on drift
         if: steps.drift.outputs.drifted == 'true'

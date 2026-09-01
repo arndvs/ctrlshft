@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # init-sandcastle.sh — Scaffold a complete Sandcastle setup in any repo.
 #
-# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-proxy] [--with-proxy-canary] [--force]
+# Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-7] [--sandbox none] [--no-proxy] [--with-proxy-canary] [--force]
 #
 # Installs thin workflow stubs that reference the Sandcastle hub engine remotely
-# (uses: arndvs/sandcastle-hub/actions/agent-run@<ref>), writes a hub-version pin,
+# (uses: arndvs/ctrlshft-hub/actions/agent-run@<ref>), writes a hub-version pin,
 # creates config, sets up prompt directory, creates GitHub labels, and prints a
 # checklist of manual steps. The engine is NOT vendored — it lives in the hub.
 
@@ -23,7 +23,7 @@ fi
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
 BRANCH="main"
-MODEL="claude-opus-4-6"
+MODEL="claude-opus-4-7"
 SANDBOX="none"
 FORCE=false
 NO_ARTIFACTS=false
@@ -43,7 +43,7 @@ while [[ $# -gt 0 ]]; do
         --force)   FORCE=true; shift ;;
         --no-artifacts) NO_ARTIFACTS=true; shift ;;
         --help|-h)
-            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-6] [--sandbox none] [--no-proxy] [--with-proxy-canary] [--no-artifacts] [--force]"
+            echo "Usage: ctrl init-sandcastle [--branch main] [--model claude-opus-4-7] [--sandbox none] [--no-proxy] [--with-proxy-canary] [--no-artifacts] [--force]"
             echo ""
             echo "Also scaffolds the artifact lifecycle (working/, plans/, docs/) by calling"
             echo "'ctrl init-artifacts --gitignore'. Pass --no-artifacts to skip it."
@@ -97,7 +97,7 @@ fi
 # Hub reference for the engine. Consumers reference the hub action remotely;
 # the engine is never vendored. Override with SANDBOX_HUB_REF (branch/tag/SHA).
 SANDBOX_HUB_REF="${SANDBOX_HUB_REF:-main}"
-SANDBOX_HUB_ACTION="arndvs/sandcastle-hub/actions/agent-run@${SANDBOX_HUB_REF}"
+SANDBOX_HUB_ACTION="arndvs/ctrlshft-hub/actions/agent-run@${SANDBOX_HUB_REF}"
 
 # Render a workflow template with variable + auth-mode substitution.
 # Proxy mode (default): keeps LITELLM_* env vars (routes through the proxy).

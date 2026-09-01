@@ -3,7 +3,7 @@
 #
 # The engine is no longer vendored (hub model). update-sandcastle.sh is a
 # deprecated stub that must:
-#   - Print the deprecation notice naming arndvs/sandcastle-hub as the source
+#   - Print the deprecation notice naming arndvs/ctrlshft-hub as the source
 #   - Print the hub release path (hub/release.sh)
 #   - Exit successfully (it intentionally does nothing — nothing to vendor)
 #
@@ -48,7 +48,7 @@ echo "── deprecation notice ──"
 
 output="$(DOTFILES="$ROOT" bash "$ROOT/bin/update-sandcastle.sh" 2>&1)"
 
-assert_contains "names sandcastle-hub as source of truth" "arndvs/sandcastle-hub" "$output"
+assert_contains "names ctrlshft-hub as source of truth" "arndvs/ctrlshft-hub" "$output"
 assert_contains "names hub/release.sh as the replacement" "hub/release.sh" "$output"
 assert_contains "states the engine is no longer vendored" "no longer vendored" "$output"
 
@@ -58,7 +58,7 @@ echo "── help ──"
 
 help_output="$(DOTFILES="$ROOT" bash "$ROOT/bin/update-sandcastle.sh" --help 2>&1)"
 
-assert_contains "help names the hub" "arndvs/sandcastle-hub" "$help_output"
+assert_contains "help names the hub" "arndvs/ctrlshft-hub" "$help_output"
 assert_contains "help names hub/release.sh" "hub/release.sh" "$help_output"
 
 # ── Summary ───────────────────────────────────────────────────────────────────

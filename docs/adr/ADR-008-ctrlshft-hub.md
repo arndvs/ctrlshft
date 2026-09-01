@@ -1,4 +1,4 @@
-# ADR-008 — Single-source-of-truth hub for the Sandcastle engine
+# ADR-008 — Single-source-of-truth hub for the ctrl+shft agent engine
 
 **Status:** Accepted
 **Date:** 2026-08-15
@@ -27,7 +27,7 @@ The engine's own code was already designed to be hub-compatible: `resolveDefault
 
 ### The hub
 
-- **New public repo** (`arndvs/sandcastle-hub`) — the sole home of:
+- **New public repo** (`arndvs/ctrlshft-hub`) — the sole home of:
   - the engine (`engine/` — lib, workflows, schemas, `run.ts`, tests)
   - templates (`templates/` — prompts, extractions, scripts, hooks)
   - composite actions (`actions/` — a single `agent-run` action encapsulating setup + preflight + engine run + publish + summary)
@@ -39,7 +39,7 @@ The engine's own code was already designed to be hub-compatible: `resolveDefault
 
 - Keep: `sandcastle.config.json`, `CONTEXT.md`, `docs/adr/`, project prompts, secrets (unchanged).
 - Replace the ~101 vendored files with:
-  - N thin workflow stubs (`~3 lines` each, `uses: arndvs/sandcastle-hub/.sandcastle/actions/agent-run@main`),
+  - N thin workflow stubs (`~3 lines` each, `uses: arndvs/ctrlshft-hub/.sandcastle/actions/agent-run@main`),
   - one `.sandcastle/hub-version.json` SHA-lock (`{ ref, lastPinnedSha, reviewedAt }`).
 
 ### Pin strategy

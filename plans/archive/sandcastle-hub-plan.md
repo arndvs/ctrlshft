@@ -3,14 +3,14 @@
 
 > **Status:** Proposed — awaiting approval
 > **Date:** 2026-08-15
-> **Derived from:** `docs/sandcastle-hub-architecture.md` + `docs/adr/ADR-008-sandcastle-hub.md`
+> **Derived from:** `docs/sandcastle-hub-architecture.md` + `docs/adr/ADR-008-ctrlshft-hub.md`
 > **Executed by:** AFK agents (shft) for AFK slices; human for HITL slices
 
 ---
 
 ## 1. Context
 
-Sandcastle's agent engine is currently vendored as ~101 files into each of 8 consumer repos, causing weekly drift, re-vendor churn, and nightly agents proposing edits to engine copies. We are replacing the vendoring model with a **public hub repo** (`arndvs/sandcastle-hub`) that is the single source of truth: consumers keep only `sandcastle.config.json` + thin workflow stubs + a 1-file SHA-lock, and reference the hub's remote composite actions via `uses: arndvs/sandcastle-hub/...@main`. This eliminates drift by construction, turns 8 parallel re-vendor PRs into a single hub release, and produces a public portfolio artifact. The engine's template-resolution and prompt-override code already supports this model (verified against `shft/engine/lib/default-template-paths.ts` and `resolve-prompt.ts`).
+Sandcastle's agent engine is currently vendored as ~101 files into each of 8 consumer repos, causing weekly drift, re-vendor churn, and nightly agents proposing edits to engine copies. We are replacing the vendoring model with a **public hub repo** (`arndvs/ctrlshft-hub`) that is the single source of truth: consumers keep only `sandcastle.config.json` + thin workflow stubs + a 1-file SHA-lock, and reference the hub's remote composite actions via `uses: arndvs/ctrlshft-hub/...@main`. This eliminates drift by construction, turns 8 parallel re-vendor PRs into a single hub release, and produces a public portfolio artifact. The engine's template-resolution and prompt-override code already supports this model (verified against `shft/engine/lib/default-template-paths.ts` and `resolve-prompt.ts`).
 
 ---
 
@@ -18,7 +18,7 @@ Sandcastle's agent engine is currently vendored as ~101 files into each of 8 con
 
 | Decision | Choice |
 | --- | --- |
-| Hub repo | New public repo `arndvs/sandcastle-hub` (`arndvs/sandcastle` is taken by a fork) |
+| Hub repo | New public repo `arndvs/ctrlshft-hub` (`arndvs/sandcastle` is taken by a fork) |
 | Consumer refs | `@main` + monthly SHA-lock review (per-user approval: "go with the recommended suggestions") |
 | Action model | Composite actions; single `agent-run` action (setup+preflight+engine+publish+summary) |
 | Workflow model | Reusable `workflow_call` jobs for lifecycle-heavy agents; inline stubs for simple scheduled agents |
@@ -44,11 +44,11 @@ Type: AFK
 Size: S
 Blocked by: none
 Steps:
-1. `gh repo create arndvs/sandcastle-hub --public --description "Single source of truth for the Sandcastle agent engine — composite actions, reusable workflows, templates, and the TypeScript engine."`
-2. Clone to `~/dev/clients/sandcastle-hub`.
+1. `gh repo create arndvs/ctrlshft-hub --public --description "Single source of truth for the Sandcastle agent engine — composite actions, reusable workflows, templates, and the TypeScript engine."`
+2. Clone to `~/dev/clients/ctrlshft-hub`.
 3. Add `.gitignore` (node_modules, *.log, .env*), `LICENSE` (MIT), `README.md` placeholder, `CODEOWNERS` (maintainer).
 4. Set default branch `main`; push initial commit.
-Acceptance criteria: Public repo exists; `gh repo view arndvs/sandcastle-hub` succeeds; README renders.
+Acceptance criteria: Public repo exists; `gh repo view arndvs/ctrlshft-hub` succeeds; README renders.
 Feedback loops: `gh repo view`, `git status`.
 
 ---
@@ -58,7 +58,7 @@ Type: AFK
 Size: M
 Blocked by: S1
 Steps:
-1. Copy `ctrlshft-public/shft/engine/` → `sandcastle-hub/engine/` (lib/, workflows/, schemas/, run.ts, package.json, pnpm-lock.yaml, tsconfig.json, test/).
+1. Copy `ctrlshft-public/shft/engine/` → `ctrlshft-hub/engine/` (lib/, workflows/, schemas/, run.ts, package.json, pnpm-lock.yaml, tsconfig.json, test/).
 2. **Layout constraint (verified):** `engine/` and `templates/` MUST be siblings. `resolveDefaultTemplatesDir` walks `../../` from `engine/workflows/` and `run.ts` walks `../` from `engine/run.ts` — both resolve to `<hub>/templates/prompts` ONLY if templates live beside engine. Do NOT nest templates under engine/.
 3. Verify no absolute paths or producer-repo assumptions in engine code (grep for `ctrlshft-public`, `$HOME/dev/clients`, `SANDBOX_PRODUCER`).
 4. Add engine test suite to hub CI: `.github/workflows/engine-ci.yml` (runs `pnpm exec tsx --test` over `engine/test/` on every PR to hub).
@@ -73,10 +73,10 @@ Type: AFK
 Size: M
 Blocked by: S1
 Steps:
-1. Copy `ctrlshft-public/shft/templates/` → `sandcastle-hub/templates/` (prompts/ 14, extractions/ 6, scripts/, hooks/, copilot-setup-steps.yml).
-2. Copy `ctrlshft-public/shft/templates/scripts/` → `sandcastle-hub/scripts/` (proxy_preflight.sh, check-workflow-enabled.sh, probes, tests).
-3. Copy `labels.json` → `sandcastle-hub/labels.json`.
-4. Copy hooks (`block-npx-tsc.sh`, `guard-sandcastle-gitflow.sh`) → `sandcastle-hub/hooks/`.
+1. Copy `ctrlshft-public/shft/templates/` → `ctrlshft-hub/templates/` (prompts/ 14, extractions/ 6, scripts/, hooks/, copilot-setup-steps.yml).
+2. Copy `ctrlshft-public/shft/templates/scripts/` → `ctrlshft-hub/scripts/` (proxy_preflight.sh, check-workflow-enabled.sh, probes, tests).
+3. Copy `labels.json` → `ctrlshft-hub/labels.json`.
+4. Copy hooks (`block-npx-tsc.sh`, `guard-sandcastle-gitflow.sh`) → `ctrlshft-hub/hooks/`.
 5. Fix any relative-path assumptions in scripts (they must run against the consumer workspace, not the hub).
 6. Add `hub/release.sh`: reads `hub-version.json` template, bumps `lastPinnedSha` to hub latest, tags `vX.Y.Z`.
 Acceptance criteria: All template/script/label/hook files exist in hub; scripts pass shellcheck; release.sh dry-runs cleanly.
@@ -89,12 +89,12 @@ Type: HITL (engine-run semantics need validation)
 Size: L
 Blocked by: S2, S3
 Steps:
-1. Create `sandcastle-hub/actions/agent-run/action.yml` (composite) with inputs: `workflow`, `ref` (default main), `token`, `timeout-minutes`, `extra-args`.
+1. Create `ctrlshft-hub/actions/agent-run/action.yml` (composite) with inputs: `workflow`, `ref` (default main), `token`, `timeout-minutes`, `extra-args`.
 2. Inside the action:
-   - Step A: checkout hub at `ref` into `${{ runner.temp }}/sandcastle-hub` (uses `actions/checkout` with the hub repo + pinned ref).
+   - Step A: checkout hub at `ref` into `${{ runner.temp }}/ctrlshft-hub` (uses `actions/checkout` with the hub repo + pinned ref).
    - Step B: workflow-enabled check — run `bash <hub>/engine/scripts/check-workflow-enabled.sh <workflow>` with **cwd = consumer workspace** (reads consumer `sandcastle.config.json` `disabledWorkflows`).
    - Step C: proxy preflight (LITELLM envs from consumer secrets).
-   - Step D: engine install + run — **cwd = consumer workspace**, `cd ${{ runner.temp }}/sandcastle-hub/engine && pnpm --ignore-workspace exec tsx run.ts <workflow> --repo ${{ github.workspace }} <extra-args>`. The `--repo` flag is REQUIRED (verified: `run.ts` defaults repoDir to the hub checkout, not the consumer).
+   - Step D: engine install + run — **cwd = consumer workspace**, `cd ${{ runner.temp }}/ctrlshft-hub/engine && pnpm --ignore-workspace exec tsx run.ts <workflow> --repo ${{ github.workspace }} <extra-args>`. The `--repo` flag is REQUIRED (verified: `run.ts` defaults repoDir to the hub checkout, not the consumer).
    - Step E: publish (issue create / PR update per workflow output).
    - Step F: summarize run to step summary.
 3. Port the retry-once loop from the current workflows.
@@ -125,7 +125,7 @@ Blocked by: S4, S5
 Steps:
 1. In `cmd-public`, delete vendored `.sandcastle/` (84 files), `.github/actions/`, and the 17 workflow YAMLs (keep `sandcastle.config.json`, `CONTEXT.md`, project prompts).
 2. Add `.sandcastle/hub-version.json` = `{ "ref": "main", "lastPinnedSha": <hub latest>, "reviewedAt": "<today>" }`.
-3. Add N stub workflows (`agent-*.yml`, ~3 lines each, `uses: arndvs/sandcastle-hub/.sandcastle/actions/agent-run@main`).
+3. Add N stub workflows (`agent-*.yml`, ~3 lines each, `uses: arndvs/ctrlshft-hub/.sandcastle/actions/agent-run@main`).
 4. Baseline-compare: run the full workflow set and confirm outputs/labels/issue creation match the pre-migration behavior.
 5. Keep `sandcastle-drift.yml` (now SHA-drift) and `require-regression-guard.yml` (if consumer-owned).
 Acceptance criteria: `cmd-public` has no vendored engine; all 17 agents trigger and produce equivalent results; no drift PRs after 1 week.
@@ -166,9 +166,9 @@ Type: HITL (narrative + portfolio quality)
 Size: M
 Blocked by: S7
 Steps:
-1. Update `ctrlshft-public` `docs/ARCHITECTURE.md` to show the hub as the engine home (point to `arndvs/sandcastle-hub`).
-2. Update `docs/adr/ADR-008-sandcastle-hub.md` status from Proposed → Accepted.
-3. Update `README.md` (producer) engine section → "engine now lives in sandcastle-hub".
+1. Update `ctrlshft-public` `docs/ARCHITECTURE.md` to show the hub as the engine home (point to `arndvs/ctrlshft-hub`).
+2. Update `docs/adr/ADR-008-ctrlshft-hub.md` status from Proposed → Accepted.
+3. Update `README.md` (producer) engine section → "engine now lives in ctrlshft-hub".
 4. Update hub `README.md` with architecture diagram (C4 context + container from the architecture doc), quick-start, and contribution guide.
 5. Update `CONTEXT.md`/handoff to reflect the new topology.
 Acceptance criteria: No doc references the old vendored-engine model as current; hub README is a clean portfolio entry point.

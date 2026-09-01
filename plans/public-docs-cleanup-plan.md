@@ -2,7 +2,7 @@
 
 **Status:** Proposed — awaiting approval
 **Date:** 2026-08-20
-**Derived from:** Codebase audit (2026-08-20), `docs/sandcastle-hub-architecture.md`, `docs/adr/ADR-008-sandcastle-hub.md`, `plans/README.md`, `WORKSPACE_INVARIANTS.md`
+**Derived from:** Codebase audit (2026-08-20), `docs/sandcastle-hub-architecture.md`, `docs/adr/ADR-008-ctrlshft-hub.md`, `plans/README.md`, `WORKSPACE_INVARIANTS.md`
 **Executed by:** AFK agents (shft) for AFK slices; HITL for taste decisions
 
 ---
@@ -50,7 +50,7 @@ Size: S
 Blocked by: none
 Steps:
 1. Create `plans/archive/`.
-2. Move the 5 `plans/*.plan.md` files: `sandcastle-hub-plan.md`, `sandcastle-hub-dogfood-plan.md`, `hub-model-cleanup-plan.md`, `workspace-prime-plan.md`, `drift-remediation-plan.md` → `plans/archive/`.
+2. Move the 5 `plans/*.plan.md` files: `ctrlshft-hub-plan.md`, `ctrlshft-hub-dogfood-plan.md`, `hub-model-cleanup-plan.md`, `workspace-prime-plan.md`, `drift-remediation-plan.md` → `plans/archive/`.
 3. Prepend each with an `> **Archived** — implemented; see git history for the shipping commits.` banner.
 4. Update `plans/README.md` to list the archive dir and its link.
 Acceptance: `plans/` shows only README + `issues/` + `archive/`; archive dir has banner. Feedback: `ls plans/`.
@@ -71,7 +71,7 @@ Size: M
 Blocked by: none
 Steps:
 1. `CONTEXT.md:25-28` (repo root) → rewrite to SHA-lock hub model:
-   - Replace the "intentionally vendored from shft/" claim with "holds a `hub-version.json` SHA-lock; engine runs from `arndvs/sandcastle-hub` via the `agent-run` action."
+   - Replace the "intentionally vendored from shft/" claim with "holds a `hub-version.json` SHA-lock; engine runs from `arndvs/ctrlshft-hub` via the `agent-run` action."
    - Drop the `update-sandcastle --dry-run` drift line (deprecated flow).
 2. `docs/ARCHITECTURE.md` ADR table → add rows for ADR-005..008 (names from `docs/adr/`).
 3. `shft/README.md` vendored section → replace `update-sandcastle`/vendored-engine description with the hub-model `uses:` + SHA-lock flow.

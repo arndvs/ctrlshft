@@ -2,7 +2,7 @@
 # sync-hub-templates.sh — Keep the hub's canonical workflow templates in sync
 # with the producer's shft/templates mirror.
 #
-# The hub (arndvs/sandcastle-hub) is the single source of truth for the
+# The hub (arndvs/ctrlshft-hub) is the single source of truth for the
 # Sandcastle engine AND its workflow templates. The producer (ctrlshft /
 # shft/templates) mirrors the shared template contract so consumers installed
 # via init-sandcastle get identical stubs regardless of which checkout
@@ -25,7 +25,7 @@ set -euo pipefail
 DOTFILES="${DOTFILES:-$HOME/dotfiles}"
 source "$DOTFILES/bin/_lib.sh"
 
-HUB="${HUB:-$HOME/dev/clients/sandcastle-hub}"
+HUB="${HUB:-$HOME/dev/clients/ctrlshft-hub}"
 PRODUCER="${PRODUCER:-$HOME/dev/clients/ctrlshft-public}"
 
 CHECK_ONLY=false
