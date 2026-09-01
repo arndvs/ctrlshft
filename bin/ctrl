@@ -561,7 +561,7 @@ except:
         ;;
 
     # ── update-sandcastle ──────────────────────────────────────────────────────
-    # DEPRECATED — the engine is no longer vendored. It lives in arndvs/sandcastle-hub.
+    # DEPRECATED — the engine is no longer vendored. It lives in arndvs/ctrlshft-hub.
     # Consumers reference it remotely via `uses: @main`. This now routes to the hub
     # release flow so the command fails with a clear, actionable message.
     update-sandcastle)
@@ -570,7 +570,7 @@ except:
         else
             red "update-sandcastle.sh not found."
             red "The engine is no longer vendored. Releases are managed in the hub:"
-            red "  cd ~/dev/clients/sandcastle-hub && hub/release.sh [patch|minor|major|<version>]"
+            red "  cd ~/dev/clients/ctrlshft-hub && hub/release.sh [patch|minor|major|<version>]"
             exit 1
         fi
         ;;
@@ -844,7 +844,7 @@ except:
         echo "  ctrl init-sandcastle    scaffold Sandcastle in a repo"
         echo "                          [--branch main] [--model claude-opus-4-6]"
         echo "                          [--sandbox none] [--no-proxy] [--force]"
-        echo "  ctrl update-sandcastle  DEPRECATED — engine lives in arndvs/sandcastle-hub."
+        echo "  ctrl update-sandcastle  DEPRECATED — engine lives in arndvs/ctrlshft-hub."
         echo "                          See hub/release.sh for releases."
         echo "  ctrl preflight-sandcastle validate drift, workflows, engine, secrets"
         echo "                          [--skip-drift] [--skip-engine] [--skip-github]"
