@@ -3,7 +3,7 @@
 
 > **Status:** Proposed — awaiting approval
 > **Date:** 2026-08-18
-> **Derived from:** `docs/sandcastle-hub-architecture.md` + `docs/adr/ADR-008-sandcastle-hub.md` + `plans/sandcastle-hub-plan.md`
+> **Derived from:** `docs/sandcastle-hub-architecture.md` + `docs/adr/ADR-008-ctrlshft-hub.md` + `plans/ctrlshft-hub-plan.md`
 > **Executed by:** AFK agents (shft) for AFK slices; human for HITL slices
 
 ---
@@ -63,7 +63,7 @@ Steps:
 1. On a branch in ctrlshft, remove the vendored `.sandcastle/` (engine, templates, scripts, hooks, run.ts, labels, CODING_STANDARDS) — keep `.sandcastle/prompts/` (consumer override) + config.
 2. Remove vendored `.github/actions/{sandcastle-setup,sandcastle-teardown}` + vendored workflow YAMLs.
 3. Add `.sandcastle/hub-version.json` SHA-lock.
-4. Add 12 thin workflow stubs (7 composite-action calls + 5 reusable-workflow calls) referencing `arndvs/sandcastle-hub`.
+4. Add 12 thin workflow stubs (7 composite-action calls + 5 reusable-workflow calls) referencing `arndvs/ctrlshft-hub`.
 5. Add SHA-drift + hub-backed labels-sync workflows.
 6. **Remove `shft/engine/`** (fully delegate to hub) — update `docs/ARCHITECTURE.md`, `docs/adr/ADR-008`, README to point at hub as engine home.
 7. Open PR to `dev` for review.
@@ -92,7 +92,7 @@ Type: AFK
 Size: M
 Blocked by: none (can run parallel to S2/S3)
 Steps:
-1. Create `sandcastle-hub/hub/release.sh`:
+1. Create `ctrlshft-hub/hub/release.sh`:
    - Reads `hub-version.json` template (or generates one).
    - Bumps `lastPinnedSha` to hub latest `main` SHA.
    - Tags `vX.Y.Z` (semver bump via arg or auto-increment).

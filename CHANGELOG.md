@@ -46,14 +46,14 @@ Slice 7.2: CLI entry points (`ctrl` & `shft`).
 - HUD: renamed `esc`→`str` helper, removed dead CSS class, replaced `setInterval` with `setTimeout`
 
 ### Added (post-0.7.0 feature set)
-- **Sandcastle** — CI-triggered, label-driven AFK agent platform. Engine lives in `arndvs/sandcastle-hub` (single source of truth); consumers reference it remotely via `uses: arndvs/sandcastle-hub/...@main`. This repo mirrors the hub's templates into `shft/templates/` via `bin/sync-hub-templates.sh`.
+- **Sandcastle** — CI-triggered, label-driven AFK agent platform. Engine lives in `arndvs/ctrlshft-hub` (single source of truth); consumers reference it remotely via `uses: arndvs/ctrlshft-hub/...@main`. This repo mirrors the hub's templates into `shft/templates/` via `bin/sync-hub-templates.sh`.
 - **Copilot Review Bridge** — FastAPI webhook → SQLite queue → `shft afk` worker pipeline (`bridge/`, `systemd/`, `bin/bridge-install.sh`, `ctrl bridge`).
 - **Sandcastle workflow templates** — 16 `agent-*.yml` stubs + `labels-sync.yml` + `sandcastle-drift.yml` covering the issue→plan→implement→PR→fix→merge lifecycle.
 - **`ctrl`/`shft` CLI expansion** — `shft proxy`, `shft engine`, `shft worktree`, `ctrl bridge` subcommands.
 - **Skills catalog growth** — 20 → 56 public skills (agent-assets, anti-ai-slop, better-auth, frontend-design, halbert-copy-editor, mobile-dev, performance-audit, etc.).
 - **Rules growth** — 4 → 14 path-gated convention files.
 - **Hooks growth** — 8 → 20+ lifecycle guards (git-workflow-gate, plan-quality-gate, test-gate, feedback-memory-gate, hud-reads, hud-session, etc.).
-- **8 ADRs** — vendor-boundary, four-tier disclosure, HUD observability, hosted proxy, agent parity, decision ledger, executable-doc policy, sandcastle-hub.
+- **8 ADRs** — vendor-boundary, four-tier disclosure, HUD observability, hosted proxy, agent parity, decision ledger, executable-doc policy, ctrlshft-hub.
 - **Global git hooks** — `git-hooks/` dispatchers (pre-commit, pre-push with public-promotion guard).
 - **Test suite** — shell + Python tests for bridge, hooks, sandcastle smoke, copilot drift.
 - **`skills-lock.json`** — SHA-256 provenance lock + drift detection.

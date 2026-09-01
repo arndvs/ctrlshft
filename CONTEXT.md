@@ -23,7 +23,7 @@
 ## Sandcastle dogfood
 
 This repo is a Sandcastle consumer under the hub model. The engine is NOT
-vendored — it runs from `arndvs/sandcastle-hub` via the `agent-run` composite
+vendored — it runs from `arndvs/ctrlshft-hub` via the `agent-run` composite
 action. `.sandcastle/` holds only a `hub-version.json` SHA-lock (plus local
 prompt overrides); the engine is referenced remotely, never copied in.
 

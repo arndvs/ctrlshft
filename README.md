@@ -29,7 +29,7 @@ ctrl+shft is one part of a connected system. The repos work together:
 
 ```mermaid
 graph LR
-    HUB["sandcastle-hub<br/>engine + templates<br/>(single source of truth)"]
+    HUB["ctrlshft-hub<br/>engine + templates<br/>(single source of truth)"]
     PROD["ctrlshft-public<br/>product source + producer"]
     DOT["dotfiles-private<br/>private overlay"]
     CMD["cmd<br/>business knowledge layer"]
@@ -43,7 +43,7 @@ graph LR
 ```
 
 - **`arndvs/ctrlshft`** — the public product source (this repo). Producer of the Sandcastle engine, mirror of the hub's templates.
-- **`arndvs/sandcastle-hub`** — single source of truth for the Sandcastle engine, templates, actions, and labels. Consumers reference it remotely via `uses: arndvs/sandcastle-hub/...@main`; nothing is vendored.
+- **`arndvs/ctrlshft-hub`** — single source of truth for the Sandcastle engine, templates, actions, and labels. Consumers reference it remotely via `uses: arndvs/ctrlshft-hub/...@main`; nothing is vendored.
 - **`dotfiles-private`** — Aaron's private overlay: secrets, `_local/` skills and instructions, machine-local state. Never promoted to public.
 - **`arndvs/cmd`** — the business knowledge layer. "ctrl+shft+cmd": ctrl configures how agents code, cmd configures what agents know about your business.
 - **`arndvs/claude-code-copilot`** — the runtime proxy that lets Claude Code reach Copilot/OpenRouter models. Infrastructure, not product content.
@@ -475,10 +475,10 @@ Sandcastle is the CI-triggered evolution of the `shft` bash loop. Instead of a l
 
 ### The hub model
 
-The engine is **not vendored** into consumers. It lives in one place — [`arndvs/sandcastle-hub`](https://github.com/arndvs/sandcastle-hub) — and consumers reference it remotely:
+The engine is **not vendored** into consumers. It lives in one place — [`arndvs/ctrlshft-hub`](https://github.com/arndvs/ctrlshft-hub) — and consumers reference it remotely:
 
 ```yaml
-uses: arndvs/sandcastle-hub/actions/agent-run@main
+uses: arndvs/ctrlshft-hub/actions/agent-run@main
 ```
 
 A consumer repo keeps only three things:
@@ -538,7 +538,7 @@ Plus `labels-sync.yml` (weekly label reconciliation) and `sandcastle-drift.yml` 
 bash ~/dotfiles/bin/init-sandcastle.sh   # install the Sandcastle consumer contract
 ```
 
-See [shft/README.md](shft/README.md) and the hub's [docs](https://github.com/arndvs/sandcastle-hub) for the full platform spec.
+See [shft/README.md](shft/README.md) and the hub's [docs](https://github.com/arndvs/ctrlshft-hub) for the full platform spec.
 
 ---
 

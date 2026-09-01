@@ -133,7 +133,7 @@ Steps:
    `shft/templates/workflows/**`, `test/`, `docs/adr/*`. Resolve via
    `WORKSPACE_INVARIANTS` (public copy of the doc considered canonical). Use
    `bin/validate-public-promotion.sh` before any public push.
-2. `sandcastle-hub/AGENTS.md`: vendor source, engine + templates + labels;
+2. `ctrlshft-hub/AGENTS.md`: vendor source, engine + templates + labels;
    one-way copy out; sees consumer stubs; never edit consumer copies.
 3. `claude-code-copilot/AGENTS.md` already exists (consumer runtime) — update
    cross-link to invariants; add "this is runtime, not product" note.

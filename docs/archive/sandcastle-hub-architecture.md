@@ -1,9 +1,9 @@
 # Sandcastle Hub Architecture
 
-> **Status:** Implemented (pilot) — hub live at `arndvs/sandcastle-hub`, cmd-public migrated (PR #19)
+> **Status:** Implemented (pilot) — hub live at `arndvs/ctrlshft-hub`, cmd-public migrated (PR #19)
 > **Date:** 2026-08-15
 > **Author:** Aaron Davis
-> **Applies to:** the public hub repo `arndvs/sandcastle-hub` and all 8 consumer repos
+> **Applies to:** the public hub repo `arndvs/ctrlshft-hub` and all 8 consumer repos
 
 ---
 
@@ -49,9 +49,9 @@ The fix is to stop shipping the engine and start **referencing** it: a public hu
 
 | Decision | Choice | Rationale |
 | --- | --- | --- |
-| Hub repo | **New public repo** `arndvs/sandcastle-hub` | `arndvs/sandcastle` is taken by a fork of mattpocock/sandcastle. A dedicated repo separates the engine product from the ctrlshft tooling monolith and gives the portfolio artifact a clean name. |
+| Hub repo | **New public repo** `arndvs/ctrlshft-hub` | `arndvs/sandcastle` is taken by a fork of mattpocock/sandcastle. A dedicated repo separates the engine product from the ctrlshft tooling monolith and gives the portfolio artifact a clean name. |
 | Consumer refs | **`@main` + monthly SHA-lock review** | `@main` gives instant propagation (no re-vendor step at all); the drift workflow shifts from "re-vendor 8 repos" to "review and pin a SHA monthly". Branch-pin `@dev` rejected: consumers should run stable engine, not the dev branch. |
-| Action model | **Composite actions** (remote, `uses: arndvs/sandcastle-hub/.sandcastle/actions/agent-run@main`) | Composite actions are self-contained, versionable via ref, and keep secrets/token plumbing local to the hub. A single `agent-run` action encapsulates setup + preflight + engine + publish + summary. |
+| Action model | **Composite actions** (remote, `uses: arndvs/ctrlshft-hub/.sandcastle/actions/agent-run@main`) | Composite actions are self-contained, versionable via ref, and keep secrets/token plumbing local to the hub. A single `agent-run` action encapsulates setup + preflight + engine + publish + summary. |
 | Workflow model | **Reusable workflows** for the 3 lifecycle-heavy jobs (plan/implement/review); **inline stubs** for the rest | `workflow_call` reduces consumer surface for the complex jobs; simple scheduled jobs stay as thin local stubs calling the composite action. Avoids the "reusable workflows can't call each other well" trap for the publish/summary steps. |
 | Engine checkout strategy | **Hub action checks out hub repo at the pinned ref** into a scratch dir; consumer repo stays checked out in `github.workspace` | The engine needs the consumer's repo context (git, issues) at `github.workspace`, so the hub clone is side-by-side. `run.ts` is invoked with the consumer cwd as `repoDir`. |
 | Consumer config | `sandcastle.config.json` stays **in the consumer repo** (project-owned) | Config is per-repo policy (baseBranch, disabledWorkflows, excludedPaths, proxy settings). Engine schema already supports defaults + env overrides; config loading is unchanged. |
@@ -74,7 +74,7 @@ C4Context
 
     Person(dev, "Repo maintainer", "Owns a consumer repo and runs the Sandcastle agent workflows")
 
-    System(hub, "sandcastle-hub (public)", "Single source of truth for the Sandcastle engine: composite actions, reusable workflows, templates, scripts, hooks, labels. Referenced remotely by consumers.")
+    System(hub, "ctrlshft-hub (public)", "Single source of truth for the Sandcastle engine: composite actions, reusable workflows, templates, scripts, hooks, labels. Referenced remotely by consumers.")
     System(github, "GitHub Actions", "Executes consumer workflow stubs and hub composite actions on schedule / dispatch / PR events")
 
     System_Ext(cmd, "cmd-public", "Consumer repo — config + workflow stubs only")
@@ -103,11 +103,11 @@ C4Context
 
 ```mermaid
 C4Container
-    title sandcastle-hub — container layout
+    title ctrlshft-hub — container layout
 
     Person(dev, "Repo maintainer")
 
-    Container_Boundary(hub, "sandcastle-hub (public repo)") {
+    Container_Boundary(hub, "ctrlshft-hub (public repo)") {
         Container(actions, "actions/", "composite actions", "agent-run (setup+preflight+engine+publish+summary), sandcastle-setup, sandcastle-teardown")
         Container(workflows, ".github/workflows/", "reusable workflows (workflow_call)", "agent-plan-issue, agent-implement-*, agent-review-* — shared lifecycle jobs")
         Container(engine, "engine/", "TypeScript engine", "lib/, workflows/, schemas/, run.ts, package.json, tsconfig — MUST sit beside templates/ (sibling layout, verified against resolveDefaultTemplatesDir)")
@@ -116,7 +116,7 @@ C4Container
         Container(release, "hub/", "Release tooling", "release.sh — bump SHA-lock, tag releases")
     }
 
-    Container(stub, "consumer workflow stub", "3-line YAML", "uses: arndvs/sandcastle-hub/.../agent-run@main — the ONLY thing a consumer tracks")
+    Container(stub, "consumer workflow stub", "3-line YAML", "uses: arndvs/ctrlshft-hub/.../agent-run@main — the ONLY thing a consumer tracks")
     Container(config, "sandcastle.config.json", "consumer config", "baseBranch, disabledWorkflows, excludedPaths, proxy, promptDir")
 
     Rel(dev, actions, "Maintains")
@@ -168,7 +168,7 @@ jobs:
       group: agent-architecture-review
       cancel-in-progress: false
     steps:
-      - uses: arndvs/sandcastle-hub/.sandcastle/actions/agent-run@main
+      - uses: arndvs/ctrlshft-hub/.sandcastle/actions/agent-run@main
         with:
           workflow: architecture-review
           ref: main
@@ -181,7 +181,7 @@ The composite `agent-run` action encapsulates: workflow-enabled check → proxy 
 
 ```mermaid
 graph LR
-    HUB["arndvs/sandcastle-hub (public)<br/>engine + actions + templates + labels"]
+    HUB["arndvs/ctrlshft-hub (public)<br/>engine + actions + templates + labels"]
     C1["cmd-public"]
     C2["launch"]
     C3["aligned"]
@@ -225,7 +225,7 @@ graph LR
 ## 6. Hub → Consumer migration plan
 
 ### Phase 0 — Foundations (hub repo)
-1. Create `arndvs/sandcastle-hub` (public, README + LICENSE + CODEOWNERS).
+1. Create `arndvs/ctrlshft-hub` (public, README + LICENSE + CODEOWNERS).
 2. `git subtree split` or copy `shft/engine` from `ctrlshft-public` into the hub `engine/` (with tests).
 3. Copy `shft/templates/` → `templates/`, `.github/actions/{sandcastle-setup,sandcastle-teardown}` → `actions/`, `labels.json`, scripts, hooks.
 4. Author `actions/agent-run/action.yml` (composite) — the one action that replaces the per-repo setup/preflight/run/publish/summary chain.
@@ -252,7 +252,7 @@ graph LR
 
 | Risk | Mitigation |
 | --- | --- |
-| Composite action `uses:` a repo-local path (`./`) — actions must reference their own repo via `uses: arndvs/sandcastle-hub/...` from the consumer | All hub-internal references use the fully-qualified `arndvs/sandcastle-hub/...` form. GitHub Actions supports referencing actions in other repos; the engine code itself is checked out by the action's first step, not by path assumptions. |
+| Composite action `uses:` a repo-local path (`./`) — actions must reference their own repo via `uses: arndvs/ctrlshft-hub/...` from the consumer | All hub-internal references use the fully-qualified `arndvs/ctrlshft-hub/...` form. GitHub Actions supports referencing actions in other repos; the engine code itself is checked out by the action's first step, not by path assumptions. |
 | `@main` instability (bad push breaks all consumers at once) | Monthly SHA-lock review + the consumer `hub-version.json` can pin to a SHA instead of `main` when a consumer wants stability. Release tagging gives a stable `vX.Y.Z` target. |
 | Reusable workflows + composite actions both reading the engine from two different checkout paths | Single `agent-run` composite action owns the checkout + run; reusable workflows delegate to it. One path, one contract. |
 | Secret sprawl (LITELLM, ANTHROPIC, AGENT_PAT) referenced from hub actions | Hub actions declare `token` input only; workflow-level `env:` from the consumer supplies the rest. Secrets stay in consumer repo secrets, never in the hub. |
@@ -285,7 +285,7 @@ graph LR
 
 ## 9. Open Questions for Approval
 
-1. **Repo name:** `arndvs/sandcastle-hub` (recommended) vs `arndvs/sandcastle-engine`. `arndvs/sandcastle` is taken by a fork.
+1. **Repo name:** `arndvs/ctrlshft-hub` (recommended) vs `arndvs/sandcastle-engine`. `arndvs/sandcastle` is taken by a fork.
 2. **Pin strategy:** `@main` + monthly SHA-lock review (recommended) vs strict `@vX.Y.Z` tags only.
 3. **ctrlshft-public's `shft/engine`:** migrate the engine out of ctrlshft-public into the hub (recommended — one engine home), or keep a mirrored copy (drift risk returns)?
 4. **Migration scope:** pilot cmd-public → rollout (recommended), or one-shot all 8?
