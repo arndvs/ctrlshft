@@ -77,6 +77,8 @@ if [[ -x "$GUARD" ]]; then
     run_case "feature branch may target dev" pass dev ai/fix/example
     run_case "dev may target master if present" pass master dev
     run_case "feature branch may not target master" fail master ai/fix/example
+    run_case "sandcastle pin-review may target main" pass main sandcastle/hub-review-20260926
+    run_case "sandcastle pin-review may target master" pass master sandcastle/hub-review-20260926
 fi
 
 printf "\n  \033[32m%d passed\033[0m  \033[31m%d failed\033[0m\n" "$PASS" "$FAIL"

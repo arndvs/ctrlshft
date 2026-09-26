@@ -13,6 +13,14 @@ fi
 
 case "$base_ref" in
     main|master)
+        # The drift workflow (sandcastle-drift.yml) opens sandcastle/* PRs
+        # that only touch .sandcastle/hub-version.json — a bot pin-review,
+        # not a code promotion. Allow those through; every other PR to main
+        # must come from dev.
+        if [[ "$head_ref" == sandcastle/* ]]; then
+            echo "PR source accepted (sandcastle pin-review): $head_ref -> $base_ref"
+            exit 0
+        fi
         if [[ "$head_ref" != "dev" ]]; then
             echo "PRs targeting $base_ref must come from dev, not $head_ref." >&2
             echo "Use the promotion path: feature branch -> dev, then dev -> $base_ref." >&2
