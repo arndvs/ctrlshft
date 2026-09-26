@@ -29,6 +29,14 @@ jobs:
 
           case "$GITHUB_BASE_REF" in
             main|master)
+              # The drift workflow (sandcastle-drift.yml) opens sandcastle/*
+              # PRs that only touch .sandcastle/hub-version.json — a bot
+              # pin-review, not a code promotion. Allow those through; every
+              # other PR to main must come from dev.
+              if [[ "$GITHUB_HEAD_REF" == sandcastle/* ]]; then
+                echo "PR source accepted (sandcastle pin-review): $GITHUB_HEAD_REF -> $GITHUB_BASE_REF"
+                exit 0
+              fi
               if [[ "$GITHUB_HEAD_REF" != "dev" ]]; then
                 echo "PRs targeting $GITHUB_BASE_REF must come from dev, not $GITHUB_HEAD_REF." >&2
                 echo "Use the promotion path: feature branch -> dev, then dev -> $GITHUB_BASE_REF." >&2
