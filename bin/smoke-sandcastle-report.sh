@@ -79,6 +79,7 @@ fi
 SANDCASTLE_WORKFLOWS=(
     "Agent: Architecture Review"
     "Agent: Check Stale PRs"
+    "Agent: Code Health Audit"
     "Agent: Fix PR Feedback"
     "Agent: Implement Issue"
     "Agent: Implement PRD"
