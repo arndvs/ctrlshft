@@ -1,7 +1,7 @@
 ---
 name: mobile-dev
 description: "Expo mobile development workflow — clean state reset, startup sequence, native rebuild decisions, and Android emulator/QEMU troubleshooting for Launch Core and its forks (Foreword, Scorpion, Aligned, Cast)."
-contexts: [expo, react-native, mobile]
+contexts: [expo, react-native]
 ---
 
 # Mobile Dev Skill
