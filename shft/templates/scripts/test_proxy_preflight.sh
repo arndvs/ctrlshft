@@ -163,7 +163,13 @@ run_suite() {
 
 echo "── proxy_preflight.sh tests ──"
 run_suite "template" "$SCRIPT_DIR/proxy_preflight.sh"
-run_suite "installed" "$ROOT/.sandcastle/scripts/proxy_preflight.sh"
+# The installed dogfood copy only exists in repos that vendor .sandcastle/scripts.
+# Since the hub migration (#330) this repo no longer vendors it, so skip rather than fail.
+if [[ -f "$ROOT/.sandcastle/scripts/proxy_preflight.sh" ]]; then
+  run_suite "installed" "$ROOT/.sandcastle/scripts/proxy_preflight.sh"
+else
+  echo "  - installed suite skipped: .sandcastle/scripts/proxy_preflight.sh not vendored"
+fi
 
 echo ""
 printf "  \033[32m%d passed\033[0m  \033[31m%d failed\033[0m\n" "$PASS" "$FAIL"
