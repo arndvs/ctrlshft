@@ -140,12 +140,8 @@ echo "$contexts"
 # Pushes a context-change event to the HUD daemon on every cd().
 # Inline push avoids subprocess overhead — this runs on every directory change.
 {
-    _dc_dotfiles="${DOTFILES:-$HOME/dotfiles}"
-    _dc_pipe="$_dc_dotfiles/working/runtime/hud.pipe"
-    _dc_events="$_dc_dotfiles/working/logs/events.jsonl"
-    _dc_ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
-    _dc_td=$(date +"%H:%M:%S" 2>/dev/null || echo "")
-    _dc_proj=$(basename "$(pwd)" 2>/dev/null || echo "unknown")
+    _dc_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    source "$_dc_self_dir/write-hud-state.sh"
 
     # Detect IDE from environment
     _dc_ide="terminal"
@@ -155,16 +151,8 @@ echo "$contexts"
         _dc_ide="cursor"
     fi
 
-    _dc_payload=$(printf '{"type":"context","project":"%s","projectPath":"%s","contexts":"%s","ide":"%s","message":"Active contexts: %s","timestamp":"%s","time":"%s"}' \
-        "$_dc_proj" "${PWD/$HOME/~}" "$contexts" "$_dc_ide" "$contexts" "$_dc_ts" "$_dc_td")
-
-    if [[ -p "$_dc_pipe" ]] && [[ "$(uname -o 2>/dev/null)" != "Msys" ]]; then
-        ( printf '%s\n' "$_dc_payload" > "$_dc_pipe" ) 2>/dev/null &
-        disown 2>/dev/null
-    else
-        mkdir -p "$_dc_dotfiles/working/logs" 2>/dev/null || true
-        printf '%s\n' "$_dc_payload" >> "$_dc_events" 2>/dev/null &
-        disown 2>/dev/null
-    fi
-    unset _dc_dotfiles _dc_pipe _dc_events _dc_ts _dc_td _dc_proj _dc_ide _dc_payload
+    # Backgrounded so cd never waits on the HUD transport cascade.
+    ( write_hud_event "context" "Active contexts: $contexts" "" "" "" "$_dc_ide" ) >/dev/null 2>&1 &
+    disown 2>/dev/null
+    unset _dc_self_dir _dc_ide
 } 2>/dev/null || true

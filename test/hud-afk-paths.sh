@@ -53,6 +53,50 @@ else
   pass "untagged event payload unchanged (no source key)"
 fi
 
+# ── #323 part 2: once.sh emits, detect-context collapses to canonical emitter ──
+
+# Static: once.sh sources the canonical writer and emits start/finish events.
+if grep -qE '^[[:space:]]*source[[:space:]].*write-hud-state\.sh' "$ROOT/shft/once.sh" \
+   && grep -q 'write_hud_event' "$ROOT/shft/once.sh"; then
+  pass "once.sh sources canonical writer and emits HUD events"
+else
+  fail "once.sh does not emit HUD events"
+fi
+
+# Static: detect-context.sh no longer hand-builds a payload or writes the pipe itself.
+if grep -q '_dc_payload=' "$ROOT/bin/detect-context.sh" || grep -q '_dc_pipe=' "$ROOT/bin/detect-context.sh"; then
+  fail "detect-context.sh still hand-rolls the HUD emitter"
+else
+  pass "detect-context.sh has no inline HUD emitter"
+fi
+
+# Static: detect-context.sh routes through the canonical context event.
+if grep -q 'write_hud_event "context"' "$ROOT/bin/detect-context.sh"; then
+  pass "detect-context.sh emits context via write_hud_event"
+else
+  fail "detect-context.sh does not emit via write_hud_event"
+fi
+
+# Behavioural: running detect-context in a project dir with no daemon writes a
+# context event with the ide field into DOTFILES/working/logs/events.jsonl.
+PROJ="$TMP/proj"
+mkdir -p "$PROJ"
+echo '{"name":"x","dependencies":{"expo":"1"}}' > "$PROJ/package.json"
+(cd "$PROJ" && env -u VSCODE_PID -u VSCODE_IPC_HOOK -u CURSOR_SESSION_ID \
+  DOTFILES="$TMP/ctx" HUD_PORT=1 bash "$ROOT/bin/detect-context.sh" >/dev/null 2>&1) || true
+CTX_LOG="$TMP/ctx/working/logs/events.jsonl"
+# Emission is backgrounded (cd must not block), so poll briefly for the write.
+for _ in $(seq 1 20); do
+  [[ -s "$CTX_LOG" ]] && break
+  sleep 0.2
+done
+if [[ -f "$CTX_LOG" ]] && grep -q '"type":"context"' "$CTX_LOG" \
+   && grep -q '"ide":"terminal"' "$CTX_LOG" && grep -q 'Active contexts: .*expo' "$CTX_LOG"; then
+  pass "context event lands in logs with ide field and contexts"
+else
+  fail "context event missing or malformed in $CTX_LOG"
+fi
+
 echo ""
 printf "  %d passed  %d failed\n" "$PASS" "$FAIL"
 [[ "$FAIL" -eq 0 ]]
