@@ -54,6 +54,7 @@ write_hud_event() {
     local _msg="$2"
     local _proj_override="${3:-}"   # optional: project name override
     local _path_override="${4:-}"   # optional: project path override
+    local _source="${5:-}"          # optional: producer tag (e.g. afk), stored by daemon
 
     # Collect context
     local _proj
@@ -74,9 +75,12 @@ write_hud_event() {
     _safe_msg=${_safe_msg//$'\r'/ }
 
     # Build JSON
+    local _source_field=""
+    [[ -n "$_source" ]] && _source_field=",\"source\":\"$_source\""
+
     local _payload
-    _payload=$(printf '{"type":"%s","project":"%s","projectPath":"%s","contexts":"%s","message":"%s","timestamp":"%s","time":"%s"}' \
-        "$_type" "$_proj" "$_path" "$_ctx" "$_safe_msg" "$_ts" "$_td")
+    _payload=$(printf '{"type":"%s","project":"%s","projectPath":"%s","contexts":"%s","message":"%s","timestamp":"%s","time":"%s"%s}' \
+        "$_type" "$_proj" "$_path" "$_ctx" "$_safe_msg" "$_ts" "$_td" "$_source_field")
 
     # Transport 1 — named pipe (background, non-blocking)
     if _can_use_pipe; then
