@@ -24,6 +24,7 @@ SUITES=(
   "copilot-skills:test/copilot-skills-materialize.sh"
   "hook-unit:test/hooks/run-hook-tests.sh"
   "hooks:test/hooks-integration.sh"
+  "hud-afk-paths:test/hud-afk-paths.sh"
   "lifecycle:test/lifecycle.sh"
   "main-pr-source:test/main-pr-source-guard.sh"
   "verify-pr-base:test/verify-pr-base.sh"
