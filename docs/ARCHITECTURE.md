@@ -9,6 +9,8 @@ Internal system map for ctrl+shft. Start here, follow the links.
 
 ## System Diagram
 
+> Diagrams of each layer (defense in depth, context loading, hooks, secrets, the AFK loop, Sandcastle): [SYSTEM-DIAGRAMS.md](SYSTEM-DIAGRAMS.md).
+
 ```mermaid
 graph TB
     subgraph "~/dotfiles (source of truth)"
