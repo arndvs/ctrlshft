@@ -17,7 +17,7 @@ ctrl+shft fixes all four. Clone it once, `bootstrap.sh` symlinks your instructio
 
 Then Sandcastle takes the loop further: label an issue `agent:implement` and a GitHub Actions workflow picks it up, implements it, opens a PR, and waits for your verdict — no local machine required.
 
-**Source of truth:** `arndvs/ctrlshft` is the canonical public product repository for reusable agent configuration, automation, docs, and Sandcastle/shft code. `~/dotfiles/` is the local checkout bootstrap uses as the on-machine source of truth; `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlink, Windows fallback copy). Public-safe product work starts in `ctrlshft`, then gets pulled back into `dotfiles-private` only for Aaron's private overlay. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [REPO_TOPOLOGY.md](REPO_TOPOLOGY.md).
+**Source of truth:** `arndvs/ctrlshft` is the canonical public product repository for reusable agent configuration, automation, docs, and Sandcastle/shft code. `~/dotfiles/` is the local checkout bootstrap uses as the on-machine source of truth; `~/.claude/`, `~/.copilot/`, and `~/.agents/` are consumer targets populated from dotfiles (symlink, Windows fallback copy). Public-safe product work starts in `ctrlshft`, then gets pulled back into `dotfiles-private` only for Aaron's private overlay. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [REPO_TOPOLOGY.md](REPO_TOPOLOGY.md). For the security, context-loading and guardrail layers as diagrams, see [docs/SYSTEM-DIAGRAMS.md](docs/SYSTEM-DIAGRAMS.md).
 
 **Quick start:** fork, clone to `~/dotfiles`, run `bash ~/dotfiles/bin/bootstrap.sh`. Full local/VPS/manual walkthroughs in [Installation](#installation).
 
